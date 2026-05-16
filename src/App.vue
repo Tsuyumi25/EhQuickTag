@@ -1,20 +1,10 @@
 <script setup lang="ts">
-import { ref, reactive, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import TagBar from '@/components/TagBar.vue'
 import TagConfigPopup from '@/components/TagConfigPopup.vue'
 import SettingsPopup from '@/components/SettingsPopup.vue'
-import type { QuickTag } from '@/types'
-import { DEFAULT_NS_ORDER } from '@/services/tagDb'
+import { tags, useNhWeight, nsOrder, disabledNs } from '@/services/store'
 
-const tags = reactive<QuickTag[]>([
-  { tag: 'language:"chinese"$', label: 'Chinese' },
-  { tag: 'language:"japanese"$', label: 'Japanese' },
-  { tag: 'language:"english"$', label: 'English' },
-])
-
-const useNhWeight = ref(true) // TODO: persist in GM storage
-const nsOrder = ref([...DEFAULT_NS_ORDER])
-const disabledNs = ref(new Set<string>())
 const effectiveNsOrder = computed(() => nsOrder.value.filter(ns => !disabledNs.value.has(ns)))
 const searchText = ref('')
 const anchorReady = ref(false)
@@ -41,7 +31,7 @@ function onAdd() {
   showPopup.value = true
 }
 
-function onSave(updated: QuickTag) {
+function onSave(updated: import('@/types').QuickTag) {
   tags[editingIndex.value] = updated
   pendingAdd.value = false
   showPopup.value = false

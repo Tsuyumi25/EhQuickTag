@@ -1,13 +1,19 @@
 import { createApp } from 'vue'
 import App from '@/App.vue'
+import { loadStore, startAutoSave } from '@/services/store'
 
-const app = createApp(App)
+;(async () => {
+  await loadStore()
 
-app.mount(
-  (() => {
-    const container = document.createElement('div')
-    container.id = 'eqt-app'
-    document.body.append(container)
-    return container
-  })(),
-)
+  const app = createApp(App)
+  app.mount(
+    (() => {
+      const container = document.createElement('div')
+      container.id = 'eqt-app'
+      document.body.append(container)
+      return container
+    })(),
+  )
+
+  startAutoSave()
+})()
