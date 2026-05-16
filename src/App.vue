@@ -100,6 +100,7 @@ watch(searchText, (val) => {
   <TagConfigPopup
     v-if="showPopup"
     :tag="tags[editingIndex]"
+    :is-add="pendingAdd"
     :use-nh-weight="useNhWeight"
     :ns-order="effectiveNsOrder"
     @save="onSave"

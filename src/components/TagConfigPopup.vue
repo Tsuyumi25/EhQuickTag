@@ -6,6 +6,7 @@ import { loadNhPopularity } from '@/services/nhPopularity'
 
 const props = defineProps<{
   tag: QuickTag
+  isAdd?: boolean
   useNhWeight?: boolean
   nsOrder?: string[]
 }>()
@@ -115,6 +116,9 @@ function onFieldKeydown(e: KeyboardEvent) {
           :disabled="!dbReady"
           @keydown="onSearchKeydown"
         />
+        <div v-if="dbReady && searchQuery.trim() && !suggestions.length" class="eqt-popup__no-result">
+          找不到符合的標籤
+        </div>
         <ul v-if="suggestions.length" class="eqt-popup__suggestions">
           <li
             v-for="(entry, i) in suggestions"
@@ -134,7 +138,7 @@ function onFieldKeydown(e: KeyboardEvent) {
       <hr class="eqt-popup__divider" />
 
       <div class="eqt-popup__field">
-        <label class="eqt-popup__label">Tag</label>
+        <label class="eqt-popup__label">標籤語法</label>
         <input
           v-model="form.tag"
           class="eqt-popup__input"
@@ -143,7 +147,7 @@ function onFieldKeydown(e: KeyboardEvent) {
         />
       </div>
       <div class="eqt-popup__field">
-        <label class="eqt-popup__label">Label</label>
+        <label class="eqt-popup__label">顯示名稱</label>
         <input
           v-model="form.label"
           class="eqt-popup__input"
@@ -152,7 +156,7 @@ function onFieldKeydown(e: KeyboardEvent) {
         />
       </div>
       <div class="eqt-popup__actions">
-        <button class="eqt-popup__btn eqt-popup__btn--delete" type="button" @click="emit('delete')">
+        <button v-if="!isAdd" class="eqt-popup__btn eqt-popup__btn--delete" type="button" @click="emit('delete')">
           刪除
         </button>
         <div class="eqt-popup__spacer" />
@@ -227,6 +231,12 @@ function onFieldKeydown(e: KeyboardEvent) {
     border: none;
     border-top: var(--eqt-border-width) solid var(--eqt-divider);
     margin: 12px 0;
+  }
+
+  &__no-result {
+    padding: 6px 8px;
+    font-size: 12px;
+    color: var(--eqt-text-hint);
   }
 
   &__suggestions {
