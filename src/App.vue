@@ -4,9 +4,36 @@ import TagBar from '@/components/TagBar.vue'
 import TagConfigPopup from '@/components/TagConfigPopup.vue'
 import UrlConfigPopup from '@/components/UrlConfigPopup.vue'
 import SettingsPopup from '@/components/SettingsPopup.vue'
-import { tagLines, useNhWeight, nsOrder, disabledNs } from '@/services/store'
+import { tagLines, useNhWeight, nsOrder, disabledNs, profiles, activeProfileIdx, switchProfile, renameProfile, createProfile } from '@/services/store'
 
 const effectiveNsOrder = computed(() => nsOrder.value.filter(ns => !disabledNs.value.has(ns)))
+
+const prevProfileName = computed(() => {
+  const idx = activeProfileIdx.value - 1
+  return idx >= 0 ? profiles[idx].name : ''
+})
+
+const nextProfileName = computed(() => {
+  const idx = activeProfileIdx.value + 1
+  return idx < profiles.length ? profiles[idx].name : ''
+})
+
+function onPrevProfile() {
+  switchProfile(activeProfileIdx.value - 1)
+}
+
+function onNextProfile() {
+  switchProfile(activeProfileIdx.value + 1)
+}
+
+function onRenameProfile(name: string) {
+  renameProfile(activeProfileIdx.value, name)
+}
+
+function onCreateProfile(name: string) {
+  createProfile(name)
+}
+
 const searchText = ref('')
 const anchorReady = ref(false)
 let searchInput: HTMLInputElement | null = null
@@ -115,6 +142,11 @@ watch(searchText, (val) => {
   <Teleport v-if="anchorReady" to="#eqt-bar-anchor">
     <TagBar
       :tag-lines="tagLines"
+      :profile-name="profiles[activeProfileIdx]?.name ?? ''"
+      :profile-idx="activeProfileIdx"
+      :profile-count="profiles.length"
+      :prev-profile-name="prevProfileName"
+      :next-profile-name="nextProfileName"
       v-model:search-text="searchText"
       @configure="onConfigure"
       @add="onAdd('tag')"
@@ -123,6 +155,10 @@ watch(searchText, (val) => {
       @move-line="onMoveLine"
       @delete-line="onDeleteLine"
       @add-line="onAddLine"
+      @prev-profile="onPrevProfile"
+      @next-profile="onNextProfile"
+      @rename-profile="onRenameProfile"
+      @create-profile="onCreateProfile"
       @settings="showSettings = true"
     />
   </Teleport>

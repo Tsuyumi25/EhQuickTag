@@ -13,6 +13,11 @@ const STATE_CLASS: Record<TagState, string | null> = {
 const props = defineProps<{
   tagLines: QuickTag[][]
   searchText: string
+  profileName: string
+  profileIdx: number
+  profileCount: number
+  prevProfileName: string
+  nextProfileName: string
 }>()
 
 const emit = defineEmits<{
@@ -25,11 +30,57 @@ const emit = defineEmits<{
   'deleteLine': [lineIdx: number]
   'addLine': []
   'settings': []
+  'prevProfile': []
+  'nextProfile': []
+  'renameProfile': [name: string]
+  'createProfile': [name: string]
 }>()
 
 const editing = ref(false)
 const linesEl = ref<HTMLElement | null>(null)
 const rowEls = ref<HTMLElement[]>([])
+
+// --- profile carousel ---
+
+const onCreationPage = ref(false)
+const renamingProfile = ref(false)
+const renameValue = ref('')
+const renameInput = ref<HTMLInputElement | null>(null)
+
+function onPrev() {
+  if (onCreationPage.value) {
+    onCreationPage.value = false
+  } else {
+    emit('prevProfile')
+  }
+}
+
+function onNext() {
+  if (props.profileIdx === props.profileCount - 1) {
+    onCreationPage.value = true
+  } else {
+    emit('nextProfile')
+  }
+}
+
+function startRenameOrCreate() {
+  renameValue.value = onCreationPage.value ? '' : props.profileName
+  renamingProfile.value = true
+  nextTick(() => renameInput.value?.select())
+}
+
+function finishRenameOrCreate() {
+  const trimmed = renameValue.value.trim()
+  if (onCreationPage.value) {
+    if (trimmed) {
+      emit('createProfile', trimmed)
+      onCreationPage.value = false
+    }
+  } else if (trimmed && trimmed !== props.profileName) {
+    emit('renameProfile', trimmed)
+  }
+  renamingProfile.value = false
+}
 
 // --- Sortable lifecycle ---
 
@@ -54,8 +105,10 @@ function activateSortables() {
         while (container.firstChild) container.removeChild(container.firstChild)
         for (const node of lineDomSnapshot) container.appendChild(node)
 
-        if (evt.oldIndex !== undefined && evt.newIndex !== undefined && evt.oldIndex !== evt.newIndex) {
-          emit('moveLine', evt.oldIndex, evt.newIndex)
+        if (evt.oldIndex !== undefined && evt.newIndex !== undefined) {
+          const from = evt.oldIndex - 1  // offset: profile-row is first child
+          const to = evt.newIndex - 1
+          if (from !== to) emit('moveLine', from, to)
         }
       },
     })
@@ -207,6 +260,41 @@ function onRightClick(event: MouseEvent, tag: string) {
 <template>
   <div class="eqt-tag-bar">
     <div class="eqt-tag-bar__lines" ref="linesEl">
+      <div class="eqt-tag-bar__profile-row">
+        <button
+          class="eqt-tag-bar__profile-nav eqt-tag-bar__profile-nav--prev"
+          type="button"
+          :disabled="profileIdx === 0 && !onCreationPage"
+          @click="onPrev"
+        >{{ onCreationPage ? profileName : prevProfileName }} &lsaquo;</button>
+        <input
+          v-if="renamingProfile"
+          ref="renameInput"
+          v-model="renameValue"
+          class="eqt-tag-bar__profile-input"
+          @keydown.enter="finishRenameOrCreate"
+          @keydown.escape="renamingProfile = false"
+          @blur="finishRenameOrCreate"
+        />
+        <button
+          v-else
+          class="eqt-tag-bar__profile-name"
+          type="button"
+          @click="startRenameOrCreate"
+        >{{ onCreationPage ? '點擊並命名創建' : profileName }}</button>
+        <button
+          class="eqt-tag-bar__profile-nav eqt-tag-bar__profile-nav--next"
+          type="button"
+          :disabled="onCreationPage"
+          @click="onNext"
+        >&rsaquo; {{ onCreationPage ? '' : nextProfileName }}</button>
+      </div>
+      <template v-if="onCreationPage">
+        <div v-for="n in tagLines.length" :key="n" class="eqt-tag-bar__line-wrap">
+          <div class="eqt-tag-bar__line"></div>
+        </div>
+      </template>
+      <template v-else>
       <div
         v-for="(line, li) in tagLines"
         :key="li"
@@ -254,6 +342,7 @@ function onRightClick(event: MouseEvent, tag: string) {
         </div>
       </div>
 
+      </template>
       <div class="eqt-tag-bar__bottom-row">
         <button
           v-if="editing"
@@ -299,8 +388,7 @@ function onRightClick(event: MouseEvent, tag: string) {
     display: flex;
     flex-direction: column;
     gap: 4px;
-    width: fit-content;
-    max-width: calc(100% - 24px);
+    width: 80%;
     margin: 0 auto;
   }
 
@@ -383,6 +471,81 @@ function onRightClick(event: MouseEvent, tag: string) {
     display: flex;
     gap: 4px;
     margin-left: auto;
+  }
+
+  &__profile-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  &__profile-nav {
+    flex: 2;
+    padding: 2px 6px;
+    border: var(--eqt-border-width) solid var(--eqt-border);
+    border-radius: 3px;
+    background: transparent;
+    color: var(--eqt-text-hint);
+    cursor: pointer;
+    font-size: 11px;
+    line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &--prev,
+    &--next {
+      text-align: center;
+    }
+
+    &:hover:not(:disabled) {
+      background: var(--eqt-bg-hover);
+    }
+
+    &:disabled {
+      opacity: 0.3;
+      cursor: default;
+    }
+  }
+
+  &__profile-name {
+    flex: 5;
+    padding: 2px 8px;
+    border: var(--eqt-border-width) solid var(--eqt-border);
+    border-radius: 3px;
+    background: transparent;
+    color: var(--eqt-text-secondary);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: bold;
+    line-height: 1.4;
+    text-align: center;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &:hover {
+      background: var(--eqt-bg-hover);
+    }
+  }
+
+  &__profile-input {
+    flex: 5;
+    padding: 2px 8px;
+    border: var(--eqt-border-width) solid var(--eqt-border-focus);
+    border-radius: 3px;
+    background: var(--eqt-bg-elevated);
+    color: var(--eqt-text);
+    font-size: 13px;
+    font-weight: bold;
+    line-height: 1.4;
+    text-align: center;
+    box-sizing: border-box;
+
+    &:focus {
+      outline: none;
+    }
   }
 
   &__btn {
