@@ -239,35 +239,33 @@ function onRightClick(event: MouseEvent, tag: string) {
         </div>
       </div>
 
-      <button
-        v-if="editing"
-        class="eqt-tag-bar__line-add"
-        type="button"
-        @click="onAddLine"
-      >+</button>
-    </div>
+      <div class="eqt-tag-bar__bottom-row">
+        <button
+          v-if="editing"
+          class="eqt-tag-bar__line-add"
+          type="button"
+          @click="onAddLine"
+        >+ 新增行</button>
+        <div class="eqt-tag-bar__controls">
+          <button
+            class="eqt-tag-bar__ctrl"
+            type="button"
+            @click="emit('add')"
+          >+ 新增標籤</button>
 
-    <div class="eqt-tag-bar__controls">
-      <button
-        class="eqt-tag-bar__ctrl"
-        type="button"
-        title="新增標籤"
-        @click="emit('add')"
-      >+</button>
+          <button
+            class="eqt-tag-bar__ctrl"
+            type="button"
+            @click="editing = !editing"
+          >{{ editing ? '✓ 完成' : '✎ 編輯' }}</button>
 
-      <button
-        class="eqt-tag-bar__ctrl"
-        type="button"
-        :title="editing ? '完成編輯' : '編輯標籤'"
-        @click="editing = !editing"
-      >{{ editing ? '✓' : '✎' }}</button>
-
-      <button
-        class="eqt-tag-bar__ctrl"
-        type="button"
-        title="設定"
-        @click="emit('settings')"
-      >⚙</button>
+          <button
+            class="eqt-tag-bar__ctrl"
+            type="button"
+            @click="emit('settings')"
+          >⚙ 設定</button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -313,16 +311,23 @@ function onRightClick(event: MouseEvent, tag: string) {
     }
   }
 
+  &__bottom-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
   &__line-add {
-    width: 100%;
+    flex: 1;
     min-height: 24px;
+    padding: 2px 8px;
     border: var(--eqt-border-width) dashed var(--eqt-border);
     border-radius: 3px;
     background: transparent;
     color: var(--eqt-text-hint);
     cursor: pointer;
     font-size: 12px;
-    line-height: 24px;
+    line-height: 1.4;
     text-align: center;
 
     &:hover {
@@ -356,7 +361,7 @@ function onRightClick(event: MouseEvent, tag: string) {
   &__controls {
     display: flex;
     gap: 4px;
-    margin-top: 4px;
+    margin-left: auto;
   }
 
   &__btn {
