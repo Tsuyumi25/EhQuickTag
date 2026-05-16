@@ -27,14 +27,6 @@ export default defineConfig({
         },
         author: 'tsuyumi',
         license: 'MIT',
-        grant: [
-          'GM.getValue',
-          'GM.setValue',
-          'GM.deleteValue',
-          'GM.listValues',
-          'GM_xmlhttpRequest',
-          'GM_addStyle',
-        ],
         connect: [
           'raw.githubusercontent.com',
         ],

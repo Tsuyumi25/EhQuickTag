@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { reactive, watch } from 'vue'
+import { reactive, ref, watch, onMounted } from 'vue'
 import type { QuickTag } from '@/types'
+import { loadTagDb, searchTags, type TagEntry } from '@/services/tagDb'
 
 const props = defineProps<{
   tag: QuickTag
@@ -13,33 +14,110 @@ const emit = defineEmits<{
 }>()
 
 const form = reactive({ tag: '', label: '' })
+const searchQuery = ref('')
+const suggestions = ref<TagEntry[]>([])
+const dbReady = ref(false)
+const selectedIdx = ref(-1)
 
 watch(() => props.tag, (t) => {
   form.tag = t.tag
   form.label = t.label ?? ''
 }, { immediate: true })
 
+onMounted(async () => {
+  await loadTagDb()
+  dbReady.value = true
+})
+
+watch(searchQuery, (q) => {
+  if (!dbReady.value || !q.trim()) {
+    suggestions.value = []
+    selectedIdx.value = -1
+    return
+  }
+  suggestions.value = searchTags(q)
+  selectedIdx.value = -1
+})
+
+function pickSuggestion(entry: TagEntry) {
+  form.tag = entry.fullTag
+  form.label = entry.name
+  searchQuery.value = ''
+  suggestions.value = []
+}
+
 function onSave() {
   if (!form.tag.trim()) return
   emit('save', { tag: form.tag.trim(), label: form.label.trim() || undefined })
 }
 
-function onKeydown(e: KeyboardEvent) {
+function onSearchKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape') {
+    if (suggestions.value.length) {
+      suggestions.value = []
+      e.stopPropagation()
+    } else {
+      emit('close')
+    }
+    return
+  }
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault()
+    if (selectedIdx.value < suggestions.value.length - 1) selectedIdx.value++
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault()
+    if (selectedIdx.value > 0) selectedIdx.value--
+  } else if (e.key === 'Enter') {
+    e.preventDefault()
+    if (selectedIdx.value >= 0 && suggestions.value[selectedIdx.value]) {
+      pickSuggestion(suggestions.value[selectedIdx.value])
+    }
+  }
+}
+
+function onFieldKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape') emit('close')
   if (e.key === 'Enter') onSave()
 }
 </script>
 
 <template>
-  <div class="eqt-popup-overlay" @click.self="emit('close')" @keydown="onKeydown">
+  <div class="eqt-popup-overlay" @click.self="emit('close')">
     <div class="eqt-popup">
+      <div class="eqt-popup__field">
+        <label class="eqt-popup__label">搜尋標籤</label>
+        <input
+          v-model="searchQuery"
+          class="eqt-popup__input"
+          :placeholder="dbReady ? '輸入中文或英文搜尋…' : '載入標籤資料庫中…'"
+          :disabled="!dbReady"
+          @keydown="onSearchKeydown"
+        />
+        <ul v-if="suggestions.length" class="eqt-popup__suggestions">
+          <li
+            v-for="(entry, i) in suggestions"
+            :key="entry.fullTag"
+            class="eqt-popup__suggestion"
+            :class="{ 'eqt-popup__suggestion--active': i === selectedIdx }"
+            @click="pickSuggestion(entry)"
+            @mouseenter="selectedIdx = i"
+          >
+            <span class="eqt-popup__suggestion-name">{{ entry.name }}</span>
+            <span class="eqt-popup__suggestion-tag">{{ entry.fullTag }}</span>
+          </li>
+        </ul>
+      </div>
+
+      <hr class="eqt-popup__divider" />
+
       <div class="eqt-popup__field">
         <label class="eqt-popup__label">Tag</label>
         <input
           v-model="form.tag"
           class="eqt-popup__input"
           placeholder="female:stockings"
-          @keydown="onKeydown"
+          @keydown="onFieldKeydown"
         />
       </div>
       <div class="eqt-popup__field">
@@ -48,7 +126,7 @@ function onKeydown(e: KeyboardEvent) {
           v-model="form.label"
           class="eqt-popup__input"
           placeholder="（留空則顯示 tag 原文）"
-          @keydown="onKeydown"
+          @keydown="onFieldKeydown"
         />
       </div>
       <div class="eqt-popup__actions">
@@ -83,13 +161,15 @@ function onKeydown(e: KeyboardEvent) {
   border: 1px solid #8a8271;
   border-radius: 6px;
   padding: 16px;
-  min-width: 300px;
+  min-width: 340px;
+  max-width: 420px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
   font-size: 13px;
   color: #34353b;
 
   &__field {
     margin-bottom: 10px;
+    position: relative;
   }
 
   &__label {
@@ -113,6 +193,57 @@ function onKeydown(e: KeyboardEvent) {
       outline: none;
       border-color: #4a7c59;
     }
+
+    &:disabled {
+      background: #e8e6da;
+      color: #8a8271;
+    }
+  }
+
+  &__divider {
+    border: none;
+    border-top: 1px solid #c5c0b0;
+    margin: 12px 0;
+  }
+
+  &__suggestions {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    margin: 2px 0 0;
+    padding: 0;
+    list-style: none;
+    background: #fff;
+    border: 1px solid #8a8271;
+    border-radius: 3px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1;
+  }
+
+  &__suggestion {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 8px;
+    cursor: pointer;
+    gap: 8px;
+
+    &:hover,
+    &--active {
+      background: #ddd8c8;
+    }
+  }
+
+  &__suggestion-name {
+    font-size: 13px;
+  }
+
+  &__suggestion-tag {
+    font-size: 11px;
+    color: #8a8271;
+    flex-shrink: 0;
   }
 
   &__actions {
