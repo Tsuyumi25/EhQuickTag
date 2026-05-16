@@ -4,6 +4,13 @@ import type { QuickTag } from '@/types'
 import { loadTagDb, searchTags, type TagEntry } from '@/services/tagDb'
 import { loadNhPopularity } from '@/services/nhPopularity'
 
+const NS_LABEL: Record<string, string> = {
+  female: '女', male: '男', mixed: '混', other: '其他',
+  location: '地點', language: '語言', parody: '原作',
+  character: '角色', artist: '繪師', cosplayer: 'Coser',
+  group: '團體', reclass: '分類', temp: '臨時',
+}
+
 const props = defineProps<{
   tag: QuickTag
   useNhWeight?: boolean
@@ -123,6 +130,7 @@ function onFieldKeydown(e: KeyboardEvent) {
             @click="pickSuggestion(entry)"
             @mouseenter="selectedIdx = i"
           >
+            <span class="eqt-popup__suggestion-ns">{{ NS_LABEL[entry.ns] ?? entry.ns }}：</span>
             <span class="eqt-popup__suggestion-name">{{ entry.name }}</span>
             <span class="eqt-popup__suggestion-tag">{{ entry.fullTag }}</span>
           </li>
@@ -177,6 +185,7 @@ function onFieldKeydown(e: KeyboardEvent) {
 }
 
 .eqt-popup {
+  text-align: left;
   background: #edebdf;
   border: 1px solid #8a8271;
   border-radius: 6px;
@@ -248,7 +257,6 @@ function onFieldKeydown(e: KeyboardEvent) {
     align-items: center;
     padding: 4px 8px;
     cursor: pointer;
-    gap: 8px;
 
     &:hover,
     &--active {
@@ -256,8 +264,16 @@ function onFieldKeydown(e: KeyboardEvent) {
     }
   }
 
+  &__suggestion-ns {
+    font-size: 11px;
+    color: #8a8271;
+    flex-shrink: 0;
+  }
+
   &__suggestion-name {
     font-size: 13px;
+    flex: 1;
+    min-width: 0;
   }
 
   &__suggestion-tag {
