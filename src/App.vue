@@ -72,10 +72,10 @@ onMounted(() => {
     searchText.value = searchInput!.value
   })
 
+  // Insert tag bar inside the search input row, after the buttons (same position as LOLICON Hentai Enhancer)
   const anchor = document.createElement('div')
   anchor.id = 'eqt-bar-anchor'
-  const inputRow = searchInput.parentElement!
-  inputRow.parentElement!.insertBefore(anchor, inputRow)
+  searchInput.parentElement!.appendChild(anchor)
   anchorReady.value = true
 })
 

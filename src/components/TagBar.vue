@@ -147,7 +147,7 @@ function onDragEnd() {
 
 <style lang="scss">
 .eqt-tag-bar {
-  display: flex;
+  display: inline-flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 4px;
