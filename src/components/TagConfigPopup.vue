@@ -186,10 +186,12 @@ function onFieldKeydown(e: KeyboardEvent) {
   text-align: left;
   background: var(--eqt-bg);
   border: var(--eqt-border-width) solid var(--eqt-border);
-  border-radius: 6px;
-  padding: 16px;
-  min-width: 340px;
-  max-width: 420px;
+  border-radius: 0.5rem;
+  padding: 1.25rem;
+  width: clamp(22rem, 80vw, 60rem);
+  min-height: 80vh;
+  max-height: 80vh;
+  overflow-y: auto;
   box-shadow: var(--eqt-shadow);
   font-size: 13px;
   color: var(--eqt-text);
@@ -250,7 +252,7 @@ function onFieldKeydown(e: KeyboardEvent) {
     background: var(--eqt-bg-elevated);
     border: var(--eqt-border-width) solid var(--eqt-border);
     border-radius: 3px;
-    max-height: 200px;
+    max-height: 50vh;
     overflow-y: auto;
     z-index: 1;
   }
