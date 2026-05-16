@@ -42,6 +42,7 @@ function activateSortables() {
   if (linesEl.value) {
     lineSortableInstance = new Sortable(linesEl.value, {
       handle: '.eqt-tag-bar__handle',
+      draggable: '.eqt-tag-bar__line-wrap',
       animation: 150,
       ghostClass: 'eqt-tag-bar__line-wrap--ghost',
       onStart: () => {
@@ -237,17 +238,16 @@ function onRightClick(event: MouseEvent, tag: string) {
           </button>
         </div>
       </div>
+
+      <button
+        v-if="editing"
+        class="eqt-tag-bar__line-add"
+        type="button"
+        @click="onAddLine"
+      >+</button>
     </div>
 
     <div class="eqt-tag-bar__controls">
-      <button
-        v-if="editing"
-        class="eqt-tag-bar__ctrl"
-        type="button"
-        title="新增行"
-        @click="onAddLine"
-      >+行</button>
-
       <button
         class="eqt-tag-bar__ctrl"
         type="button"
@@ -308,6 +308,24 @@ function onRightClick(event: MouseEvent, tag: string) {
 
     &:active {
       cursor: grabbing;
+    }
+  }
+
+  &__line-add {
+    width: 100%;
+    min-height: 24px;
+    border: var(--eqt-border-width) dashed var(--eqt-border);
+    border-radius: 3px;
+    background: transparent;
+    color: var(--eqt-text-hint);
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 24px;
+    text-align: center;
+
+    &:hover {
+      background: var(--eqt-bg-hover);
+      color: var(--eqt-text-secondary);
     }
   }
 
