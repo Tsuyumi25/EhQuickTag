@@ -280,7 +280,9 @@ function onRightClick(event: MouseEvent, tag: string) {
     display: flex;
     flex-direction: column;
     gap: 4px;
-    margin: 0 12px;
+    width: fit-content;
+    max-width: calc(100% - 24px);
+    margin: 0 auto;
   }
 
   &__line-wrap {
@@ -345,7 +347,6 @@ function onRightClick(event: MouseEvent, tag: string) {
   }
 
   &__line {
-    flex: 1;
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
