@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, reactive, watch, onMounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
 import TagBar from '@/components/TagBar.vue'
 import TagConfigPopup from '@/components/TagConfigPopup.vue'
 import SettingsPopup from '@/components/SettingsPopup.vue'
 import type { QuickTag } from '@/types'
+import { DEFAULT_NS_ORDER } from '@/services/tagDb'
 
 const tags = reactive<QuickTag[]>([
   { tag: 'language:"chinese"$', label: 'Chinese' },
@@ -12,6 +13,9 @@ const tags = reactive<QuickTag[]>([
 ])
 
 const useNhWeight = ref(true) // TODO: persist in GM storage
+const nsOrder = ref([...DEFAULT_NS_ORDER])
+const disabledNs = ref(new Set<string>())
+const effectiveNsOrder = computed(() => nsOrder.value.filter(ns => !disabledNs.value.has(ns)))
 const searchText = ref('')
 const anchorReady = ref(false)
 let searchInput: HTMLInputElement | null = null
@@ -107,6 +111,7 @@ watch(searchText, (val) => {
     v-if="showPopup"
     :tag="tags[editingIndex]"
     :use-nh-weight="useNhWeight"
+    :ns-order="effectiveNsOrder"
     @save="onSave"
     @delete="onDelete"
     @close="onClose"
@@ -115,6 +120,10 @@ watch(searchText, (val) => {
   <SettingsPopup
     v-if="showSettings"
     v-model:use-nh-weight="useNhWeight"
+    :ns-order="nsOrder"
+    :disabled-ns="disabledNs"
+    @update:ns-order="nsOrder = $event"
+    @update:disabled-ns="disabledNs = $event"
     @close="showSettings = false"
   />
 </template>

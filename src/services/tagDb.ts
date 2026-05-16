@@ -144,14 +144,15 @@ const enum MatchTier {
 // nh "tag" type only covers these EH namespaces
 const NH_NAMESPACES = new Set(['female', 'male', 'mixed', 'other'])
 
-// Namespace tier: how commonly searched is this namespace?
-const NS_TIER: Record<string, number> = {
-  female: 0, male: 0,
-  other: 1, mixed: 1, location: 1,
-  parody: 2, character: 2,
-  artist: 3, cosplayer: 3, group: 3, language: 3,
-  reclass: 4, temp: 4,
-}
+/** Default namespace order (index = tier). */
+export const DEFAULT_NS_ORDER = [
+  'female', 'male', 'other', 'mixed', 'location',
+  'parody', 'character',
+  'artist', 'cosplayer', 'group', 'language',
+  'reclass', 'temp',
+]
+
+export const ALL_NAMESPACES = DEFAULT_NS_ORDER
 
 const NS_ALIASES: Record<string, string> = {
   r: 'reclass', g: 'group', a: 'artist', cos: 'cosplayer',
@@ -187,8 +188,21 @@ interface RankedEntry {
   nsTier: number
 }
 
-export function searchTags(query: string, useNhWeight = false): TagEntry[] {
+export interface SearchOptions {
+  useNhWeight?: boolean
+  nsOrder?: string[]
+}
+
+export function searchTags(query: string, opts: SearchOptions = {}): TagEntry[] {
   if (!entries || !query.trim()) return []
+
+  const { useNhWeight = false, nsOrder = DEFAULT_NS_ORDER } = opts
+
+  // build ns → tier lookup; namespaces not in nsOrder are hidden
+  const nsTierMap = new Map<string, number>()
+  for (let i = 0; i < nsOrder.length; i++) {
+    nsTierMap.set(nsOrder[i], i)
+  }
 
   let q = query.toLowerCase().normalize().trim()
   let pool = entries
@@ -198,7 +212,7 @@ export function searchTags(query: string, useNhWeight = false): TagEntry[] {
   if (colIdx >= 1) {
     const prefix = q.slice(0, colIdx)
     const resolvedNs = NS_ALIASES[prefix] ?? prefix
-    if (NS_TIER[resolvedNs] !== undefined) {
+    if (nsTierMap.has(resolvedNs)) {
       pool = pool.filter(e => e.ns === resolvedNs)
       q = q.slice(colIdx + 1)
     }
@@ -219,7 +233,10 @@ export function searchTags(query: string, useNhWeight = false): TagEntry[] {
   const ranked: RankedEntry[] = []
 
   for (const entry of pool) {
-    // try each term variant, take first match
+    // skip namespaces not in nsOrder (disabled by user)
+    const nsTier = nsTierMap.get(entry.ns)
+    if (nsTier === undefined) continue
+
     let matchTier: MatchTier | null = null
     for (const term of terms) {
       matchTier = getMatchTier(entry, term)
@@ -232,11 +249,10 @@ export function searchTags(query: string, useNhWeight = false): TagEntry[] {
       entry,
       matchTier,
       nhCount: useNhWeight && NH_NAMESPACES.has(entry.ns) ? (getNhCount(entry.raw) ?? 0) : 0,
-      nsTier: NS_TIER[entry.ns] ?? 4,
+      nsTier,
     })
   }
 
-  // multi-key sort: matchTier → nhCount desc → nsTier → raw length
   ranked.sort((a, b) =>
     (a.matchTier - b.matchTier)
     || (b.nhCount - a.nhCount)

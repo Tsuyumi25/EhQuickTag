@@ -14,6 +14,7 @@ const NS_LABEL: Record<string, string> = {
 const props = defineProps<{
   tag: QuickTag
   useNhWeight?: boolean
+  nsOrder?: string[]
 }>()
 
 const emit = defineEmits<{
@@ -50,7 +51,7 @@ watch(searchQuery, (q) => {
     return
   }
   searchTimer = window.setTimeout(() => {
-    suggestions.value = searchTags(q, props.useNhWeight)
+    suggestions.value = searchTags(q, { useNhWeight: props.useNhWeight, nsOrder: props.nsOrder })
     selectedIdx.value = -1
   }, 80)
 })
