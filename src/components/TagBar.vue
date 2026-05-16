@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { TagState, type QuickTag } from '@/types'
+import { TagState, type QuickTag, splitMultiTag } from '@/types'
 import { useSortable } from '@/composables/useSortable'
 
 const STATE_CLASS: Record<TagState, string | null> = {
@@ -57,24 +57,29 @@ const tokenSet = computed(() => new Set(tokenize(props.searchText)))
 
 function getState(tag: string): TagState {
   const tokens = tokenSet.value
-  if (tokens.has(`-${tag}`)) return TagState.Exclude
-  if (tokens.has(`~${tag}`)) return TagState.Or
-  if (tokens.has(tag)) return TagState.Include
+  const parts = splitMultiTag(tag)
+  if (!parts.length) return TagState.Off
+
+  if (parts.every(p => tokens.has(`-${p}`))) return TagState.Exclude
+  if (parts.every(p => tokens.has(`~${p}`))) return TagState.Or
+  if (parts.every(p => tokens.has(p))) return TagState.Include
   return TagState.Off
 }
 
 function removeTag(text: string, tag: string): string {
   const tokens = tokenize(text)
-  const forms = [tag, `~${tag}`, `-${tag}`]
-  return tokens.filter(t => !forms.includes(t)).join(' ')
+  const forms = new Set(splitMultiTag(tag).flatMap(p => [p, `~${p}`, `-${p}`]))
+  return tokens.filter(t => !forms.has(t)).join(' ')
 }
 
 function addTag(text: string, tag: string, state: TagState): string {
   const tokens = tokenize(text)
 
-  if (state === TagState.Include) tokens.push(tag)
-  else if (state === TagState.Or) tokens.push(`~${tag}`)
-  else if (state === TagState.Exclude) tokens.push(`-${tag}`)
+  for (const p of splitMultiTag(tag)) {
+    if (state === TagState.Include) tokens.push(p)
+    else if (state === TagState.Or) tokens.push(`~${p}`)
+    else if (state === TagState.Exclude) tokens.push(`-${p}`)
+  }
 
   return tokens.join(' ')
 }

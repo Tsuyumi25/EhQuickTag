@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { reactive, ref, watch, onMounted, onUnmounted } from 'vue'
-import { type QuickTag, NS_LABEL } from '@/types'
+import { reactive, ref, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { type QuickTag, NS_LABEL, splitMultiTag } from '@/types'
 import { loadTagDb, searchTags, type TagEntry } from '@/services/tagDb'
 import { loadNhPopularity } from '@/services/nhPopularity'
 
@@ -17,22 +17,33 @@ const emit = defineEmits<{
   'close': []
 }>()
 
-const form = reactive({ tag: '', label: '' })
+const label = ref('')
+const tagRows = reactive<string[]>([])
+const tagInputs = ref<HTMLInputElement[]>([])
+const dbReady = ref(false)
+
+// Per-row search state
+const activeRow = ref(-1)
 const searchQuery = ref('')
 const suggestions = ref<TagEntry[]>([])
-const dbReady = ref(false)
 const selectedIdx = ref(-1)
 
 watch(() => props.tag, (t) => {
-  form.tag = t.tag
-  form.label = t.label ?? ''
+  label.value = t.label ?? ''
+  const parts = t.tag ? splitMultiTag(t.tag) : []
+  tagRows.splice(0, tagRows.length, ...parts)
+  tagRows.push('')
 }, { immediate: true })
 
 onMounted(async () => {
+  document.addEventListener('keydown', onGlobalKeydown)
   const loads: Promise<unknown>[] = [loadTagDb()]
   if (props.useNhWeight) loads.push(loadNhPopularity())
   await Promise.all(loads)
   dbReady.value = true
+  nextTick(() => {
+    tagInputs.value[tagInputs.value.length - 1]?.focus()
+  })
 })
 
 let searchTimer = 0
@@ -50,9 +61,24 @@ watch(searchQuery, (q) => {
   }, 80)
 })
 
-onUnmounted(() => { clearTimeout(searchTimer) })
+function onGlobalKeydown(e: KeyboardEvent) {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+    e.preventDefault()
+    onSave()
+  } else if (e.key === 'Escape') {
+    if (suggestions.value.length) {
+      suggestions.value = []
+    } else {
+      emit('close')
+    }
+  }
+}
 
-/** Convert fullTag (e.g. female:big breasts) to search syntax (female:"big breasts"$) */
+onUnmounted(() => {
+  clearTimeout(searchTimer)
+  document.removeEventListener('keydown', onGlobalKeydown)
+})
+
 function formatSearchTag(fullTag: string): string {
   const col = fullTag.indexOf(':')
   if (col === -1) return `"${fullTag}"$`
@@ -61,46 +87,63 @@ function formatSearchTag(fullTag: string): string {
   return `${ns}:"${name}"$`
 }
 
-function pickSuggestion(entry: TagEntry) {
-  form.tag = formatSearchTag(entry.fullTag)
-  form.label = entry.name
+function pickSuggestion(entry: TagEntry, rowIdx: number) {
+  tagRows[rowIdx] = formatSearchTag(entry.fullTag)
   searchQuery.value = ''
   suggestions.value = []
+  activeRow.value = -1
+}
+
+function onRowInput(rowIdx: number, value: string) {
+  tagRows[rowIdx] = value
+  activeRow.value = rowIdx
+  searchQuery.value = value
+}
+
+function onRowFocus(rowIdx: number) {
+  activeRow.value = rowIdx
+  searchQuery.value = tagRows[rowIdx]
+}
+
+function addRowAfter(idx: number) {
+  tagRows.splice(idx + 1, 0, '')
+  nextTick(() => {
+    tagInputs.value[idx + 1]?.focus()
+  })
+}
+
+function removeRow(idx: number) {
+  if (tagRows.length <= 1) {
+    tagRows[0] = ''
+    return
+  }
+  tagRows.splice(idx, 1)
+}
+
+function onRowKeydown(e: KeyboardEvent, rowIdx: number) {
+  if (suggestions.value.length) {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      if (selectedIdx.value < suggestions.value.length - 1) selectedIdx.value++
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      if (selectedIdx.value > 0) selectedIdx.value--
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      if (selectedIdx.value >= 0 && suggestions.value[selectedIdx.value]) {
+        pickSuggestion(suggestions.value[selectedIdx.value], rowIdx)
+      }
+    }
+  } else if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey) {
+    e.preventDefault()
+    addRowAfter(rowIdx)
+  }
 }
 
 function onSave() {
-  if (!form.tag.trim()) return
-  emit('save', { tag: form.tag.trim(), label: form.label.trim() || undefined })
-}
-
-function onSearchKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape') {
-    if (suggestions.value.length) {
-      suggestions.value = []
-      e.stopPropagation()
-    } else {
-      emit('close')
-    }
-    return
-  }
-
-  if (e.key === 'ArrowDown') {
-    e.preventDefault()
-    if (selectedIdx.value < suggestions.value.length - 1) selectedIdx.value++
-  } else if (e.key === 'ArrowUp') {
-    e.preventDefault()
-    if (selectedIdx.value > 0) selectedIdx.value--
-  } else if (e.key === 'Enter') {
-    e.preventDefault()
-    if (selectedIdx.value >= 0 && suggestions.value[selectedIdx.value]) {
-      pickSuggestion(suggestions.value[selectedIdx.value])
-    }
-  }
-}
-
-function onFieldKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape') emit('close')
-  if (e.key === 'Enter') onSave()
+  const joined = tagRows.map(t => t.trim()).filter(Boolean).join(', ')
+  if (!joined) return
+  emit('save', { tag: joined, label: label.value.trim() || undefined })
 }
 </script>
 
@@ -108,63 +151,69 @@ function onFieldKeydown(e: KeyboardEvent) {
   <div class="eqt-popup-overlay" @click.self="emit('close')">
     <div class="eqt-popup">
       <div class="eqt-popup__field">
-        <label class="eqt-popup__label">搜尋標籤</label>
+        <label class="eqt-popup__label">顯示名稱</label>
         <input
-          v-model="searchQuery"
+          v-model="label"
           class="eqt-popup__input"
-          :placeholder="dbReady ? '輸入中文或英文搜尋…' : '載入標籤資料庫中…'"
-          :disabled="!dbReady"
-          @keydown="onSearchKeydown"
+          placeholder="（留空則顯示 tag 原文）"
         />
-        <div v-if="dbReady && searchQuery.trim() && !suggestions.length" class="eqt-popup__no-result">
-          找不到符合的標籤
-        </div>
-        <ul v-if="suggestions.length" class="eqt-popup__suggestions">
-          <li
-            v-for="(entry, i) in suggestions"
-            :key="entry.fullTag"
-            class="eqt-popup__suggestion"
-            :class="{ 'eqt-popup__suggestion--active': i === selectedIdx }"
-            @click="pickSuggestion(entry)"
-            @mouseenter="selectedIdx = i"
-          >
-            <span class="eqt-popup__suggestion-ns">{{ NS_LABEL[entry.ns] ?? entry.ns }}：</span>
-            <span class="eqt-popup__suggestion-name">{{ entry.name }}</span>
-            <span class="eqt-popup__suggestion-tag">{{ entry.fullTag }}</span>
-          </li>
-        </ul>
       </div>
 
       <hr class="eqt-popup__divider" />
 
       <div class="eqt-popup__field">
         <label class="eqt-popup__label">標籤語法</label>
-        <input
-          v-model="form.tag"
-          class="eqt-popup__input"
-          placeholder="female:stockings"
-          @keydown="onFieldKeydown"
-        />
+        <div
+          v-for="(row, i) in tagRows"
+          :key="i"
+          class="eqt-popup__tag-row"
+        >
+          <input
+            ref="tagInputs"
+            :value="row"
+            class="eqt-popup__input eqt-popup__tag-input"
+            :placeholder="dbReady ? '輸入中文或英文搜尋…' : '載入中…'"
+            :disabled="!dbReady"
+            @input="onRowInput(i, ($event.target as HTMLInputElement).value)"
+            @focus="onRowFocus(i)"
+            @keydown="onRowKeydown($event, i)"
+          />
+          <button
+            class="eqt-popup__tag-remove"
+            type="button"
+            title="移除"
+            @click="removeRow(i)"
+          >&times;</button>
+          <div v-if="activeRow === i && dbReady && searchQuery.trim() && !suggestions.length" class="eqt-popup__no-result">
+            找不到符合的標籤
+          </div>
+          <ul v-if="activeRow === i && suggestions.length" class="eqt-popup__suggestions">
+            <li
+              v-for="(entry, si) in suggestions"
+              :key="entry.fullTag"
+              class="eqt-popup__suggestion"
+              :class="{ 'eqt-popup__suggestion--active': si === selectedIdx }"
+              @mousedown.prevent="pickSuggestion(entry, i)"
+              @mouseenter="selectedIdx = si"
+            >
+              <span class="eqt-popup__suggestion-ns">{{ NS_LABEL[entry.ns] ?? entry.ns }}：</span>
+              <span class="eqt-popup__suggestion-name">{{ entry.name }}</span>
+              <span class="eqt-popup__suggestion-tag">{{ entry.fullTag }}</span>
+            </li>
+          </ul>
+        </div>
       </div>
-      <div class="eqt-popup__field">
-        <label class="eqt-popup__label">顯示名稱</label>
-        <input
-          v-model="form.label"
-          class="eqt-popup__input"
-          placeholder="（留空則顯示 tag 原文）"
-          @keydown="onFieldKeydown"
-        />
-      </div>
+
       <div class="eqt-popup__actions">
         <button v-if="!isAdd" class="eqt-popup__btn eqt-popup__btn--delete" type="button" @click="emit('delete')">
           刪除
         </button>
         <div class="eqt-popup__spacer" />
         <button class="eqt-popup__btn" type="button" @click="emit('close')">
-          取消
+          取消 <kbd class="eqt-popup__kbd">Esc</kbd>
         </button>
         <button class="eqt-popup__btn eqt-popup__btn--primary" type="button" @click="onSave">
-          儲存
+          儲存 <kbd class="eqt-popup__kbd">Ctrl+Enter</kbd>
         </button>
       </div>
     </div>
@@ -235,16 +284,57 @@ function onFieldKeydown(e: KeyboardEvent) {
     margin: 12px 0;
   }
 
+  &__tag-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 6px;
+    position: relative;
+
+    .eqt-popup__input {
+      flex: 1;
+    }
+  }
+
+  &__tag-remove {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    color: var(--eqt-text-hint);
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    border-radius: 3px;
+
+    &:hover {
+      background: var(--eqt-bg-hover);
+      color: #8c3333;
+    }
+  }
+
   &__no-result {
+    position: absolute;
+    left: 0;
+    right: 28px;
+    top: 100%;
     padding: 6px 8px;
     font-size: 12px;
     color: var(--eqt-text-hint);
+    background: var(--eqt-bg-elevated);
+    border: var(--eqt-border-width) solid var(--eqt-border);
+    border-radius: 3px;
+    z-index: 1;
   }
 
   &__suggestions {
     position: absolute;
     left: 0;
-    right: 0;
+    right: 28px;
     top: 100%;
     margin: 2px 0 0;
     padding: 0;
@@ -297,6 +387,13 @@ function onFieldKeydown(e: KeyboardEvent) {
 
   &__spacer {
     flex: 1;
+  }
+
+  &__kbd {
+    margin-left: 6px;
+    font-size: 10px;
+    opacity: 0.6;
+    font-family: inherit;
   }
 
   &__btn {

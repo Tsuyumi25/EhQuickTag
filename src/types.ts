@@ -10,6 +10,10 @@ export interface QuickTag {
   label?: string
 }
 
+export function splitMultiTag(tag: string): string[] {
+  return tag.split(',').map(s => s.trim()).filter(Boolean)
+}
+
 export const NS_LABEL: Record<string, string> = {
   female: '女', male: '男', mixed: '混', other: '其他',
   location: '地點', language: '語言', parody: '原作',
