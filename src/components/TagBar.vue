@@ -26,8 +26,11 @@ const editing = ref(false)
 
 // --- search text parsing ---
 
+// Tokenize respecting quoted strings: female:"big breasts" is one token
+const TOKEN_RE = /[^"\s]*"[^"]*"[^\s]*|[^\s"]+/g
+
 function tokenize(text: string): string[] {
-  return text.trim().split(/\s+/).filter(Boolean)
+  return text.match(TOKEN_RE) ?? []
 }
 
 const tokenSet = computed(() => new Set(tokenize(props.searchText)))

@@ -6,9 +6,9 @@ import SettingsPopup from '@/components/SettingsPopup.vue'
 import type { QuickTag } from '@/types'
 
 const tags = reactive<QuickTag[]>([
-  { tag: 'language:chinese', label: 'Chinese' },
-  { tag: 'language:japanese', label: 'Japanese' },
-  { tag: 'language:english', label: 'English' },
+  { tag: 'language:"chinese"$', label: 'Chinese' },
+  { tag: 'language:"japanese"$', label: 'Japanese' },
+  { tag: 'language:"english"$', label: 'English' },
 ])
 
 const useNhWeight = ref(true) // TODO: persist in GM storage

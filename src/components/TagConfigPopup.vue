@@ -50,8 +50,17 @@ watch(searchQuery, (q) => {
 
 onUnmounted(() => { clearTimeout(searchTimer) })
 
+/** Convert fullTag (e.g. female:big breasts) to search syntax (female:"big breasts"$) */
+function formatSearchTag(fullTag: string): string {
+  const col = fullTag.indexOf(':')
+  if (col === -1) return `"${fullTag}"$`
+  const ns = fullTag.slice(0, col)
+  const name = fullTag.slice(col + 1)
+  return `${ns}:"${name}"$`
+}
+
 function pickSuggestion(entry: TagEntry) {
-  form.tag = entry.fullTag
+  form.tag = formatSearchTag(entry.fullTag)
   form.label = entry.name
   searchQuery.value = ''
   suggestions.value = []
