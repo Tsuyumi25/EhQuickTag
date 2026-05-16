@@ -3,7 +3,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import TagBar from '@/components/TagBar.vue'
 import TagConfigPopup from '@/components/TagConfigPopup.vue'
 import SettingsPopup from '@/components/SettingsPopup.vue'
-import { tags, useNhWeight, nsOrder, disabledNs } from '@/services/store'
+import { tagLines, useNhWeight, nsOrder, disabledNs } from '@/services/store'
 
 const effectiveNsOrder = computed(() => nsOrder.value.filter(ns => !disabledNs.value.has(ns)))
 const searchText = ref('')
@@ -12,48 +12,54 @@ let searchInput: HTMLInputElement | null = null
 
 // --- tag config popup ---
 
-const editingIndex = ref(-1)
+const editingLine = ref(-1)
+const editingIdx = ref(-1)
 const pendingAdd = ref(false)
 const showPopup = ref(false)
 
-function onConfigure(tag: string) {
-  const idx = tags.findIndex(t => t.tag === tag)
-  if (idx === -1) return
-  editingIndex.value = idx
+function onConfigure(lineIdx: number, tagIdx: number) {
+  editingLine.value = lineIdx
+  editingIdx.value = tagIdx
   pendingAdd.value = false
   showPopup.value = true
 }
 
 function onAdd() {
-  editingIndex.value = tags.length
-  tags.push({ tag: '', label: '' })
+  const lastIdx = tagLines.length - 1
+  tagLines[lastIdx].push({ tag: '', label: '' })
+  editingLine.value = lastIdx
+  editingIdx.value = tagLines[lastIdx].length - 1
   pendingAdd.value = true
   showPopup.value = true
 }
 
 function onSave(updated: import('@/types').QuickTag) {
-  tags[editingIndex.value] = updated
+  tagLines[editingLine.value][editingIdx.value] = updated
   pendingAdd.value = false
   showPopup.value = false
 }
 
 function onDelete() {
-  tags.splice(editingIndex.value, 1)
+  tagLines[editingLine.value].splice(editingIdx.value, 1)
   pendingAdd.value = false
   showPopup.value = false
 }
 
 function onClose() {
   if (pendingAdd.value) {
-    tags.splice(editingIndex.value, 1)
+    tagLines[editingLine.value].splice(editingIdx.value, 1)
     pendingAdd.value = false
   }
   showPopup.value = false
 }
 
-function onReorder(from: number, to: number) {
-  const [item] = tags.splice(from, 1)
-  tags.splice(to, 0, item)
+function onMove(fromLine: number, fromIdx: number, toLine: number, toIdx: number) {
+  const [item] = tagLines[fromLine].splice(fromIdx, 1)
+  tagLines[toLine].splice(toIdx, 0, item)
+}
+
+function onAddLine() {
+  tagLines.push([])
 }
 
 // --- settings popup ---
@@ -88,18 +94,19 @@ watch(searchText, (val) => {
 <template>
   <Teleport v-if="anchorReady" to="#eqt-bar-anchor">
     <TagBar
-      :tags="tags"
+      :tag-lines="tagLines"
       v-model:search-text="searchText"
       @configure="onConfigure"
       @add="onAdd"
-      @reorder="onReorder"
+      @move="onMove"
+      @add-line="onAddLine"
       @settings="showSettings = true"
     />
   </Teleport>
 
   <TagConfigPopup
     v-if="showPopup"
-    :tag="tags[editingIndex]"
+    :tag="tagLines[editingLine][editingIdx]"
     :is-add="pendingAdd"
     :use-nh-weight="useNhWeight"
     :ns-order="effectiveNsOrder"

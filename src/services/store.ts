@@ -14,10 +14,12 @@ interface PersistedSettings {
   disabledNs: string[]
 }
 
-const DEFAULT_TAGS: QuickTag[] = [
-  { tag: 'language:"chinese"$', label: 'Chinese' },
-  { tag: 'language:"japanese"$', label: 'Japanese' },
-  { tag: 'language:"english"$', label: 'English' },
+const DEFAULT_TAG_LINES: QuickTag[][] = [
+  [
+    { tag: 'language:"chinese"$', label: 'Chinese' },
+    { tag: 'language:"japanese"$', label: 'Japanese' },
+    { tag: 'language:"english"$', label: 'English' },
+  ],
 ]
 
 const DEFAULT_SETTINGS: PersistedSettings = {
@@ -28,7 +30,7 @@ const DEFAULT_SETTINGS: PersistedSettings = {
 
 // --- reactive state ---
 
-export const tags = reactive<QuickTag[]>([])
+export const tagLines = reactive<QuickTag[][]>([])
 export const useNhWeight = ref(true)
 export const nsOrder = ref<string[]>([...DEFAULT_NS_ORDER])
 export const disabledNs = ref(new Set<string>())
@@ -41,9 +43,15 @@ export async function loadStore(): Promise<void> {
     GM.getValue<string>(KEYS.settings, ''),
   ])
 
-  // tags
-  const parsed: QuickTag[] = savedTags ? JSON.parse(savedTags) : DEFAULT_TAGS
-  tags.splice(0, tags.length, ...parsed)
+  // tags — migrate from flat QuickTag[] to QuickTag[][]
+  if (savedTags) {
+    const parsed = JSON.parse(savedTags)
+    const isNewFormat = parsed.length === 0 || Array.isArray(parsed[0])
+    const lines: QuickTag[][] = isNewFormat ? parsed : [parsed]
+    tagLines.splice(0, tagLines.length, ...lines)
+  } else {
+    tagLines.splice(0, tagLines.length, ...DEFAULT_TAG_LINES)
+  }
 
   // settings
   const s: PersistedSettings = savedSettings
@@ -57,7 +65,7 @@ export async function loadStore(): Promise<void> {
 // --- auto-save on change ---
 
 function saveTags() {
-  GM.setValue(KEYS.tags, JSON.stringify(tags))
+  GM.setValue(KEYS.tags, JSON.stringify(tagLines))
 }
 
 function saveSettings() {
@@ -70,6 +78,6 @@ function saveSettings() {
 }
 
 export function startAutoSave(): void {
-  watch(tags, saveTags, { deep: true })
+  watch(tagLines, saveTags)
   watch([useNhWeight, nsOrder, disabledNs], saveSettings, { deep: true })
 }

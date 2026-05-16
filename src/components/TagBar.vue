@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick, onUnmounted } from 'vue'
+import Sortable from 'sortablejs'
 import { TagState, type QuickTag, splitMultiTag } from '@/types'
-import { useSortable } from '@/composables/useSortable'
 
 const STATE_CLASS: Record<TagState, string | null> = {
   [TagState.Include]: 'eqt-tag-bar__btn--include',
@@ -11,39 +11,89 @@ const STATE_CLASS: Record<TagState, string | null> = {
 }
 
 const props = defineProps<{
-  tags: QuickTag[]
+  tagLines: QuickTag[][]
   searchText: string
 }>()
 
 const emit = defineEmits<{
   'update:searchText': [value: string]
-  'configure': [tag: string]
+  'configure': [lineIdx: number, tagIdx: number]
   'add': []
-  'reorder': [from: number, to: number]
+  'move': [fromLine: number, fromIdx: number, toLine: number, toIdx: number]
+  'addLine': []
   'settings': []
 }>()
 
 const editing = ref(false)
-const tagListEl = ref<HTMLElement | null>(null)
+const rowEls = ref<HTMLElement[]>([])
 
 // --- Sortable lifecycle ---
 
-const { activate: activateSortable, deactivate: deactivateSortable } = useSortable(tagListEl, {
-  animation: 150,
-  ghostClass: 'eqt-tag-bar__btn--ghost',
-  chosenClass: 'eqt-tag-bar__btn--chosen',
-  dragClass: 'eqt-tag-bar__btn--drag',
-  onEnd: (evt) => {
-    if (evt.oldIndex !== undefined && evt.newIndex !== undefined && evt.oldIndex !== evt.newIndex) {
-      emit('reorder', evt.oldIndex, evt.newIndex)
-    }
-  },
-})
+let sortableInstances: Sortable[] = []
+let domSnapshots = new Map<HTMLElement, Node[]>()
+
+function activateSortables() {
+  for (const el of rowEls.value) {
+    sortableInstances.push(new Sortable(el, {
+      group: 'eqt-tags',
+      animation: 150,
+      ghostClass: 'eqt-tag-bar__btn--ghost',
+      chosenClass: 'eqt-tag-bar__btn--chosen',
+      dragClass: 'eqt-tag-bar__btn--drag',
+      onStart: () => {
+        domSnapshots.clear()
+        for (const rowEl of rowEls.value) {
+          domSnapshots.set(rowEl, [...rowEl.childNodes])
+        }
+      },
+      onEnd: (evt) => {
+        // Restore only the containers involved in the drag
+        const targets = new Set([evt.from, evt.to].filter(Boolean))
+        for (const container of targets) {
+          const nodes = domSnapshots.get(container as HTMLElement)
+          if (!nodes) continue
+          while (container.firstChild) container.removeChild(container.firstChild)
+          for (const node of nodes) container.appendChild(node)
+        }
+
+        if (evt.from && evt.to && evt.oldIndex !== undefined && evt.newIndex !== undefined) {
+          const fromLine = Number(evt.from.dataset.line)
+          const toLine = Number(evt.to.dataset.line)
+          if (fromLine !== toLine || evt.oldIndex !== evt.newIndex) {
+            emit('move', fromLine, evt.oldIndex, toLine, evt.newIndex)
+          }
+        }
+      },
+    }))
+  }
+}
+
+function deactivateSortables() {
+  for (const s of sortableInstances) {
+    try { s.destroy() } catch { /* ignore corrupted instance */ }
+  }
+  sortableInstances = []
+  domSnapshots.clear()
+}
 
 watch(editing, (isEditing) => {
-  if (isEditing) activateSortable()
-  else deactivateSortable()
+  if (isEditing) nextTick(activateSortables)
+  else deactivateSortables()
 })
+
+onUnmounted(deactivateSortables)
+
+let addingLine = false
+function onAddLine() {
+  if (addingLine) return
+  addingLine = true
+  deactivateSortables()
+  emit('addLine')
+  nextTick(() => {
+    activateSortables()
+    addingLine = false
+  })
+}
 
 // --- search text parsing ---
 
@@ -115,56 +165,84 @@ function onRightClick(event: MouseEvent, tag: string) {
 
 <template>
   <div class="eqt-tag-bar">
-    <div ref="tagListEl" class="eqt-tag-bar__list">
-      <button
-        v-for="qt in tags"
-        :key="qt.tag"
-        :data-id="qt.tag"
-        class="eqt-tag-bar__btn"
-        :class="editing ? 'eqt-tag-bar__btn--editing' : STATE_CLASS[getState(qt.tag)]"
-        type="button"
-        @click="editing ? emit('configure', qt.tag) : onLeftClick(qt.tag)"
-        @contextmenu.prevent="!editing && onRightClick($event, qt.tag)"
+    <div class="eqt-tag-bar__lines">
+      <div
+        v-for="(line, li) in tagLines"
+        :key="li"
+        ref="rowEls"
+        :data-line="li"
+        class="eqt-tag-bar__line"
       >
-        {{ qt.label || qt.tag }}
-      </button>
+        <button
+          v-for="(qt, ti) in line"
+          :key="qt.tag"
+          :data-id="qt.tag"
+          class="eqt-tag-bar__btn"
+          :class="editing ? 'eqt-tag-bar__btn--editing' : STATE_CLASS[getState(qt.tag)]"
+          type="button"
+          @click="editing ? emit('configure', li, ti) : onLeftClick(qt.tag)"
+          @contextmenu.prevent="!editing && onRightClick($event, qt.tag)"
+        >
+          {{ qt.label || qt.tag }}
+        </button>
+      </div>
     </div>
 
-    <button
-      class="eqt-tag-bar__ctrl"
-      type="button"
-      title="新增標籤"
-      @click="emit('add')"
-    >+</button>
+    <div class="eqt-tag-bar__controls">
+      <button
+        v-if="editing"
+        class="eqt-tag-bar__ctrl"
+        type="button"
+        title="新增行"
+        @click="onAddLine"
+      >+行</button>
 
-    <button
-      class="eqt-tag-bar__ctrl"
-      type="button"
-      :title="editing ? '完成編輯' : '編輯標籤'"
-      @click="editing = !editing"
-    >{{ editing ? '✓' : '✎' }}</button>
+      <button
+        class="eqt-tag-bar__ctrl"
+        type="button"
+        title="新增標籤"
+        @click="emit('add')"
+      >+</button>
 
-    <button
-      class="eqt-tag-bar__ctrl"
-      type="button"
-      title="設定"
-      @click="emit('settings')"
-    >⚙</button>
+      <button
+        class="eqt-tag-bar__ctrl"
+        type="button"
+        :title="editing ? '完成編輯' : '編輯標籤'"
+        @click="editing = !editing"
+      >{{ editing ? '✓' : '✎' }}</button>
+
+      <button
+        class="eqt-tag-bar__ctrl"
+        type="button"
+        title="設定"
+        @click="emit('settings')"
+      >⚙</button>
+    </div>
   </div>
 </template>
 
 <style lang="scss">
 .eqt-tag-bar {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
   padding: 6px 0;
 
-  &__list {
+  &__lines {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 0 12px;
+  }
+
+  &__line {
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
+    min-height: 24px;
+  }
+
+  &__controls {
+    display: flex;
+    gap: 4px;
+    margin-top: 4px;
   }
 
   &__btn {
