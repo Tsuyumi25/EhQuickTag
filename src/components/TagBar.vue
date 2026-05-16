@@ -1,6 +1,13 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { TagState, type QuickTag } from '@/types'
+
+const STATE_CLASS: Record<TagState, string | null> = {
+  [TagState.Include]: 'eqt-tag-bar__btn--include',
+  [TagState.Or]:      'eqt-tag-bar__btn--or',
+  [TagState.Exclude]: 'eqt-tag-bar__btn--exclude',
+  [TagState.Off]:     null,
+}
 
 const props = defineProps<{
   tags: QuickTag[]
@@ -12,6 +19,7 @@ const emit = defineEmits<{
   'configure': [tag: string]
   'add': []
   'reorder': [from: number, to: number]
+  'settings': []
 }>()
 
 const editing = ref(false)
@@ -22,12 +30,13 @@ function tokenize(text: string): string[] {
   return text.trim().split(/\s+/).filter(Boolean)
 }
 
-function getState(tag: string): TagState {
-  const tokens = tokenize(props.searchText)
+const tokenSet = computed(() => new Set(tokenize(props.searchText)))
 
-  if (tokens.includes(`-${tag}`)) return TagState.Exclude
-  if (tokens.includes(`~${tag}`)) return TagState.Or
-  if (tokens.includes(tag)) return TagState.Include
+function getState(tag: string): TagState {
+  const tokens = tokenSet.value
+  if (tokens.has(`-${tag}`)) return TagState.Exclude
+  if (tokens.has(`~${tag}`)) return TagState.Or
+  if (tokens.has(tag)) return TagState.Include
   return TagState.Off
 }
 
@@ -108,13 +117,7 @@ function onDragEnd() {
       :key="qt.tag"
       class="eqt-tag-bar__btn"
       :class="[
-        editing
-          ? 'eqt-tag-bar__btn--editing'
-          : {
-              'eqt-tag-bar__btn--include': getState(qt.tag) === TagState.Include,
-              'eqt-tag-bar__btn--or': getState(qt.tag) === TagState.Or,
-              'eqt-tag-bar__btn--exclude': getState(qt.tag) === TagState.Exclude,
-            },
+        editing ? 'eqt-tag-bar__btn--editing' : STATE_CLASS[getState(qt.tag)],
         { 'eqt-tag-bar__btn--dragging': editing && dragIndex === index },
       ]"
       type="button"
@@ -142,6 +145,13 @@ function onDragEnd() {
       :title="editing ? '完成編輯' : '編輯標籤'"
       @click="editing = !editing"
     >{{ editing ? '✓' : '✎' }}</button>
+
+    <button
+      class="eqt-tag-bar__ctrl"
+      type="button"
+      title="設定"
+      @click="emit('settings')"
+    >⚙</button>
   </div>
 </template>
 

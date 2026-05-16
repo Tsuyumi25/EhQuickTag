@@ -1,41 +1,35 @@
-import { GM, GM_xmlhttpRequest } from '$'
+import { GM_xmlhttpRequest } from '$'
+import { isASCII, toCN, toJP } from '@/services/cjkDict'
+import { getNhCount } from '@/services/nhPopularity'
+import { hasGMXHR, cacheGet, cacheSet } from '@/services/gmStorage'
 
 const DB_URL = 'https://raw.githubusercontent.com/EhTagTranslation/DatabaseReleases/master/db.html.json'
 const CACHE_KEY = 'eqt_tag_db'
 const CACHE_TS_KEY = 'eqt_tag_db_ts'
 const CACHE_TTL = 24 * 60 * 60 * 1000 // 24h
 
-export interface TagEntry {
-  /** e.g. "female:stockings" */
+/** Fields persisted to cache. */
+interface StoredEntry {
   fullTag: string
-  /** namespace e.g. "female" */
   ns: string
-  /** raw tag name e.g. "stockings" */
   raw: string
-  /** Chinese name (HTML stripped) e.g. "过膝袜" */
   name: string
+  introSearch: string
+}
+
+/** StoredEntry + pre-computed search fields (never serialized to cache). */
+export interface TagEntry extends StoredEntry {
+  /** raw.toLowerCase() — pre-computed to avoid per-keystroke allocation */
+  rawLow: string
+  /** name.toLowerCase() — pre-computed to avoid per-keystroke allocation */
+  nameLow: string
+  /** words in rawLow after index 0 (index 0 covered by prefix check); null for single-word tags */
+  rawWords: string[] | null
 }
 
 let entries: TagEntry[] | null = null
 
-// --- GM availability detection ---
-
-const hasGM = typeof GM?.getValue === 'function'
-const hasGMXHR = typeof GM_xmlhttpRequest === 'function'
-
-// --- storage abstraction ---
-
-async function cacheGet(key: string): Promise<string | null> {
-  if (hasGM) return (await GM.getValue<string>(key, '')) || null
-  return localStorage.getItem(key)
-}
-
-async function cacheSet(key: string, value: string): Promise<void> {
-  if (hasGM) { await GM.setValue(key, value); return }
-  try { localStorage.setItem(key, value) } catch { /* quota exceeded */ }
-}
-
-// --- fetch abstraction ---
+// --- HTML / text processing ---
 
 function stripHtml(html: string): string {
   const tmp = document.createElement('span')
@@ -43,11 +37,32 @@ function stripHtml(html: string): string {
   return tmp.textContent ?? ''
 }
 
+function removeEmojiAndImages(html: string): string {
+  // strip <img> tags first, then strip HTML, then remove emoji
+  const noImg = html.replace(/<img[^>]*>/gi, '')
+  const text = stripHtml(noImg)
+  // remove emoji (unicode ranges for common emoji blocks)
+  return text.replace(/[\u{1F000}-\u{1FFFF}]|[\u{2600}-\u{27BF}]|[\u{FE00}-\u{FE0F}]|[\u{200D}]|[\u{20E3}]|[\u{E0020}-\u{E007F}]/gu, '').trim()
+}
+
+// --- index building ---
+
 interface DbJson {
   data: {
     namespace: string
     data: Record<string, { name: string; intro: string; links: string }>
   }[]
+}
+
+function addSearchFields(stored: StoredEntry): TagEntry {
+  const rawLow = stored.raw.toLowerCase()
+  const words = rawLow.split(' ')
+  return {
+    ...stored,
+    rawLow,
+    nameLow: stored.name.toLowerCase(),
+    rawWords: words.length > 1 ? words.slice(1) : null,
+  }
 }
 
 function buildIndex(db: DbJson): TagEntry[] {
@@ -58,17 +73,19 @@ function buildIndex(db: DbJson): TagEntry[] {
     if (ns === 'rows') continue
 
     for (const [raw, info] of Object.entries(section.data)) {
-      result.push({
-        fullTag: `${ns}:${raw}`,
-        ns,
-        raw,
-        name: stripHtml(info.name),
-      })
+      let introSearch = ''
+      if (info.intro) introSearch += '\0' + stripHtml(info.intro).toLowerCase()
+      if (info.links) introSearch += '\0' + stripHtml(info.links).toLowerCase()
+
+      const name = removeEmojiAndImages(info.name)
+      result.push(addSearchFields({ fullTag: `${ns}:${raw}`, ns, raw, name, introSearch }))
     }
   }
 
   return result
 }
+
+// --- fetch ---
 
 async function fetchDb(): Promise<string> {
   if (hasGMXHR) {
@@ -85,7 +102,6 @@ async function fetchDb(): Promise<string> {
     })
   }
 
-  // fallback: native fetch (works on e-hentai, may fail on exhentai due to CORS)
   const res = await fetch(DB_URL)
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
   return res.text()
@@ -94,64 +110,87 @@ async function fetchDb(): Promise<string> {
 export async function loadTagDb(): Promise<TagEntry[]> {
   if (entries) return entries
 
-  // try cache
   const cachedTs = Number(await cacheGet(CACHE_TS_KEY)) || 0
   if (Date.now() - cachedTs < CACHE_TTL) {
     const cached = await cacheGet(CACHE_KEY)
     if (cached) {
-      entries = JSON.parse(cached)
-      return entries!
+      entries = (JSON.parse(cached) as StoredEntry[]).map(addSearchFields)
+      return entries
     }
   }
 
-  // fetch fresh
   const raw = await fetchDb()
   const db: DbJson = JSON.parse(raw)
   entries = buildIndex(db)
 
-  // cache the index
-  await cacheSet(CACHE_KEY, JSON.stringify(entries))
+  const stored: StoredEntry[] = entries.map(({ fullTag, ns, raw: r, name, introSearch }) =>
+    ({ fullTag, ns, raw: r, name, introSearch }),
+  )
+  await cacheSet(CACHE_KEY, JSON.stringify(stored))
   await cacheSet(CACHE_TS_KEY, String(Date.now()))
 
   return entries
 }
 
-// --- search with scoring (aligned with EhSyringe) ---
+// --- multi-key ranking ---
 
-const NS_SCORE: Record<string, number> = {
-  other: 10,
-  location: 9,
-  female: 9,
-  male: 8.5,
-  mixed: 8,
-  parody: 3.3,
-  character: 2.8,
-  artist: 2.5,
-  cosplayer: 2.4,
-  group: 2.2,
-  language: 2,
-  reclass: 1,
-  temp: 0,
+// Match tier: how well does the search term match the tag?
+const enum MatchTier {
+  Prefix = 0,    // tag starts with search term
+  WordStart = 1, // a word in the tag starts with search term
+  Substring = 2, // search term found anywhere
 }
 
-function scoreField(ns: string, search: string, field: string, positionMultiplier: number): number {
-  const idx = field.toLowerCase().indexOf(search)
-  if (idx < 0) return 0
-  const nsScore = NS_SCORE[ns] ?? 1
-  return (nsScore * (search.length + 1) / field.length) * (idx === 0 ? 2 : 1) * positionMultiplier
+// nh "tag" type only covers these EH namespaces
+const NH_NAMESPACES = new Set(['female', 'male', 'mixed', 'other'])
+
+// Namespace tier: how commonly searched is this namespace?
+const NS_TIER: Record<string, number> = {
+  female: 0, male: 0,
+  other: 1, mixed: 1, location: 1,
+  parody: 2, character: 2,
+  artist: 3, cosplayer: 3, group: 3, language: 3,
+  reclass: 4, temp: 4,
 }
 
-/** Resolve "f:" → "female", "m:" → "male", etc. */
 const NS_ALIASES: Record<string, string> = {
   r: 'reclass', g: 'group', a: 'artist', cos: 'cosplayer',
   p: 'parody', c: 'character', f: 'female', m: 'male',
   x: 'mixed', l: 'language', o: 'other', loc: 'location',
 }
 
-export function searchTags(query: string, limit = 20): TagEntry[] {
+function getMatchTier(entry: TagEntry, search: string): MatchTier | null {
+  // prefix: entire field starts with search
+  if (entry.rawLow.startsWith(search) || entry.nameLow.startsWith(search)) {
+    return MatchTier.Prefix
+  }
+
+  // word-start: any subsequent word in raw starts with search, or name contains it
+  if (entry.rawWords !== null) {
+    for (const word of entry.rawWords) {
+      if (word.startsWith(search)) return MatchTier.WordStart
+    }
+  }
+  if (entry.nameLow.includes(search)) return MatchTier.WordStart
+
+  // substring: anywhere in raw or introSearch
+  if (entry.rawLow.includes(search)) return MatchTier.Substring
+  if (entry.introSearch && entry.introSearch.includes(search)) return MatchTier.Substring
+
+  return null
+}
+
+interface RankedEntry {
+  entry: TagEntry
+  matchTier: MatchTier
+  nhCount: number // 0 if no nh data
+  nsTier: number
+}
+
+export function searchTags(query: string, useNhWeight = false): TagEntry[] {
   if (!entries || !query.trim()) return []
 
-  let q = query.toLowerCase().trim()
+  let q = query.toLowerCase().normalize().trim()
   let pool = entries
 
   // namespace filter: "f:stock" → filter to female, search "stock"
@@ -159,24 +198,51 @@ export function searchTags(query: string, limit = 20): TagEntry[] {
   if (colIdx >= 1) {
     const prefix = q.slice(0, colIdx)
     const resolvedNs = NS_ALIASES[prefix] ?? prefix
-    if (NS_SCORE[resolvedNs] !== undefined) {
+    if (NS_TIER[resolvedNs] !== undefined) {
       pool = pool.filter(e => e.ns === resolvedNs)
       q = q.slice(colIdx + 1)
     }
   }
 
-  if (!q) return pool.slice(0, limit)
+  // strip leading quote (EH exact-match syntax)
+  if (q.startsWith('"')) q = q.slice(1)
 
-  const scored: { entry: TagEntry; score: number }[] = []
+  if (!q) return pool
 
-  for (const entry of pool) {
-    const s =
-      scoreField(entry.ns, q, entry.raw, 1)
-      + scoreField(entry.ns, q, entry.name, 1)
-
-    if (s > 0) scored.push({ entry, score: s })
+  // build search terms: original + CJK variants
+  let terms = [q]
+  if (!isASCII(q)) {
+    terms.push(toCN(q), ...toJP(q))
+    terms = [...new Set(terms)]
   }
 
-  scored.sort((a, b) => b.score - a.score)
-  return scored.slice(0, limit).map(s => s.entry)
+  const ranked: RankedEntry[] = []
+
+  for (const entry of pool) {
+    // try each term variant, take first match
+    let matchTier: MatchTier | null = null
+    for (const term of terms) {
+      matchTier = getMatchTier(entry, term)
+      if (matchTier !== null) break
+    }
+
+    if (matchTier === null) continue
+
+    ranked.push({
+      entry,
+      matchTier,
+      nhCount: useNhWeight && NH_NAMESPACES.has(entry.ns) ? (getNhCount(entry.raw) ?? 0) : 0,
+      nsTier: NS_TIER[entry.ns] ?? 4,
+    })
+  }
+
+  // multi-key sort: matchTier → nhCount desc → nsTier → raw length
+  ranked.sort((a, b) =>
+    (a.matchTier - b.matchTier)
+    || (b.nhCount - a.nhCount)
+    || (a.nsTier - b.nsTier)
+    || (a.entry.raw.length - b.entry.raw.length),
+  )
+
+  return ranked.map(r => r.entry)
 }

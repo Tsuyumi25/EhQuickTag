@@ -2,6 +2,7 @@
 import { ref, reactive, watch, onMounted } from 'vue'
 import TagBar from '@/components/TagBar.vue'
 import TagConfigPopup from '@/components/TagConfigPopup.vue'
+import SettingsPopup from '@/components/SettingsPopup.vue'
 import type { QuickTag } from '@/types'
 
 const tags = reactive<QuickTag[]>([
@@ -10,47 +11,48 @@ const tags = reactive<QuickTag[]>([
   { tag: 'language:english', label: 'English' },
 ])
 
+const useNhWeight = ref(true) // TODO: persist in GM storage
 const searchText = ref('')
 const anchorReady = ref(false)
 let searchInput: HTMLInputElement | null = null
 
-// --- popup state ---
+// --- tag config popup ---
 
 const editingIndex = ref(-1)
-const isAdding = ref(false)
+const pendingAdd = ref(false)
 const showPopup = ref(false)
 
 function onConfigure(tag: string) {
   const idx = tags.findIndex(t => t.tag === tag)
   if (idx === -1) return
   editingIndex.value = idx
-  isAdding.value = false
+  pendingAdd.value = false
   showPopup.value = true
 }
 
 function onAdd() {
   editingIndex.value = tags.length
   tags.push({ tag: '', label: '' })
-  isAdding.value = true
+  pendingAdd.value = true
   showPopup.value = true
 }
 
 function onSave(updated: QuickTag) {
   tags[editingIndex.value] = updated
-  isAdding.value = false
+  pendingAdd.value = false
   showPopup.value = false
 }
 
 function onDelete() {
   tags.splice(editingIndex.value, 1)
-  isAdding.value = false
+  pendingAdd.value = false
   showPopup.value = false
 }
 
 function onClose() {
-  if (isAdding.value) {
+  if (pendingAdd.value) {
     tags.splice(editingIndex.value, 1)
-    isAdding.value = false
+    pendingAdd.value = false
   }
   showPopup.value = false
 }
@@ -59,6 +61,10 @@ function onReorder(from: number, to: number) {
   const [item] = tags.splice(from, 1)
   tags.splice(to, 0, item)
 }
+
+// --- settings popup ---
+
+const showSettings = ref(false)
 
 // --- search box sync ---
 
@@ -72,7 +78,6 @@ onMounted(() => {
     searchText.value = searchInput!.value
   })
 
-  // Insert tag bar inside the search input row, after the buttons (same position as LOLICON Hentai Enhancer)
   const anchor = document.createElement('div')
   anchor.id = 'eqt-bar-anchor'
   searchInput.parentElement!.appendChild(anchor)
@@ -94,14 +99,22 @@ watch(searchText, (val) => {
       @configure="onConfigure"
       @add="onAdd"
       @reorder="onReorder"
+      @settings="showSettings = true"
     />
   </Teleport>
 
   <TagConfigPopup
     v-if="showPopup"
     :tag="tags[editingIndex]"
+    :use-nh-weight="useNhWeight"
     @save="onSave"
     @delete="onDelete"
     @close="onClose"
+  />
+
+  <SettingsPopup
+    v-if="showSettings"
+    v-model:use-nh-weight="useNhWeight"
+    @close="showSettings = false"
   />
 </template>

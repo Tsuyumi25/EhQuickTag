@@ -29,6 +29,7 @@ export default defineConfig({
         license: 'MIT',
         connect: [
           'raw.githubusercontent.com',
+          'nhentai.net',
         ],
       },
       build: {

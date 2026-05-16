@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { reactive, ref, watch, onMounted } from 'vue'
+import { reactive, ref, watch, onMounted, onUnmounted } from 'vue'
 import type { QuickTag } from '@/types'
 import { loadTagDb, searchTags, type TagEntry } from '@/services/tagDb'
+import { loadNhPopularity } from '@/services/nhPopularity'
 
 const props = defineProps<{
   tag: QuickTag
+  useNhWeight?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -25,19 +27,28 @@ watch(() => props.tag, (t) => {
 }, { immediate: true })
 
 onMounted(async () => {
-  await loadTagDb()
+  const loads: Promise<unknown>[] = [loadTagDb()]
+  if (props.useNhWeight) loads.push(loadNhPopularity())
+  await Promise.all(loads)
   dbReady.value = true
 })
 
+let searchTimer = 0
+
 watch(searchQuery, (q) => {
+  clearTimeout(searchTimer)
   if (!dbReady.value || !q.trim()) {
     suggestions.value = []
     selectedIdx.value = -1
     return
   }
-  suggestions.value = searchTags(q)
-  selectedIdx.value = -1
+  searchTimer = window.setTimeout(() => {
+    suggestions.value = searchTags(q, props.useNhWeight)
+    selectedIdx.value = -1
+  }, 80)
 })
+
+onUnmounted(() => { clearTimeout(searchTimer) })
 
 function pickSuggestion(entry: TagEntry) {
   form.tag = entry.fullTag
