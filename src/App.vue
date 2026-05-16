@@ -58,6 +58,15 @@ function onMove(fromLine: number, fromIdx: number, toLine: number, toIdx: number
   tagLines[toLine].splice(toIdx, 0, item)
 }
 
+function onMoveLine(from: number, to: number) {
+  const [line] = tagLines.splice(from, 1)
+  tagLines.splice(to, 0, line)
+}
+
+function onDeleteLine(lineIdx: number) {
+  tagLines.splice(lineIdx, 1)
+}
+
 function onAddLine() {
   tagLines.push([])
 }
@@ -99,6 +108,8 @@ watch(searchText, (val) => {
       @configure="onConfigure"
       @add="onAdd"
       @move="onMove"
+      @move-line="onMoveLine"
+      @delete-line="onDeleteLine"
       @add-line="onAddLine"
       @settings="showSettings = true"
     />

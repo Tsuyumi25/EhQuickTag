@@ -20,19 +20,46 @@ const emit = defineEmits<{
   'configure': [lineIdx: number, tagIdx: number]
   'add': []
   'move': [fromLine: number, fromIdx: number, toLine: number, toIdx: number]
+  'moveLine': [from: number, to: number]
+  'deleteLine': [lineIdx: number]
   'addLine': []
   'settings': []
 }>()
 
 const editing = ref(false)
+const linesEl = ref<HTMLElement | null>(null)
 const rowEls = ref<HTMLElement[]>([])
 
 // --- Sortable lifecycle ---
 
 let sortableInstances: Sortable[] = []
 let domSnapshots = new Map<HTMLElement, Node[]>()
+let lineSortableInstance: Sortable | null = null
+let lineDomSnapshot: Node[] = []
 
 function activateSortables() {
+  // Line-level sortable (reorder entire rows via handle)
+  if (linesEl.value) {
+    lineSortableInstance = new Sortable(linesEl.value, {
+      handle: '.eqt-tag-bar__handle',
+      animation: 150,
+      ghostClass: 'eqt-tag-bar__line-wrap--ghost',
+      onStart: () => {
+        lineDomSnapshot = [...linesEl.value!.childNodes]
+      },
+      onEnd: (evt) => {
+        const container = linesEl.value!
+        while (container.firstChild) container.removeChild(container.firstChild)
+        for (const node of lineDomSnapshot) container.appendChild(node)
+
+        if (evt.oldIndex !== undefined && evt.newIndex !== undefined && evt.oldIndex !== evt.newIndex) {
+          emit('moveLine', evt.oldIndex, evt.newIndex)
+        }
+      },
+    })
+  }
+
+  // Tag-level sortables (cross-row drag)
   for (const el of rowEls.value) {
     sortableInstances.push(new Sortable(el, {
       group: 'eqt-tags',
@@ -47,7 +74,6 @@ function activateSortables() {
         }
       },
       onEnd: (evt) => {
-        // Restore only the containers involved in the drag
         const targets = new Set([evt.from, evt.to].filter(Boolean))
         for (const container of targets) {
           const nodes = domSnapshots.get(container as HTMLElement)
@@ -69,6 +95,10 @@ function activateSortables() {
 }
 
 function deactivateSortables() {
+  try { lineSortableInstance?.destroy() } catch { /* ignore */ }
+  lineSortableInstance = null
+  lineDomSnapshot = []
+
   for (const s of sortableInstances) {
     try { s.destroy() } catch { /* ignore corrupted instance */ }
   }
@@ -83,16 +113,25 @@ watch(editing, (isEditing) => {
 
 onUnmounted(deactivateSortables)
 
-let addingLine = false
-function onAddLine() {
-  if (addingLine) return
-  addingLine = true
+let mutatingLines = false
+
+function rebuildSortablesAround(action: () => void) {
+  if (mutatingLines) return
+  mutatingLines = true
   deactivateSortables()
-  emit('addLine')
+  try { action() } catch (e) { mutatingLines = false; throw e }
   nextTick(() => {
     activateSortables()
-    addingLine = false
+    mutatingLines = false
   })
+}
+
+function onAddLine() {
+  rebuildSortablesAround(() => emit('addLine'))
+}
+
+function onDeleteLine(li: number) {
+  rebuildSortablesAround(() => emit('deleteLine', li))
 }
 
 // --- search text parsing ---
@@ -165,26 +204,38 @@ function onRightClick(event: MouseEvent, tag: string) {
 
 <template>
   <div class="eqt-tag-bar">
-    <div class="eqt-tag-bar__lines">
+    <div class="eqt-tag-bar__lines" ref="linesEl">
       <div
         v-for="(line, li) in tagLines"
         :key="li"
-        ref="rowEls"
-        :data-line="li"
-        class="eqt-tag-bar__line"
+        class="eqt-tag-bar__line-wrap"
       >
+        <div v-if="editing" class="eqt-tag-bar__handle" title="拖曳排序行">⠿</div>
         <button
-          v-for="(qt, ti) in line"
-          :key="qt.tag"
-          :data-id="qt.tag"
-          class="eqt-tag-bar__btn"
-          :class="editing ? 'eqt-tag-bar__btn--editing' : STATE_CLASS[getState(qt.tag)]"
+          v-if="editing && line.length === 0"
+          class="eqt-tag-bar__line-delete"
           type="button"
-          @click="editing ? emit('configure', li, ti) : onLeftClick(qt.tag)"
-          @contextmenu.prevent="!editing && onRightClick($event, qt.tag)"
+          title="刪除空行"
+          @click="onDeleteLine(li)"
+        >🗑</button>
+        <div
+          ref="rowEls"
+          :data-line="li"
+          class="eqt-tag-bar__line"
         >
-          {{ qt.label || qt.tag }}
-        </button>
+          <button
+            v-for="(qt, ti) in line"
+            :key="qt.tag"
+            :data-id="qt.tag"
+            class="eqt-tag-bar__btn"
+            :class="editing ? 'eqt-tag-bar__btn--editing' : STATE_CLASS[getState(qt.tag)]"
+            type="button"
+            @click="editing ? emit('configure', li, ti) : onLeftClick(qt.tag)"
+            @contextmenu.prevent="!editing && onRightClick($event, qt.tag)"
+          >
+            {{ qt.label || qt.tag }}
+          </button>
+        </div>
       </div>
     </div>
 
@@ -232,7 +283,51 @@ function onRightClick(event: MouseEvent, tag: string) {
     margin: 0 12px;
   }
 
+  &__line-wrap {
+    display: flex;
+    align-items: flex-start;
+    gap: 4px;
+
+    &--ghost {
+      opacity: 0.4;
+    }
+  }
+
+  &__handle {
+    flex-shrink: 0;
+    cursor: grab;
+    color: var(--eqt-text-hint);
+    font-size: 14px;
+    line-height: 24px;
+    user-select: none;
+    padding: 0 2px;
+
+    &:hover {
+      color: var(--eqt-text-secondary);
+    }
+
+    &:active {
+      cursor: grabbing;
+    }
+  }
+
+  &__line-delete {
+    flex-shrink: 0;
+    border: none;
+    background: transparent;
+    color: var(--eqt-text-hint);
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 24px;
+    padding: 0 2px;
+
+    &:hover {
+      color: #8c3333;
+    }
+  }
+
   &__line {
+    flex: 1;
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
