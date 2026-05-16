@@ -124,7 +124,7 @@ function toggleNs(ns: string) {
   &__hint {
     margin: 4px 0 0;
     font-size: 11px;
-    color: #8a8271;
+    color: var(--eqt-text-hint);
     line-height: 1.4;
   }
 
@@ -149,7 +149,7 @@ function toggleNs(ns: string) {
     font-size: 13px;
 
     &:hover {
-      background: rgba(0, 0, 0, 0.04);
+      background: var(--eqt-bg-hover);
     }
 
     &--ghost {
@@ -157,7 +157,7 @@ function toggleNs(ns: string) {
     }
 
     &--chosen {
-      background: rgba(0, 0, 0, 0.06);
+      background: var(--eqt-bg-active);
     }
   }
 
@@ -168,12 +168,12 @@ function toggleNs(ns: string) {
 
   &__ns-key {
     font-size: 11px;
-    color: #8a8271;
+    color: var(--eqt-text-hint);
     flex: 1;
   }
 
   &__ns-grip {
-    color: #b0a89a;
+    color: var(--eqt-grip);
     cursor: grab;
     user-select: none;
   }

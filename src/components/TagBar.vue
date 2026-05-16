@@ -164,17 +164,17 @@ function onRightClick(event: MouseEvent, tag: string) {
 
   &__btn {
     padding: 2px 8px;
-    border: 1px solid #8a8271;
+    border: var(--eqt-border-width) solid var(--eqt-border);
     border-radius: 3px;
     background: transparent;
-    color: #5c0d12;
+    color: var(--eqt-text-secondary);
     cursor: pointer;
     font-size: 12px;
     line-height: 1.4;
     transition: background 0.15s, border-color 0.15s, color 0.15s;
 
     &:hover {
-      background: rgba(0, 0, 0, 0.06);
+      background: var(--eqt-bg-hover);
     }
 
     &--include {
@@ -213,7 +213,7 @@ function onRightClick(event: MouseEvent, tag: string) {
       cursor: grab;
 
       &:hover {
-        background: rgba(0, 0, 0, 0.08);
+        background: var(--eqt-bg-hover);
       }
     }
 
@@ -233,16 +233,16 @@ function onRightClick(event: MouseEvent, tag: string) {
 
   &__ctrl {
     padding: 2px 6px;
-    border: 1px solid #8a8271;
+    border: var(--eqt-border-width) solid var(--eqt-border);
     border-radius: 3px;
     background: transparent;
-    color: #5c0d12;
+    color: var(--eqt-text-secondary);
     cursor: pointer;
     font-size: 12px;
     line-height: 1.4;
 
     &:hover {
-      background: rgba(0, 0, 0, 0.06);
+      background: var(--eqt-bg-hover);
     }
   }
 }

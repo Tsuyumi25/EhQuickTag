@@ -1,0 +1,41 @@
+// Light theme (e-hentai.org) — on :root so Teleported content inherits
+:root {
+  --eqt-bg: #edebdf;
+  --eqt-bg-elevated: #fff;
+  --eqt-bg-hover: rgba(0, 0, 0, 0.06);
+  --eqt-bg-active: #ddd8c8;
+  --eqt-bg-btn: #ddd8c8;
+  --eqt-bg-btn-hover: #cfc9b5;
+  --eqt-bg-disabled: #e8e6da;
+  --eqt-text: #34353b;
+  --eqt-text-secondary: #5c0d12;
+  --eqt-text-hint: #8a8271;
+  --eqt-border: #8a8271;
+  --eqt-border-width: 1px;
+  --eqt-border-focus: #4a7c59;
+  --eqt-divider: #c5c0b0;
+  --eqt-overlay: rgba(0, 0, 0, 0.4);
+  --eqt-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  --eqt-grip: #b0a89a;
+}
+
+// Dark theme (exhentai.org)
+:root.eqt-dark {
+  --eqt-bg: #34353b;
+  --eqt-bg-elevated: #2b2c31;
+  --eqt-bg-hover: rgba(255, 255, 255, 0.06);
+  --eqt-bg-active: #4a4b52;
+  --eqt-bg-btn: #4a4b52;
+  --eqt-bg-btn-hover: #55565e;
+  --eqt-bg-disabled: #2b2c31;
+  --eqt-text: #ddd;
+  --eqt-text-secondary: #ddd;
+  --eqt-text-hint: #8a8a8a;
+  --eqt-border: #5c6068;
+  --eqt-border-width: 2px;
+  --eqt-border-focus: #5a9a6a;
+  --eqt-divider: #4f535b;
+  --eqt-overlay: rgba(0, 0, 0, 0.6);
+  --eqt-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --eqt-grip: #6a6b70;
+}

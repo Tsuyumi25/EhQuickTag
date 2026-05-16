@@ -175,20 +175,20 @@ function onFieldKeydown(e: KeyboardEvent) {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--eqt-overlay);
 }
 
 .eqt-popup {
   text-align: left;
-  background: #edebdf;
-  border: 1px solid #8a8271;
+  background: var(--eqt-bg);
+  border: var(--eqt-border-width) solid var(--eqt-border);
   border-radius: 6px;
   padding: 16px;
   min-width: 340px;
   max-width: 420px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--eqt-shadow);
   font-size: 13px;
-  color: #34353b;
+  color: var(--eqt-text);
 
   &__field {
     margin-bottom: 10px;
@@ -205,27 +205,27 @@ function onFieldKeydown(e: KeyboardEvent) {
   &__input {
     width: 100%;
     padding: 4px 6px;
-    border: 1px solid #8a8271;
+    border: var(--eqt-border-width) solid var(--eqt-border);
     border-radius: 3px;
     font-size: 13px;
-    background: #fff;
-    color: #34353b;
+    background: var(--eqt-bg-elevated);
+    color: var(--eqt-text);
     box-sizing: border-box;
 
     &:focus {
       outline: none;
-      border-color: #4a7c59;
+      border-color: var(--eqt-border-focus);
     }
 
     &:disabled {
-      background: #e8e6da;
-      color: #8a8271;
+      background: var(--eqt-bg-disabled);
+      color: var(--eqt-text-hint);
     }
   }
 
   &__divider {
     border: none;
-    border-top: 1px solid #c5c0b0;
+    border-top: var(--eqt-border-width) solid var(--eqt-divider);
     margin: 12px 0;
   }
 
@@ -237,8 +237,8 @@ function onFieldKeydown(e: KeyboardEvent) {
     margin: 2px 0 0;
     padding: 0;
     list-style: none;
-    background: #fff;
-    border: 1px solid #8a8271;
+    background: var(--eqt-bg-elevated);
+    border: var(--eqt-border-width) solid var(--eqt-border);
     border-radius: 3px;
     max-height: 200px;
     overflow-y: auto;
@@ -254,13 +254,13 @@ function onFieldKeydown(e: KeyboardEvent) {
 
     &:hover,
     &--active {
-      background: #ddd8c8;
+      background: var(--eqt-bg-active);
     }
   }
 
   &__suggestion-ns {
     font-size: 11px;
-    color: #8a8271;
+    color: var(--eqt-text-hint);
     flex-shrink: 0;
   }
 
@@ -272,7 +272,7 @@ function onFieldKeydown(e: KeyboardEvent) {
 
   &__suggestion-tag {
     font-size: 11px;
-    color: #8a8271;
+    color: var(--eqt-text-hint);
     flex-shrink: 0;
   }
 
@@ -289,15 +289,15 @@ function onFieldKeydown(e: KeyboardEvent) {
 
   &__btn {
     padding: 4px 12px;
-    border: 1px solid #8a8271;
+    border: var(--eqt-border-width) solid var(--eqt-border);
     border-radius: 3px;
-    background: #ddd8c8;
-    color: #34353b;
+    background: var(--eqt-bg-btn);
+    color: var(--eqt-text);
     cursor: pointer;
     font-size: 12px;
 
     &:hover {
-      background: #cfc9b5;
+      background: var(--eqt-bg-btn-hover);
     }
 
     &--primary {
