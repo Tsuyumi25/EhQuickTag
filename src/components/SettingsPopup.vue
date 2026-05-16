@@ -1,12 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-
-const NS_LABEL: Record<string, string> = {
-  female: '女', male: '男', mixed: '混', other: '其他',
-  location: '地點', language: '語言', parody: '原作',
-  character: '角色', artist: '繪師', cosplayer: 'Coser',
-  group: '團體', reclass: '分類', temp: '臨時',
-}
+import { ref, onMounted } from 'vue'
+import { useSortable } from '@/composables/useSortable'
+import { NS_LABEL } from '@/types'
 
 const props = defineProps<{
   useNhWeight: boolean
@@ -25,33 +20,26 @@ function onKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape') emit('close')
 }
 
-// --- drag reorder ---
+// --- Sortable ---
 
-const dragIndex = ref(-1)
+const nsListEl = ref<HTMLElement | null>(null)
 
-function onDragStart(index: number, event: DragEvent) {
-  dragIndex.value = index
-  event.dataTransfer!.effectAllowed = 'move'
-}
+const { activate: activateSortable } = useSortable(nsListEl, {
+  animation: 150,
+  handle: '.eqt-settings__ns-grip',
+  ghostClass: 'eqt-settings__ns-item--ghost',
+  chosenClass: 'eqt-settings__ns-item--chosen',
+  onEnd: (evt) => {
+    if (evt.oldIndex !== undefined && evt.newIndex !== undefined && evt.oldIndex !== evt.newIndex) {
+      const newOrder = [...props.nsOrder]
+      const [item] = newOrder.splice(evt.oldIndex, 1)
+      newOrder.splice(evt.newIndex, 0, item)
+      emit('update:nsOrder', newOrder)
+    }
+  },
+})
 
-function onDragOver(event: DragEvent) {
-  event.preventDefault()
-  event.dataTransfer!.dropEffect = 'move'
-}
-
-function onDrop(index: number) {
-  if (dragIndex.value !== -1 && dragIndex.value !== index) {
-    const newOrder = [...props.nsOrder]
-    const [item] = newOrder.splice(dragIndex.value, 1)
-    newOrder.splice(index, 0, item)
-    emit('update:nsOrder', newOrder)
-  }
-  dragIndex.value = -1
-}
-
-function onDragEnd() {
-  dragIndex.value = -1
-}
+onMounted(activateSortable)
 
 // --- toggle ---
 
@@ -85,17 +73,12 @@ function toggleNs(ns: string) {
         調整搜尋建議中 namespace 的內部排序權重。拖曳調整順序，取消勾選可隱藏該類別。<br />
         注意：此順序僅影響 namespace 之間的排列，匹配品質和 nhentai 人氣仍然優先。
       </p>
-      <ul class="eqt-settings__ns-list">
+      <ul ref="nsListEl" class="eqt-settings__ns-list">
         <li
-          v-for="(ns, index) in nsOrder"
+          v-for="ns in nsOrder"
           :key="ns"
+          :data-id="ns"
           class="eqt-settings__ns-item"
-          :class="{ 'eqt-settings__ns-item--dragging': dragIndex === index }"
-          draggable="true"
-          @dragstart="onDragStart(index, $event)"
-          @dragover="onDragOver"
-          @drop="onDrop(index)"
-          @dragend="onDragEnd"
         >
           <input
             type="checkbox"
@@ -163,15 +146,18 @@ function toggleNs(ns: string) {
     gap: 6px;
     padding: 3px 6px;
     border-radius: 3px;
-    cursor: grab;
     font-size: 13px;
 
     &:hover {
       background: rgba(0, 0, 0, 0.04);
     }
 
-    &--dragging {
+    &--ghost {
       opacity: 0.4;
+    }
+
+    &--chosen {
+      background: rgba(0, 0, 0, 0.06);
     }
   }
 

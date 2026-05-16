@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { TagState, type QuickTag } from '@/types'
+import { useSortable } from '@/composables/useSortable'
 
 const STATE_CLASS: Record<TagState, string | null> = {
   [TagState.Include]: 'eqt-tag-bar__btn--include',
@@ -23,10 +24,29 @@ const emit = defineEmits<{
 }>()
 
 const editing = ref(false)
+const tagListEl = ref<HTMLElement | null>(null)
+
+// --- Sortable lifecycle ---
+
+const { activate: activateSortable, deactivate: deactivateSortable } = useSortable(tagListEl, {
+  animation: 150,
+  ghostClass: 'eqt-tag-bar__btn--ghost',
+  chosenClass: 'eqt-tag-bar__btn--chosen',
+  dragClass: 'eqt-tag-bar__btn--drag',
+  onEnd: (evt) => {
+    if (evt.oldIndex !== undefined && evt.newIndex !== undefined && evt.oldIndex !== evt.newIndex) {
+      emit('reorder', evt.oldIndex, evt.newIndex)
+    }
+  },
+})
+
+watch(editing, (isEditing) => {
+  if (isEditing) activateSortable()
+  else deactivateSortable()
+})
 
 // --- search text parsing ---
 
-// Tokenize respecting quoted strings: female:"big breasts" is one token
 const TOKEN_RE = /[^"\s]*"[^"]*"[^\s]*|[^\s"]+/g
 
 function tokenize(text: string): string[] {
@@ -86,54 +106,24 @@ function onRightClick(event: MouseEvent, tag: string) {
   const cleaned = removeTag(props.searchText, tag)
   emit('update:searchText', addTag(cleaned, tag, next))
 }
-
-// --- edit mode: drag reorder ---
-
-const dragIndex = ref(-1)
-
-function onDragStart(index: number, event: DragEvent) {
-  dragIndex.value = index
-  event.dataTransfer!.effectAllowed = 'move'
-}
-
-function onDragOver(event: DragEvent) {
-  event.preventDefault()
-  event.dataTransfer!.dropEffect = 'move'
-}
-
-function onDrop(index: number) {
-  if (dragIndex.value !== -1 && dragIndex.value !== index) {
-    emit('reorder', dragIndex.value, index)
-  }
-  dragIndex.value = -1
-}
-
-function onDragEnd() {
-  dragIndex.value = -1
-}
 </script>
 
 <template>
   <div class="eqt-tag-bar">
-    <button
-      v-for="(qt, index) in tags"
-      :key="qt.tag"
-      class="eqt-tag-bar__btn"
-      :class="[
-        editing ? 'eqt-tag-bar__btn--editing' : STATE_CLASS[getState(qt.tag)],
-        { 'eqt-tag-bar__btn--dragging': editing && dragIndex === index },
-      ]"
-      type="button"
-      :draggable="editing"
-      @click="editing ? emit('configure', qt.tag) : onLeftClick(qt.tag)"
-      @contextmenu.prevent="!editing && onRightClick($event, qt.tag)"
-      @dragstart="onDragStart(index, $event)"
-      @dragover="onDragOver"
-      @drop="onDrop(index)"
-      @dragend="onDragEnd"
-    >
-      {{ qt.label || qt.tag }}
-    </button>
+    <div ref="tagListEl" class="eqt-tag-bar__list">
+      <button
+        v-for="qt in tags"
+        :key="qt.tag"
+        :data-id="qt.tag"
+        class="eqt-tag-bar__btn"
+        :class="editing ? 'eqt-tag-bar__btn--editing' : STATE_CLASS[getState(qt.tag)]"
+        type="button"
+        @click="editing ? emit('configure', qt.tag) : onLeftClick(qt.tag)"
+        @contextmenu.prevent="!editing && onRightClick($event, qt.tag)"
+      >
+        {{ qt.label || qt.tag }}
+      </button>
+    </div>
 
     <button
       class="eqt-tag-bar__ctrl"
@@ -165,6 +155,12 @@ function onDragEnd() {
   align-items: center;
   gap: 4px;
   padding: 6px 0;
+
+  &__list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
 
   &__btn {
     padding: 2px 8px;
@@ -221,8 +217,17 @@ function onDragEnd() {
       }
     }
 
-    &--dragging {
+    &--ghost {
       opacity: 0.4;
+    }
+
+    &--chosen {
+      cursor: grabbing;
+    }
+
+    &--drag {
+      opacity: 0.8;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     }
   }
 
