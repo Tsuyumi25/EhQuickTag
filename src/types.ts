@@ -8,6 +8,7 @@ export enum TagState {
 export interface QuickTag {
   tag: string
   label?: string
+  url?: string
 }
 
 export function splitMultiTag(tag: string): string[] {

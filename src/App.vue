@@ -2,6 +2,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import TagBar from '@/components/TagBar.vue'
 import TagConfigPopup from '@/components/TagConfigPopup.vue'
+import UrlConfigPopup from '@/components/UrlConfigPopup.vue'
 import SettingsPopup from '@/components/SettingsPopup.vue'
 import { tagLines, useNhWeight, nsOrder, disabledNs } from '@/services/store'
 
@@ -15,34 +16,43 @@ let searchInput: HTMLInputElement | null = null
 const editingLine = ref(-1)
 const editingIdx = ref(-1)
 const pendingAdd = ref(false)
-const showPopup = ref(false)
+const showTagPopup = ref(false)
+const showUrlPopup = ref(false)
 
 function onConfigure(lineIdx: number, tagIdx: number) {
   editingLine.value = lineIdx
   editingIdx.value = tagIdx
   pendingAdd.value = false
-  showPopup.value = true
+  const qt = tagLines[lineIdx][tagIdx]
+  if (qt.url) {
+    showUrlPopup.value = true
+  } else {
+    showTagPopup.value = true
+  }
 }
 
-function onAdd() {
+function onAdd(type: 'tag' | 'url' = 'tag') {
   const lastIdx = tagLines.length - 1
-  tagLines[lastIdx].push({ tag: '', label: '' })
+  tagLines[lastIdx].push(type === 'url' ? { tag: '', url: '', label: '' } : { tag: '', label: '' })
   editingLine.value = lastIdx
   editingIdx.value = tagLines[lastIdx].length - 1
   pendingAdd.value = true
-  showPopup.value = true
+  if (type === 'url') showUrlPopup.value = true
+  else showTagPopup.value = true
 }
 
 function onSave(updated: import('@/types').QuickTag) {
   tagLines[editingLine.value][editingIdx.value] = updated
   pendingAdd.value = false
-  showPopup.value = false
+  showTagPopup.value = false
+  showUrlPopup.value = false
 }
 
 function onDelete() {
   tagLines[editingLine.value].splice(editingIdx.value, 1)
   pendingAdd.value = false
-  showPopup.value = false
+  showTagPopup.value = false
+  showUrlPopup.value = false
 }
 
 function onClose() {
@@ -50,7 +60,8 @@ function onClose() {
     tagLines[editingLine.value].splice(editingIdx.value, 1)
     pendingAdd.value = false
   }
-  showPopup.value = false
+  showTagPopup.value = false
+  showUrlPopup.value = false
 }
 
 function onMove(fromLine: number, fromIdx: number, toLine: number, toIdx: number) {
@@ -106,7 +117,8 @@ watch(searchText, (val) => {
       :tag-lines="tagLines"
       v-model:search-text="searchText"
       @configure="onConfigure"
-      @add="onAdd"
+      @add="onAdd('tag')"
+      @add-url="onAdd('url')"
       @move="onMove"
       @move-line="onMoveLine"
       @delete-line="onDeleteLine"
@@ -116,11 +128,20 @@ watch(searchText, (val) => {
   </Teleport>
 
   <TagConfigPopup
-    v-if="showPopup"
+    v-if="showTagPopup"
     :tag="tagLines[editingLine][editingIdx]"
     :is-add="pendingAdd"
     :use-nh-weight="useNhWeight"
     :ns-order="effectiveNsOrder"
+    @save="onSave"
+    @delete="onDelete"
+    @close="onClose"
+  />
+
+  <UrlConfigPopup
+    v-if="showUrlPopup"
+    :tag="tagLines[editingLine][editingIdx]"
+    :is-add="pendingAdd"
     @save="onSave"
     @delete="onDelete"
     @close="onClose"

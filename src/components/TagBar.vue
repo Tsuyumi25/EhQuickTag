@@ -19,6 +19,7 @@ const emit = defineEmits<{
   'update:searchText': [value: string]
   'configure': [lineIdx: number, tagIdx: number]
   'add': []
+  'addUrl': []
   'move': [fromLine: number, fromIdx: number, toLine: number, toIdx: number]
   'moveLine': [from: number, to: number]
   'deleteLine': [lineIdx: number]
@@ -224,18 +225,32 @@ function onRightClick(event: MouseEvent, tag: string) {
           :data-line="li"
           class="eqt-tag-bar__line"
         >
-          <button
-            v-for="(qt, ti) in line"
-            :key="qt.tag"
-            :data-id="qt.tag"
-            class="eqt-tag-bar__btn"
-            :class="editing ? 'eqt-tag-bar__btn--editing' : STATE_CLASS[getState(qt.tag)]"
-            type="button"
-            @click="editing ? emit('configure', li, ti) : onLeftClick(qt.tag)"
-            @contextmenu.prevent="!editing && onRightClick($event, qt.tag)"
-          >
-            {{ qt.label || qt.tag }}
-          </button>
+          <template v-for="(qt, ti) in line" :key="qt.tag || qt.url">
+            <a
+              v-if="qt.url && !editing"
+              :href="qt.url"
+              :data-id="qt.url"
+              class="eqt-tag-bar__btn eqt-tag-bar__btn--url"
+            >↗ {{ qt.label || qt.url }}</a>
+
+            <button
+              v-else-if="qt.url"
+              :data-id="qt.url"
+              class="eqt-tag-bar__btn eqt-tag-bar__btn--editing"
+              type="button"
+              @click="emit('configure', li, ti)"
+            >↗ {{ qt.label || qt.url }}</button>
+
+            <button
+              v-else
+              :data-id="qt.tag"
+              class="eqt-tag-bar__btn"
+              :class="editing ? 'eqt-tag-bar__btn--editing' : STATE_CLASS[getState(qt.tag)]"
+              type="button"
+              @click="editing ? emit('configure', li, ti) : onLeftClick(qt.tag)"
+              @contextmenu.prevent="!editing && onRightClick($event, qt.tag)"
+            >{{ qt.label || qt.tag }}</button>
+          </template>
         </div>
       </div>
 
@@ -252,6 +267,12 @@ function onRightClick(event: MouseEvent, tag: string) {
             type="button"
             @click="emit('add')"
           >+ 新增標籤</button>
+
+          <button
+            class="eqt-tag-bar__ctrl"
+            type="button"
+            @click="emit('addUrl')"
+          >↗ 新增網址</button>
 
           <button
             class="eqt-tag-bar__ctrl"
@@ -377,6 +398,10 @@ function onRightClick(event: MouseEvent, tag: string) {
 
     &:hover {
       background: var(--eqt-bg-hover);
+    }
+
+    &--url {
+      text-decoration: none;
     }
 
     &--include {
