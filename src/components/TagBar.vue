@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onUnmounted } from 'vue'
 import Sortable from 'sortablejs'
+import { ChevronLeft, ChevronRight, ExternalLink, GripVertical, Trash2, Pencil, Check, Settings } from '@lucide/vue'
 import { TagState, type QuickTag, splitMultiTag } from '@/types'
 
 const STATE_CLASS: Record<TagState, string | null> = {
@@ -267,7 +268,7 @@ function onRightClick(event: MouseEvent, tag: string) {
           type="button"
           :disabled="profileIdx === 0 && !onCreationPage"
           @click="onPrev"
-        >{{ onCreationPage ? profileName : prevProfileName }} &lsaquo;</button>
+        >{{ onCreationPage ? profileName : prevProfileName }} <ChevronLeft :size="12" /></button>
         <input
           v-if="renamingProfile"
           ref="renameInput"
@@ -290,14 +291,14 @@ function onRightClick(event: MouseEvent, tag: string) {
             :tabindex="(!editing || onCreationPage) ? -1 : undefined"
             :disabled="profileCount <= 1"
             @click="emit('deleteProfile')"
-          >🗑</button>
+          ><Trash2 :size="12" /></button>
         </div>
         <button
           class="eqt-tag-bar__profile-nav eqt-tag-bar__profile-nav--next"
           type="button"
           :disabled="onCreationPage"
           @click="onNext"
-        >&rsaquo; {{ onCreationPage ? '' : nextProfileName }}</button>
+        ><ChevronRight :size="12" /> {{ onCreationPage ? '' : nextProfileName }}</button>
       </div>
       <template v-if="onCreationPage">
         <div v-for="n in tagLines.length" :key="n" class="eqt-tag-bar__line-wrap">
@@ -310,14 +311,14 @@ function onRightClick(event: MouseEvent, tag: string) {
         :key="li"
         class="eqt-tag-bar__line-wrap"
       >
-        <div v-if="editing" class="eqt-tag-bar__handle" title="拖曳排序行">⠿</div>
+        <div class="eqt-tag-bar__handle" :class="{ 'eqt-tag-bar__handle--hidden': !editing }" title="拖曳排序行"><GripVertical :size="14" /></div>
         <button
           v-if="editing && line.length === 0"
           class="eqt-tag-bar__line-delete"
           type="button"
           title="刪除空行"
           @click="onDeleteLine(li)"
-        >🗑</button>
+        ><Trash2 :size="12" /></button>
         <div
           ref="rowEls"
           :data-line="li"
@@ -329,7 +330,7 @@ function onRightClick(event: MouseEvent, tag: string) {
               :href="qt.url"
               :data-id="qt.url"
               class="eqt-tag-bar__btn eqt-tag-bar__btn--url"
-            >↗ {{ qt.label || qt.url }}</a>
+            ><ExternalLink :size="12" /> {{ qt.label || qt.url }}</a>
 
             <button
               v-else-if="qt.url"
@@ -337,7 +338,7 @@ function onRightClick(event: MouseEvent, tag: string) {
               class="eqt-tag-bar__btn eqt-tag-bar__btn--editing"
               type="button"
               @click="emit('configure', li, ti)"
-            >↗ {{ qt.label || qt.url }}</button>
+            ><ExternalLink :size="12" /> {{ qt.label || qt.url }}</button>
 
             <button
               v-else
@@ -371,19 +372,19 @@ function onRightClick(event: MouseEvent, tag: string) {
             class="eqt-tag-bar__ctrl"
             type="button"
             @click="emit('addUrl')"
-          >↗ 新增網址</button>
+          ><ExternalLink :size="12" /> 新增網址</button>
 
           <button
             class="eqt-tag-bar__ctrl eqt-tag-bar__ctrl--toggle"
             type="button"
             @click="editing = !editing"
-          ><span :class="{ 'eqt-tag-bar__ctrl-hidden': !editing }">✓ 完成</span><span :class="{ 'eqt-tag-bar__ctrl-hidden': editing }">✎ 編輯</span></button>
+          ><span :class="{ 'eqt-tag-bar__ctrl-hidden': !editing }"><Check :size="12" /> 完成</span><span :class="{ 'eqt-tag-bar__ctrl-hidden': editing }"><Pencil :size="12" /> 編輯</span></button>
 
           <button
             class="eqt-tag-bar__ctrl"
             type="button"
             @click="emit('settings')"
-          >⚙ 設定</button>
+          ><Settings :size="12" /> 設定</button>
         </div>
       </div>
     </div>
@@ -403,6 +404,7 @@ function onRightClick(event: MouseEvent, tag: string) {
   }
 
   &__line-wrap {
+    position: relative;
     display: flex;
     align-items: flex-start;
     gap: 4px;
@@ -413,13 +415,16 @@ function onRightClick(event: MouseEvent, tag: string) {
   }
 
   &__handle {
-    flex-shrink: 0;
+    position: absolute;
+    right: 100%;
+    top: 0;
+    display: flex;
+    align-items: center;
+    height: 24px;
     cursor: grab;
     color: var(--eqt-text-hint);
-    font-size: 14px;
-    line-height: 24px;
     user-select: none;
-    padding: 0 2px;
+    padding: 0 4px 0 0;
 
     &:hover {
       color: var(--eqt-text-secondary);
@@ -427,6 +432,11 @@ function onRightClick(event: MouseEvent, tag: string) {
 
     &:active {
       cursor: grabbing;
+    }
+
+    &--hidden {
+      visibility: hidden;
+      pointer-events: none;
     }
   }
 
@@ -456,12 +466,13 @@ function onRightClick(event: MouseEvent, tag: string) {
 
   &__line-delete {
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    height: 24px;
     border: none;
     background: transparent;
     color: var(--eqt-text-hint);
     cursor: pointer;
-    font-size: 12px;
-    line-height: 24px;
     padding: 0 2px;
 
     &:hover {

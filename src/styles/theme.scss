@@ -1,3 +1,8 @@
+#eqt-app svg,
+#eqt-bar-anchor svg {
+  vertical-align: middle;
+}
+
 // Light theme (e-hentai.org) — on :root so Teleported content inherits
 :root {
   --eqt-bg: #edebdf;

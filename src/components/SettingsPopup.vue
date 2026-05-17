@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { GripVertical } from '@lucide/vue'
 import { useSortable } from '@/composables/useSortable'
 import { NS_LABEL } from '@/types'
 
@@ -87,7 +88,7 @@ function toggleNs(ns: string) {
           />
           <span class="eqt-settings__ns-label">{{ NS_LABEL[ns] ?? ns }}</span>
           <span class="eqt-settings__ns-key">{{ ns }}</span>
-          <span class="eqt-settings__ns-grip">⠿</span>
+          <span class="eqt-settings__ns-grip"><GripVertical :size="14" /></span>
         </li>
       </ul>
 
