@@ -22,7 +22,7 @@ interface PersistedSettings {
   fontWeight: string
 }
 
-const DEFAULT_TAG_LINES: QuickTag[][] = [
+export const DEFAULT_TAG_LINES: QuickTag[][] = [
   [
     { tag: 'language:"chinese"$', label: '中文' },
     { tag: 'language:"english"$', label: '英語' },
@@ -90,7 +90,7 @@ export async function loadStore(): Promise<void> {
     } else {
       lines = DEFAULT_TAG_LINES
     }
-    profiles.splice(0, profiles.length, { name: '預設', tagLines: lines })
+    profiles.splice(0, profiles.length, { name: '預設標籤組', tagLines: lines })
     activeProfileIdx.value = 0
   }
 

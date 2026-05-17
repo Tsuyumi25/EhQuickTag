@@ -248,7 +248,7 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
             class="eqt-tag-bar__profile-split-name"
             type="button"
             @click="startRenameOrCreate"
-          >{{ onCreationPage ? '點擊並命名創建' : profileName }}</button>
+          >{{ onCreationPage ? '點擊命名新標籤組' : profileName }}</button>
           <button
             class="eqt-tag-bar__profile-split-delete"
             :class="{ 'eqt-tag-bar__profile-split-delete--hidden': !editing || onCreationPage }"
