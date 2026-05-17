@@ -17,11 +17,29 @@ const emit = defineEmits<{
 
 const label = ref('')
 const url = ref('')
+const urlMode = ref<'eh' | 'full'>('eh')
 const fetchingTitle = ref(false)
+
+const EH_DOMAINS = ['e-hentai.org', 'exhentai.org']
+
+function detectMode(raw: string): { mode: 'eh' | 'full'; path: string } {
+  if (!raw || raw.startsWith('?') || raw.startsWith('/')) {
+    return { mode: 'eh', path: raw }
+  }
+  try {
+    const u = new URL(raw, 'https://e-hentai.org')
+    if (EH_DOMAINS.includes(u.hostname)) {
+      return { mode: 'eh', path: u.pathname + u.search }
+    }
+  } catch { /* not a valid URL */ }
+  return { mode: 'full', path: raw }
+}
 
 watch(() => props.tag, (t) => {
   label.value = t.label ?? ''
-  url.value = t.url ?? ''
+  const detected = detectMode(t.url ?? '')
+  urlMode.value = detected.mode
+  url.value = detected.path
 }, { immediate: true })
 
 function onGlobalKeydown(e: KeyboardEvent) {
@@ -70,7 +88,8 @@ function fetchTitle() {
 function onSave() {
   const trimmedUrl = url.value.trim()
   if (!trimmedUrl) return
-  emit('save', { tag: '', url: trimmedUrl, label: label.value.trim() || undefined })
+  const finalUrl = urlMode.value === 'eh' ? detectMode(trimmedUrl).path : trimmedUrl
+  emit('save', { tag: '', url: finalUrl, label: label.value.trim() || undefined })
 }
 </script>
 
@@ -91,12 +110,20 @@ function onSave() {
       <div class="eqt-popup__field">
         <label class="eqt-popup__label">網址</label>
         <div class="eqt-popup__url-row">
+          <select
+            v-model="urlMode"
+            class="eqt-popup__url-prefix"
+          >
+            <option value="eh">e[-x]hentai.org</option>
+            <option value="full">完整網址</option>
+          </select>
           <input
             v-model="url"
             class="eqt-popup__input"
-            placeholder="https://..."
+            :placeholder="urlMode === 'eh' ? '/?f_cats=991' : 'https://...'"
           />
           <button
+            v-if="urlMode === 'full'"
             class="eqt-popup__btn"
             type="button"
             :disabled="fetchingTitle || !url.trim()"
@@ -132,6 +159,22 @@ function onSave() {
 
   .eqt-popup__input {
     flex: 1;
+    min-width: 0;
+  }
+}
+
+.eqt-popup__url-prefix {
+  padding: 4px 6px;
+  border: var(--eqt-border-width) solid var(--eqt-border);
+  border-radius: 3px;
+  font-size: 13px;
+  background: var(--eqt-bg-elevated);
+  color: var(--eqt-text);
+  flex-shrink: 0;
+
+  &:focus {
+    outline: none;
+    border-color: var(--eqt-border-focus);
   }
 }
 </style>
