@@ -34,6 +34,7 @@ const emit = defineEmits<{
   'nextProfile': []
   'renameProfile': [name: string]
   'createProfile': [name: string]
+  'deleteProfile': []
 }>()
 
 const editing = ref(false)
@@ -276,12 +277,21 @@ function onRightClick(event: MouseEvent, tag: string) {
           @keydown.escape="renamingProfile = false"
           @blur="finishRenameOrCreate"
         />
-        <button
-          v-else
-          class="eqt-tag-bar__profile-name"
-          type="button"
-          @click="startRenameOrCreate"
-        >{{ onCreationPage ? '點擊並命名創建' : profileName }}</button>
+        <div v-else class="eqt-tag-bar__profile-split">
+          <button
+            class="eqt-tag-bar__profile-split-name"
+            type="button"
+            @click="startRenameOrCreate"
+          >{{ onCreationPage ? '點擊並命名創建' : profileName }}</button>
+          <button
+            class="eqt-tag-bar__profile-split-delete"
+            :class="{ 'eqt-tag-bar__profile-split-delete--hidden': !editing || onCreationPage }"
+            type="button"
+            :tabindex="(!editing || onCreationPage) ? -1 : undefined"
+            :disabled="profileCount <= 1"
+            @click="emit('deleteProfile')"
+          >🗑</button>
+        </div>
         <button
           class="eqt-tag-bar__profile-nav eqt-tag-bar__profile-nav--next"
           type="button"
@@ -475,12 +485,16 @@ function onRightClick(event: MouseEvent, tag: string) {
 
   &__profile-row {
     display: flex;
-    align-items: center;
+    align-items: stretch;
     gap: 4px;
   }
 
+
   &__profile-nav {
     flex: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     padding: 2px 6px;
     border: var(--eqt-border-width) solid var(--eqt-border);
     border-radius: 3px;
@@ -508,11 +522,20 @@ function onRightClick(event: MouseEvent, tag: string) {
     }
   }
 
-  &__profile-name {
+  &__profile-split {
     flex: 5;
-    padding: 2px 8px;
+    display: flex;
+    align-items: stretch;
+    padding: 0;
     border: var(--eqt-border-width) solid var(--eqt-border);
     border-radius: 3px;
+    min-width: 0;
+  }
+
+  &__profile-split-name {
+    flex: 1;
+    padding: 0;
+    border: none;
     background: transparent;
     color: var(--eqt-text-secondary);
     cursor: pointer;
@@ -527,6 +550,32 @@ function onRightClick(event: MouseEvent, tag: string) {
 
     &:hover {
       background: var(--eqt-bg-hover);
+    }
+  }
+
+  &__profile-split-delete {
+    flex-shrink: 0;
+    padding: 2px 8px;
+    border: none;
+    border-left: var(--eqt-border-width) solid var(--eqt-border);
+    background: transparent;
+    color: var(--eqt-text-hint);
+    cursor: pointer;
+    font-size: 11px;
+    line-height: 1.4;
+
+    &:hover:not(:disabled) {
+      background: rgba(140, 51, 51, 0.15);
+      color: #8c3333;
+    }
+
+    &:disabled {
+      opacity: 0.3;
+      cursor: default;
+    }
+
+    &--hidden {
+      visibility: hidden;
     }
   }
 

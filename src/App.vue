@@ -4,7 +4,7 @@ import TagBar from '@/components/TagBar.vue'
 import TagConfigPopup from '@/components/TagConfigPopup.vue'
 import UrlConfigPopup from '@/components/UrlConfigPopup.vue'
 import SettingsPopup from '@/components/SettingsPopup.vue'
-import { tagLines, useNhWeight, nsOrder, disabledNs, profiles, activeProfileIdx, switchProfile, renameProfile, createProfile } from '@/services/store'
+import { tagLines, useNhWeight, nsOrder, disabledNs, profiles, activeProfileIdx, switchProfile, renameProfile, createProfile, deleteProfile } from '@/services/store'
 
 const effectiveNsOrder = computed(() => nsOrder.value.filter(ns => !disabledNs.value.has(ns)))
 
@@ -32,6 +32,10 @@ function onRenameProfile(name: string) {
 
 function onCreateProfile(name: string) {
   createProfile(name)
+}
+
+function onDeleteProfile() {
+  deleteProfile(activeProfileIdx.value)
 }
 
 const searchText = ref('')
@@ -159,6 +163,7 @@ watch(searchText, (val) => {
       @next-profile="onNextProfile"
       @rename-profile="onRenameProfile"
       @create-profile="onCreateProfile"
+      @delete-profile="onDeleteProfile"
       @settings="showSettings = true"
     />
   </Teleport>

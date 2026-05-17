@@ -106,6 +106,14 @@ export function createProfile(name: string): void {
   tagLines.splice(0, tagLines.length, ...Array.from({ length: lineCount }, () => []))
 }
 
+export function deleteProfile(idx: number): void {
+  if (profiles.length <= 1) return
+  profiles.splice(idx, 1)
+  const newIdx = Math.min(idx, profiles.length - 1)
+  activeProfileIdx.value = newIdx
+  tagLines.splice(0, tagLines.length, ...profiles[newIdx].tagLines)
+}
+
 // --- auto-save on change ---
 
 function saveProfiles() {
