@@ -505,7 +505,7 @@ function onRightClick(event: MouseEvent, tag: string) {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 2px 6px;
+    padding: 0 6px;
     border: var(--eqt-border-width) solid var(--eqt-border);
     border-radius: 3px;
     background: transparent;
@@ -595,11 +595,11 @@ function onRightClick(event: MouseEvent, tag: string) {
 
   &__profile-input {
     flex: 5;
-    padding: 2px 8px;
+    padding: 0;
     border: var(--eqt-border-width) solid var(--eqt-border-focus);
     border-radius: 3px;
-    background: var(--eqt-bg-elevated);
-    color: var(--eqt-text);
+    background: var(--eqt-bg);
+    color: var(--eqt-text-secondary);
     font-size: 13px;
     font-weight: bold;
     line-height: 1.4;
