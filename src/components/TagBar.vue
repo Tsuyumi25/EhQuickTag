@@ -2,7 +2,8 @@
 import { ref, computed, watch, nextTick, onUnmounted } from 'vue'
 import Sortable from 'sortablejs'
 import { ChevronLeft, ChevronRight, ExternalLink, GripVertical, Trash2, Pencil, Check, Settings } from '@lucide/vue'
-import { TagState, type QuickTag, splitMultiTag } from '@/types'
+import { TagState, type QuickTag } from '@/types'
+import { tokenize, getState as _getState, removeTag, addTag, getNextRightClickState } from '@/services/tagState'
 
 const STATE_CLASS: Record<TagState, string | null> = {
   [TagState.Include]: 'eqt-tag-bar__btn--include',
@@ -193,41 +194,10 @@ function onDeleteLine(li: number) {
 
 // --- search text parsing ---
 
-const TOKEN_RE = /[^"\s]*"[^"]*"[^\s]*|[^\s"]+/g
-
-function tokenize(text: string): string[] {
-  return text.match(TOKEN_RE) ?? []
-}
-
 const tokenSet = computed(() => new Set(tokenize(props.searchText)))
 
 function getState(tag: string): TagState {
-  const tokens = tokenSet.value
-  const parts = splitMultiTag(tag)
-  if (!parts.length) return TagState.Off
-
-  if (parts.every(p => tokens.has(`-${p}`))) return TagState.Exclude
-  if (parts.every(p => tokens.has(`~${p}`))) return TagState.Or
-  if (parts.every(p => tokens.has(p))) return TagState.Include
-  return TagState.Off
-}
-
-function removeTag(text: string, tag: string): string {
-  const tokens = tokenize(text)
-  const forms = new Set(splitMultiTag(tag).flatMap(p => [p, `~${p}`, `-${p}`]))
-  return tokens.filter(t => !forms.has(t)).join(' ')
-}
-
-function addTag(text: string, tag: string, state: TagState): string {
-  const tokens = tokenize(text)
-
-  for (const p of splitMultiTag(tag)) {
-    if (state === TagState.Include) tokens.push(p)
-    else if (state === TagState.Or) tokens.push(`~${p}`)
-    else if (state === TagState.Exclude) tokens.push(`-${p}`)
-  }
-
-  return tokens.join(' ')
+  return _getState(tag, tokenSet.value)
 }
 
 // --- normal mode handlers ---
@@ -242,20 +212,15 @@ function onLeftClick(tag: string) {
   )
 }
 
-const MODIFIER_CYCLE: Record<number, TagState> = {
-  [TagState.Off]: TagState.Or,
-  [TagState.Include]: TagState.Or,
-  [TagState.Or]: TagState.Exclude,
-  [TagState.Exclude]: TagState.Or,
-}
-
-function onRightClick(event: MouseEvent, tag: string) {
+function onRightClick(event: MouseEvent, qt: QuickTag) {
   event.preventDefault()
 
-  const state = getState(tag)
-  const next = MODIFIER_CYCLE[state]
-  const cleaned = removeTag(props.searchText, tag)
-  emit('update:searchText', addTag(cleaned, tag, next))
+  const state = getState(qt.tag)
+  const next = getNextRightClickState(qt, state)
+  if (next === null) return
+
+  const cleaned = removeTag(props.searchText, qt.tag)
+  emit('update:searchText', addTag(cleaned, qt.tag, next))
 }
 </script>
 
@@ -347,7 +312,7 @@ function onRightClick(event: MouseEvent, tag: string) {
               :class="editing ? 'eqt-tag-bar__btn--editing' : STATE_CLASS[getState(qt.tag)]"
               type="button"
               @click="editing ? emit('configure', li, ti) : onLeftClick(qt.tag)"
-              @contextmenu.prevent="!editing && onRightClick($event, qt.tag)"
+              @contextmenu.prevent="!editing && onRightClick($event, qt)"
             >{{ qt.label || qt.tag }}</button>
           </template>
         </div>

@@ -5,10 +5,13 @@ export enum TagState {
   Exclude = 3,
 }
 
+export type TagMode = 'or' | 'exclude'
+
 export interface QuickTag {
   tag: string
   label?: string
   url?: string
+  disabledModes?: readonly TagMode[]
 }
 
 export function splitMultiTag(tag: string): string[] {

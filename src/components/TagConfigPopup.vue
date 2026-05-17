@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reactive, ref, watch, onMounted, onUnmounted, nextTick } from 'vue'
-import { type QuickTag, NS_LABEL, splitMultiTag } from '@/types'
+import { type QuickTag, type TagMode, NS_LABEL, splitMultiTag } from '@/types'
 import { loadTagDb, searchTags, type TagEntry } from '@/services/tagDb'
 import { loadNhPopularity } from '@/services/nhPopularity'
 
@@ -21,6 +21,8 @@ const label = ref('')
 const tagRows = reactive<string[]>([])
 const tagInputs = ref<HTMLInputElement[]>([])
 const dbReady = ref(false)
+const orEnabled = ref(true)
+const excludeEnabled = ref(true)
 
 // Per-row search state
 const activeRow = ref(-1)
@@ -33,6 +35,9 @@ watch(() => props.tag, (t) => {
   const parts = t.tag ? splitMultiTag(t.tag) : []
   tagRows.splice(0, tagRows.length, ...parts)
   tagRows.push('')
+  const disabled = new Set(t.disabledModes ?? [])
+  orEnabled.value = !disabled.has('or')
+  excludeEnabled.value = !disabled.has('exclude')
 }, { immediate: true })
 
 onMounted(async () => {
@@ -143,7 +148,14 @@ function onRowKeydown(e: KeyboardEvent, rowIdx: number) {
 function onSave() {
   const joined = tagRows.map(t => t.trim()).filter(Boolean).join(', ')
   if (!joined) return
-  emit('save', { tag: joined, label: label.value.trim() || undefined })
+  const disabled: TagMode[] = []
+  if (!orEnabled.value) disabled.push('or')
+  if (!excludeEnabled.value) disabled.push('exclude')
+  emit('save', {
+    tag: joined,
+    label: label.value.trim() || undefined,
+    disabledModes: disabled.length ? disabled : undefined,
+  })
 }
 </script>
 
@@ -201,6 +213,22 @@ function onSave() {
               <span class="eqt-popup__suggestion-tag">{{ entry.fullTag }}</span>
             </li>
           </ul>
+        </div>
+      </div>
+
+      <hr class="eqt-popup__divider" />
+
+      <div class="eqt-popup__field">
+        <label class="eqt-popup__label">右鍵模式</label>
+        <div class="eqt-popup__modes">
+          <label class="eqt-popup__mode">
+            <input type="checkbox" v-model="orEnabled" />
+            <span>Or（~）</span>
+          </label>
+          <label class="eqt-popup__mode">
+            <input type="checkbox" v-model="excludeEnabled" />
+            <span>Exclude（-）</span>
+          </label>
         </div>
       </div>
 
@@ -376,6 +404,20 @@ function onSave() {
     font-size: 11px;
     color: var(--eqt-text-hint);
     flex-shrink: 0;
+  }
+
+  &__modes {
+    display: flex;
+    gap: 12px;
+  }
+
+  &__mode {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    user-select: none;
   }
 
   &__actions {

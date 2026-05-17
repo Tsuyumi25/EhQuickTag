@@ -20,6 +20,7 @@
     "typescript": "^6.0.3",
     "vite": "^8.0.13",
     "vite-plugin-monkey": "^8.0.5",
+    "vitest": "^4.1.6",
     "vue-tsc": "^3.2.9"
   },
   "packageManager": "pnpm@10.28.0"

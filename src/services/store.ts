@@ -25,15 +25,15 @@ const DEFAULT_TAG_LINES: QuickTag[][] = [
     { tag: 'language:"chinese"$', label: '中文' },
     { tag: 'language:"english"$', label: '英語' },
     { tag: 'language:"korean"$', label: '韓語' },
-    { tag: '-language:"english"$, -language:"chinese"$, -language:"korean"$', label: '日語' },
+    { tag: '-language:"english"$, -language:"chinese"$, -language:"korean"$', label: '日語', disabledModes: ['or', 'exclude'] },
   ],
   [
     { tag: 'other:"full color"$', label: '全彩' },
     { tag: 'other:"uncensored"$', label: '無修正' },
     { tag: 'language:"translated"$', label: '已翻譯' },
     { tag: 'language:"speechless"$', label: '無對話' },
-    { tag: '-other:"ai generated"$', label: '排除AI' },
-    { tag: '-other:"rough translation"$', label: '排除機翻' },
+    { tag: '-other:"ai generated"$', label: '排除AI', disabledModes: ['or', 'exclude'] },
+    { tag: '-other:"rough translation"$', label: '排除機翻', disabledModes: ['or', 'exclude'] },
   ],
   [
     { tag: '', url: '?f_cats=0&f_search=other%3A%22how+to%24%22', label: '教學' },
