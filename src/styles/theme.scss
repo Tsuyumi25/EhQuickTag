@@ -1,6 +1,7 @@
-#eqt-app svg,
-#eqt-bar-anchor svg {
-  vertical-align: middle;
+
+#eqt-app button,
+#eqt-bar-anchor button {
+  font: inherit;
 }
 
 // Light theme (e-hentai.org) — on :root so Teleported content inherits

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onUnmounted } from 'vue'
 import Sortable from 'sortablejs'
-import { ChevronLeft, ChevronRight, ExternalLink, GripVertical, Trash2, Pencil, Check, Settings } from '@lucide/vue'
+import { ChevronLeft, ChevronRight, ExternalLink, GripVertical, Trash2, Pencil, Check, Settings, Plus } from '@lucide/vue'
 import { TagState, type QuickTag } from '@/types'
 import { tokenize, getState as _getState, removeTag, addTag, getNextRightClickState } from '@/services/tagState'
 
@@ -325,13 +325,13 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
           class="eqt-tag-bar__line-add"
           type="button"
           @click="onAddLine"
-        >+ 新增行</button>
+        ><Plus :size="12" /> 新增行</button>
         <div class="eqt-tag-bar__controls">
           <button
             class="eqt-tag-bar__ctrl"
             type="button"
             @click="emit('add')"
-          >+ 新增標籤</button>
+          ><Plus :size="12" /> 新增標籤</button>
 
           <button
             class="eqt-tag-bar__ctrl"
@@ -577,6 +577,9 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
   }
 
   &__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
     padding: 2px 8px;
     border: var(--eqt-border-width) solid var(--eqt-border);
     border-radius: 3px;
@@ -650,6 +653,9 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
   }
 
   &__ctrl {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
     padding: 2px 6px;
     border: var(--eqt-border-width) solid var(--eqt-border);
     border-radius: 3px;
