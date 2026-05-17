@@ -22,10 +22,27 @@ interface PersistedSettings {
 
 const DEFAULT_TAG_LINES: QuickTag[][] = [
   [
-    { tag: 'language:"chinese"$', label: 'Chinese' },
-    { tag: 'language:"japanese"$', label: 'Japanese' },
-    { tag: 'language:"english"$', label: 'English' },
+    { tag: 'language:"chinese"$', label: '中文' },
+    { tag: 'language:"english"$', label: '英語' },
+    { tag: 'language:"korean"$', label: '韓語' },
+    { tag: '-language:"english"$, -language:"chinese"$, -language:"korean"$', label: '日語' },
   ],
+  [
+    { tag: 'other:"full color"$', label: '全彩' },
+    { tag: 'other:"uncensored"$', label: '無修正' },
+    { tag: 'language:"translated"$', label: '已翻譯' },
+    { tag: 'language:"speechless"$', label: '無對話' },
+    { tag: '-other:"ai generated"$', label: '排除AI' },
+    { tag: '-other:"rough translation"$', label: '排除機翻' },
+  ],
+  [
+    { tag: '', url: '?f_cats=0&f_search=other%3A%22how+to%24%22', label: '教學' },
+    { tag: '', url: '?f_cats=0&f_search=o%3Aartbook%24', label: '畫集' },
+    { tag: '', url: '?f_cats=991', label: '圖集' },
+    { tag: '', url: '?f_cats=1019&f_search=o%3Atankoubon%24', label: '單行本' },
+    { tag: '', url: '?f_cats=1019&f_search=o%3Aanthology%24', label: '選集' },
+  ],
+  [],
 ]
 
 const DEFAULT_SETTINGS: PersistedSettings = {
