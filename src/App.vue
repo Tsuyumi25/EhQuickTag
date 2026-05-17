@@ -4,9 +4,17 @@ import TagBar from '@/components/TagBar.vue'
 import TagConfigPopup from '@/components/TagConfigPopup.vue'
 import UrlConfigPopup from '@/components/UrlConfigPopup.vue'
 import SettingsPopup from '@/components/SettingsPopup.vue'
-import { tagLines, useNhWeight, nsOrder, disabledNs, profiles, activeProfileIdx, switchProfile, renameProfile, createProfile, deleteProfile } from '@/services/store'
+import { tagLines, useNhWeight, nsOrder, disabledNs, fontFamily, fontWeight, profiles, activeProfileIdx, switchProfile, renameProfile, createProfile, deleteProfile } from '@/services/store'
 
 const effectiveNsOrder = computed(() => nsOrder.value.filter(ns => !disabledNs.value.has(ns)))
+
+watch([fontFamily, fontWeight], () => {
+  const root = document.documentElement
+  if (fontFamily.value) root.style.setProperty('--eqt-font-family', fontFamily.value)
+  else root.style.removeProperty('--eqt-font-family')
+  if (fontWeight.value) root.style.setProperty('--eqt-font-weight', fontWeight.value)
+  else root.style.removeProperty('--eqt-font-weight')
+}, { immediate: true })
 
 const prevProfileName = computed(() => {
   const idx = activeProfileIdx.value - 1

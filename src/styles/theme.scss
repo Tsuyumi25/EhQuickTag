@@ -1,3 +1,8 @@
+#eqt-app,
+#eqt-bar-anchor {
+  font-family: var(--eqt-font-family, inherit);
+  font-weight: var(--eqt-font-weight, inherit);
+}
 
 #eqt-app button,
 #eqt-bar-anchor button {

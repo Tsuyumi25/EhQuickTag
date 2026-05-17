@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue'
 import { GripVertical, Undo2, Trash2 } from '@lucide/vue'
 import { useSortable } from '@/composables/useSortable'
 import { NS_LABEL } from '@/types'
-import { deletedProfiles, restoreProfile, purgeProfile } from '@/services/store'
+import { deletedProfiles, restoreProfile, purgeProfile, fontFamily, fontWeight } from '@/services/store'
 
 const props = defineProps<{
   useNhWeight: boolean
@@ -92,6 +92,42 @@ function toggleNs(ns: string) {
           <span class="eqt-settings__ns-grip"><GripVertical :size="14" /></span>
         </li>
       </ul>
+
+      <h4 class="eqt-settings__subtitle">自定義字體</h4>
+      <div class="eqt-settings__font-row">
+        <input
+          :value="fontFamily"
+          class="eqt-settings__font-input"
+          placeholder="留空則使用頁面字體"
+          @input="fontFamily = ($event.target as HTMLInputElement).value"
+        />
+      </div>
+      <div class="eqt-settings__font-row">
+        <label class="eqt-settings__font-label">字重</label>
+        <select
+          :value="fontWeight"
+          class="eqt-settings__font-input eqt-settings__font-select"
+          @change="fontWeight = ($event.target as HTMLSelectElement).value"
+        >
+          <option value="">預設</option>
+          <option value="100">100 Thin</option>
+          <option value="200">200 Extra Light</option>
+          <option value="300">300 Light</option>
+          <option value="400">400 Normal</option>
+          <option value="500">500 Medium</option>
+          <option value="600">600 Semi Bold</option>
+          <option value="700">700 Bold</option>
+          <option value="800">800 Extra Bold</option>
+          <option value="900">900 Black</option>
+        </select>
+      </div>
+      <p class="eqt-settings__hint">
+        font-family 值範例：<code>"Noto Sans TC", sans-serif</code>
+      </p>
+      <div class="eqt-settings__font-preview" :style="{ fontFamily: fontFamily || 'inherit', fontWeight: fontWeight || 'inherit' }">
+        The quick brown fox jumps over the lazy dog<br />
+        天地玄黃，宇宙洪荒。日月盈昃，辰宿列張。
+      </div>
 
       <template v-if="deletedProfiles.length">
         <h4 class="eqt-settings__subtitle">已刪除的 Profile</h4>
@@ -198,6 +234,46 @@ function toggleNs(ns: string) {
     color: var(--eqt-grip);
     cursor: grab;
     user-select: none;
+  }
+
+  &__font-row {
+    margin-top: 4px;
+  }
+
+  &__font-label {
+    font-size: 12px;
+    font-weight: bold;
+    margin-right: 6px;
+  }
+
+  &__font-select {
+    width: auto;
+  }
+
+  &__font-input {
+    padding: 4px 6px;
+    border: var(--eqt-border-width) solid var(--eqt-border);
+    border-radius: 3px;
+    font-size: 13px;
+    background: var(--eqt-bg-elevated);
+    color: var(--eqt-text);
+    box-sizing: border-box;
+
+    &:focus {
+      outline: none;
+      border-color: var(--eqt-border-focus);
+    }
+  }
+
+  &__font-preview {
+    margin-top: 6px;
+    padding: 8px;
+    border: var(--eqt-border-width) solid var(--eqt-border);
+    border-radius: 3px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--eqt-text);
+    background: var(--eqt-bg-elevated);
   }
 
   &__deleted-name {

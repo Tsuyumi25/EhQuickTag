@@ -18,6 +18,8 @@ interface PersistedSettings {
   useNhWeight: boolean
   nsOrder: string[]
   disabledNs: string[]
+  fontFamily: string
+  fontWeight: string
 }
 
 const DEFAULT_TAG_LINES: QuickTag[][] = [
@@ -49,6 +51,8 @@ const DEFAULT_SETTINGS: PersistedSettings = {
   useNhWeight: true,
   nsOrder: DEFAULT_NS_ORDER,
   disabledNs: [],
+  fontFamily: '',
+  fontWeight: '',
 }
 
 // --- reactive state ---
@@ -60,6 +64,8 @@ export const tagLines = reactive<QuickTag[][]>([])
 export const useNhWeight = ref(true)
 export const nsOrder = ref<string[]>([...DEFAULT_NS_ORDER])
 export const disabledNs = ref(new Set<string>())
+export const fontFamily = ref('')
+export const fontWeight = ref('')
 
 // --- load from GM ---
 
@@ -97,6 +103,8 @@ export async function loadStore(): Promise<void> {
   useNhWeight.value = s.useNhWeight
   nsOrder.value = s.nsOrder
   disabledNs.value = new Set(s.disabledNs)
+  fontFamily.value = s.fontFamily
+  fontWeight.value = s.fontWeight
 }
 
 // --- profile switching ---
@@ -161,11 +169,13 @@ function saveSettings() {
     useNhWeight: useNhWeight.value,
     nsOrder: nsOrder.value,
     disabledNs: [...disabledNs.value],
+    fontFamily: fontFamily.value,
+    fontWeight: fontWeight.value,
   }
   GM.setValue(KEYS.settings, JSON.stringify(data))
 }
 
 export function startAutoSave(): void {
   watch([tagLines, deletedProfiles], saveProfiles)
-  watch([useNhWeight, nsOrder, disabledNs], saveSettings, { deep: true })
+  watch([useNhWeight, nsOrder, disabledNs, fontFamily, fontWeight], saveSettings, { deep: true })
 }
