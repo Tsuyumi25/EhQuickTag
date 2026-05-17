@@ -532,6 +532,8 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
     right: 0;
     top: 0;
     bottom: 0;
+    display: flex;
+    align-items: center;
     padding: 0 8px;
     border: none;
     border-left: var(--eqt-border-width) solid var(--eqt-border);
@@ -670,10 +672,14 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
     }
 
     &--toggle {
-      display: grid;
+      display: inline-grid;
+      align-items: center;
 
       > * {
         grid-area: 1 / 1;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
       }
     }
   }
