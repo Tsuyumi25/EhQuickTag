@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { GripVertical } from '@lucide/vue'
+import { GripVertical, Undo2, Trash2 } from '@lucide/vue'
 import { useSortable } from '@/composables/useSortable'
 import { NS_LABEL } from '@/types'
+import { deletedProfiles, restoreProfile, purgeProfile } from '@/services/store'
 
 const props = defineProps<{
   useNhWeight: boolean
@@ -92,6 +93,26 @@ function toggleNs(ns: string) {
         </li>
       </ul>
 
+      <template v-if="deletedProfiles.length">
+        <h4 class="eqt-settings__subtitle">已刪除的 Profile</h4>
+        <ul class="eqt-settings__ns-list">
+          <li
+            v-for="(p, i) in deletedProfiles"
+            :key="i"
+            class="eqt-settings__ns-item"
+          >
+            <span class="eqt-settings__deleted-name">{{ p.name }}</span>
+            <span class="eqt-settings__deleted-count">{{ p.tagLines.flat().length }} 標籤</span>
+            <button class="eqt-settings__deleted-btn" type="button" title="恢復" @click="restoreProfile(i)">
+              <Undo2 :size="12" />
+            </button>
+            <button class="eqt-settings__deleted-btn eqt-settings__deleted-btn--purge" type="button" title="永久刪除" @click="purgeProfile(i)">
+              <Trash2 :size="12" />
+            </button>
+          </li>
+        </ul>
+      </template>
+
       <div class="eqt-popup__actions">
         <div class="eqt-popup__spacer" />
         <button class="eqt-popup__btn eqt-popup__btn--primary" type="button" @click="emit('close')">
@@ -177,6 +198,43 @@ function toggleNs(ns: string) {
     color: var(--eqt-grip);
     cursor: grab;
     user-select: none;
+  }
+
+  &__deleted-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__deleted-count {
+    font-size: 11px;
+    color: var(--eqt-text-hint);
+    flex-shrink: 0;
+  }
+
+  &__deleted-btn {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: 3px;
+    background: transparent;
+    color: var(--eqt-text-hint);
+    cursor: pointer;
+
+    &:hover {
+      background: var(--eqt-bg-active);
+      color: var(--eqt-text);
+    }
+
+    &--purge:hover {
+      color: #8c3333;
+    }
   }
 }
 </style>

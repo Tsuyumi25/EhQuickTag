@@ -37,6 +37,7 @@ const DEFAULT_SETTINGS: PersistedSettings = {
 // --- reactive state ---
 
 export const profiles = reactive<Profile[]>([])
+export const deletedProfiles = reactive<Profile[]>([])
 export const activeProfileIdx = ref(0)
 export const tagLines = reactive<QuickTag[][]>([])
 export const useNhWeight = ref(true)
@@ -54,8 +55,9 @@ export async function loadStore(): Promise<void> {
 
   // profiles — migrate from legacy eqt_tags if needed
   if (savedProfiles) {
-    const data = JSON.parse(savedProfiles) as { active: number; profiles: Profile[] }
+    const data = JSON.parse(savedProfiles) as { active: number; profiles: Profile[]; deleted?: Profile[] }
     profiles.splice(0, profiles.length, ...data.profiles)
+    deletedProfiles.splice(0, deletedProfiles.length, ...(data.deleted ?? []))
     activeProfileIdx.value = Math.min(Math.max(data.active, 0), profiles.length - 1)
   } else {
     let lines: QuickTag[][]
@@ -108,10 +110,22 @@ export function createProfile(name: string): void {
 
 export function deleteProfile(idx: number): void {
   if (profiles.length <= 1) return
-  profiles.splice(idx, 1)
-  const newIdx = Math.min(idx, profiles.length - 1)
+  syncTagLinesToActiveProfile()
+  const [removed] = profiles.splice(idx, 1)
+  deletedProfiles.push(removed)
+  const active = activeProfileIdx.value
+  const newIdx = idx < active ? active - 1 : Math.min(idx, profiles.length - 1)
   activeProfileIdx.value = newIdx
   tagLines.splice(0, tagLines.length, ...profiles[newIdx].tagLines)
+}
+
+export function restoreProfile(idx: number): void {
+  const [restored] = deletedProfiles.splice(idx, 1)
+  profiles.push(restored)
+}
+
+export function purgeProfile(idx: number): void {
+  deletedProfiles.splice(idx, 1)
 }
 
 // --- auto-save on change ---
@@ -121,6 +135,7 @@ function saveProfiles() {
   GM.setValue(KEYS.profiles, JSON.stringify({
     active: activeProfileIdx.value,
     profiles: profiles.map(p => ({ name: p.name, tagLines: p.tagLines })),
+    deleted: deletedProfiles.map(p => ({ name: p.name, tagLines: p.tagLines })),
   }))
 }
 
@@ -134,6 +149,6 @@ function saveSettings() {
 }
 
 export function startAutoSave(): void {
-  watch(tagLines, saveProfiles)
+  watch([tagLines, deletedProfiles], saveProfiles)
   watch([useNhWeight, nsOrder, disabledNs], saveSettings, { deep: true })
 }
