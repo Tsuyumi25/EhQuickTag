@@ -374,10 +374,10 @@ function onRightClick(event: MouseEvent, tag: string) {
           >↗ 新增網址</button>
 
           <button
-            class="eqt-tag-bar__ctrl"
+            class="eqt-tag-bar__ctrl eqt-tag-bar__ctrl--toggle"
             type="button"
             @click="editing = !editing"
-          >{{ editing ? '✓ 完成' : '✎ 編輯' }}</button>
+          ><span :class="{ 'eqt-tag-bar__ctrl-hidden': !editing }">✓ 完成</span><span :class="{ 'eqt-tag-bar__ctrl-hidden': editing }">✎ 編輯</span></button>
 
           <button
             class="eqt-tag-bar__ctrl"
@@ -683,6 +683,18 @@ function onRightClick(event: MouseEvent, tag: string) {
     &:hover {
       background: var(--eqt-bg-hover);
     }
+
+    &--toggle {
+      display: grid;
+
+      > * {
+        grid-area: 1 / 1;
+      }
+    }
+  }
+
+  &__ctrl-hidden {
+    visibility: hidden;
   }
 }
 </style>
