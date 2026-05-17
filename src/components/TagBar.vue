@@ -524,16 +524,15 @@ function onRightClick(event: MouseEvent, tag: string) {
 
   &__profile-split {
     flex: 5;
-    display: flex;
-    align-items: stretch;
-    padding: 0;
+    position: relative;
     border: var(--eqt-border-width) solid var(--eqt-border);
     border-radius: 3px;
     min-width: 0;
   }
 
   &__profile-split-name {
-    flex: 1;
+    display: block;
+    width: 100%;
     padding: 0;
     border: none;
     background: transparent;
@@ -554,10 +553,14 @@ function onRightClick(event: MouseEvent, tag: string) {
   }
 
   &__profile-split-delete {
-    flex-shrink: 0;
-    padding: 2px 8px;
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    padding: 0 8px;
     border: none;
     border-left: var(--eqt-border-width) solid var(--eqt-border);
+    border-radius: 0 3px 3px 0;
     background: transparent;
     color: var(--eqt-text-hint);
     cursor: pointer;
@@ -576,6 +579,7 @@ function onRightClick(event: MouseEvent, tag: string) {
 
     &--hidden {
       visibility: hidden;
+      pointer-events: none;
     }
   }
 
