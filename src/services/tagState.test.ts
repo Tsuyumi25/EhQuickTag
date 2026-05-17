@@ -555,8 +555,8 @@ describe('getNextRightClickState', () => {
       expect(getNextRightClickState(qt, TagState.Or)).toBe(TagState.Exclude)
     })
 
-    it('Exclude → Or', () => {
-      expect(getNextRightClickState(qt, TagState.Exclude)).toBe(TagState.Or)
+    it('Exclude → Off', () => {
+      expect(getNextRightClickState(qt, TagState.Exclude)).toBe(TagState.Off)
     })
   })
 
@@ -571,8 +571,8 @@ describe('getNextRightClickState', () => {
       expect(getNextRightClickState(qt, TagState.Include)).toBe(TagState.Exclude)
     })
 
-    it('Exclude → Exclude (single modifier cycles to self)', () => {
-      expect(getNextRightClickState(qt, TagState.Exclude)).toBe(TagState.Exclude)
+    it('Exclude → Off (single modifier cycles back)', () => {
+      expect(getNextRightClickState(qt, TagState.Exclude)).toBe(TagState.Off)
     })
   })
 
@@ -587,8 +587,8 @@ describe('getNextRightClickState', () => {
       expect(getNextRightClickState(qt, TagState.Include)).toBe(TagState.Exclude)
     })
 
-    it('Exclude → Exclude (single modifier)', () => {
-      expect(getNextRightClickState(qt, TagState.Exclude)).toBe(TagState.Exclude)
+    it('Exclude → Off', () => {
+      expect(getNextRightClickState(qt, TagState.Exclude)).toBe(TagState.Off)
     })
   })
 
@@ -631,7 +631,7 @@ describe('round-trip: positive tag', () => {
     expect(getState(tag, new Set(tokenize(text)))).toBe(TagState.Off)
   })
 
-  it('right-click cycle: Off → Or → Exclude → Or', () => {
+  it('right-click cycle: Off → Or → Exclude → Off', () => {
     const qt = { tag }
     let text = ''
 
@@ -645,10 +645,10 @@ describe('round-trip: positive tag', () => {
     expect(text).toBe('-language:"chinese"$')
     expect(getState(tag, new Set(tokenize(text)))).toBe(TagState.Exclude)
 
-    // Exclude → Or
-    text = addTag(removeTag(text, tag), tag, TagState.Or)
-    expect(text).toBe('~language:"chinese"$')
-    expect(getState(tag, new Set(tokenize(text)))).toBe(TagState.Or)
+    // Exclude → Off
+    text = removeTag(text, tag)
+    expect(text).toBe('')
+    expect(getState(tag, new Set(tokenize(text)))).toBe(TagState.Off)
   })
 })
 
@@ -726,10 +726,10 @@ describe('round-trip: composite mixed (chinese + exclude AI)', () => {
     expect(getEffectiveModifiers({ tag })).toEqual([TagState.Exclude])
   })
 
-  it('right-click cycle: Off → Exclude, Exclude stays', () => {
+  it('right-click cycle: Off → Exclude → Off', () => {
     const qt = { tag }
     expect(getNextRightClickState(qt, TagState.Off)).toBe(TagState.Exclude)
-    expect(getNextRightClickState(qt, TagState.Exclude)).toBe(TagState.Exclude)
+    expect(getNextRightClickState(qt, TagState.Exclude)).toBe(TagState.Off)
   })
 
   it('removeTag cleans Include form', () => {

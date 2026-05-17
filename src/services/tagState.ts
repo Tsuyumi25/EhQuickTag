@@ -85,5 +85,6 @@ export function getNextRightClickState(qt: QuickTag, currentState: TagState): Ta
     return modifiers[0]
   }
   const idx = modifiers.indexOf(currentState)
-  return idx === -1 ? modifiers[0] : modifiers[(idx + 1) % modifiers.length]
+  if (idx === -1) return modifiers[0]
+  return idx === modifiers.length - 1 ? TagState.Off : modifiers[idx + 1]
 }

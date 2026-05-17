@@ -220,7 +220,7 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
   if (next === null) return
 
   const cleaned = removeTag(props.searchText, qt.tag)
-  emit('update:searchText', addTag(cleaned, qt.tag, next))
+  emit('update:searchText', next === TagState.Off ? cleaned : addTag(cleaned, qt.tag, next))
 }
 </script>
 
