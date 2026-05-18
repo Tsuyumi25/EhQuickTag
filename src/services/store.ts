@@ -153,6 +153,33 @@ export function purgeProfile(idx: number): void {
   deletedProfiles.splice(idx, 1)
 }
 
+export function reorderProfiles(fromIdx: number, toIdx: number): void {
+  if (fromIdx === toIdx) return
+  syncTagLinesToActiveProfile()
+  const [moved] = profiles.splice(fromIdx, 1)
+  profiles.splice(toIdx, 0, moved)
+  // update activeProfileIdx to follow the active profile
+  const active = activeProfileIdx.value
+  if (active === fromIdx) {
+    activeProfileIdx.value = toIdx
+  } else if (fromIdx < active && toIdx >= active) {
+    activeProfileIdx.value = active - 1
+  } else if (fromIdx > active && toIdx <= active) {
+    activeProfileIdx.value = active + 1
+  }
+  saveProfiles()
+}
+
+export function updateProfileTagLines(idx: number, newTagLines: QuickTag[][]): void {
+  profiles[idx].tagLines = newTagLines
+  if (idx === activeProfileIdx.value) {
+    tagLines.splice(0, tagLines.length, ...newTagLines)
+    // watcher on tagLines will call saveProfiles()
+  } else {
+    saveProfiles()
+  }
+}
+
 // --- auto-save on change ---
 
 function saveProfiles() {

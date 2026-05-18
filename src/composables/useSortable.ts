@@ -11,15 +11,13 @@ export function useSortable(el: Ref<HTMLElement | null>, options: Sortable.Optio
   function activate(): void {
     if (el.value && !instance) {
       instance = Sortable.create(el.value, {
+        forceFallback: true,
         ...options,
         onStart: (evt) => {
           orderBeforeDrag = instance!.toArray()
           options.onStart?.(evt)
         },
         onEnd: (evt) => {
-          // Sortable moves DOM nodes directly, bypassing Vue's virtual DOM.
-          // Restore the pre-drag DOM order so Vue's reconciler can re-render
-          // from a clean baseline instead of fighting Sortable over node positions.
           instance!.sort(orderBeforeDrag)
           options.onEnd?.(evt)
         },
