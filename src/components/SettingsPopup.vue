@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, toRaw, onUnmounted } from 'vue'
-import { GripVertical, Undo2, Trash2, Copy, Download, Check } from '@lucide/vue'
+import { GripVertical, Trash2, Copy, Download, Check } from '@lucide/vue'
 import Draggable from 'vuedraggable'
 import { baseDragOptions } from '@/utils/drag'
 import { NS_LABEL, type QuickTag } from '@/types'
@@ -161,14 +161,11 @@ function openEditor(idx: number, deleted = false) {
 }
 
 function onEditorSave() {
+  if (editingDeleted.value) return
   try {
     const parsed = JSON.parse(editorText.value)
     editorError.value = ''
-    if (editingDeleted.value) {
-      deletedProfiles[editingProfileIdx.value].tagLines = parsed
-    } else {
-      updateProfileTagLines(editingProfileIdx.value, parsed)
-    }
+    updateProfileTagLines(editingProfileIdx.value, parsed)
   } catch (err) {
     editorError.value = (err as Error).message
   }
@@ -344,11 +341,16 @@ function onEditorExport() {
             class="eqt-json-editor__textarea"
             spellcheck="false"
             autocomplete="off"
+            :readonly="editingDeleted"
           />
 
           <p v-if="editorError" class="eqt-json-editor__error">JSON 格式錯誤：{{ editorError }}</p>
 
-          <div class="eqt-popup__actions">
+          <div v-if="editingDeleted" class="eqt-popup__actions" style="justify-content: center">
+            <button class="eqt-popup__btn eqt-popup__btn--primary" type="button" @click="onRestore(editingProfileIdx)">恢復標籤組</button>
+            <button class="eqt-popup__btn eqt-popup__btn--delete" type="button" @click="onPurge(editingProfileIdx)">永久刪除</button>
+          </div>
+          <div v-else class="eqt-popup__actions">
             <div class="eqt-popup__spacer" />
             <button class="eqt-popup__btn eqt-popup__btn--primary" type="button" @click="onEditorSave">儲存</button>
           </div>
@@ -404,12 +406,6 @@ function onEditorExport() {
             >
               <span class="eqt-settings__item-name">{{ p.name }}</span>
               <span class="eqt-settings__item-count">{{ p.tagLines.flat().length }}</span>
-              <button class="eqt-settings__item-btn" type="button" title="恢復" @click.stop="onRestore(i)">
-                <Undo2 :size="12" />
-              </button>
-              <button class="eqt-settings__item-btn eqt-settings__item-btn--purge" type="button" title="永久刪除" @click.stop="onPurge(i)">
-                <Trash2 :size="12" />
-              </button>
             </li>
           </ul>
         </template>
