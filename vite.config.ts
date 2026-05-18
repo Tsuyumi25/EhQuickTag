@@ -27,6 +27,10 @@ export default defineConfig({
         },
         author: 'tsuyumi',
         license: 'MIT',
+        icon: 'https://e-hentai.org/favicon.ico',
+        homepageURL: 'https://github.com/Tsuyumi25/eh-quick-tag',
+        supportURL: 'https://github.com/Tsuyumi25/eh-quick-tag/issues',
+        'run-at': 'document-end',
         connect: [
           'raw.githubusercontent.com',
           'nhentai.net',
