@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, toRaw, onUnmounted } from 'vue'
-import { GripVertical, Trash2, Copy, Download, Check } from '@lucide/vue'
+import { Trash2, Copy, Download, Check, RotateCcw } from '@lucide/vue'
 import Draggable from 'vuedraggable'
 import { baseDragOptions } from '@/utils/drag'
 import { NS_LABEL, type QuickTag } from '@/types'
+import { DEFAULT_NS_ORDER } from '@/services/tagDb'
 import {
   profiles, activeProfileIdx, deletedProfiles, type Profile,
   deleteProfile, restoreProfile, purgeProfile, reorderProfiles, updateProfileTagLines,
@@ -59,6 +60,11 @@ function onNsOrderChange(evt: any) {
     newOrder.splice(evt.moved.newIndex, 0, item)
     emit('update:nsOrder', newOrder)
   }
+}
+
+function resetNsOrder() {
+  emit('update:nsOrder', [...DEFAULT_NS_ORDER])
+  emit('update:disabledNs', new Set())
 }
 
 const savedOverflow = document.body.style.overflow
@@ -270,7 +276,10 @@ function onEditorExport() {
               <span class="eqt-settings__label">新分頁搜尋時切換到該分頁</span>
             </label>
 
-            <h4 class="eqt-settings__subtitle">Namespace 搜尋順序</h4>
+            <h4 class="eqt-settings__subtitle">
+              Namespace 搜尋順序
+              <button class="eqt-settings__reset-btn" type="button" title="重置為預設" @click="resetNsOrder"><RotateCcw :size="12" /> 重置</button>
+            </h4>
             <p class="eqt-settings__hint">
               調整搜尋建議中 namespace 的內部排序權重。拖曳調整順序，取消勾選可隱藏該類別。<br />
               注意：此順序僅影響 namespace 之間的排列，匹配品質和 nhentai 人氣仍然優先。
@@ -279,13 +288,14 @@ function onEditorExport() {
               v-bind="dragOptions"
               :model-value="nsOrder"
               :item-key="(ns: string) => ns"
-              handle=".eqt-settings__ns-grip"
+              filter="input"
+              :prevent-on-filter="false"
               tag="ul"
               class="eqt-settings__ns-list"
               @change="onNsOrderChange"
             >
               <template #item="{ element: ns }">
-                <li class="eqt-settings__ns-item">
+                <li class="eqt-settings__ns-item eqt-settings__ns-item--draggable">
                   <input
                     type="checkbox"
                     :checked="!disabledNs.has(ns)"
@@ -293,7 +303,6 @@ function onEditorExport() {
                   />
                   <span class="eqt-settings__ns-label">{{ NS_LABEL[ns] ?? ns }}</span>
                   <span class="eqt-settings__ns-key">{{ ns }}</span>
-                  <span class="eqt-settings__ns-grip"><GripVertical :size="14" /></span>
                 </li>
               </template>
             </Draggable>
@@ -577,6 +586,28 @@ function onEditorExport() {
     margin: 14px 0 4px;
     font-size: 13px;
     font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  &__reset-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 1px 6px;
+    border: none;
+    border-radius: 3px;
+    background: transparent;
+    color: var(--eqt-text-hint);
+    font-size: 11px;
+    line-height: 1;
+    cursor: pointer;
+
+    &:hover {
+      background: var(--eqt-bg-hover);
+      color: var(--eqt-text);
+    }
   }
 
   &__ns-list {
@@ -609,6 +640,10 @@ function onEditorExport() {
     &--clickable {
       cursor: pointer;
     }
+
+    &--draggable {
+      cursor: grab;
+    }
   }
 
   &__ns-label {
@@ -622,11 +657,6 @@ function onEditorExport() {
     flex: 1;
   }
 
-  &__ns-grip {
-    color: var(--eqt-grip);
-    cursor: grab;
-    user-select: none;
-  }
 
   &__font-row {
     margin-top: 4px;
