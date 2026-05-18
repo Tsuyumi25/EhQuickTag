@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, toRaw, onUnmounted } from 'vue'
-import { Trash2, Copy, Download, Check, RotateCcw } from '@lucide/vue'
+import { Trash2, Copy, Download, Check, RotateCcw, CircleAlert, ExternalLink, Code } from '@lucide/vue'
 import Draggable from 'vuedraggable'
 import { baseDragOptions } from '@/utils/drag'
 import { NS_LABEL, type QuickTag } from '@/types'
@@ -40,6 +40,7 @@ const dragOptions = {
 const tabs = [
   { key: 'search', label: '搜尋' },
   { key: 'appearance', label: '外觀' },
+  { key: 'about', label: '關於' },
 ] as const
 
 type TabKey = typeof tabs[number]['key']
@@ -209,7 +210,7 @@ function onEditorExport() {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `eh-quick-tag-${editingName.value}-${new Date().toISOString().slice(0, 10)}.json`
+  a.download = `EhQuickTag-${editingName.value}-${new Date().toISOString().slice(0, 10)}.json`
   a.click()
   URL.revokeObjectURL(url)
 }
@@ -350,6 +351,59 @@ function onEditorExport() {
                 </div>
               </template>
             </div>
+          </div>
+
+          <!-- 設定：關於 -->
+          <div v-show="activeTab === 'about'" class="eqt-settings__about">
+            <div class="eqt-about__hero">
+              <div class="eqt-about__title">EH Quick Tag</div>
+              <div class="eqt-about__version">v0.1.0</div>
+              <div class="eqt-about__desc">E-Hentai / ExHentai 搜尋快捷標籤列</div>
+              <div class="eqt-about__actions">
+                <a class="eqt-about__action-btn" href="https://github.com/Tsuyumi25/EhQuickTag" target="_blank" rel="noopener"><Code :size="14" /> GitHub</a>
+                <a class="eqt-about__action-btn" href="https://github.com/Tsuyumi25/EhQuickTag/issues" target="_blank" rel="noopener"><CircleAlert :size="14" /> 回報問題</a>
+              </div>
+            </div>
+
+            <div class="eqt-about__section">
+              <div class="eqt-about__section-title">靈感來源</div>
+              <div class="eqt-about__items">
+                <a class="eqt-about__item" href="https://sleazyfork.org/scripts/454282" target="_blank" rel="noopener">
+                  <ExternalLink :size="12" /> Add button on exhentai searchbox
+                </a>
+                <a class="eqt-about__item" href="https://sleazyfork.org/scripts/454209" target="_blank" rel="noopener">
+                  <ExternalLink :size="12" /> ExAdvancedSearchMemo
+                </a>
+                <a class="eqt-about__item" href="https://sleazyfork.org/scripts/516145" target="_blank" rel="noopener">
+                  <ExternalLink :size="12" /> Lolicon E-Hentai/ExHentai Enhancer
+                </a>
+              </div>
+            </div>
+
+            <div class="eqt-about__section">
+              <div class="eqt-about__section-title">技術棧參考</div>
+              <div class="eqt-about__items">
+                <a class="eqt-about__item" href="https://github.com/sk2589822/Exhentai-Enhancer" target="_blank" rel="noopener">
+                  <Code :size="12" /> Exhentai-Enhancer
+                </a>
+              </div>
+            </div>
+
+            <div class="eqt-about__section">
+              <div class="eqt-about__section-title">致謝</div>
+              <div class="eqt-about__items">
+                <a class="eqt-about__item" href="https://github.com/EhTagTranslation/Database" target="_blank" rel="noopener">
+                  <Code :size="12" /> EhTagTranslation
+                  <span class="eqt-about__item-detail">標籤中文翻譯資料庫（CC BY-NC-SA 3.0）</span>
+                </a>
+                <a class="eqt-about__item" href="https://github.com/EhTagTranslation/EhSyringe" target="_blank" rel="noopener">
+                  <Code :size="12" /> EhSyringe
+                  <span class="eqt-about__item-detail">搜尋排序權重邏輯參考</span>
+                </a>
+              </div>
+            </div>
+
+            <div class="eqt-about__footer">MIT License</div>
           </div>
         </div>
 
@@ -581,6 +635,7 @@ function onEditorExport() {
     color: var(--eqt-text-hint);
     line-height: 1.4;
   }
+
 
   &__subtitle {
     margin: 14px 0 4px;
@@ -851,6 +906,108 @@ function onEditorExport() {
     color: #c33;
     background: rgba(204, 51, 51, 0.08);
     border-radius: 3px;
+  }
+}
+
+.eqt-about {
+  &__hero {
+    text-align: center;
+    padding: 20px 16px;
+    margin-bottom: 16px;
+    border-radius: 6px;
+    background: var(--eqt-bg-hover);
+  }
+
+  &__title {
+    font-size: 18px;
+    font-weight: bold;
+    color: var(--eqt-text);
+  }
+
+  &__version {
+    margin-top: 2px;
+    font-size: 11px;
+    color: var(--eqt-text-hint);
+  }
+
+  &__desc {
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--eqt-text-hint);
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  &__action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    border: var(--eqt-border-width) solid var(--eqt-border);
+    border-radius: 3px;
+    background: var(--eqt-bg-btn);
+    color: var(--eqt-text);
+    font-size: 12px;
+    text-decoration: none;
+    cursor: pointer;
+
+    &:hover {
+      background: var(--eqt-bg-btn-hover);
+    }
+  }
+
+  &__section {
+    margin-bottom: 12px;
+  }
+
+  &__section-title {
+    font-size: 11px;
+    font-weight: bold;
+    color: var(--eqt-text-hint);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+
+  &__items {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    color: var(--eqt-text);
+    text-decoration: none;
+
+    &:hover {
+      background: var(--eqt-bg-hover);
+    }
+  }
+
+  &__item-detail {
+    color: var(--eqt-text-hint);
+    font-size: 11px;
+    margin-left: auto;
+  }
+
+  &__footer {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: var(--eqt-border-width) solid var(--eqt-divider);
+    font-size: 11px;
+    color: var(--eqt-text-hint);
+    text-align: center;
   }
 }
 </style>

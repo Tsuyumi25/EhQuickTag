@@ -10,7 +10,7 @@ export default defineConfig({
     monkey({
       entry: 'src/main.ts',
       userscript: {
-        namespace: 'https://github.com/Tsuyumi25/eh-quick-tag',
+        namespace: 'https://github.com/Tsuyumi25/EhQuickTag',
         match: [
           'https://exhentai.org/*',
           'https://e-hentai.org/*',
@@ -28,8 +28,8 @@ export default defineConfig({
         author: 'tsuyumi',
         license: 'MIT',
         icon: 'https://e-hentai.org/favicon.ico',
-        homepageURL: 'https://github.com/Tsuyumi25/eh-quick-tag',
-        supportURL: 'https://github.com/Tsuyumi25/eh-quick-tag/issues',
+        homepageURL: 'https://github.com/Tsuyumi25/EhQuickTag',
+        supportURL: 'https://github.com/Tsuyumi25/EhQuickTag/issues',
         'run-at': 'document-end',
         connect: [
           'raw.githubusercontent.com',

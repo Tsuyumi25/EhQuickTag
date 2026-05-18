@@ -27,7 +27,7 @@ async function fetchPage(page: number): Promise<{ name: string; count: number }[
       GM_xmlhttpRequest({
         method: 'GET',
         url,
-        headers: { 'User-Agent': 'eh-quick-tag/0.1 (userscript)' },
+        headers: { 'User-Agent': 'EhQuickTag/0.1 (userscript)' },
         onload: (res) => {
           if (res.status === 200) {
             const data: NhTagResult = JSON.parse(res.responseText)
