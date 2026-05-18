@@ -52,7 +52,7 @@ function isInteractive(e: MouseEvent) {
 }
 
 function onBarDblClick(e: MouseEvent) {
-  if (isInteractive(e)) return
+  if (editing.value || isInteractive(e)) return
   e.preventDefault()
   e.stopPropagation()
   window.getSelection()?.removeAllRanges()
@@ -60,7 +60,7 @@ function onBarDblClick(e: MouseEvent) {
 }
 
 function onBarContextMenu(e: MouseEvent) {
-  if (isInteractive(e)) return
+  if (editing.value || isInteractive(e)) return
   e.preventDefault()
   const now = Date.now()
   if (now - lastRightClickTime < 500) {
