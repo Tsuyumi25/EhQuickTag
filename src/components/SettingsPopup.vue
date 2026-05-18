@@ -8,6 +8,7 @@ import {
   profiles, activeProfileIdx, deletedProfiles, type Profile,
   deleteProfile, restoreProfile, purgeProfile, reorderProfiles, updateProfileTagLines,
   fontFamily, fontWeight, DEFAULT_TAG_LINES, tagLines,
+  dblClickLeft, dblClickRight, newTabActive, type DblClickAction,
 } from '@/services/store'
 
 const props = defineProps<{
@@ -43,6 +44,11 @@ const tabs = [
 type TabKey = typeof tabs[number]['key']
 
 const activeTab = ref<TabKey | null>('search')
+
+const dblClickOptions = [
+  { label: '左鍵雙擊', ref: dblClickLeft },
+  { label: '右鍵雙擊', ref: dblClickRight },
+]
 
 // --- nsOrder change handler ---
 
@@ -237,6 +243,32 @@ function onEditorExport() {
             <p class="eqt-settings__hint">
               開啟後，搜尋建議會優先顯示 nhentai 上傳量高的標籤（top 500），其餘按預設公式排序。
             </p>
+
+            <h4 class="eqt-settings__subtitle">背景雙擊動作</h4>
+            <div
+              v-for="({ label, ref: r }) in dblClickOptions"
+              :key="label"
+              class="eqt-settings__dblclick-row"
+            >
+              <label class="eqt-settings__dblclick-label">{{ label }}</label>
+              <select
+                class="eqt-settings__select"
+                :value="r.value"
+                @change="r.value = ($event.target as HTMLSelectElement).value as DblClickAction"
+              >
+                <option value="search">搜尋（當前頁面）</option>
+                <option value="searchNewTab">搜尋（新分頁）</option>
+                <option value="clearSearch">清空搜尋框</option>
+              </select>
+            </div>
+            <label class="eqt-settings__row" style="margin-top: 6px">
+              <input
+                type="checkbox"
+                :checked="newTabActive"
+                @change="newTabActive = ($event.target as HTMLInputElement).checked"
+              />
+              <span class="eqt-settings__label">新分頁搜尋時切換到該分頁</span>
+            </label>
 
             <h4 class="eqt-settings__subtitle">Namespace 搜尋順序</h4>
             <p class="eqt-settings__hint">
@@ -510,6 +542,28 @@ function onEditorExport() {
 
   &__label {
     user-select: none;
+  }
+
+  &__dblclick-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+    font-size: 13px;
+  }
+
+  &__dblclick-label {
+    min-width: 5em;
+    flex-shrink: 0;
+  }
+
+  &__select {
+    padding: 3px 6px;
+    border: var(--eqt-border-width) solid var(--eqt-border);
+    border-radius: 3px;
+    background: var(--eqt-bg-elevated);
+    color: var(--eqt-text);
+    font-size: 12px;
   }
 
   &__hint {

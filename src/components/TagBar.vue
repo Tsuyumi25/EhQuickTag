@@ -1,11 +1,17 @@
 <script setup lang="ts">
 import { ref, computed, nextTick } from 'vue'
 import Draggable from 'vuedraggable'
-import { ChevronLeft, ChevronRight, ExternalLink, GripVertical, Trash2, Pencil, Check, Settings, Plus } from '@lucide/vue'
+import { ChevronLeft, ChevronRight, ExternalLink, GripVertical, Trash2, Pencil, Check, Settings, Plus, Info } from '@lucide/vue'
 import { TagState, type QuickTag } from '@/types'
 import { tokenize, getState as _getState, removeTag, addTag, getNextRightClickState } from '@/services/tagState'
-import { tagLines } from '@/services/store'
+import { tagLines, dblClickLeft, dblClickRight, type DblClickAction } from '@/services/store'
 import { baseDragOptions } from '@/utils/drag'
+
+const ACTION_LABEL: Record<DblClickAction, string> = {
+  search: '搜尋',
+  searchNewTab: '新分頁搜尋',
+  clearSearch: '清空搜尋框',
+}
 
 const STATE_CLASS: Record<TagState, string | null> = {
   [TagState.Include]: 'eqt-tag-bar__btn--include',
@@ -34,9 +40,44 @@ const emit = defineEmits<{
   'renameProfile': [name: string]
   'createProfile': [name: string]
   'deleteProfile': []
+  'search': [action: DblClickAction]
 }>()
 
 const editing = ref(false)
+
+let lastRightClickTime = 0
+
+function isInteractive(e: MouseEvent) {
+  return (e.target as HTMLElement).closest('button, a, input')
+}
+
+function onBarDblClick(e: MouseEvent) {
+  if (isInteractive(e)) return
+  e.preventDefault()
+  e.stopPropagation()
+  window.getSelection()?.removeAllRanges()
+  execDblClickAction(dblClickLeft.value)
+}
+
+function onBarContextMenu(e: MouseEvent) {
+  if (isInteractive(e)) return
+  e.preventDefault()
+  const now = Date.now()
+  if (now - lastRightClickTime < 500) {
+    execDblClickAction(dblClickRight.value)
+    lastRightClickTime = 0
+  } else {
+    lastRightClickTime = now
+  }
+}
+
+function execDblClickAction(action: DblClickAction) {
+  if (action === 'clearSearch') {
+    emit('update:searchText', '')
+  } else {
+    emit('search', action)
+  }
+}
 
 // --- profile carousel ---
 
@@ -163,7 +204,8 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
 </script>
 
 <template>
-  <div class="eqt-tag-bar">
+  <div class="eqt-tag-bar" @dblclick="onBarDblClick" @contextmenu="onBarContextMenu">
+    <span class="eqt-tag-bar__info"><Info :size="16" /><span class="eqt-tag-bar__info-text">左鍵雙擊：{{ ACTION_LABEL[dblClickLeft] }}｜右鍵雙擊：{{ ACTION_LABEL[dblClickRight] }}</span></span>
     <div class="eqt-tag-bar__lines">
       <div class="eqt-tag-bar__profile-row">
         <button
@@ -305,7 +347,38 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
 
 <style lang="scss">
 .eqt-tag-bar {
+  position: relative;
   padding: 6px 0;
+
+  &:has(.eqt-tag-bar__info:hover) {
+    background: var(--eqt-bg-hover);
+  }
+
+  &__info {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    color: var(--eqt-text-secondary);
+    font-size: 11px;
+    user-select: none;
+
+    &:hover {
+      background: var(--eqt-bg-btn);
+    }
+  }
+
+  &__info-text {
+    display: none;
+
+    .eqt-tag-bar__info:hover & {
+      display: inline;
+    }
+  }
 
   &__lines {
     display: flex;

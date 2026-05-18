@@ -4,7 +4,8 @@ import TagBar from '@/components/TagBar.vue'
 import TagConfigPopup from '@/components/TagConfigPopup.vue'
 import UrlConfigPopup from '@/components/UrlConfigPopup.vue'
 import SettingsPopup from '@/components/SettingsPopup.vue'
-import { tagLines, useNhWeight, nsOrder, disabledNs, fontFamily, fontWeight, profiles, activeProfileIdx, switchProfile, renameProfile, createProfile, deleteProfile } from '@/services/store'
+import { GM_openInTab } from '$'
+import { tagLines, useNhWeight, nsOrder, disabledNs, fontFamily, fontWeight, profiles, activeProfileIdx, switchProfile, renameProfile, createProfile, deleteProfile, newTabActive, type DblClickAction } from '@/services/store'
 
 const effectiveNsOrder = computed(() => nsOrder.value.filter(ns => !disabledNs.value.has(ns)))
 
@@ -107,6 +108,17 @@ function onClose() {
 
 const showSettings = ref(false)
 
+function onSearch(action: DblClickAction) {
+  if (!searchInput?.form) return
+  if (action === 'searchNewTab') {
+    const url = new URL(searchInput.form.action || window.location.href)
+    new FormData(searchInput.form).forEach((v, k) => url.searchParams.set(k, v as string))
+    GM_openInTab(url.href, { active: newTabActive.value })
+  } else {
+    searchInput.form.submit()
+  }
+}
+
 // --- search box sync ---
 
 onMounted(() => {
@@ -150,6 +162,7 @@ watch(searchText, (val) => {
       @create-profile="onCreateProfile"
       @delete-profile="onDeleteProfile"
       @settings="showSettings = true"
+      @search="onSearch"
     />
   </Teleport>
 

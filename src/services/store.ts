@@ -14,12 +14,17 @@ export interface Profile {
   tagLines: QuickTag[][]
 }
 
+export type DblClickAction = 'search' | 'searchNewTab' | 'clearSearch'
+
 interface PersistedSettings {
   useNhWeight: boolean
   nsOrder: string[]
   disabledNs: string[]
   fontFamily: string
   fontWeight: string
+  dblClickLeft: DblClickAction
+  dblClickRight: DblClickAction
+  newTabActive: boolean
 }
 
 export const DEFAULT_TAG_LINES: QuickTag[][] = [
@@ -53,6 +58,9 @@ const DEFAULT_SETTINGS: PersistedSettings = {
   disabledNs: [],
   fontFamily: '',
   fontWeight: '',
+  dblClickLeft: 'search',
+  dblClickRight: 'searchNewTab',
+  newTabActive: true,
 }
 
 // --- reactive state ---
@@ -66,6 +74,9 @@ export const nsOrder = ref<string[]>([...DEFAULT_NS_ORDER])
 export const disabledNs = ref(new Set<string>())
 export const fontFamily = ref('')
 export const fontWeight = ref('')
+export const dblClickLeft = ref<DblClickAction>('search')
+export const dblClickRight = ref<DblClickAction>('searchNewTab')
+export const newTabActive = ref(true)
 
 // --- load from GM ---
 
@@ -105,6 +116,9 @@ export async function loadStore(): Promise<void> {
   disabledNs.value = new Set(s.disabledNs)
   fontFamily.value = s.fontFamily
   fontWeight.value = s.fontWeight
+  dblClickLeft.value = s.dblClickLeft
+  dblClickRight.value = s.dblClickRight
+  newTabActive.value = s.newTabActive
 }
 
 // --- profile switching ---
@@ -198,11 +212,14 @@ function saveSettings() {
     disabledNs: [...disabledNs.value],
     fontFamily: fontFamily.value,
     fontWeight: fontWeight.value,
+    dblClickLeft: dblClickLeft.value,
+    dblClickRight: dblClickRight.value,
+    newTabActive: newTabActive.value,
   }
   GM.setValue(KEYS.settings, JSON.stringify(data))
 }
 
 export function startAutoSave(): void {
   watch([tagLines, deletedProfiles], saveProfiles)
-  watch([useNhWeight, nsOrder, disabledNs, fontFamily, fontWeight], saveSettings, { deep: true })
+  watch([useNhWeight, nsOrder, disabledNs, fontFamily, fontWeight, dblClickLeft, dblClickRight, newTabActive], saveSettings, { deep: true })
 }
