@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick, onUnmounted } from 'vue'
-import Sortable from 'sortablejs'
+import { ref, computed, nextTick } from 'vue'
+import Draggable from 'vuedraggable'
 import { ChevronLeft, ChevronRight, ExternalLink, GripVertical, Trash2, Pencil, Check, Settings, Plus } from '@lucide/vue'
 import { TagState, type QuickTag } from '@/types'
 import { tokenize, getState as _getState, removeTag, addTag, getNextRightClickState } from '@/services/tagState'
+import { tagLines } from '@/services/store'
+import { baseDragOptions } from '@/utils/drag'
 
 const STATE_CLASS: Record<TagState, string | null> = {
   [TagState.Include]: 'eqt-tag-bar__btn--include',
@@ -13,7 +15,6 @@ const STATE_CLASS: Record<TagState, string | null> = {
 }
 
 const props = defineProps<{
-  tagLines: QuickTag[][]
   searchText: string
   profileName: string
   profileIdx: number
@@ -27,10 +28,6 @@ const emit = defineEmits<{
   'configure': [lineIdx: number, tagIdx: number]
   'add': []
   'addUrl': []
-  'move': [fromLine: number, fromIdx: number, toLine: number, toIdx: number]
-  'moveLine': [from: number, to: number]
-  'deleteLine': [lineIdx: number]
-  'addLine': []
   'settings': []
   'prevProfile': []
   'nextProfile': []
@@ -40,8 +37,6 @@ const emit = defineEmits<{
 }>()
 
 const editing = ref(false)
-const linesEl = ref<HTMLElement | null>(null)
-const rowEls = ref<HTMLElement[]>([])
 
 // --- profile carousel ---
 
@@ -85,111 +80,54 @@ function finishRenameOrCreate() {
   renamingProfile.value = false
 }
 
-// --- Sortable lifecycle ---
+// --- draggable change handlers ---
 
-let sortableInstances: Sortable[] = []
-let domSnapshots = new Map<HTMLElement, Node[]>()
-let lineSortableInstance: Sortable | null = null
-let lineDomSnapshot: Node[] = []
+let tagDragging = false
 
-function activateSortables() {
-  // Line-level sortable (reorder entire rows via handle)
-  if (linesEl.value) {
-    lineSortableInstance = new Sortable(linesEl.value, {
-      handle: '.eqt-tag-bar__handle',
-      draggable: '.eqt-tag-bar__line-wrap',
-      animation: 150,
-      ghostClass: 'eqt-tag-bar__line-wrap--ghost',
-      onStart: () => {
-        lineDomSnapshot = [...linesEl.value!.childNodes]
-      },
-      onEnd: (evt) => {
-        const container = linesEl.value!
-        while (container.firstChild) container.removeChild(container.firstChild)
-        for (const node of lineDomSnapshot) container.appendChild(node)
-
-        if (evt.oldIndex !== undefined && evt.newIndex !== undefined) {
-          const from = evt.oldIndex - 1  // offset: profile-row is first child
-          const to = evt.newIndex - 1
-          if (from !== to) emit('moveLine', from, to)
-        }
-      },
-    })
-  }
-
-  // Tag-level sortables (cross-row drag)
-  for (const el of rowEls.value) {
-    sortableInstances.push(new Sortable(el, {
-      group: 'eqt-tags',
-      animation: 150,
-      ghostClass: 'eqt-tag-bar__btn--ghost',
-      chosenClass: 'eqt-tag-bar__btn--chosen',
-      dragClass: 'eqt-tag-bar__btn--drag',
-      onStart: () => {
-        domSnapshots.clear()
-        for (const rowEl of rowEls.value) {
-          domSnapshots.set(rowEl, [...rowEl.childNodes])
-        }
-      },
-      onEnd: (evt) => {
-        const targets = new Set([evt.from, evt.to].filter(Boolean))
-        for (const container of targets) {
-          const nodes = domSnapshots.get(container as HTMLElement)
-          if (!nodes) continue
-          while (container.firstChild) container.removeChild(container.firstChild)
-          for (const node of nodes) container.appendChild(node)
-        }
-
-        if (evt.from && evt.to && evt.oldIndex !== undefined && evt.newIndex !== undefined) {
-          const fromLine = Number(evt.from.dataset.line)
-          const toLine = Number(evt.to.dataset.line)
-          if (fromLine !== toLine || evt.oldIndex !== evt.newIndex) {
-            emit('move', fromLine, evt.oldIndex, toLine, evt.newIndex)
-          }
-        }
-      },
-    }))
+function onLineChange(evt: any) {
+  if (evt.moved) {
+    const [line] = tagLines.splice(evt.moved.oldIndex, 1)
+    tagLines.splice(evt.moved.newIndex, 0, line)
   }
 }
 
-function deactivateSortables() {
-  try { lineSortableInstance?.destroy() } catch { /* ignore */ }
-  lineSortableInstance = null
-  lineDomSnapshot = []
-
-  for (const s of sortableInstances) {
-    try { s.destroy() } catch { /* ignore corrupted instance */ }
+function onTagChange(lineIdx: number, evt: any) {
+  if (evt.added) {
+    tagLines[lineIdx].splice(evt.added.newIndex, 0, evt.added.element)
   }
-  sortableInstances = []
-  domSnapshots.clear()
+  if (evt.removed) {
+    tagLines[lineIdx].splice(evt.removed.oldIndex, 1)
+  }
+  if (evt.moved) {
+    const [item] = tagLines[lineIdx].splice(evt.moved.oldIndex, 1)
+    tagLines[lineIdx].splice(evt.moved.newIndex, 0, item)
+  }
 }
 
-watch(editing, (isEditing) => {
-  if (isEditing) nextTick(activateSortables)
-  else deactivateSortables()
-})
+function onTagStart() { tagDragging = true }
+function onTagEnd() { setTimeout(() => { tagDragging = false }, 0) }
 
-onUnmounted(deactivateSortables)
+function onAddLine() { tagLines.push([]) }
+function onDeleteLine(li: number) { tagLines.splice(li, 1) }
 
-let mutatingLines = false
-
-function rebuildSortablesAround(action: () => void) {
-  if (mutatingLines) return
-  mutatingLines = true
-  deactivateSortables()
-  try { action() } catch (e) { mutatingLines = false; throw e }
-  nextTick(() => {
-    activateSortables()
-    mutatingLines = false
-  })
+function onConfigure(li: number, ti: number) {
+  if (tagDragging) return
+  emit('configure', li, ti)
 }
 
-function onAddLine() {
-  rebuildSortablesAround(() => emit('addLine'))
+function tagKey(qt: QuickTag) { return qt.tag || qt.url || '' }
+
+const lineDragOptions = {
+  ...baseDragOptions,
+  ghostClass: 'eqt-tag-bar__line-wrap--ghost',
 }
 
-function onDeleteLine(li: number) {
-  rebuildSortablesAround(() => emit('deleteLine', li))
+const tagDragOptions = {
+  ...baseDragOptions,
+  group: 'eqt-tags',
+  ghostClass: 'eqt-tag-bar__btn--ghost',
+  chosenClass: 'eqt-tag-bar__btn--chosen',
+  dragClass: 'eqt-tag-bar__btn--drag',
 }
 
 // --- search text parsing ---
@@ -226,7 +164,7 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
 
 <template>
   <div class="eqt-tag-bar">
-    <div class="eqt-tag-bar__lines" ref="linesEl">
+    <div class="eqt-tag-bar__lines">
       <div class="eqt-tag-bar__profile-row">
         <button
           class="eqt-tag-bar__profile-nav eqt-tag-bar__profile-nav--prev"
@@ -270,55 +208,64 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
           <div class="eqt-tag-bar__line"></div>
         </div>
       </template>
-      <template v-else>
-      <div
-        v-for="(line, li) in tagLines"
-        :key="li"
-        class="eqt-tag-bar__line-wrap"
+      <Draggable
+        v-else
+        v-bind="lineDragOptions"
+        :model-value="tagLines"
+        :item-key="(_: any, i: number) => i"
+        handle=".eqt-tag-bar__handle"
+        :disabled="!editing"
+        class="eqt-tag-bar__line-rows"
+        @change="onLineChange"
       >
-        <div class="eqt-tag-bar__handle" :class="{ 'eqt-tag-bar__handle--hidden': !editing }" title="拖曳排序行"><GripVertical :size="14" /></div>
-        <button
-          v-if="editing && line.length === 0"
-          class="eqt-tag-bar__line-delete"
-          type="button"
-          title="刪除空行"
-          @click="onDeleteLine(li)"
-        ><Trash2 :size="12" /></button>
-        <div
-          ref="rowEls"
-          :data-line="li"
-          class="eqt-tag-bar__line"
-        >
-          <template v-for="(qt, ti) in line" :key="qt.tag || qt.url">
-            <a
-              v-if="qt.url && !editing"
-              :href="qt.url"
-              :data-id="qt.url"
-              class="eqt-tag-bar__btn eqt-tag-bar__btn--url"
-            ><ExternalLink :size="12" /> {{ qt.label || qt.url }}</a>
-
+        <template #item="{ element: line, index: li }">
+          <div class="eqt-tag-bar__line-wrap">
+            <div class="eqt-tag-bar__handle" :class="{ 'eqt-tag-bar__handle--hidden': !editing }" title="拖曳排序行"><GripVertical :size="14" /></div>
             <button
-              v-else-if="qt.url"
-              :data-id="qt.url"
-              class="eqt-tag-bar__btn eqt-tag-bar__btn--editing"
+              v-if="editing && line.length === 0"
+              class="eqt-tag-bar__line-delete"
               type="button"
-              @click="emit('configure', li, ti)"
-            ><ExternalLink :size="12" /> {{ qt.label || qt.url }}</button>
+              title="刪除空行"
+              @click="onDeleteLine(li)"
+            ><Trash2 :size="12" /></button>
+            <Draggable
+              v-bind="tagDragOptions"
+              :model-value="tagLines[li]"
+              :item-key="tagKey"
+              :disabled="!editing"
+              tag="div"
+              class="eqt-tag-bar__line"
+              @change="onTagChange(li, $event)"
+              @start="onTagStart"
+              @end="onTagEnd"
+            >
+              <template #item="{ element: qt, index: ti }">
+                <a
+                  v-if="qt.url && !editing"
+                  :href="qt.url"
+                  class="eqt-tag-bar__btn eqt-tag-bar__btn--url"
+                ><ExternalLink :size="12" /> {{ qt.label || qt.url }}</a>
 
-            <button
-              v-else
-              :data-id="qt.tag"
-              class="eqt-tag-bar__btn"
-              :class="editing ? 'eqt-tag-bar__btn--editing' : STATE_CLASS[getState(qt.tag)]"
-              type="button"
-              @click="editing ? emit('configure', li, ti) : onLeftClick(qt.tag)"
-              @contextmenu.prevent="!editing && onRightClick($event, qt)"
-            >{{ qt.label || qt.tag }}</button>
-          </template>
-        </div>
-      </div>
+                <button
+                  v-else-if="qt.url"
+                  class="eqt-tag-bar__btn eqt-tag-bar__btn--editing"
+                  type="button"
+                  @click="onConfigure(li, ti)"
+                ><ExternalLink :size="12" /> {{ qt.label || qt.url }}</button>
 
-      </template>
+                <button
+                  v-else
+                  class="eqt-tag-bar__btn"
+                  :class="editing ? 'eqt-tag-bar__btn--editing' : STATE_CLASS[getState(qt.tag)]"
+                  type="button"
+                  @click="editing ? onConfigure(li, ti) : onLeftClick(qt.tag)"
+                  @contextmenu.prevent="!editing && onRightClick($event, qt)"
+                >{{ qt.label || qt.tag }}</button>
+              </template>
+            </Draggable>
+          </div>
+        </template>
+      </Draggable>
       <div class="eqt-tag-bar__bottom-row">
         <button
           v-if="editing"
@@ -366,6 +313,12 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
     gap: 4px;
     width: 80%;
     margin: 0 auto;
+  }
+
+  &__line-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
   }
 
   &__line-wrap {

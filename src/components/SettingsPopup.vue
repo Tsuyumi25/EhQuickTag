@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref, computed, toRaw, onMounted, onUnmounted } from 'vue'
+import { ref, computed, toRaw, onUnmounted } from 'vue'
 import { GripVertical, Undo2, Trash2, Copy, Download, Check } from '@lucide/vue'
-import { useSortable } from '@/composables/useSortable'
+import Draggable from 'vuedraggable'
+import { baseDragOptions } from '@/utils/drag'
 import { NS_LABEL, type QuickTag } from '@/types'
 import {
-  profiles, activeProfileIdx, deletedProfiles,
-  restoreProfile, purgeProfile, reorderProfiles, updateProfileTagLines,
+  profiles, activeProfileIdx, deletedProfiles, type Profile,
+  deleteProfile, restoreProfile, purgeProfile, reorderProfiles, updateProfileTagLines,
   fontFamily, fontWeight, DEFAULT_TAG_LINES, tagLines,
 } from '@/services/store'
 
@@ -26,6 +27,12 @@ function onKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape') emit('close')
 }
 
+const dragOptions = {
+  ...baseDragOptions,
+  ghostClass: 'eqt-settings__ns-item--ghost',
+  chosenClass: 'eqt-settings__ns-item--chosen',
+}
+
 // --- tabs ---
 
 const tabs = [
@@ -37,29 +44,16 @@ type TabKey = typeof tabs[number]['key']
 
 const activeTab = ref<TabKey | null>('search')
 
-// --- Sortable ---
+// --- nsOrder change handler ---
 
-const nsListEl = ref<HTMLElement | null>(null)
-
-const { activate: activateSortable } = useSortable(nsListEl, {
-  animation: 150,
-  handle: '.eqt-settings__ns-grip',
-  ghostClass: 'eqt-settings__ns-item--ghost',
-  chosenClass: 'eqt-settings__ns-item--chosen',
-  onEnd: (evt) => {
-    if (evt.oldIndex !== undefined && evt.newIndex !== undefined && evt.oldIndex !== evt.newIndex) {
-      const newOrder = [...props.nsOrder]
-      const [item] = newOrder.splice(evt.oldIndex, 1)
-      newOrder.splice(evt.newIndex, 0, item)
-      emit('update:nsOrder', newOrder)
-    }
-  },
-})
-
-onMounted(() => {
-  activateSortable()
-  activateProfileSortable()
-})
+function onNsOrderChange(evt: any) {
+  if (evt.moved) {
+    const newOrder = [...props.nsOrder]
+    const [item] = newOrder.splice(evt.moved.oldIndex, 1)
+    newOrder.splice(evt.moved.newIndex, 0, item)
+    emit('update:nsOrder', newOrder)
+  }
+}
 
 onUnmounted(() => {
   clearTimeout(copiedTimer)
@@ -87,33 +81,26 @@ function profileUid(p: object): string {
   return uidMap.get(raw)!
 }
 
-// --- profile sortable ---
+// --- profile draggable ---
 
-const profileListEl = ref<HTMLElement | null>(null)
+let profileDragging = false
 
-const { activate: activateProfileSortable } = useSortable(profileListEl, {
-  animation: 150,
-  handle: '.eqt-settings__ns-grip',
-  ghostClass: 'eqt-settings__ns-item--ghost',
-  chosenClass: 'eqt-settings__ns-item--chosen',
-  onEnd: (evt) => {
-    if (evt.oldIndex !== undefined && evt.newIndex !== undefined && evt.oldIndex !== evt.newIndex) {
-      const from = evt.oldIndex, to = evt.newIndex
-      // keep editingProfileIdx following the same profile
-      if (!editingDeleted.value && editingProfileIdx.value >= 0) {
-        const ed = editingProfileIdx.value
-        if (ed === from) {
-          editingProfileIdx.value = to
-        } else if (from < ed && to >= ed) {
-          editingProfileIdx.value = ed - 1
-        } else if (from > ed && to <= ed) {
-          editingProfileIdx.value = ed + 1
-        }
-      }
-      reorderProfiles(from, to)
+function onProfileChange(evt: any) {
+  if (evt.moved) {
+    const from = evt.moved.oldIndex, to = evt.moved.newIndex
+    // track editingProfileIdx
+    if (!editingDeleted.value && editingProfileIdx.value >= 0) {
+      const ed = editingProfileIdx.value
+      if (ed === from) editingProfileIdx.value = to
+      else if (from < ed && to >= ed) editingProfileIdx.value = ed - 1
+      else if (from > ed && to <= ed) editingProfileIdx.value = ed + 1
     }
-  },
-})
+    reorderProfiles(from, to)
+  }
+}
+
+function onProfileStart() { profileDragging = true }
+function onProfileEnd() { setTimeout(() => { profileDragging = false }, 0) }
 
 // --- json editor (inline) ---
 
@@ -138,23 +125,31 @@ const editingName = computed(() => {
   return editingDeleted.value ? deletedProfiles[idx]?.name : profiles[idx]?.name
 })
 
-function adjustDeletedEditorIdx(removedIdx: number) {
-  if (!editingDeleted.value) return
+function adjustEditorIdxOnRemove(removedIdx: number, fromDeleted: boolean) {
+  if (editingDeleted.value !== fromDeleted) return
   if (editingProfileIdx.value === removedIdx) editingProfileIdx.value = -1
   else if (editingProfileIdx.value > removedIdx) editingProfileIdx.value--
 }
 
+function onDelete(idx: number) {
+  adjustEditorIdxOnRemove(idx, false)
+  deleteProfile(idx)
+}
+
 function onRestore(idx: number) {
-  adjustDeletedEditorIdx(idx)
+  adjustEditorIdxOnRemove(idx, true)
   restoreProfile(idx)
 }
 
 function onPurge(idx: number) {
-  adjustDeletedEditorIdx(idx)
+  const name = deletedProfiles[idx]?.name ?? ''
+  if (!confirm(`確定要永久刪除「${name}」嗎？此操作無法復原。`)) return
+  adjustEditorIdxOnRemove(idx, true)
   purgeProfile(idx)
 }
 
 function openEditor(idx: number, deleted = false) {
+  if (profileDragging) return
   activeTab.value = null
   editingProfileIdx.value = idx
   editingDeleted.value = deleted
@@ -247,23 +242,28 @@ function onEditorExport() {
               調整搜尋建議中 namespace 的內部排序權重。拖曳調整順序，取消勾選可隱藏該類別。<br />
               注意：此順序僅影響 namespace 之間的排列，匹配品質和 nhentai 人氣仍然優先。
             </p>
-            <ul ref="nsListEl" class="eqt-settings__ns-list">
-              <li
-                v-for="ns in nsOrder"
-                :key="ns"
-                :data-id="ns"
-                class="eqt-settings__ns-item"
-              >
-                <input
-                  type="checkbox"
-                  :checked="!disabledNs.has(ns)"
-                  @change="toggleNs(ns)"
-                />
-                <span class="eqt-settings__ns-label">{{ NS_LABEL[ns] ?? ns }}</span>
-                <span class="eqt-settings__ns-key">{{ ns }}</span>
-                <span class="eqt-settings__ns-grip"><GripVertical :size="14" /></span>
-              </li>
-            </ul>
+            <Draggable
+              v-bind="dragOptions"
+              :model-value="nsOrder"
+              :item-key="(ns: string) => ns"
+              handle=".eqt-settings__ns-grip"
+              tag="ul"
+              class="eqt-settings__ns-list"
+              @change="onNsOrderChange"
+            >
+              <template #item="{ element: ns }">
+                <li class="eqt-settings__ns-item">
+                  <input
+                    type="checkbox"
+                    :checked="!disabledNs.has(ns)"
+                    @change="toggleNs(ns)"
+                  />
+                  <span class="eqt-settings__ns-label">{{ NS_LABEL[ns] ?? ns }}</span>
+                  <span class="eqt-settings__ns-key">{{ ns }}</span>
+                  <span class="eqt-settings__ns-grip"><GripVertical :size="14" /></span>
+                </li>
+              </template>
+            </Draggable>
           </div>
 
           <!-- 設定：外觀 -->
@@ -358,26 +358,42 @@ function onEditorExport() {
       <!-- 右欄：標籤組列表 -->
       <aside class="eqt-settings__profiles">
         <h4 class="eqt-settings__subtitle" style="margin-top: 0">標籤組</h4>
-        <ul ref="profileListEl" class="eqt-settings__ns-list">
-          <li
-            v-for="(p, i) in profiles"
-            :key="profileUid(p)"
-            :data-id="profileUid(p)"
-            class="eqt-settings__ns-item eqt-settings__ns-item--clickable"
-            :class="{ 'eqt-settings__ns-item--chosen': editingProfileIdx === i && !editingDeleted }"
-            @click="openEditor(i)"
-          >
-            <span class="eqt-settings__item-name">
-              {{ p.name }}
-              <span v-if="i === activeProfileIdx" class="eqt-settings__active-badge">目前</span>
-            </span>
-            <span class="eqt-settings__item-count">{{ (i === activeProfileIdx ? tagLines : p.tagLines).flat().length }}</span>
-            <span class="eqt-settings__ns-grip"><GripVertical :size="14" /></span>
-          </li>
-        </ul>
+        <Draggable
+          v-bind="dragOptions"
+          :model-value="profiles"
+          :item-key="profileUid"
+          filter=".eqt-settings__item-btn"
+          :prevent-on-filter="false"
+          tag="ul"
+          class="eqt-settings__ns-list"
+          @change="onProfileChange"
+          @start="onProfileStart"
+          @end="onProfileEnd"
+        >
+          <template #item="{ element: p, index: i }">
+            <li
+              class="eqt-settings__ns-item eqt-settings__ns-item--clickable"
+              :class="{ 'eqt-settings__ns-item--chosen': editingProfileIdx === i && !editingDeleted }"
+              @click="openEditor(i)"
+            >
+              <span class="eqt-settings__item-name">
+                {{ p.name }}
+                <span v-if="i === activeProfileIdx" class="eqt-settings__active-badge">目前</span>
+              </span>
+              <span class="eqt-settings__item-count">{{ (i === activeProfileIdx ? tagLines : p.tagLines).flat().length }}</span>
+              <button
+                v-if="profiles.length > 1"
+                class="eqt-settings__item-btn eqt-settings__item-btn--purge"
+                type="button"
+                title="移入垃圾桶"
+                @click.stop="onDelete(i)"
+              ><Trash2 :size="12" /></button>
+            </li>
+          </template>
+        </Draggable>
 
         <template v-if="deletedProfiles.length">
-          <h4 class="eqt-settings__subtitle">已刪除</h4>
+          <h4 class="eqt-settings__subtitle">回收桶</h4>
           <ul class="eqt-settings__ns-list">
             <li
               v-for="(p, i) in deletedProfiles"

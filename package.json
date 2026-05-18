@@ -10,11 +10,10 @@
   },
   "dependencies": {
     "@lucide/vue": "^1.16.0",
-    "sortablejs": "^1.15.7",
-    "vue": "^3.5.34"
+    "vue": "^3.5.34",
+    "vuedraggable": "^4.1.0"
   },
   "devDependencies": {
-    "@types/sortablejs": "^1.15.9",
     "@vitejs/plugin-vue": "^6.0.7",
     "sass": "^1.99.0",
     "typescript": "^6.0.3",

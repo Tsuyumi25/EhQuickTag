@@ -103,24 +103,6 @@ function onClose() {
   showUrlPopup.value = false
 }
 
-function onMove(fromLine: number, fromIdx: number, toLine: number, toIdx: number) {
-  const [item] = tagLines[fromLine].splice(fromIdx, 1)
-  tagLines[toLine].splice(toIdx, 0, item)
-}
-
-function onMoveLine(from: number, to: number) {
-  const [line] = tagLines.splice(from, 1)
-  tagLines.splice(to, 0, line)
-}
-
-function onDeleteLine(lineIdx: number) {
-  tagLines.splice(lineIdx, 1)
-}
-
-function onAddLine() {
-  tagLines.push([])
-}
-
 // --- settings popup ---
 
 const showSettings = ref(false)
@@ -153,7 +135,6 @@ watch(searchText, (val) => {
 <template>
   <Teleport v-if="anchorReady" to="#eqt-bar-anchor">
     <TagBar
-      :tag-lines="tagLines"
       :profile-name="profiles[activeProfileIdx]?.name ?? ''"
       :profile-idx="activeProfileIdx"
       :profile-count="profiles.length"
@@ -163,10 +144,6 @@ watch(searchText, (val) => {
       @configure="onConfigure"
       @add="onAdd('tag')"
       @add-url="onAdd('url')"
-      @move="onMove"
-      @move-line="onMoveLine"
-      @delete-line="onDeleteLine"
-      @add-line="onAddLine"
       @prev-profile="onPrevProfile"
       @next-profile="onNextProfile"
       @rename-profile="onRenameProfile"
