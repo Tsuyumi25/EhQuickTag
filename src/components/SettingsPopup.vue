@@ -55,7 +55,11 @@ function onNsOrderChange(evt: any) {
   }
 }
 
+const savedOverflow = document.body.style.overflow
+document.body.style.overflow = 'hidden'
+
 onUnmounted(() => {
+  document.body.style.overflow = savedOverflow
   clearTimeout(copiedTimer)
 })
 
