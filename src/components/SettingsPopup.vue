@@ -532,6 +532,7 @@ function onEditorExport() {
     align-items: center;
     gap: 6px;
     padding: 3px 6px;
+    min-height: 30px;
     border-radius: 3px;
     font-size: 13px;
 
