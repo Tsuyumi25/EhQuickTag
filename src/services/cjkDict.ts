@@ -1,9 +1,15 @@
+// dict.json: Simplified Chinese ↔ Japanese Kanji
+//   Source: manakanemu/ctoj + 京都大學 CJK 漢字對照表 (via EhSyringe dict.yml)
+// t2s.json:  Traditional → Simplified Chinese (from OpenCC TSCharacters.txt, Apache-2.0)
+// Regenerate: npx tsx scripts/gen-dict.ts / npx tsx scripts/gen-t2s.ts
 import CN2JP from './dict.json'
+import T2S from './t2s.json'
 
 const cn2jp: Readonly<Record<string, readonly string[]>> = CN2JP
 const jp2cn: Readonly<Record<string, string>> = Object.fromEntries(
   Object.entries(cn2jp).flatMap(([k, v]) => v.map(vv => [vv, k])),
 )
+const t2s: Readonly<Record<string, string>> = T2S
 
 export function isASCII(text: string): boolean {
   for (let i = 0; i < text.length; i++) {
@@ -12,11 +18,11 @@ export function isASCII(text: string): boolean {
   return true
 }
 
-/** Convert JP kanji → CN simplified (many-to-one) */
+/** Convert traditional/JP kanji → CN simplified */
 export function toCN(text: string): string {
   let ret = ''
   for (const ch of text) {
-    ret += jp2cn[ch] ?? ch
+    ret += t2s[ch] ?? jp2cn[ch] ?? ch
   }
   return ret
 }

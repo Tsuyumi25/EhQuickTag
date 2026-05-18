@@ -398,7 +398,11 @@ function onEditorExport() {
                 </a>
                 <a class="eqt-about__item" href="https://github.com/EhTagTranslation/EhSyringe" target="_blank" rel="noopener">
                   <Code :size="12" /> EhSyringe
-                  <span class="eqt-about__item-detail">搜尋排序權重邏輯參考</span>
+                  <span class="eqt-about__item-detail">搜尋排序權重邏輯參考（MIT）</span>
+                </a>
+                <a class="eqt-about__item" href="https://github.com/BYVoid/OpenCC" target="_blank" rel="noopener">
+                  <Code :size="12" /> OpenCC
+                  <span class="eqt-about__item-detail">繁簡轉換字表（Apache-2.0）</span>
                 </a>
               </div>
             </div>
