@@ -6,11 +6,12 @@ import { TagState, type QuickTag } from '@/types'
 import { tokenize, getState as _getState, removeTag, addTag, getNextRightClickState } from '@/services/tagState'
 import { tagLines, dblClickLeft, dblClickRight, type DblClickAction } from '@/services/store'
 import { baseDragOptions } from '@/utils/drag'
+import { t } from '@/composables/useI18n'
 
-const ACTION_LABEL: Record<DblClickAction, string> = {
-  search: '搜尋',
-  searchNewTab: '新分頁搜尋',
-  clearSearch: '清空搜尋框',
+const ACTION_KEYS: Record<DblClickAction, string> = {
+  search: 'tagbar.search',
+  searchNewTab: 'tagbar.searchNewTab',
+  clearSearch: 'tagbar.clearSearch',
 }
 
 const STATE_CLASS: Record<TagState, string | null> = {
@@ -205,7 +206,7 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
 
 <template>
   <div class="eqt-tag-bar" @dblclick="onBarDblClick" @contextmenu="onBarContextMenu">
-    <span class="eqt-tag-bar__info"><Info :size="16" /><span class="eqt-tag-bar__info-text">左鍵雙擊：{{ ACTION_LABEL[dblClickLeft] }}｜右鍵雙擊：{{ ACTION_LABEL[dblClickRight] }}</span></span>
+    <span class="eqt-tag-bar__info"><Info :size="16" /><span class="eqt-tag-bar__info-text">{{ t('tagbar.infoTooltip', { left: t(ACTION_KEYS[dblClickLeft]), right: t(ACTION_KEYS[dblClickRight]) }) }}</span></span>
     <div class="eqt-tag-bar__lines">
       <div class="eqt-tag-bar__profile-row">
         <button
@@ -228,7 +229,7 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
             class="eqt-tag-bar__profile-split-name"
             type="button"
             @click="startRenameOrCreate"
-          >{{ onCreationPage ? '點擊命名新標籤組' : profileName }}</button>
+          >{{ onCreationPage ? t('tagbar.newProfile') : profileName }}</button>
           <button
             class="eqt-tag-bar__profile-split-delete"
             :class="{ 'eqt-tag-bar__profile-split-delete--hidden': !editing || onCreationPage }"
@@ -262,12 +263,12 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
       >
         <template #item="{ element: line, index: li }">
           <div class="eqt-tag-bar__line-wrap">
-            <div class="eqt-tag-bar__handle" :class="{ 'eqt-tag-bar__handle--hidden': !editing }" title="拖曳排序行"><GripVertical :size="14" /></div>
+            <div class="eqt-tag-bar__handle" :class="{ 'eqt-tag-bar__handle--hidden': !editing }" :title="t('tagbar.handleTitle')"><GripVertical :size="14" /></div>
             <button
               v-if="editing && line.length === 0"
               class="eqt-tag-bar__line-delete"
               type="button"
-              title="刪除空行"
+              :title="t('tagbar.deleteLine')"
               @click="onDeleteLine(li)"
             ><Trash2 :size="12" /></button>
             <Draggable
@@ -314,31 +315,31 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
           class="eqt-tag-bar__line-add"
           type="button"
           @click="onAddLine"
-        ><Plus :size="12" /> 新增行</button>
+        ><Plus :size="12" /> {{ t('tagbar.addLine') }}</button>
         <div class="eqt-tag-bar__controls">
           <button
             class="eqt-tag-bar__ctrl"
             type="button"
             @click="emit('add')"
-          ><Plus :size="12" /> 新增標籤</button>
+          ><Plus :size="12" /> {{ t('tagbar.addTag') }}</button>
 
           <button
             class="eqt-tag-bar__ctrl"
             type="button"
             @click="emit('addUrl')"
-          ><ExternalLink :size="12" /> 新增網址</button>
+          ><ExternalLink :size="12" /> {{ t('tagbar.addUrl') }}</button>
 
           <button
             class="eqt-tag-bar__ctrl eqt-tag-bar__ctrl--toggle"
             type="button"
             @click="editing = !editing"
-          ><span :class="{ 'eqt-tag-bar__ctrl-hidden': !editing }"><Check :size="12" /> 完成</span><span :class="{ 'eqt-tag-bar__ctrl-hidden': editing }"><Pencil :size="12" /> 編輯</span></button>
+          ><span :class="{ 'eqt-tag-bar__ctrl-hidden': !editing }"><Check :size="12" /> {{ t('tagbar.done') }}</span><span :class="{ 'eqt-tag-bar__ctrl-hidden': editing }"><Pencil :size="12" /> {{ t('tagbar.edit') }}</span></button>
 
           <button
             class="eqt-tag-bar__ctrl"
             type="button"
             @click="emit('settings')"
-          ><Settings :size="12" /> 設定</button>
+          ><Settings :size="12" /> {{ t('tagbar.settings') }}</button>
         </div>
       </div>
     </div>

@@ -14,6 +14,7 @@ import '@/styles/theme.scss'
       }
       const container = document.createElement('div')
       container.id = 'eqt-app'
+      container.setAttribute('translate', 'no')
       document.body.append(container)
       return container
     })(),

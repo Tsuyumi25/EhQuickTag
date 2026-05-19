@@ -3,12 +3,13 @@ import { ref, computed, toRaw, onUnmounted } from 'vue'
 import { Trash2, Copy, Download, Check, RotateCcw, CircleAlert, ExternalLink, Code } from '@lucide/vue'
 import Draggable from 'vuedraggable'
 import { baseDragOptions } from '@/utils/drag'
-import { NS_LABEL, type QuickTag } from '@/types'
+import type { QuickTag } from '@/types'
+import { t, locale, setLocale, type Locale } from '@/composables/useI18n'
 import { DEFAULT_NS_ORDER } from '@/services/tagDb'
 import {
   profiles, activeProfileIdx, deletedProfiles, type Profile,
   deleteProfile, restoreProfile, purgeProfile, reorderProfiles, updateProfileTagLines,
-  fontFamily, fontWeight, DEFAULT_TAG_LINES, tagLines,
+  fontFamily, fontWeight, getDefaultTagLines, tagLines,
   dblClickLeft, dblClickRight, newTabActive, type DblClickAction,
 } from '@/services/store'
 
@@ -37,20 +38,30 @@ const dragOptions = {
 
 // --- tabs ---
 
-const tabs = [
-  { key: 'search', label: '搜尋' },
-  { key: 'appearance', label: '外觀' },
-  { key: 'about', label: '關於' },
-] as const
+const tabKeys = ['appearance', 'search', 'about'] as const
+type TabKey = typeof tabKeys[number]
 
-type TabKey = typeof tabs[number]['key']
+const tabLabelKeys: Record<TabKey, string> = {
+  search: 'settings.tabSearch',
+  appearance: 'settings.tabAppearance',
+  about: 'settings.tabAbout',
+}
 
-const activeTab = ref<TabKey | null>('search')
+const activeTab = ref<TabKey | null>('appearance')
 
 const dblClickOptions = [
-  { label: '左鍵雙擊', ref: dblClickLeft },
-  { label: '右鍵雙擊', ref: dblClickRight },
+  { labelKey: 'settings.dblClickLeft', ref: dblClickLeft },
+  { labelKey: 'settings.dblClickRight', ref: dblClickRight },
 ]
+
+const localeOptions: { value: Locale; label: string }[] = [
+  { value: 'zh-TW', label: '繁體中文' },
+  { value: 'zh-CN', label: '简体中文' },
+  { value: 'en', label: 'English' },
+  { value: 'ja', label: '日本語' },
+]
+
+const previewTagLines = computed(() => getDefaultTagLines())
 
 // --- nsOrder change handler ---
 
@@ -160,7 +171,7 @@ function onRestore(idx: number) {
 
 function onPurge(idx: number) {
   const name = deletedProfiles[idx]?.name ?? ''
-  if (!confirm(`確定要永久刪除「${name}」嗎？此操作無法復原。`)) return
+  if (!confirm(t('settings.purgeConfirm', { name }))) return
   adjustEditorIdxOnRemove(idx, true)
   purgeProfile(idx)
 }
@@ -220,18 +231,18 @@ function onEditorExport() {
   <div class="eqt-popup-overlay" @click.self="emit('close')" @keydown="onKeydown">
     <div class="eqt-popup eqt-settings__layout">
       <nav class="eqt-settings__sidebar">
-        <h3 class="eqt-popup__title">設定</h3>
+        <h3 class="eqt-popup__title">{{ t('settings.title') }}</h3>
         <button
-          v-for="tab in tabs"
-          :key="tab.key"
+          v-for="key in tabKeys"
+          :key="key"
           type="button"
           class="eqt-settings__tab"
-          :class="{ 'eqt-settings__tab--active': activeTab === tab.key }"
-          @click="activeTab = tab.key; editingProfileIdx = -1"
-        >{{ tab.label }}</button>
+          :class="{ 'eqt-settings__tab--active': activeTab === key }"
+          @click="activeTab = key; editingProfileIdx = -1"
+        >{{ t(tabLabelKeys[key]) }}</button>
         <div class="eqt-settings__sidebar-spacer" />
         <button class="eqt-popup__btn eqt-popup__btn--primary" type="button" @click="emit('close')">
-          關閉
+          {{ t('settings.close') }}
         </button>
       </nav>
 
@@ -239,33 +250,33 @@ function onEditorExport() {
         <!-- 設定：搜尋 -->
         <div v-show="editingProfileIdx < 0">
           <div v-show="activeTab === 'search'">
-            <label class="eqt-settings__row">
+            <label class="eqt-settings__row" style="margin-top: 0">
               <input
                 type="checkbox"
                 :checked="props.useNhWeight"
                 @change="emit('update:useNhWeight', ($event.target as HTMLInputElement).checked)"
               />
-              <span class="eqt-settings__label">使用 nhentai 人氣權重排序</span>
+              <span class="eqt-settings__label">{{ t('settings.useNhWeight') }}</span>
             </label>
             <p class="eqt-settings__hint">
-              開啟後，搜尋建議會優先顯示 nhentai 上傳量高的標籤（top 500），其餘按預設公式排序。
+              {{ t('settings.useNhWeightHint') }}
             </p>
 
-            <h4 class="eqt-settings__subtitle">背景雙擊動作</h4>
+            <h4 class="eqt-settings__subtitle">{{ t('settings.dblClickActions') }}</h4>
             <div
-              v-for="({ label, ref: r }) in dblClickOptions"
-              :key="label"
+              v-for="({ labelKey, ref: r }) in dblClickOptions"
+              :key="labelKey"
               class="eqt-settings__dblclick-row"
             >
-              <label class="eqt-settings__dblclick-label">{{ label }}</label>
+              <label class="eqt-settings__dblclick-label">{{ t(labelKey) }}</label>
               <select
                 class="eqt-settings__select"
                 :value="r.value"
                 @change="r.value = ($event.target as HTMLSelectElement).value as DblClickAction"
               >
-                <option value="search">搜尋（當前頁面）</option>
-                <option value="searchNewTab">搜尋（新分頁）</option>
-                <option value="clearSearch">清空搜尋框</option>
+                <option value="search">{{ t('settings.actionSearchCurrent') }}</option>
+                <option value="searchNewTab">{{ t('settings.actionSearchNewTab') }}</option>
+                <option value="clearSearch">{{ t('settings.actionClear') }}</option>
               </select>
             </div>
             <label class="eqt-settings__row" style="margin-top: 6px">
@@ -274,16 +285,15 @@ function onEditorExport() {
                 :checked="newTabActive"
                 @change="newTabActive = ($event.target as HTMLInputElement).checked"
               />
-              <span class="eqt-settings__label">新分頁搜尋時切換到該分頁</span>
+              <span class="eqt-settings__label">{{ t('settings.newTabActivate') }}</span>
             </label>
 
             <h4 class="eqt-settings__subtitle">
-              Namespace 搜尋順序
-              <button class="eqt-settings__reset-btn" type="button" title="重置為預設" @click="resetNsOrder"><RotateCcw :size="12" /> 重置</button>
+              {{ t('settings.nsOrder') }}
+              <button class="eqt-settings__reset-btn" type="button" :title="t('settings.resetTitle')" @click="resetNsOrder"><RotateCcw :size="12" /> {{ t('settings.reset') }}</button>
             </h4>
-            <p class="eqt-settings__hint">
-              調整搜尋建議中 namespace 的內部排序權重。拖曳調整順序，取消勾選可隱藏該類別。<br />
-              注意：此順序僅影響 namespace 之間的排列，匹配品質和 nhentai 人氣仍然優先。
+            <p class="eqt-settings__hint" style="white-space: pre-line">
+              {{ t('settings.nsOrderHint') }}
             </p>
             <Draggable
               v-bind="dragOptions"
@@ -302,7 +312,7 @@ function onEditorExport() {
                     :checked="!disabledNs.has(ns)"
                     @change="toggleNs(ns)"
                   />
-                  <span class="eqt-settings__ns-label">{{ NS_LABEL[ns] ?? ns }}</span>
+                  <span class="eqt-settings__ns-label">{{ t('ns.' + ns) }}</span>
                   <span class="eqt-settings__ns-key">{{ ns }}</span>
                 </li>
               </template>
@@ -311,20 +321,32 @@ function onEditorExport() {
 
           <!-- 設定：外觀 -->
           <div v-show="activeTab === 'appearance'">
-            <h4 class="eqt-settings__subtitle" style="margin-top: 0">自定義字體</h4>
+            <h4 class="eqt-settings__subtitle" style="margin-top: 0">{{ t('settings.language') }}</h4>
+            <div class="eqt-settings__locale-row">
+              <button
+                v-for="opt in localeOptions"
+                :key="opt.value"
+                type="button"
+                class="eqt-settings__locale-btn"
+                :class="{ 'eqt-settings__locale-btn--active': locale === opt.value }"
+                @click="setLocale(opt.value)"
+              >{{ opt.label }}</button>
+            </div>
+
+            <h4 class="eqt-settings__subtitle">{{ t('settings.fontFamily') }}</h4>
             <div class="eqt-settings__font-row">
               <input
                 :value="fontFamily"
                 class="eqt-settings__font-input eqt-settings__font-input--full"
-                placeholder="留空則使用頁面字體"
+                :placeholder="t('settings.fontFamilyPlaceholder')"
                 @input="fontFamily = ($event.target as HTMLInputElement).value"
               />
             </div>
             <p class="eqt-settings__hint">
-              font-family 值範例：<code>"Noto Sans TC", sans-serif</code>
+              {{ t('settings.fontFamilyHint') }}<code>"Noto Sans TC", sans-serif</code>
             </p>
 
-            <h4 class="eqt-settings__subtitle">字重</h4>
+            <h4 class="eqt-settings__subtitle">{{ t('settings.fontWeight') }}</h4>
             <div class="eqt-settings__weight-row">
               <input
                 type="range"
@@ -335,12 +357,12 @@ function onEditorExport() {
                 class="eqt-settings__weight-slider"
                 @input="fontWeight = ($event.target as HTMLInputElement).value"
               />
-              <span class="eqt-settings__weight-value">{{ fontWeight || '預設' }}</span>
+              <span class="eqt-settings__weight-value">{{ fontWeight || '400' }}</span>
             </div>
 
-            <h4 class="eqt-settings__subtitle">預覽</h4>
+            <h4 class="eqt-settings__subtitle">{{ t('settings.preview') }}</h4>
             <div class="eqt-settings__font-preview" :style="{ fontFamily: fontFamily || 'inherit', fontWeight: fontWeight || 'inherit' }">
-              <template v-for="(line, li) in DEFAULT_TAG_LINES" :key="li">
+              <template v-for="(line, li) in previewTagLines" :key="li">
                 <div v-if="line.length" class="eqt-settings__preview-line">
                   <span
                     v-for="(qt, ti) in line"
@@ -358,15 +380,15 @@ function onEditorExport() {
             <div class="eqt-about__hero">
               <div class="eqt-about__title">EH Quick Tag</div>
               <div class="eqt-about__version">v0.1.0</div>
-              <div class="eqt-about__desc">E-Hentai / ExHentai 搜尋快捷標籤列</div>
+              <div class="eqt-about__desc">{{ t('about.desc') }}</div>
               <div class="eqt-about__actions">
                 <a class="eqt-about__action-btn" href="https://github.com/Tsuyumi25/EhQuickTag" target="_blank" rel="noopener"><Code :size="14" /> GitHub</a>
-                <a class="eqt-about__action-btn" href="https://github.com/Tsuyumi25/EhQuickTag/issues" target="_blank" rel="noopener"><CircleAlert :size="14" /> 回報問題</a>
+                <a class="eqt-about__action-btn" href="https://github.com/Tsuyumi25/EhQuickTag/issues" target="_blank" rel="noopener"><CircleAlert :size="14" /> {{ t('about.reportIssue') }}</a>
               </div>
             </div>
 
             <div class="eqt-about__section">
-              <div class="eqt-about__section-title">靈感來源</div>
+              <div class="eqt-about__section-title">{{ t('about.inspiration') }}</div>
               <div class="eqt-about__items">
                 <a class="eqt-about__item" href="https://sleazyfork.org/scripts/454282" target="_blank" rel="noopener">
                   <ExternalLink :size="12" /> Add button on exhentai searchbox
@@ -381,7 +403,7 @@ function onEditorExport() {
             </div>
 
             <div class="eqt-about__section">
-              <div class="eqt-about__section-title">技術棧參考</div>
+              <div class="eqt-about__section-title">{{ t('about.techRef') }}</div>
               <div class="eqt-about__items">
                 <a class="eqt-about__item" href="https://github.com/sk2589822/Exhentai-Enhancer" target="_blank" rel="noopener">
                   <Code :size="12" /> Exhentai-Enhancer
@@ -390,19 +412,19 @@ function onEditorExport() {
             </div>
 
             <div class="eqt-about__section">
-              <div class="eqt-about__section-title">致謝</div>
+              <div class="eqt-about__section-title">{{ t('about.credits') }}</div>
               <div class="eqt-about__items">
                 <a class="eqt-about__item" href="https://github.com/EhTagTranslation/Database" target="_blank" rel="noopener">
                   <Code :size="12" /> EhTagTranslation
-                  <span class="eqt-about__item-detail">標籤中文翻譯資料庫（CC BY-NC-SA 3.0）</span>
+                  <span class="eqt-about__item-detail">{{ t('about.ehttDetail') }}</span>
                 </a>
                 <a class="eqt-about__item" href="https://github.com/EhTagTranslation/EhSyringe" target="_blank" rel="noopener">
                   <Code :size="12" /> EhSyringe
-                  <span class="eqt-about__item-detail">搜尋排序權重邏輯參考（MIT）</span>
+                  <span class="eqt-about__item-detail">{{ t('about.ehsyringeDetail') }}</span>
                 </a>
                 <a class="eqt-about__item" href="https://github.com/BYVoid/OpenCC" target="_blank" rel="noopener">
                   <Code :size="12" /> OpenCC
-                  <span class="eqt-about__item-detail">繁簡轉換字表（Apache-2.0）</span>
+                  <span class="eqt-about__item-detail">{{ t('about.openccDetail') }}</span>
                 </a>
               </div>
             </div>
@@ -416,11 +438,11 @@ function onEditorExport() {
           <div class="eqt-json-editor__header">
             <h4 class="eqt-json-editor__title">{{ editingName }}</h4>
             <div class="eqt-json-editor__toolbar">
-              <button class="eqt-json-editor__tool-btn" type="button" :title="editorCopied ? '已複製' : '複製'" @click="onEditorCopy">
+              <button class="eqt-json-editor__tool-btn" type="button" :title="editorCopied ? t('settings.editorCopied') : t('settings.editorCopy')" @click="onEditorCopy">
                 <Check v-if="editorCopied" :size="14" />
                 <Copy v-else :size="14" />
               </button>
-              <button class="eqt-json-editor__tool-btn" type="button" title="匯出檔案" @click="onEditorExport">
+              <button class="eqt-json-editor__tool-btn" type="button" :title="t('settings.editorExport')" @click="onEditorExport">
                 <Download :size="14" />
               </button>
             </div>
@@ -434,7 +456,7 @@ function onEditorExport() {
                   :key="ti"
                   class="eqt-settings__preview-tag"
                   :class="{ 'eqt-settings__preview-tag--url': !!qt.url }"
-                >{{ qt.label || qt.tag || '(空)' }}</span>
+                >{{ qt.label || qt.tag || t('settings.emptyTag') }}</span>
               </div>
             </template>
           </div>
@@ -447,22 +469,22 @@ function onEditorExport() {
             :readonly="editingDeleted"
           />
 
-          <p v-if="editorError" class="eqt-json-editor__error">JSON 格式錯誤：{{ editorError }}</p>
+          <p v-if="editorError" class="eqt-json-editor__error">{{ t('settings.editorJsonError', { message: editorError }) }}</p>
 
           <div v-if="editingDeleted" class="eqt-popup__actions" style="justify-content: center">
-            <button class="eqt-popup__btn eqt-popup__btn--primary" type="button" @click="onRestore(editingProfileIdx)">恢復標籤組</button>
-            <button class="eqt-popup__btn eqt-popup__btn--delete" type="button" @click="onPurge(editingProfileIdx)">永久刪除</button>
+            <button class="eqt-popup__btn eqt-popup__btn--primary" type="button" @click="onRestore(editingProfileIdx)">{{ t('settings.restoreProfile') }}</button>
+            <button class="eqt-popup__btn eqt-popup__btn--delete" type="button" @click="onPurge(editingProfileIdx)">{{ t('settings.purgeProfile') }}</button>
           </div>
           <div v-else class="eqt-popup__actions">
             <div class="eqt-popup__spacer" />
-            <button class="eqt-popup__btn eqt-popup__btn--primary" type="button" @click="onEditorSave">儲存</button>
+            <button class="eqt-popup__btn eqt-popup__btn--primary" type="button" @click="onEditorSave">{{ t('settings.save') }}</button>
           </div>
         </div>
       </div>
 
       <!-- 右欄：標籤組列表 -->
       <aside class="eqt-settings__profiles">
-        <h4 class="eqt-settings__subtitle" style="margin-top: 0">標籤組</h4>
+        <h4 class="eqt-settings__subtitle" style="margin-top: 0">{{ t('settings.profilesTitle') }}</h4>
         <Draggable
           v-bind="dragOptions"
           :model-value="profiles"
@@ -483,14 +505,14 @@ function onEditorExport() {
             >
               <span class="eqt-settings__item-name">
                 {{ p.name }}
-                <span v-if="i === activeProfileIdx" class="eqt-settings__active-badge">目前</span>
+                <span v-if="i === activeProfileIdx" class="eqt-settings__active-badge">{{ t('settings.activeBadge') }}</span>
               </span>
               <span class="eqt-settings__item-count">{{ (i === activeProfileIdx ? tagLines : p.tagLines).flat().length }}</span>
               <button
                 v-if="profiles.length > 1"
                 class="eqt-settings__item-btn eqt-settings__item-btn--purge"
                 type="button"
-                title="移入垃圾桶"
+                :title="t('settings.moveToTrash')"
                 @click.stop="onDelete(i)"
               ><Trash2 :size="12" /></button>
             </li>
@@ -498,7 +520,7 @@ function onEditorExport() {
         </Draggable>
 
         <template v-if="deletedProfiles.length">
-          <h4 class="eqt-settings__subtitle">回收桶</h4>
+          <h4 class="eqt-settings__subtitle">{{ t('settings.trash') }}</h4>
           <ul class="eqt-settings__ns-list">
             <li
               v-for="(p, i) in deletedProfiles"
@@ -622,6 +644,31 @@ function onEditorExport() {
   &__dblclick-label {
     min-width: 5em;
     flex-shrink: 0;
+  }
+
+  &__locale-row {
+    display: flex;
+    gap: 4px;
+    margin-top: 4px;
+  }
+
+  &__locale-btn {
+    padding: 3px 10px;
+    border: var(--eqt-border-width) solid var(--eqt-border);
+    border-radius: 3px;
+    background: transparent;
+    color: var(--eqt-text-secondary);
+    font-size: 12px;
+    cursor: pointer;
+
+    &:hover {
+      background: var(--eqt-bg-hover);
+    }
+
+    &--active {
+      background: var(--eqt-bg-active);
+      font-weight: bold;
+    }
   }
 
   &__select {

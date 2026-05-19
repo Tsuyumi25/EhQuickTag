@@ -1,7 +1,8 @@
 import { GM } from '$'
-import { reactive, ref, watch } from 'vue'
+import { reactive, ref, watch, nextTick } from 'vue'
 import type { QuickTag } from '@/types'
 import { DEFAULT_NS_ORDER } from '@/services/tagDb'
+import { locale, setLocale, detectLocale, t, type Locale } from '@/composables/useI18n'
 
 const KEYS = {
   profiles: 'eqt_profiles',
@@ -12,6 +13,7 @@ const KEYS = {
 export interface Profile {
   name: string
   tagLines: QuickTag[][]
+  isDefault?: boolean
 }
 
 export type DblClickAction = 'search' | 'searchNewTab' | 'clearSearch'
@@ -25,32 +27,46 @@ interface PersistedSettings {
   dblClickLeft: DblClickAction
   dblClickRight: DblClickAction
   newTabActive: boolean
+  locale: Locale | ''
 }
 
-export const DEFAULT_TAG_LINES: QuickTag[][] = [
+// Tag definitions without labels — labels are filled by getDefaultTagLines() based on locale
+const DEFAULT_TAG_DEFS: { tag: string; url?: string; labelKey: string; disabledModes?: readonly ('or' | 'exclude')[] }[][] = [
   [
-    { tag: 'language:"chinese"$', label: '中文' },
-    { tag: 'language:"english"$', label: '英語' },
-    { tag: 'language:"korean"$', label: '韓語' },
-    { tag: '-language:"english"$, -language:"chinese"$, -language:"korean"$', label: '日語', disabledModes: ['or', 'exclude'] },
+    { tag: 'language:"chinese"$', labelKey: 'default.chinese' },
+    { tag: 'language:"english"$', labelKey: 'default.english' },
+    { tag: 'language:"korean"$', labelKey: 'default.korean' },
+    { tag: '-language:"english"$, -language:"chinese"$, -language:"korean"$', labelKey: 'default.japanese', disabledModes: ['or', 'exclude'] },
   ],
   [
-    { tag: 'other:"full color"$', label: '全彩' },
-    { tag: 'other:"uncensored"$', label: '無修正' },
-    { tag: 'language:"translated"$', label: '已翻譯' },
-    { tag: 'language:"speechless"$', label: '無對話' },
-    { tag: '-other:"ai generated"$', label: '排除AI', disabledModes: ['or', 'exclude'] },
-    { tag: '-other:"rough translation"$', label: '排除機翻', disabledModes: ['or', 'exclude'] },
+    { tag: 'other:"full color"$', labelKey: 'default.fullColor' },
+    { tag: 'other:"uncensored"$', labelKey: 'default.uncensored' },
+    { tag: 'language:"translated"$', labelKey: 'default.translated' },
+    { tag: 'language:"speechless"$', labelKey: 'default.speechless' },
+    { tag: '-other:"ai generated"$', labelKey: 'default.excludeAI', disabledModes: ['or', 'exclude'] },
+    { tag: '-other:"rough translation"$', labelKey: 'default.excludeRoughTL', disabledModes: ['or', 'exclude'] },
   ],
   [
-    { tag: '', url: '?f_cats=0&f_search=other%3A%22how+to%24%22', label: '教學' },
-    { tag: '', url: '?f_cats=0&f_search=o%3Aartbook%24', label: '畫集' },
-    { tag: '', url: '?f_cats=991', label: '圖集' },
-    { tag: '', url: '?f_cats=1019&f_search=o%3Atankoubon%24', label: '單行本' },
-    { tag: '', url: '?f_cats=1019&f_search=o%3Aanthology%24', label: '選集' },
+    { tag: '', url: '?f_cats=0&f_search=other%3A%22how+to%24%22', labelKey: 'default.howto' },
+    { tag: '', url: '?f_cats=0&f_search=o%3Aartbook%24', labelKey: 'default.artbook' },
+    { tag: '', url: '?f_cats=991', labelKey: 'default.imageset' },
+    { tag: '', url: '?f_cats=1019&f_search=o%3Atankoubon%24', labelKey: 'default.tankoubon' },
+    { tag: '', url: '?f_cats=1019&f_search=o%3Aanthology%24', labelKey: 'default.anthology' },
   ],
   [],
 ]
+
+export function getDefaultTagLines(): QuickTag[][] {
+  return DEFAULT_TAG_DEFS.map(line =>
+    line.map(({ tag, url, labelKey, disabledModes }) => ({
+      tag,
+      ...(url ? { url } : {}),
+      label: t(labelKey),
+      ...(disabledModes ? { disabledModes } : {}),
+    })),
+  )
+}
+
 
 const DEFAULT_SETTINGS: PersistedSettings = {
   useNhWeight: true,
@@ -61,6 +77,7 @@ const DEFAULT_SETTINGS: PersistedSettings = {
   dblClickLeft: 'search',
   dblClickRight: 'searchNewTab',
   newTabActive: true,
+  locale: '',
 }
 
 // --- reactive state ---
@@ -95,13 +112,15 @@ export async function loadStore(): Promise<void> {
     activeProfileIdx.value = Math.min(Math.max(data.active, 0), profiles.length - 1)
   } else {
     let lines: QuickTag[][]
+    let isDefault = false
     if (savedTags) {
       const parsed = JSON.parse(savedTags)
       lines = (parsed.length === 0 || Array.isArray(parsed[0])) ? parsed : [parsed]
     } else {
-      lines = DEFAULT_TAG_LINES
+      lines = getDefaultTagLines()
+      isDefault = true
     }
-    profiles.splice(0, profiles.length, { name: '預設標籤組', tagLines: lines })
+    profiles.splice(0, profiles.length, { name: t('default.profileName'), tagLines: lines, isDefault })
     activeProfileIdx.value = 0
   }
 
@@ -119,12 +138,17 @@ export async function loadStore(): Promise<void> {
   dblClickLeft.value = s.dblClickLeft
   dblClickRight.value = s.dblClickRight
   newTabActive.value = s.newTabActive
+  setLocale(s.locale ? s.locale as Locale : detectLocale())
 }
 
 // --- profile switching ---
 
+let localeChanging = false
+
 function syncTagLinesToActiveProfile() {
-  profiles[activeProfileIdx.value].tagLines = JSON.parse(JSON.stringify(tagLines))
+  const p = profiles[activeProfileIdx.value]
+  p.tagLines = JSON.parse(JSON.stringify(tagLines))
+  if (p.isDefault && !localeChanging) p.isDefault = false
 }
 
 export function switchProfile(idx: number): void {
@@ -186,6 +210,7 @@ export function reorderProfiles(fromIdx: number, toIdx: number): void {
 
 export function updateProfileTagLines(idx: number, newTagLines: QuickTag[][]): void {
   profiles[idx].tagLines = newTagLines
+  if (profiles[idx].isDefault) profiles[idx].isDefault = false
   if (idx === activeProfileIdx.value) {
     tagLines.splice(0, tagLines.length, ...newTagLines)
     // watcher on tagLines will call saveProfiles()
@@ -200,7 +225,7 @@ function saveProfiles() {
   syncTagLinesToActiveProfile()
   GM.setValue(KEYS.profiles, JSON.stringify({
     active: activeProfileIdx.value,
-    profiles: profiles.map(p => ({ name: p.name, tagLines: p.tagLines })),
+    profiles: profiles.map(p => ({ name: p.name, tagLines: p.tagLines, ...(p.isDefault ? { isDefault: true } : {}) })),
     deleted: deletedProfiles.map(p => ({ name: p.name, tagLines: p.tagLines })),
   }))
 }
@@ -215,11 +240,27 @@ function saveSettings() {
     dblClickLeft: dblClickLeft.value,
     dblClickRight: dblClickRight.value,
     newTabActive: newTabActive.value,
+    locale: locale.value,
   }
   GM.setValue(KEYS.settings, JSON.stringify(data))
 }
 
 export function startAutoSave(): void {
   watch([tagLines, deletedProfiles], saveProfiles)
-  watch([useNhWeight, nsOrder, disabledNs, fontFamily, fontWeight, dblClickLeft, dblClickRight, newTabActive], saveSettings, { deep: true })
+  watch([useNhWeight, nsOrder, disabledNs, fontFamily, fontWeight, dblClickLeft, dblClickRight, newTabActive, locale], saveSettings, { deep: true })
+
+  // When locale changes, update default profiles' labels
+  watch(locale, async () => {
+    localeChanging = true
+    for (const p of profiles) {
+      if (!p.isDefault) continue
+      p.name = t('default.profileName')
+      p.tagLines = getDefaultTagLines()
+      if (activeProfileIdx.value === profiles.indexOf(p)) {
+        tagLines.splice(0, tagLines.length, ...p.tagLines)
+      }
+    }
+    await nextTick()
+    localeChanging = false
+  })
 }

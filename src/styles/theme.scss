@@ -1,12 +1,15 @@
-#eqt-bar-anchor {
+#eqt-bar-anchor,
+#eqt-app {
   font-family: var(--eqt-font-family, inherit);
   font-weight: var(--eqt-font-weight, inherit);
+  line-height: 1.4;
 }
 
 #eqt-app button,
 #eqt-bar-anchor button {
   font-family: inherit;
   font-weight: inherit;
+  line-height: inherit;
 }
 
 // Light theme (e-hentai.org) — on :root so Teleported content inherits

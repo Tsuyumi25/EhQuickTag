@@ -3,6 +3,7 @@ import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { GM_xmlhttpRequest } from '$'
 import { hasGMXHR } from '@/services/gmStorage'
 import type { QuickTag } from '@/types'
+import { t } from '@/composables/useI18n'
 
 const props = defineProps<{
   tag: QuickTag
@@ -97,25 +98,25 @@ function onSave() {
   <div class="eqt-popup-overlay" @click.self="emit('close')">
     <div class="eqt-popup eqt-popup--url">
       <div class="eqt-popup__field">
-        <label class="eqt-popup__label">顯示名稱</label>
+        <label class="eqt-popup__label">{{ t('urlConfig.displayName') }}</label>
         <input
           v-model="label"
           class="eqt-popup__input"
-          placeholder="（留空則顯示網址）"
+          :placeholder="t('urlConfig.displayNameHint')"
         />
       </div>
 
       <hr class="eqt-popup__divider" />
 
       <div class="eqt-popup__field">
-        <label class="eqt-popup__label">網址</label>
+        <label class="eqt-popup__label">{{ t('urlConfig.url') }}</label>
         <div class="eqt-popup__url-row">
           <select
             v-model="urlMode"
             class="eqt-popup__url-prefix"
           >
             <option value="eh">e[-x]hentai.org</option>
-            <option value="full">完整網址</option>
+            <option value="full">{{ t('urlConfig.fullUrl') }}</option>
           </select>
           <input
             v-model="url"
@@ -128,20 +129,20 @@ function onSave() {
             type="button"
             :disabled="fetchingTitle || !url.trim()"
             @click="fetchTitle"
-          >{{ fetchingTitle ? '取得中…' : '取得標題' }}</button>
+          >{{ fetchingTitle ? t('urlConfig.fetching') : t('urlConfig.fetchTitle') }}</button>
         </div>
       </div>
 
       <div class="eqt-popup__actions">
         <button v-if="!isAdd" class="eqt-popup__btn eqt-popup__btn--delete" type="button" @click="emit('delete')">
-          刪除
+          {{ t('urlConfig.delete') }}
         </button>
         <div class="eqt-popup__spacer" />
         <button class="eqt-popup__btn" type="button" @click="emit('close')">
-          取消 <kbd class="eqt-popup__kbd">Esc</kbd>
+          {{ t('urlConfig.cancel') }} <kbd class="eqt-popup__kbd">Esc</kbd>
         </button>
         <button class="eqt-popup__btn eqt-popup__btn--primary" type="button" @click="onSave">
-          儲存 <kbd class="eqt-popup__kbd">Ctrl+Enter</kbd>
+          {{ t('urlConfig.save') }} <kbd class="eqt-popup__kbd">Ctrl+Enter</kbd>
         </button>
       </div>
     </div>

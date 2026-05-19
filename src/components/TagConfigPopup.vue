@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { reactive, ref, watch, onMounted, onUnmounted, nextTick } from 'vue'
-import { type QuickTag, type TagMode, NS_LABEL, splitMultiTag } from '@/types'
+import { type QuickTag, type TagMode, splitMultiTag } from '@/types'
+import { t, isCJKLocale } from '@/composables/useI18n'
 import { loadTagDb, searchTags, type TagEntry } from '@/services/tagDb'
 import { loadNhPopularity } from '@/services/nhPopularity'
 
@@ -163,18 +164,18 @@ function onSave() {
   <div class="eqt-popup-overlay" @click.self="emit('close')">
     <div class="eqt-popup">
       <div class="eqt-popup__field">
-        <label class="eqt-popup__label">顯示名稱</label>
+        <label class="eqt-popup__label">{{ t('tagConfig.displayName') }}</label>
         <input
           v-model="label"
           class="eqt-popup__input"
-          placeholder="（留空則顯示 tag 原文）"
+          :placeholder="t('tagConfig.displayNameHint')"
         />
       </div>
 
       <hr class="eqt-popup__divider" />
 
       <div class="eqt-popup__field">
-        <label class="eqt-popup__label">標籤語法</label>
+        <label class="eqt-popup__label">{{ t('tagConfig.tagSyntax') }}</label>
         <div
           v-for="(row, i) in tagRows"
           :key="i"
@@ -184,7 +185,7 @@ function onSave() {
             ref="tagInputs"
             :value="row"
             class="eqt-popup__input eqt-popup__tag-input"
-            :placeholder="dbReady ? '輸入中文或英文搜尋…' : '載入中…'"
+            :placeholder="dbReady ? t('tagConfig.searchPlaceholder') : t('tagConfig.loadingPlaceholder')"
             :disabled="!dbReady"
             @input="onRowInput(i, ($event.target as HTMLInputElement).value)"
             @focus="onRowFocus(i)"
@@ -193,11 +194,11 @@ function onSave() {
           <button
             class="eqt-popup__tag-remove"
             type="button"
-            title="移除"
+            :title="t('tagConfig.removeRow')"
             @click="removeRow(i)"
           >&times;</button>
           <div v-if="activeRow === i && dbReady && searchQuery.trim() && !suggestions.length" class="eqt-popup__no-result">
-            找不到符合的標籤
+            {{ t('tagConfig.noResult') }}
           </div>
           <ul v-if="activeRow === i && suggestions.length" class="eqt-popup__suggestions">
             <li
@@ -208,8 +209,8 @@ function onSave() {
               @mousedown.prevent="pickSuggestion(entry, i)"
               @mouseenter="selectedIdx = si"
             >
-              <span class="eqt-popup__suggestion-ns">{{ NS_LABEL[entry.ns] ?? entry.ns }}：</span>
-              <span class="eqt-popup__suggestion-name">{{ entry.name }}</span>
+              <span class="eqt-popup__suggestion-ns">{{ t('ns.' + entry.ns) }}：</span>
+              <span class="eqt-popup__suggestion-name">{{ isCJKLocale() ? entry.name : entry.raw }}</span>
               <span class="eqt-popup__suggestion-tag">{{ entry.fullTag }}</span>
             </li>
           </ul>
@@ -219,7 +220,7 @@ function onSave() {
       <hr class="eqt-popup__divider" />
 
       <div class="eqt-popup__field">
-        <label class="eqt-popup__label">右鍵模式</label>
+        <label class="eqt-popup__label">{{ t('tagConfig.rightClickMode') }}</label>
         <div class="eqt-popup__modes">
           <label class="eqt-popup__mode">
             <input type="checkbox" v-model="orEnabled" />
@@ -234,14 +235,14 @@ function onSave() {
 
       <div class="eqt-popup__actions">
         <button v-if="!isAdd" class="eqt-popup__btn eqt-popup__btn--delete" type="button" @click="emit('delete')">
-          刪除
+          {{ t('tagConfig.delete') }}
         </button>
         <div class="eqt-popup__spacer" />
         <button class="eqt-popup__btn" type="button" @click="emit('close')">
-          取消 <kbd class="eqt-popup__kbd">Esc</kbd>
+          {{ t('tagConfig.cancel') }} <kbd class="eqt-popup__kbd">Esc</kbd>
         </button>
         <button class="eqt-popup__btn eqt-popup__btn--primary" type="button" @click="onSave">
-          儲存 <kbd class="eqt-popup__kbd">Ctrl+Enter</kbd>
+          {{ t('tagConfig.save') }} <kbd class="eqt-popup__kbd">Ctrl+Enter</kbd>
         </button>
       </div>
     </div>
