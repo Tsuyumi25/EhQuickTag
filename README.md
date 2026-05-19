@@ -22,7 +22,8 @@ E-Hentai / ExHentai 搜尋快捷標籤列。
 
 需要 [Tampermonkey](https://www.tampermonkey.net/) 或相容的 userscript 管理器。
 
-從 [Releases](https://github.com/Tsuyumi25/EhQuickTag/releases) 下載最新的 `eh-quick-tag.user.js` 並安裝。
+- [Sleazy Fork](https://sleazyfork.org/zh-TW/scripts/578820-eh-quick-tag)
+- [GitHub Releases](https://github.com/Tsuyumi25/EhQuickTag/releases)
 
 > ⚠️ 開發中，資料格式（標籤組、設定等）在未來版本可能不相容，屆時可能需要重新設定。
 
