@@ -27,18 +27,22 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/eh-quick-tag.user.js
+          files: |
+            dist/eh-quick-tag.user.js
+            dist/eh-quick-tag.meta.js
           generate_release_notes: true
 
       - name: Push dist to release branch
         run: |
           cp dist/eh-quick-tag.user.js /tmp/eh-quick-tag.user.js
+          cp dist/eh-quick-tag.meta.js /tmp/eh-quick-tag.meta.js
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout --orphan release-tmp
           git rm -rf .
           mkdir -p dist
           cp /tmp/eh-quick-tag.user.js dist/eh-quick-tag.user.js
+          cp /tmp/eh-quick-tag.meta.js dist/eh-quick-tag.meta.js
           git add dist/
           git commit -m "release: ${GITHUB_REF_NAME}"
           git push --force origin HEAD:release
