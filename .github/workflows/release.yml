@@ -1,0 +1,44 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm build
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/eh-quick-tag.user.js
+          generate_release_notes: true
+
+      - name: Push dist to release branch
+        run: |
+          cp dist/eh-quick-tag.user.js /tmp/eh-quick-tag.user.js
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan release-tmp
+          git rm -rf .
+          mkdir -p dist
+          cp /tmp/eh-quick-tag.user.js dist/eh-quick-tag.user.js
+          git add dist/
+          git commit -m "release: ${GITHUB_REF_NAME}"
+          git push --force origin HEAD:release
