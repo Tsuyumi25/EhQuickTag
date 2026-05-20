@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { onClickOutside, useScrollLock } from '@vueuse/core'
 import { GM_xmlhttpRequest } from '$'
 import { hasGMXHR } from '@/services/gmStorage'
 import type { QuickTag } from '@/types'
@@ -20,6 +21,7 @@ const label = ref('')
 const url = ref('')
 const urlMode = ref<'eh' | 'full'>('eh')
 const fetchingTitle = ref(false)
+const popupEl = ref<HTMLElement | null>(null)
 
 const EH_DOMAINS = ['e-hentai.org', 'exhentai.org']
 
@@ -60,6 +62,9 @@ onUnmounted(() => {
 
 let abortFetch: { abort(): void } | null = null
 
+onClickOutside(popupEl, () => emit('close'))
+useScrollLock(document.body, true)
+
 function fetchTitle() {
   const trimmed = url.value.trim()
   if (!trimmed || !hasGMXHR) return
@@ -95,8 +100,8 @@ function onSave() {
 </script>
 
 <template>
-  <div class="eqt-popup-overlay" @click.self="emit('close')">
-    <div class="eqt-popup eqt-popup--url">
+  <div class="eqt-popup-overlay">
+    <div ref="popupEl" class="eqt-popup eqt-popup--url">
       <div class="eqt-popup__field">
         <label class="eqt-popup__label">{{ t('urlConfig.displayName') }}</label>
         <input

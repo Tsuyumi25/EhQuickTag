@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, toRaw, onUnmounted } from 'vue'
+import { onClickOutside, useScrollLock } from '@vueuse/core'
 import { Trash2, Copy, Download, Check, RotateCcw, CircleAlert, ExternalLink, Code } from '@lucide/vue'
 import Draggable from 'vuedraggable'
 import { baseDragOptions } from '@/utils/drag'
@@ -79,11 +80,11 @@ function resetNsOrder() {
   emit('update:disabledNs', new Set())
 }
 
-const savedOverflow = document.body.style.overflow
-document.body.style.overflow = 'hidden'
+const popupEl = ref<HTMLElement | null>(null)
+onClickOutside(popupEl, () => emit('close'))
+useScrollLock(document.body, true)
 
 onUnmounted(() => {
-  document.body.style.overflow = savedOverflow
   clearTimeout(copiedTimer)
 })
 
@@ -228,8 +229,8 @@ function onEditorExport() {
 </script>
 
 <template>
-  <div class="eqt-popup-overlay" @click.self="emit('close')" @keydown="onKeydown">
-    <div class="eqt-popup eqt-settings__layout">
+  <div class="eqt-popup-overlay" @keydown="onKeydown">
+    <div ref="popupEl" class="eqt-popup eqt-settings__layout">
       <nav class="eqt-settings__sidebar">
         <h3 class="eqt-popup__title">{{ t('settings.title') }}</h3>
         <button

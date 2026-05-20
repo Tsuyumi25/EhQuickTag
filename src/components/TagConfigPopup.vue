@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { reactive, ref, watch, onMounted, onUnmounted, nextTick, computed } from 'vue'
+import { onClickOutside, useScrollLock } from '@vueuse/core'
 import { ExternalLink } from '@lucide/vue'
 import { type QuickTag, type TagMode, splitMultiTag } from '@/types'
 import { t, isCJKLocale } from '@/composables/useI18n'
@@ -41,6 +42,7 @@ const dbReady = ref(false)
 const orEnabled = ref(true)
 const excludeEnabled = ref(true)
 const activeRow = ref(-1)
+const popupEl = ref<HTMLElement | null>(null)
 
 // --- init from props ---
 
@@ -64,6 +66,11 @@ function makeRow(raw: string): RowState {
     selectedIdx: -1,
   }
 }
+
+// --- click outside & scroll lock ---
+
+onClickOutside(popupEl, () => emit('close'))
+useScrollLock(document.body, true)
 
 // --- DB loading ---
 
@@ -508,8 +515,8 @@ const qualifierOptions = Array.from(QUALIFIER_SET).map(q => ({ value: `q:${q}`, 
 </script>
 
 <template>
-  <div class="eqt-popup-overlay" @click.self="emit('close')">
-    <div class="eqt-popup">
+  <div class="eqt-popup-overlay">
+    <div ref="popupEl" class="eqt-popup">
       <div class="eqt-popup__field">
         <label class="eqt-popup__label">{{ t('tagConfig.displayName') }}</label>
         <input
