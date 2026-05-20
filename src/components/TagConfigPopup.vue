@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { reactive, ref, watch, onMounted, onUnmounted, nextTick, computed } from 'vue'
-import { onClickOutside, useScrollLock } from '@vueuse/core'
+import { reactive, ref, watch, onMounted, onScopeDispose, nextTick, computed } from 'vue'
+import { onClickOutside, useScrollLock, useEventListener } from '@vueuse/core'
 import { ExternalLink } from '@lucide/vue'
 import { type QuickTag, type TagMode, splitMultiTag } from '@/types'
 import { t, isCJKLocale } from '@/composables/useI18n'
@@ -71,11 +71,11 @@ function makeRow(raw: string): RowState {
 
 onClickOutside(popupEl, () => emit('close'))
 useScrollLock(document.body, true)
+useEventListener(document, 'keydown', onGlobalKeydown)
 
 // --- DB loading ---
 
 onMounted(async () => {
-  document.addEventListener('keydown', onGlobalKeydown)
   await loadTagDb()
   dbReady.value = true
   if (props.isAdd) {
@@ -83,11 +83,6 @@ onMounted(async () => {
       tagInputRefs.value[0]?.focus()
     })
   }
-})
-
-onUnmounted(() => {
-  clearTimeout(searchTimer)
-  document.removeEventListener('keydown', onGlobalKeydown)
 })
 
 // --- bidirectional sync ---
@@ -313,6 +308,7 @@ function getNsFormatLabel(token: SearchToken): string {
 // --- autocomplete ---
 
 let searchTimer = 0
+onScopeDispose(() => clearTimeout(searchTimer))
 
 function triggerSearch(rowIdx: number) {
   clearTimeout(searchTimer)

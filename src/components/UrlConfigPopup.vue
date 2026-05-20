@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted } from 'vue'
-import { onClickOutside, useScrollLock } from '@vueuse/core'
+import { ref, watch, onScopeDispose } from 'vue'
+import { onClickOutside, useScrollLock, useEventListener } from '@vueuse/core'
 import { GM_xmlhttpRequest } from '$'
 import { hasGMXHR } from '@/services/gmStorage'
 import type { QuickTag } from '@/types'
@@ -54,16 +54,12 @@ function onGlobalKeydown(e: KeyboardEvent) {
   }
 }
 
-onMounted(() => document.addEventListener('keydown', onGlobalKeydown))
-onUnmounted(() => {
-  document.removeEventListener('keydown', onGlobalKeydown)
-  abortFetch?.abort()
-})
-
 let abortFetch: { abort(): void } | null = null
+onScopeDispose(() => abortFetch?.abort())
 
 onClickOutside(popupEl, () => emit('close'))
 useScrollLock(document.body, true)
+useEventListener(document, 'keydown', onGlobalKeydown)
 
 function fetchTitle() {
   const trimmed = url.value.trim()

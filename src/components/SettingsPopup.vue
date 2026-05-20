@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, toRaw, onUnmounted } from 'vue'
-import { onClickOutside, useScrollLock } from '@vueuse/core'
+import { ref, computed, toRaw } from 'vue'
+import { onClickOutside, useScrollLock, useClipboard, useTimeoutFn } from '@vueuse/core'
 import { Trash2, Copy, Download, Check, RotateCcw, CircleAlert, ExternalLink, Code } from '@lucide/vue'
 import Draggable from 'vuedraggable'
 import { baseDragOptions } from '@/utils/drag'
@@ -84,10 +84,6 @@ const popupEl = ref<HTMLElement | null>(null)
 onClickOutside(popupEl, () => emit('close'))
 useScrollLock(document.body, true)
 
-onUnmounted(() => {
-  clearTimeout(copiedTimer)
-})
-
 // --- toggle ---
 
 function toggleNs(ns: string) {
@@ -138,7 +134,8 @@ const editingDeleted = ref(false)
 const editorText = ref('')
 const editorError = ref('')
 const editorCopied = ref(false)
-let copiedTimer: ReturnType<typeof setTimeout> | undefined
+const { copy: clipboardCopy } = useClipboard({ legacy: true })
+const { start: startCopiedTimer } = useTimeoutFn(() => { editorCopied.value = false }, 1500, { immediate: false })
 
 const editorPreview = computed<QuickTag[][] | null>(() => {
   try {
@@ -201,20 +198,9 @@ function onEditorSave() {
 }
 
 async function onEditorCopy() {
-  try {
-    await navigator.clipboard.writeText(editorText.value)
-  } catch {
-    const ta = document.createElement('textarea')
-    ta.value = editorText.value
-    ta.style.cssText = 'position:fixed;opacity:0'
-    document.body.appendChild(ta)
-    ta.select()
-    document.execCommand('copy')
-    document.body.removeChild(ta)
-  }
+  await clipboardCopy(editorText.value)
   editorCopied.value = true
-  clearTimeout(copiedTimer)
-  copiedTimer = setTimeout(() => { editorCopied.value = false }, 1500)
+  startCopiedTimer()
 }
 
 function onEditorExport() {
