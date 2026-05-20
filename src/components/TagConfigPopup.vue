@@ -460,15 +460,19 @@ function buildExplain(token: SearchToken): ExplainSegment[] {
     segs.push({ text: nsDisplay, cls: EXPLAIN_CLASSES.ns, label: t('tagConfig.explainNs') })
     segs.push({ text: ':', cls: EXPLAIN_CLASSES.punct, label: '' })
   }
-  if (token.quoted || token.tag.includes(' ')) {
+  const needsQuotes = token.tag.includes(' ')
+  if (needsQuotes) {
     segs.push({ text: '"', cls: EXPLAIN_CLASSES.punct, label: '' })
     segs.push({ text: token.tag, cls: EXPLAIN_CLASSES.tag, label: t('tagConfig.explainTag') })
+    if (token.suffix) {
+      segs.push({ text: token.suffix, cls: EXPLAIN_CLASSES.suffix, label: t('tagConfig.explainSuffix') })
+    }
     segs.push({ text: '"', cls: EXPLAIN_CLASSES.punct, label: '' })
   } else if (token.tag) {
     segs.push({ text: token.tag, cls: EXPLAIN_CLASSES.tag, label: t('tagConfig.explainTag') })
-  }
-  if (token.suffix) {
-    segs.push({ text: token.suffix, cls: EXPLAIN_CLASSES.suffix, label: t('tagConfig.explainSuffix') })
+    if (token.suffix) {
+      segs.push({ text: token.suffix, cls: EXPLAIN_CLASSES.suffix, label: t('tagConfig.explainSuffix') })
+    }
   }
   return segs
 }

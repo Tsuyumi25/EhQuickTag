@@ -343,6 +343,13 @@ describe('serializeToken', () => {
     })).toBe('female:big*')
   })
 
+  it('quoted flag ignored for single-word tags', () => {
+    expect(serializeToken({
+      prefix: null, qualifier: null, namespace: 'language', namespaceRaw: 'language',
+      tag: 'chinese', quoted: true, suffix: '$', raw: '',
+    })).toBe('language:chinese$')
+  })
+
   it('error token emits raw', () => {
     const raw = 'broken::stuff'
     expect(serializeToken({
@@ -362,7 +369,7 @@ describe('round-trip', () => {
     'female:"big breasts$"',
     'f:"big breasts$"',
     '-other:"ai generated$"',
-    '~language:"chinese$"',
+    '~language:chinese$',
     'tag:rimjob$',
     'title:"comic aun"',
     '-title:2007',
@@ -370,7 +377,7 @@ describe('round-trip', () => {
     'loli*',
     'other:"full color$"',
     '-female:"big breasts$"',
-    'language:"translated$"',
+    'language:translated$',
   ]
 
   for (const raw of cases) {

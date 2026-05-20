@@ -193,7 +193,7 @@ export function serializeToken(token: SearchToken, opts?: SerializeOptions): str
     result += ns + ':'
   }
 
-  const needsQuotes = token.quoted || token.tag.includes(' ')
+  const needsQuotes = token.tag.includes(' ')
   if (needsQuotes) {
     result += '"' + token.tag + (token.suffix ?? '') + '"'
   } else {
