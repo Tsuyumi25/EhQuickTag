@@ -33,7 +33,6 @@ export default defineConfig({
         'run-at': 'document-end',
         connect: [
           'raw.githubusercontent.com',
-          'nhentai.net',
         ],
       },
       build: {

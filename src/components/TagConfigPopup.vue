@@ -4,7 +4,6 @@ import { ExternalLink } from '@lucide/vue'
 import { type QuickTag, type TagMode, splitMultiTag } from '@/types'
 import { t, isCJKLocale } from '@/composables/useI18n'
 import { loadTagDb, searchTags, type TagEntry, ALL_NAMESPACES } from '@/services/tagDb'
-import { loadNhPopularity } from '@/services/nhPopularity'
 import {
   parseToken, serializeToken, type SearchToken, type Prefix, type Suffix, type Qualifier,
   NS_TO_SHORT, QUALIFIER_SET,
@@ -70,9 +69,7 @@ function makeRow(raw: string): RowState {
 
 onMounted(async () => {
   document.addEventListener('keydown', onGlobalKeydown)
-  const loads: Promise<unknown>[] = [loadTagDb()]
-  if (props.useNhWeight) loads.push(loadNhPopularity())
-  await Promise.all(loads)
+  await loadTagDb()
   dbReady.value = true
   if (props.isAdd) {
     nextTick(() => {
