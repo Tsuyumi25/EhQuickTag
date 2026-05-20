@@ -283,9 +283,7 @@ function onCycleSuffix(rowIdx: number) {
   onStructuredChange(rowIdx)
 }
 
-function nsToShort(ns: string): string | undefined {
-  return NS_TO_SHORT[ns]
-}
+const nsToShort = (ns: string) => NS_TO_SHORT[ns] as string | undefined
 
 function cycleNsFormat(rowIdx: number) {
   const row = rows[rowIdx]
@@ -496,6 +494,8 @@ function onSave() {
 
 // --- namespace list for dropdown ---
 
+const isCJK = computed(isCJKLocale)
+
 const nsOptions = computed(() =>
   ALL_NAMESPACES.map(ns => {
     const short = nsToShort(ns)
@@ -503,9 +503,7 @@ const nsOptions = computed(() =>
   })
 )
 
-const qualifierOptions: { value: string; label: string }[] = [
-  ...Array.from(QUALIFIER_SET).map(q => ({ value: `q:${q}`, label: `${q}:` })),
-]
+const qualifierOptions = Array.from(QUALIFIER_SET).map(q => ({ value: `q:${q}`, label: `${q}:` }))
 </script>
 
 <template>
@@ -591,7 +589,7 @@ const qualifierOptions: { value: string; label: string }[] = [
                   @mouseenter="row.selectedIdx = si"
                 >
                   <span class="eqt-popup__suggestion-ns">{{ t('ns.' + entry.ns) }}：</span>
-                  <span class="eqt-popup__suggestion-name">{{ isCJKLocale() ? entry.name : entry.raw }}</span>
+                  <span class="eqt-popup__suggestion-name">{{ isCJK ? entry.name : entry.raw }}</span>
                   <span class="eqt-popup__suggestion-tag">{{ entry.fullTag }}</span>
                 </li>
               </ul>

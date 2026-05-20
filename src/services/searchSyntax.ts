@@ -69,11 +69,10 @@ export function parseToken(raw: string): SearchToken {
   }
 
   let pos = 0
-  const input = raw
-  const len = input.length
+  const len = raw.length
 
-  function peek(): string { return pos < len ? input[pos] : '' }
-  function advance(): string { return input[pos++] }
+  function peek(): string { return pos < len ? raw[pos] : '' }
+  function advance(): string { return raw[pos++] }
 
   // 1. prefix
   if (peek() === '-' || peek() === '~') {
@@ -84,12 +83,12 @@ export function parseToken(raw: string): SearchToken {
   //    look for ':' before any '"' or end of string
   let colonIdx = -1
   for (let i = pos; i < len; i++) {
-    if (input[i] === '"') break
-    if (input[i] === ':') { colonIdx = i; break }
+    if (raw[i] === '"') break
+    if (raw[i] === ':') { colonIdx = i; break }
   }
 
   if (colonIdx >= 0 && colonIdx > pos) {
-    const candidate = input.slice(pos, colonIdx)
+    const candidate = raw.slice(pos, colonIdx)
     const resolved = resolveColonPrefix(candidate)
 
     if (resolved.qualifier || resolved.namespace) {
@@ -133,14 +132,14 @@ export function parseToken(raw: string): SearchToken {
   }
   if (pos < len) {
     // characters remain after quoted value (legacy suffix or unexpected chars)
-    const remaining = input.slice(pos)
+    const remaining = raw.slice(pos)
     const suffixChar = remaining[0]
     if (!token.suffix && (suffixChar === '$' || suffixChar === '*' || suffixChar === '%')) {
       token.suffix = suffixChar as Suffix
       pos++
     }
     if (pos < len) {
-      token.parseError = `Unexpected characters after suffix: "${input.slice(pos)}"`
+      token.parseError = `Unexpected characters after suffix: "${raw.slice(pos)}"`
     }
   } else if (!token.quoted && token.tag.length > 0) {
     // for bare words, check if last char is a suffix

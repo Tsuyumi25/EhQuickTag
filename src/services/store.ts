@@ -35,18 +35,18 @@ interface PersistedSettings {
 // Tag definitions without labels — labels are filled by getDefaultTagLines() based on locale
 const DEFAULT_TAG_DEFS: { tag: string; url?: string; labelKey: string; disabledModes?: readonly ('or' | 'exclude')[] }[][] = [
   [
-    { tag: 'language:"chinese"$', labelKey: 'default.chinese' },
-    { tag: 'language:"english"$', labelKey: 'default.english' },
-    { tag: 'language:"korean"$', labelKey: 'default.korean' },
-    { tag: '-language:"english"$, -language:"chinese"$, -language:"korean"$', labelKey: 'default.japanese', disabledModes: ['or', 'exclude'] },
+    { tag: 'language:chinese$', labelKey: 'default.chinese' },
+    { tag: 'language:english$', labelKey: 'default.english' },
+    { tag: 'language:korean$', labelKey: 'default.korean' },
+    { tag: '-language:english$, -language:chinese$, -language:korean$', labelKey: 'default.japanese', disabledModes: ['or', 'exclude'] },
   ],
   [
-    { tag: 'other:"full color"$', labelKey: 'default.fullColor' },
-    { tag: 'other:"uncensored"$', labelKey: 'default.uncensored' },
-    { tag: 'language:"translated"$', labelKey: 'default.translated' },
-    { tag: 'language:"speechless"$', labelKey: 'default.speechless' },
-    { tag: '-other:"ai generated"$', labelKey: 'default.excludeAI', disabledModes: ['or', 'exclude'] },
-    { tag: '-other:"rough translation"$', labelKey: 'default.excludeRoughTL', disabledModes: ['or', 'exclude'] },
+    { tag: 'other:"full color$"', labelKey: 'default.fullColor' },
+    { tag: 'other:uncensored$', labelKey: 'default.uncensored' },
+    { tag: 'language:translated$', labelKey: 'default.translated' },
+    { tag: 'language:speechless$', labelKey: 'default.speechless' },
+    { tag: '-other:"ai generated$"', labelKey: 'default.excludeAI', disabledModes: ['or', 'exclude'] },
+    { tag: '-other:"rough translation$"', labelKey: 'default.excludeRoughTL', disabledModes: ['or', 'exclude'] },
   ],
   [
     { tag: '', url: '?f_cats=0&f_search=other%3A%22how+to%24%22', labelKey: 'default.howto' },
