@@ -1,9 +1,20 @@
 import { TagState, type QuickTag, splitMultiTag } from '@/types'
-
-const TOKEN_RE = /[^"\s]*"[^"]*"[^\s]*|[^\s"]+/g
+import { parseToken, serializeToken, TOKEN_RE } from './searchSyntax'
 
 export function tokenize(text: string): string[] {
   return text.match(TOKEN_RE) ?? []
+}
+
+/** Normalize namespace to long form for comparison. Preserves prefix, suffix, quoting. */
+const _nsCache = new Map<string, string>()
+export function normalizeNs(tokenStr: string): string {
+  let result = _nsCache.get(tokenStr)
+  if (result !== undefined) return result
+  const parsed = parseToken(tokenStr)
+  // namespaceRaw: null forces serializeToken to use nsFormat fallback instead of preserving raw form
+  result = parsed.parseError ? tokenStr : serializeToken({ ...parsed, namespaceRaw: null }, { nsFormat: 'long' })
+  _nsCache.set(tokenStr, result)
+  return result
 }
 
 export function applyState(part: string, state: TagState): string {
@@ -20,25 +31,27 @@ export function applyState(part: string, state: TagState): string {
 }
 
 export function allForms(part: string): string[] {
-  if (part.startsWith('-')) return [part, part.slice(1)]
-  if (part.startsWith('~')) return [part, `-${part.slice(1)}`]
-  return [part, `~${part}`, `-${part}`]
+  const p = normalizeNs(part)
+  if (p.startsWith('-')) return [p, p.slice(1)]
+  if (p.startsWith('~')) return [p, `-${p.slice(1)}`]
+  return [p, `~${p}`, `-${p}`]
 }
 
 export function detectState(part: string, tokens: Set<string>): TagState | null {
-  const neg = part.startsWith('-')
-  const or = part.startsWith('~')
-  const base = (neg || or) ? part.slice(1) : part
+  const p = normalizeNs(part)
+  const neg = p.startsWith('-')
+  const or = p.startsWith('~')
+  const base = (neg || or) ? p.slice(1) : p
   if (neg) {
     if (tokens.has(base)) return TagState.Exclude
-    if (tokens.has(part)) return TagState.Include
+    if (tokens.has(p)) return TagState.Include
   } else if (or) {
     if (tokens.has(`-${base}`)) return TagState.Exclude
-    if (tokens.has(part)) return TagState.Include
+    if (tokens.has(p)) return TagState.Include
   } else {
-    if (tokens.has(`-${part}`)) return TagState.Exclude
-    if (tokens.has(`~${part}`)) return TagState.Or
-    if (tokens.has(part)) return TagState.Include
+    if (tokens.has(`-${p}`)) return TagState.Exclude
+    if (tokens.has(`~${p}`)) return TagState.Or
+    if (tokens.has(p)) return TagState.Include
   }
   return null
 }
@@ -56,7 +69,7 @@ export function getState(tag: string, tokens: Set<string>): TagState {
 export function removeTag(text: string, tag: string): string {
   const tokens = tokenize(text)
   const forms = new Set(splitMultiTag(tag).flatMap(allForms))
-  return tokens.filter(t => !forms.has(t)).join(' ')
+  return tokens.filter(t => !forms.has(normalizeNs(t))).join(' ')
 }
 
 export function addTag(text: string, tag: string, state: TagState): string {

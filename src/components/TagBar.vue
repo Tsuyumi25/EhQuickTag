@@ -3,7 +3,7 @@ import { ref, computed, nextTick } from 'vue'
 import Draggable from 'vuedraggable'
 import { ChevronLeft, ChevronRight, ExternalLink, GripVertical, Trash2, Pencil, Check, Settings, Plus, Info } from '@lucide/vue'
 import { TagState, type QuickTag } from '@/types'
-import { tokenize, getState as _getState, removeTag, addTag, getNextRightClickState } from '@/services/tagState'
+import { tokenize, normalizeNs, getState as _getState, removeTag, addTag, getNextRightClickState } from '@/services/tagState'
 import { tagLines, dblClickLeft, dblClickRight, type DblClickAction } from '@/services/store'
 import { baseDragOptions } from '@/utils/drag'
 import { t } from '@/composables/useI18n'
@@ -174,7 +174,7 @@ const tagDragOptions = {
 
 // --- search text parsing ---
 
-const tokenSet = computed(() => new Set(tokenize(props.searchText)))
+const tokenSet = computed(() => new Set(tokenize(props.searchText).map(normalizeNs)))
 
 function getState(tag: string): TagState {
   return _getState(tag, tokenSet.value)

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { TagState } from '@/types'
 import {
   tokenize,
+  normalizeNs,
   applyState,
   allForms,
   detectState,
@@ -745,5 +746,90 @@ describe('round-trip: composite mixed (chinese + exclude AI)', () => {
       'language:"chinese"$ -other:"ai generated"$ other:foo$',
       tag,
     )).toBe('other:foo$')
+  })
+})
+
+// ============================================================
+// namespace normalization: long/short forms should match
+// ============================================================
+
+describe('namespace normalization: detectState', () => {
+  it('short ns in search matches long ns button', () => {
+    const tokens = new Set(['l:"chinese"$'].map(t =>
+      // simulate what TagBar does: normalizeNs
+      normalizeNs(t),
+    ))
+    expect(detectState('language:"chinese"$', tokens)).toBe(TagState.Include)
+  })
+
+  it('long ns in search matches short ns button', () => {
+    const tokens = new Set(['language:"chinese"$'].map(t =>
+      normalizeNs(t),
+    ))
+    expect(detectState('l:"chinese"$', tokens)).toBe(TagState.Include)
+  })
+
+  it('short ns with ~ prefix detected as Or', () => {
+    const tokens = new Set(['~l:"chinese"$'].map(t =>
+      normalizeNs(t),
+    ))
+    expect(detectState('language:"chinese"$', tokens)).toBe(TagState.Or)
+  })
+
+  it('short ns with - prefix detected as Exclude', () => {
+    const tokens = new Set(['-l:"chinese"$'].map(t =>
+      normalizeNs(t),
+    ))
+    expect(detectState('language:"chinese"$', tokens)).toBe(TagState.Exclude)
+  })
+})
+
+describe('namespace normalization: getState', () => {
+  it('button=long, search=short → Include', () => {
+    const tag = 'language:"chinese"$'
+    const tokens = new Set(tokenize('l:"chinese"$').map(t =>
+      normalizeNs(t),
+    ))
+    expect(getState(tag, tokens)).toBe(TagState.Include)
+  })
+
+  it('button=short, search=long → Include', () => {
+    const tag = 'l:"chinese"$'
+    const tokens = new Set(tokenize('language:"chinese"$').map(t =>
+      normalizeNs(t),
+    ))
+    expect(getState(tag, tokens)).toBe(TagState.Include)
+  })
+
+  it('composite: mixed ns formats all detected', () => {
+    const tag = 'language:"chinese"$, -other:"ai generated"$'
+    const tokens = new Set(tokenize('l:"chinese"$ -o:"ai generated"$').map(t =>
+      normalizeNs(t),
+    ))
+    expect(getState(tag, tokens)).toBe(TagState.Include)
+  })
+})
+
+describe('namespace normalization: removeTag', () => {
+  it('removes short-form tokens when button uses long form', () => {
+    expect(removeTag('l:"chinese"$ other:foo$', 'language:"chinese"$'))
+      .toBe('other:foo$')
+  })
+
+  it('removes long-form tokens when button uses short form', () => {
+    expect(removeTag('language:"chinese"$ other:foo$', 'l:"chinese"$'))
+      .toBe('other:foo$')
+  })
+
+  it('removes mixed ns forms from search text', () => {
+    expect(removeTag(
+      'l:"chinese"$ -o:"ai generated"$ other:foo$',
+      'language:"chinese"$, -other:"ai generated"$',
+    )).toBe('other:foo$')
+  })
+
+  it('removes ~short-form tokens', () => {
+    expect(removeTag('~f:"big breasts"$ other:foo$', 'female:"big breasts"$'))
+      .toBe('other:foo$')
   })
 })

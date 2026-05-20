@@ -200,8 +200,8 @@ export function serializeToken(token: SearchToken, opts?: SerializeOptions): str
 
 // ---- query-level functions ----
 
-// Same regex as tagState.ts TOKEN_RE — handles quoted strings with spaces
-const TOKEN_RE = /[^"\s]*"[^"]*"[^\s]*|[^\s"]+/g
+/** Tokenization regex shared with tagState.ts — handles quoted strings with spaces */
+export const TOKEN_RE = /[^"\s]*"[^"]*"[^\s]*|[^\s"]+/g
 
 export function parseQuery(input: string): SearchToken[] {
   const matches = input.match(TOKEN_RE)
