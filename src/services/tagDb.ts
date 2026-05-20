@@ -3,10 +3,17 @@ import { isASCII, toCN, toJP } from '@/services/cjkDict'
 import { getNhCount } from '@/services/nhPopularity'
 import { hasGMXHR, cacheGet, cacheSet } from '@/services/gmStorage'
 
-const DB_URL = 'https://raw.githubusercontent.com/EhTagTranslation/DatabaseReleases/master/db.html.json'
+export type TagDbMirror = 'jsdelivr' | 'fastly' | 'gcore' | 'github'
+
+export const TAG_DB_MIRRORS: Record<TagDbMirror, { label: string; url: string }> = {
+  jsdelivr: { label: 'jsDelivr', url: 'https://cdn.jsdelivr.net/gh/EhTagTranslation/DatabaseReleases@master/db.html.json' },
+  fastly: { label: 'jsDelivr (Fastly)', url: 'https://fastly.jsdelivr.net/gh/EhTagTranslation/DatabaseReleases@master/db.html.json' },
+  gcore: { label: 'jsDelivr (Gcore)', url: 'https://gcore.jsdelivr.net/gh/EhTagTranslation/DatabaseReleases@master/db.html.json' },
+  github: { label: 'GitHub Raw', url: 'https://raw.githubusercontent.com/EhTagTranslation/DatabaseReleases/master/db.html.json' },
+}
+
 const CACHE_KEY = 'eqt_tag_db'
 const CACHE_TS_KEY = 'eqt_tag_db_ts'
-const CACHE_TTL = 24 * 60 * 60 * 1000 // 24h
 
 /** Fields persisted to cache. */
 interface StoredEntry {
@@ -81,12 +88,14 @@ function buildIndex(db: DbJson): TagEntry[] {
 
 // --- fetch ---
 
-async function fetchDb(): Promise<string> {
+async function fetchDb(mirror: TagDbMirror = 'jsdelivr'): Promise<string> {
+  const url = TAG_DB_MIRRORS[mirror]?.url ?? TAG_DB_MIRRORS.jsdelivr.url
+
   if (hasGMXHR) {
     return new Promise((resolve, reject) => {
       GM_xmlhttpRequest({
         method: 'GET',
-        url: DB_URL,
+        url,
         onload: (res) => {
           if (res.status === 200) resolve(res.responseText)
           else reject(new Error(`HTTP ${res.status}`))
@@ -96,16 +105,22 @@ async function fetchDb(): Promise<string> {
     })
   }
 
-  const res = await fetch(DB_URL)
+  const res = await fetch(url)
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
   return res.text()
 }
 
-export async function loadTagDb(): Promise<TagEntry[]> {
+export interface LoadTagDbOptions {
+  mirror?: TagDbMirror
+  ttlDays?: number
+}
+
+export async function loadTagDb(opts: LoadTagDbOptions = {}): Promise<TagEntry[]> {
   if (entries) return entries
 
+  const ttl = (opts.ttlDays ?? 7) * 24 * 60 * 60 * 1000
   const cachedTs = Number(await cacheGet(CACHE_TS_KEY)) || 0
-  if (Date.now() - cachedTs < CACHE_TTL) {
+  if (Date.now() - cachedTs < ttl) {
     const cached = await cacheGet(CACHE_KEY)
     if (cached) {
       entries = (JSON.parse(cached) as StoredEntry[]).map(addSearchFields)
@@ -113,7 +128,7 @@ export async function loadTagDb(): Promise<TagEntry[]> {
     }
   }
 
-  const raw = await fetchDb()
+  const raw = await fetchDb(opts.mirror)
   const db: DbJson = JSON.parse(raw)
   entries = buildIndex(db)
 
@@ -124,6 +139,13 @@ export async function loadTagDb(): Promise<TagEntry[]> {
   await cacheSet(CACHE_TS_KEY, String(Date.now()))
 
   return entries
+}
+
+/** Force re-fetch tag DB from mirror, ignoring cache. */
+export async function refreshTagDb(opts: LoadTagDbOptions = {}): Promise<void> {
+  entries = null
+  await cacheSet(CACHE_TS_KEY, '0')
+  await loadTagDb(opts)
 }
 
 // --- multi-key ranking ---

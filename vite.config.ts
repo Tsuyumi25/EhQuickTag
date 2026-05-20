@@ -33,6 +33,9 @@ export default defineConfig({
         'run-at': 'document-end',
         connect: [
           'raw.githubusercontent.com',
+          'cdn.jsdelivr.net',
+          'fastly.jsdelivr.net',
+          'gcore.jsdelivr.net',
         ],
       },
       build: {

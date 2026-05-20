@@ -1,7 +1,7 @@
 import { GM } from '$'
 import { reactive, ref, watch, nextTick } from 'vue'
 import type { QuickTag } from '@/types'
-import { DEFAULT_NS_ORDER } from '@/services/tagDb'
+import { DEFAULT_NS_ORDER, type TagDbMirror } from '@/services/tagDb'
 import { locale, setLocale, detectLocale, t, type Locale } from '@/composables/useI18n'
 
 const KEYS = {
@@ -30,6 +30,8 @@ interface PersistedSettings {
   locale: Locale | ''
   nsFormat: 'long' | 'short'
   defaultExactMatch: boolean
+  tagDbMirror: TagDbMirror
+  tagDbTtlDays: number
 }
 
 // Tag definitions without labels — labels are filled by getDefaultTagLines() based on locale
@@ -82,6 +84,8 @@ const DEFAULT_SETTINGS: PersistedSettings = {
   locale: '',
   nsFormat: 'long',
   defaultExactMatch: true,
+  tagDbMirror: 'jsdelivr',
+  tagDbTtlDays: 7,
 }
 
 // --- reactive state ---
@@ -100,6 +104,8 @@ export const dblClickRight = ref<DblClickAction>('searchNewTab')
 export const newTabActive = ref(true)
 export const nsFormat = ref<'long' | 'short'>('long')
 export const defaultExactMatch = ref(true)
+export const tagDbMirror = ref<TagDbMirror>('jsdelivr')
+export const tagDbTtlDays = ref(7)
 
 // --- load from GM ---
 
@@ -146,6 +152,8 @@ export async function loadStore(): Promise<void> {
   newTabActive.value = s.newTabActive
   nsFormat.value = s.nsFormat
   defaultExactMatch.value = s.defaultExactMatch
+  tagDbMirror.value = s.tagDbMirror
+  tagDbTtlDays.value = s.tagDbTtlDays
   setLocale(s.locale ? s.locale as Locale : detectLocale())
 }
 
@@ -251,13 +259,15 @@ function saveSettings() {
     locale: locale.value,
     nsFormat: nsFormat.value,
     defaultExactMatch: defaultExactMatch.value,
+    tagDbMirror: tagDbMirror.value,
+    tagDbTtlDays: tagDbTtlDays.value,
   }
   GM.setValue(KEYS.settings, JSON.stringify(data))
 }
 
 export function startAutoSave(): void {
   watch([tagLines, deletedProfiles], saveProfiles)
-  watch([useNhWeight, nsOrder, disabledNs, fontFamily, fontWeight, dblClickLeft, dblClickRight, newTabActive, locale, nsFormat, defaultExactMatch], saveSettings, { deep: true })
+  watch([useNhWeight, nsOrder, disabledNs, fontFamily, fontWeight, dblClickLeft, dblClickRight, newTabActive, locale, nsFormat, defaultExactMatch, tagDbMirror, tagDbTtlDays], saveSettings, { deep: true })
 
   // When locale changes, update default profiles' labels
   watch(locale, async () => {

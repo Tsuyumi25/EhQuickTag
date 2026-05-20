@@ -5,7 +5,8 @@ import TagConfigPopup from '@/components/TagConfigPopup.vue'
 import UrlConfigPopup from '@/components/UrlConfigPopup.vue'
 import SettingsPopup from '@/components/SettingsPopup.vue'
 import { GM_openInTab } from '$'
-import { tagLines, useNhWeight, nsOrder, disabledNs, fontFamily, fontWeight, profiles, activeProfileIdx, switchProfile, renameProfile, createProfile, deleteProfile, newTabActive, nsFormat, defaultExactMatch, type DblClickAction } from '@/services/store'
+import { tagLines, useNhWeight, nsOrder, disabledNs, fontFamily, fontWeight, profiles, activeProfileIdx, switchProfile, renameProfile, createProfile, deleteProfile, newTabActive, nsFormat, defaultExactMatch, tagDbMirror, tagDbTtlDays, type DblClickAction } from '@/services/store'
+import { loadTagDb } from '@/services/tagDb'
 
 const effectiveNsOrder = computed(() => nsOrder.value.filter(ns => !disabledNs.value.has(ns)))
 
@@ -122,6 +123,7 @@ function onSearch(action: DblClickAction) {
 // --- search box sync ---
 
 onMounted(() => {
+  loadTagDb({ mirror: tagDbMirror.value, ttlDays: tagDbTtlDays.value })
   searchInput = document.querySelector<HTMLInputElement>('#f_search')
   if (!searchInput) return
 

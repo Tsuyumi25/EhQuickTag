@@ -6,12 +6,13 @@ import Draggable from 'vuedraggable'
 import { baseDragOptions } from '@/utils/drag'
 import type { QuickTag } from '@/types'
 import { t, locale, setLocale, type Locale } from '@/composables/useI18n'
-import { DEFAULT_NS_ORDER } from '@/services/tagDb'
+import { DEFAULT_NS_ORDER, refreshTagDb, TAG_DB_MIRRORS, type TagDbMirror } from '@/services/tagDb'
 import {
   profiles, activeProfileIdx, deletedProfiles, type Profile,
   deleteProfile, restoreProfile, purgeProfile, reorderProfiles, updateProfileTagLines,
   fontFamily, fontWeight, getDefaultTagLines, tagLines,
-  dblClickLeft, dblClickRight, newTabActive, nsFormat, defaultExactMatch, type DblClickAction,
+  dblClickLeft, dblClickRight, newTabActive, nsFormat, defaultExactMatch,
+  tagDbMirror, tagDbTtlDays, type DblClickAction,
 } from '@/services/store'
 
 const props = defineProps<{
@@ -39,12 +40,13 @@ const dragOptions = {
 
 // --- tabs ---
 
-const tabKeys = ['appearance', 'search', 'about'] as const
+const tabKeys = ['appearance', 'search', 'data', 'about'] as const
 type TabKey = typeof tabKeys[number]
 
 const tabLabelKeys: Record<TabKey, string> = {
   search: 'settings.tabSearch',
   appearance: 'settings.tabAppearance',
+  data: 'settings.tabData',
   about: 'settings.tabAbout',
 }
 
@@ -83,6 +85,13 @@ function resetNsOrder() {
 const popupEl = ref<HTMLElement | null>(null)
 onClickOutside(popupEl, () => emit('close'))
 useScrollLock(document.body, true)
+
+const mirrorOptions = Object.entries(TAG_DB_MIRRORS).map(([k, v]) => ({ value: k as TagDbMirror, label: v.label }))
+const refreshing = ref(false)
+async function onRefreshTagDb() {
+  refreshing.value = true
+  try { await refreshTagDb({ mirror: tagDbMirror.value }) } finally { refreshing.value = false }
+}
 
 // --- toggle ---
 
@@ -332,6 +341,24 @@ function onEditorExport() {
                 </li>
               </template>
             </Draggable>
+          </div>
+
+          <!-- 設定：資料 -->
+          <div v-show="activeTab === 'data'">
+            <h4 class="eqt-settings__subtitle" style="margin-top: 0">{{ t('settings.tagDbMirror') }}</h4>
+            <div class="eqt-settings__row">
+              <select class="eqt-settings__select" v-model="tagDbMirror">
+                <option v-for="opt in mirrorOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+              </select>
+            </div>
+
+            <h4 class="eqt-settings__subtitle">{{ t('settings.tagDbTtlDays') }}</h4>
+            <div class="eqt-settings__row">
+              <input class="eqt-settings__input eqt-settings__input--short" type="number" min="1" max="30" v-model.number="tagDbTtlDays" />
+              <button class="eqt-settings__refresh-btn" type="button" :disabled="refreshing" @click="onRefreshTagDb">
+                <RotateCcw :size="12" /> {{ refreshing ? t('settings.tagDbRefreshing') : t('settings.tagDbRefresh') }}
+              </button>
+            </div>
           </div>
 
           <!-- 設定：外觀 -->
@@ -728,6 +755,45 @@ function onEditorExport() {
     &:hover {
       background: var(--eqt-bg-hover);
       color: var(--eqt-text);
+    }
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+
+  &__input--short {
+    width: 5em;
+    padding: 4px 6px;
+    border: var(--eqt-border-width) solid var(--eqt-border);
+    border-radius: 3px;
+    background: var(--eqt-bg);
+    color: var(--eqt-text);
+    font-size: 13px;
+  }
+
+  &__refresh-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border: var(--eqt-border-width) solid var(--eqt-border);
+    border-radius: 3px;
+    background: transparent;
+    color: var(--eqt-text-secondary);
+    font-size: 12px;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      background: var(--eqt-bg-hover);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: default;
     }
   }
 
