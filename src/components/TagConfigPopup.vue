@@ -48,7 +48,7 @@ watch(() => props.tag, (t) => {
   label.value = t.label ?? ''
   const parts = t.tag ? splitMultiTag(t.tag) : []
   rows.splice(0, rows.length, ...parts.map(makeRow))
-  rows.push(makeRow(''))
+  if (props.isAdd || !parts.length) rows.push(makeRow(''))
   const disabled = new Set(t.disabledModes ?? [])
   orEnabled.value = !disabled.has('or')
   excludeEnabled.value = !disabled.has('exclude')
@@ -73,10 +73,11 @@ onMounted(async () => {
   if (props.useNhWeight) loads.push(loadNhPopularity())
   await Promise.all(loads)
   dbReady.value = true
-  nextTick(() => {
-    const lastInput = tagInputRefs.value[tagInputRefs.value.length - 1]
-    lastInput?.focus()
-  })
+  if (props.isAdd) {
+    nextTick(() => {
+      tagInputRefs.value[0]?.focus()
+    })
+  }
 })
 
 onUnmounted(() => {
@@ -409,9 +410,6 @@ function onTagKeydown(e: KeyboardEvent, rowIdx: number) {
         pickSuggestion(row.suggestions[row.selectedIdx], rowIdx)
       }
     }
-  } else if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey) {
-    e.preventDefault()
-    addRowAfter(rowIdx)
   }
 }
 
@@ -521,7 +519,14 @@ const qualifierOptions = Array.from(QUALIFIER_SET).map(q => ({ value: `q:${q}`, 
       <hr class="eqt-popup__divider" />
 
       <div class="eqt-popup__field">
-        <label class="eqt-popup__label">{{ t('tagConfig.tagSyntax') }}</label>
+        <div class="eqt-popup__label-row">
+          <label class="eqt-popup__label">{{ t('tagConfig.tagSyntax') }}</label>
+          <button
+            class="eqt-popup__add-btn"
+            type="button"
+            @click="addRowAfter(rows.length - 1)"
+          >+ {{ t('tagbar.addTag') }}</button>
+        </div>
 
         <div
           v-for="(row, i) in rows"
@@ -694,11 +699,40 @@ const qualifierOptions = Array.from(QUALIFIER_SET).map(q => ({ value: `q:${q}`, 
     position: relative;
   }
 
+  &__label-row {
+    display: flex;
+    align-items: baseline;
+    margin-bottom: 3px;
+    font-weight: bold;
+    font-size: 12px;
+  }
+
+  &__add-btn {
+    margin-left: auto;
+    padding: 4px 6px;
+    border: var(--eqt-border-width) solid var(--eqt-border);
+    border-radius: 3px;
+    background: transparent;
+    color: var(--eqt-text-hint);
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 1.4;
+
+    &:hover {
+      background: var(--eqt-bg-hover);
+      color: var(--eqt-text-secondary);
+    }
+  }
+
   &__label {
     display: block;
     margin-bottom: 3px;
     font-weight: bold;
     font-size: 12px;
+
+    .eqt-popup__label-row > & {
+      margin-bottom: 0;
+    }
   }
 
   &__input {
@@ -1091,6 +1125,7 @@ const qualifierOptions = Array.from(QUALIFIER_SET).map(q => ({ value: `q:${q}`, 
       color: var(--eqt-text-hint);
     }
   }
+
 }
 
 // --- explain colors ---
