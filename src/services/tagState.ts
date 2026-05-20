@@ -37,21 +37,31 @@ export function allForms(part: string): string[] {
   return [p, `~${p}`, `-${p}`]
 }
 
+const _normSetCache = new WeakMap<Set<string>, Set<string>>()
+function normSet(tokens: Set<string>): Set<string> {
+  let norm = _normSetCache.get(tokens)
+  if (norm) return norm
+  norm = new Set([...tokens].map(normalizeNs))
+  _normSetCache.set(tokens, norm)
+  return norm
+}
+
 export function detectState(part: string, tokens: Set<string>): TagState | null {
+  const nt = normSet(tokens)
   const p = normalizeNs(part)
   const neg = p.startsWith('-')
   const or = p.startsWith('~')
   const base = (neg || or) ? p.slice(1) : p
   if (neg) {
-    if (tokens.has(base)) return TagState.Exclude
-    if (tokens.has(p)) return TagState.Include
+    if (nt.has(base)) return TagState.Exclude
+    if (nt.has(p)) return TagState.Include
   } else if (or) {
-    if (tokens.has(`-${base}`)) return TagState.Exclude
-    if (tokens.has(p)) return TagState.Include
+    if (nt.has(`-${base}`)) return TagState.Exclude
+    if (nt.has(p)) return TagState.Include
   } else {
-    if (tokens.has(`-${p}`)) return TagState.Exclude
-    if (tokens.has(`~${p}`)) return TagState.Or
-    if (tokens.has(p)) return TagState.Include
+    if (nt.has(`-${p}`)) return TagState.Exclude
+    if (nt.has(`~${p}`)) return TagState.Or
+    if (nt.has(p)) return TagState.Include
   }
   return null
 }

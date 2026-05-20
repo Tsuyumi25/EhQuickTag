@@ -122,13 +122,20 @@ export function parseToken(raw: string): SearchToken {
   }
 
   // 4. suffix — check for trailing $, *, %
-  //    For quoted tokens, suffix comes after the closing quote (already consumed into remaining)
-  //    For bare tokens, suffix is the last char of the tag
+  //    Canonical form: suffix inside quotes ("big breasts$")
+  //    Also handles legacy form: suffix after closing quote ("big breasts"$)
+  if (token.quoted && token.tag.length > 0) {
+    const lastChar = token.tag[token.tag.length - 1]
+    if (lastChar === '$' || lastChar === '*' || lastChar === '%') {
+      token.suffix = lastChar as Suffix
+      token.tag = token.tag.slice(0, -1)
+    }
+  }
   if (pos < len) {
-    // characters remain after quoted value
+    // characters remain after quoted value (legacy suffix or unexpected chars)
     const remaining = input.slice(pos)
     const suffixChar = remaining[0]
-    if (suffixChar === '$' || suffixChar === '*' || suffixChar === '%') {
+    if (!token.suffix && (suffixChar === '$' || suffixChar === '*' || suffixChar === '%')) {
       token.suffix = suffixChar as Suffix
       pos++
     }
@@ -188,12 +195,11 @@ export function serializeToken(token: SearchToken, opts?: SerializeOptions): str
 
   const needsQuotes = token.quoted || token.tag.includes(' ')
   if (needsQuotes) {
-    result += '"' + token.tag + '"'
+    result += '"' + token.tag + (token.suffix ?? '') + '"'
   } else {
     result += token.tag
+    if (token.suffix) result += token.suffix
   }
-
-  if (token.suffix) result += token.suffix
 
   return result
 }

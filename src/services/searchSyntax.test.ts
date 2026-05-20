@@ -188,8 +188,8 @@ describe('parseToken (prefix)', () => {
 // ============================================================
 
 describe('parseToken (real-world)', () => {
-  it('-other:"ai generated"$', () => {
-    const t = parseToken('-other:"ai generated"$')
+  it('-other:"ai generated$" (suffix inside quotes)', () => {
+    const t = parseToken('-other:"ai generated$"')
     expect(t.prefix).toBe('-')
     expect(t.namespace).toBe('other')
     expect(t.tag).toBe('ai generated')
@@ -197,27 +197,53 @@ describe('parseToken (real-world)', () => {
     expect(t.suffix).toBe('$')
   })
 
-  it('language:"translated"$', () => {
-    const t = parseToken('language:"translated"$')
-    expect(t.namespace).toBe('language')
-    expect(t.tag).toBe('translated')
+  it('mixed:"ffm threesome$" (official EH format)', () => {
+    const t = parseToken('mixed:"ffm threesome$"')
+    expect(t.namespace).toBe('mixed')
+    expect(t.tag).toBe('ffm threesome')
+    expect(t.quoted).toBe(true)
     expect(t.suffix).toBe('$')
   })
 
-  it('other:"full color"$', () => {
-    const t = parseToken('other:"full color"$')
+  it('other:"full color$"', () => {
+    const t = parseToken('other:"full color$"')
     expect(t.namespace).toBe('other')
     expect(t.tag).toBe('full color')
     expect(t.quoted).toBe(true)
     expect(t.suffix).toBe('$')
   })
 
-  it('~language:"chinese"$', () => {
-    const t = parseToken('~language:"chinese"$')
+  it('~language:"chinese$"', () => {
+    const t = parseToken('~language:"chinese$"')
     expect(t.prefix).toBe('~')
     expect(t.namespace).toBe('language')
     expect(t.tag).toBe('chinese')
     expect(t.suffix).toBe('$')
+  })
+})
+
+// ============================================================
+// parseToken — legacy format (suffix outside quotes)
+// ============================================================
+
+describe('parseToken (legacy: suffix outside quotes)', () => {
+  it('-other:"ai generated"$ → same parse result', () => {
+    const t = parseToken('-other:"ai generated"$')
+    expect(t.tag).toBe('ai generated')
+    expect(t.suffix).toBe('$')
+  })
+
+  it('other:"full color"$ → same parse result', () => {
+    const t = parseToken('other:"full color"$')
+    expect(t.tag).toBe('full color')
+    expect(t.suffix).toBe('$')
+  })
+
+  it('legacy form serializes to canonical form', () => {
+    const legacy = parseToken('female:"big breasts"$')
+    const canonical = parseToken('female:"big breasts$"')
+    expect(serializeToken(legacy)).toBe(serializeToken(canonical))
+    expect(serializeToken(legacy)).toBe('female:"big breasts$"')
   })
 })
 
@@ -261,11 +287,11 @@ describe('serializeToken', () => {
     })).toBe('lolicon')
   })
 
-  it('full form with namespace', () => {
+  it('full form with namespace (suffix inside quotes)', () => {
     expect(serializeToken({
       prefix: null, qualifier: null, namespace: 'female', namespaceRaw: 'female',
       tag: 'big breasts', quoted: true, suffix: '$', raw: '',
-    })).toBe('female:"big breasts"$')
+    })).toBe('female:"big breasts$"')
   })
 
   it('namespaceRaw preserved when set', () => {
@@ -279,7 +305,7 @@ describe('serializeToken', () => {
     expect(serializeToken({
       prefix: null, qualifier: null, namespace: 'female', namespaceRaw: null,
       tag: 'big breasts', quoted: true, suffix: '$', raw: '',
-    }, { nsFormat: 'short' })).toBe('f:"big breasts"$')
+    }, { nsFormat: 'short' })).toBe('f:"big breasts$"')
   })
 
   it('nsFormat: long fallback when namespaceRaw is null', () => {
@@ -303,11 +329,11 @@ describe('serializeToken', () => {
     })).toBe('~m:yaoi$')
   })
 
-  it('auto-quotes tag with spaces', () => {
+  it('auto-quotes tag with spaces (suffix inside quotes)', () => {
     expect(serializeToken({
       prefix: null, qualifier: null, namespace: 'female', namespaceRaw: 'female',
       tag: 'big breasts', quoted: false, suffix: '$', raw: '',
-    })).toBe('female:"big breasts"$')
+    })).toBe('female:"big breasts$"')
   })
 
   it('wildcard suffix', () => {
@@ -333,18 +359,18 @@ describe('serializeToken', () => {
 describe('round-trip', () => {
   const cases = [
     'lolicon$',
-    'female:"big breasts"$',
-    'f:"big breasts"$',
-    '-other:"ai generated"$',
-    '~language:"chinese"$',
+    'female:"big breasts$"',
+    'f:"big breasts$"',
+    '-other:"ai generated$"',
+    '~language:"chinese$"',
     'tag:rimjob$',
     'title:"comic aun"',
     '-title:2007',
     'uploader:bob',
     'loli*',
-    'other:"full color"$',
-    '-female:"big breasts"$',
-    'language:"translated"$',
+    'other:"full color$"',
+    '-female:"big breasts$"',
+    'language:"translated$"',
   ]
 
   for (const raw of cases) {
@@ -416,17 +442,17 @@ describe('parseQuery', () => {
 
 describe('serializeQuery', () => {
   it('preserves original namespace format', () => {
-    const tokens = parseQuery('f:"big breasts"$ -m:yaoi$')
+    const tokens = parseQuery('f:"big breasts$" -m:yaoi$')
     const result = serializeQuery(tokens)
-    expect(result).toBe('f:"big breasts"$ -m:yaoi$')
+    expect(result).toBe('f:"big breasts$" -m:yaoi$')
   })
 
   it('nsFormat fallback when namespaceRaw is null', () => {
-    const tokens = parseQuery('female:"big breasts"$ -male:yaoi$')
+    const tokens = parseQuery('female:"big breasts$" -male:yaoi$')
     // clear namespaceRaw to test fallback
     for (const t of tokens) t.namespaceRaw = null
     const result = serializeQuery(tokens, { nsFormat: 'short' })
-    expect(result).toBe('f:"big breasts"$ -m:yaoi$')
+    expect(result).toBe('f:"big breasts$" -m:yaoi$')
   })
 
   it('empty array → empty string', () => {
