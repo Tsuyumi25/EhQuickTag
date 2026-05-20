@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { reactive, ref, watch, onMounted, onUnmounted, nextTick, computed } from 'vue'
+import { ExternalLink } from '@lucide/vue'
 import { type QuickTag, type TagMode, splitMultiTag } from '@/types'
 import { t, isCJKLocale } from '@/composables/useI18n'
 import { loadTagDb, searchTags, type TagEntry, ALL_NAMESPACES } from '@/services/tagDb'
@@ -493,6 +494,11 @@ function onSave() {
 // --- namespace list for dropdown ---
 
 const isCJK = computed(isCJKLocale)
+const syntaxHelpUrl = computed(() =>
+  isCJK.value
+    ? 'https://ehwiki.org/wiki/Gallery_Searching/Chinese'
+    : 'https://ehwiki.org/wiki/Gallery_Searching'
+)
 
 const nsOptions = computed(() =>
   ALL_NAMESPACES.map(ns => {
@@ -521,6 +527,7 @@ const qualifierOptions = Array.from(QUALIFIER_SET).map(q => ({ value: `q:${q}`, 
       <div class="eqt-popup__field">
         <div class="eqt-popup__label-row">
           <label class="eqt-popup__label">{{ t('tagConfig.tagSyntax') }}</label>
+          <a class="eqt-popup__syntax-help" :href="syntaxHelpUrl" target="_blank" rel="noopener"><ExternalLink :size="12" /> Wiki</a>
           <button
             class="eqt-popup__add-btn"
             type="button"
@@ -705,6 +712,28 @@ const qualifierOptions = Array.from(QUALIFIER_SET).map(q => ({ value: `q:${q}`, 
     margin-bottom: 3px;
     font-weight: bold;
     font-size: 12px;
+  }
+
+  &__syntax-help {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    margin-left: 6px;
+    padding: 4px 6px;
+    border: var(--eqt-border-width) solid var(--eqt-border);
+    border-radius: 3px;
+    background: transparent;
+    color: var(--eqt-text-hint);
+    font-size: 12px;
+    font-weight: normal;
+    line-height: 1.4;
+    text-decoration: none;
+    cursor: pointer;
+
+    &:hover {
+      background: var(--eqt-bg-hover);
+      color: var(--eqt-text-secondary);
+    }
   }
 
   &__add-btn {
