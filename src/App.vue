@@ -5,7 +5,7 @@ import TagConfigPopup from '@/components/TagConfigPopup.vue'
 import UrlConfigPopup from '@/components/UrlConfigPopup.vue'
 import SettingsPopup from '@/components/SettingsPopup.vue'
 import { GM_openInTab } from '$'
-import { tagLines, useNhWeight, nsOrder, disabledNs, fontFamily, fontWeight, profiles, activeProfileIdx, switchProfile, renameProfile, createProfile, deleteProfile, newTabActive, type DblClickAction } from '@/services/store'
+import { tagLines, useNhWeight, nsOrder, disabledNs, fontFamily, fontWeight, profiles, activeProfileIdx, switchProfile, renameProfile, createProfile, deleteProfile, newTabActive, nsFormat, defaultExactMatch, type DblClickAction } from '@/services/store'
 
 const effectiveNsOrder = computed(() => nsOrder.value.filter(ns => !disabledNs.value.has(ns)))
 
@@ -172,6 +172,8 @@ watch(searchText, (val) => {
     :is-add="pendingAdd"
     :use-nh-weight="useNhWeight"
     :ns-order="effectiveNsOrder"
+    :ns-format="nsFormat"
+    :default-exact-match="defaultExactMatch"
     @save="onSave"
     @delete="onDelete"
     @close="onClose"

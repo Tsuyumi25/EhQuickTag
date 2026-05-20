@@ -10,7 +10,7 @@ import {
   profiles, activeProfileIdx, deletedProfiles, type Profile,
   deleteProfile, restoreProfile, purgeProfile, reorderProfiles, updateProfileTagLines,
   fontFamily, fontWeight, getDefaultTagLines, tagLines,
-  dblClickLeft, dblClickRight, newTabActive, type DblClickAction,
+  dblClickLeft, dblClickRight, newTabActive, nsFormat, defaultExactMatch, type DblClickAction,
 } from '@/services/store'
 
 const props = defineProps<{
@@ -260,6 +260,34 @@ function onEditorExport() {
             </label>
             <p class="eqt-settings__hint">
               {{ t('settings.useNhWeightHint') }}
+            </p>
+
+            <h4 class="eqt-settings__subtitle">{{ t('settings.nsFormat') }}</h4>
+            <div class="eqt-settings__locale-row">
+              <button
+                type="button"
+                class="eqt-settings__locale-btn"
+                :class="{ 'eqt-settings__locale-btn--active': nsFormat === 'long' }"
+                @click="nsFormat = 'long'"
+              >{{ t('settings.nsFormatLong') }}</button>
+              <button
+                type="button"
+                class="eqt-settings__locale-btn"
+                :class="{ 'eqt-settings__locale-btn--active': nsFormat === 'short' }"
+                @click="nsFormat = 'short'"
+              >{{ t('settings.nsFormatShort') }}</button>
+            </div>
+
+            <label class="eqt-settings__row" style="margin-top: 10px">
+              <input
+                type="checkbox"
+                :checked="defaultExactMatch"
+                @change="defaultExactMatch = ($event.target as HTMLInputElement).checked"
+              />
+              <span class="eqt-settings__label">{{ t('settings.defaultExactMatch') }}</span>
+            </label>
+            <p class="eqt-settings__hint">
+              {{ t('settings.defaultExactMatchHint') }}
             </p>
 
             <h4 class="eqt-settings__subtitle">{{ t('settings.dblClickActions') }}</h4>

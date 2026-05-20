@@ -28,6 +28,8 @@ interface PersistedSettings {
   dblClickRight: DblClickAction
   newTabActive: boolean
   locale: Locale | ''
+  nsFormat: 'long' | 'short'
+  defaultExactMatch: boolean
 }
 
 // Tag definitions without labels — labels are filled by getDefaultTagLines() based on locale
@@ -78,6 +80,8 @@ const DEFAULT_SETTINGS: PersistedSettings = {
   dblClickRight: 'searchNewTab',
   newTabActive: true,
   locale: '',
+  nsFormat: 'long',
+  defaultExactMatch: true,
 }
 
 // --- reactive state ---
@@ -94,6 +98,8 @@ export const fontWeight = ref('')
 export const dblClickLeft = ref<DblClickAction>('search')
 export const dblClickRight = ref<DblClickAction>('searchNewTab')
 export const newTabActive = ref(true)
+export const nsFormat = ref<'long' | 'short'>('long')
+export const defaultExactMatch = ref(true)
 
 // --- load from GM ---
 
@@ -138,6 +144,8 @@ export async function loadStore(): Promise<void> {
   dblClickLeft.value = s.dblClickLeft
   dblClickRight.value = s.dblClickRight
   newTabActive.value = s.newTabActive
+  nsFormat.value = s.nsFormat
+  defaultExactMatch.value = s.defaultExactMatch
   setLocale(s.locale ? s.locale as Locale : detectLocale())
 }
 
@@ -241,13 +249,15 @@ function saveSettings() {
     dblClickRight: dblClickRight.value,
     newTabActive: newTabActive.value,
     locale: locale.value,
+    nsFormat: nsFormat.value,
+    defaultExactMatch: defaultExactMatch.value,
   }
   GM.setValue(KEYS.settings, JSON.stringify(data))
 }
 
 export function startAutoSave(): void {
   watch([tagLines, deletedProfiles], saveProfiles)
-  watch([useNhWeight, nsOrder, disabledNs, fontFamily, fontWeight, dblClickLeft, dblClickRight, newTabActive, locale], saveSettings, { deep: true })
+  watch([useNhWeight, nsOrder, disabledNs, fontFamily, fontWeight, dblClickLeft, dblClickRight, newTabActive, locale, nsFormat, defaultExactMatch], saveSettings, { deep: true })
 
   // When locale changes, update default profiles' labels
   watch(locale, async () => {
