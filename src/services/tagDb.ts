@@ -14,7 +14,6 @@ interface StoredEntry {
   ns: string
   raw: string
   name: string
-  introSearch: string
 }
 
 /** StoredEntry + pre-computed search fields (never serialized to cache). */
@@ -31,10 +30,9 @@ let entries: TagEntry[] | null = null
 
 // --- HTML / text processing ---
 
+const _domParser = new DOMParser()
 function stripHtml(html: string): string {
-  const tmp = document.createElement('span')
-  tmp.innerHTML = html
-  return tmp.textContent ?? ''
+  return _domParser.parseFromString(html, 'text/html').body.textContent ?? ''
 }
 
 function removeEmojiAndImages(html: string): string {
@@ -73,12 +71,8 @@ function buildIndex(db: DbJson): TagEntry[] {
     if (ns === 'rows') continue
 
     for (const [raw, info] of Object.entries(section.data)) {
-      let introSearch = ''
-      if (info.intro) introSearch += '\0' + stripHtml(info.intro).toLowerCase()
-      if (info.links) introSearch += '\0' + stripHtml(info.links).toLowerCase()
-
       const name = removeEmojiAndImages(info.name)
-      result.push(addSearchFields({ fullTag: `${ns}:${raw}`, ns, raw, name, introSearch }))
+      result.push(addSearchFields({ fullTag: `${ns}:${raw}`, ns, raw, name }))
     }
   }
 
@@ -123,8 +117,8 @@ export async function loadTagDb(): Promise<TagEntry[]> {
   const db: DbJson = JSON.parse(raw)
   entries = buildIndex(db)
 
-  const stored: StoredEntry[] = entries.map(({ fullTag, ns, raw: r, name, introSearch }) =>
-    ({ fullTag, ns, raw: r, name, introSearch }),
+  const stored: StoredEntry[] = entries.map(({ fullTag, ns, raw: r, name }) =>
+    ({ fullTag, ns, raw: r, name }),
   )
   await cacheSet(CACHE_KEY, JSON.stringify(stored))
   await cacheSet(CACHE_TS_KEY, String(Date.now()))
@@ -174,9 +168,8 @@ function getMatchTier(entry: TagEntry, search: string): MatchTier | null {
   }
   if (entry.nameLow.includes(search)) return MatchTier.WordStart
 
-  // substring: anywhere in raw or introSearch
+  // substring: anywhere in raw
   if (entry.rawLow.includes(search)) return MatchTier.Substring
-  if (entry.introSearch && entry.introSearch.includes(search)) return MatchTier.Substring
 
   return null
 }
