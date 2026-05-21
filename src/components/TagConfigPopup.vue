@@ -33,6 +33,8 @@ interface RowState {
   rawText: string
   suggestions: TagEntry[]
   selectedIdx: number
+  undoStack: string[]
+  redoStack: string[]
 }
 
 const label = ref('')
@@ -64,6 +66,8 @@ function makeRow(raw: string): RowState {
     rawText: raw,
     suggestions: [],
     selectedIdx: -1,
+    undoStack: [],
+    redoStack: [],
   }
 }
 
@@ -206,14 +210,45 @@ function onCompositionStart() {
   isComposing = true
 }
 
-function onRawKeydown(e: KeyboardEvent) {
-  if (e.key === 'Enter') e.preventDefault()
+function onRawKeydown(e: KeyboardEvent, rowIdx: number) {
+  if (e.key === 'Enter') { e.preventDefault(); return }
+  const key = e.key.toLowerCase()
+  const isUndo = (e.ctrlKey || e.metaKey) && key === 'z' && !e.shiftKey
+  const isRedo = (e.ctrlKey || e.metaKey) && (key === 'y' || (key === 'z' && e.shiftKey))
+  if (!isUndo && !isRedo) return
+
+  e.preventDefault()
+  const row = rows[rowIdx]
+  if (isUndo) {
+    if (!row.undoStack.length) return
+    row.redoStack.push(row.rawText)
+    applyRawText(rowIdx, row.undoStack.pop()!)
+  } else {
+    if (!row.redoStack.length) return
+    row.undoStack.push(row.rawText)
+    applyRawText(rowIdx, row.redoStack.pop()!)
+  }
+}
+
+function applyRawText(rowIdx: number, text: string) {
+  _syncing = true
+  const row = rows[rowIdx]
+  row.rawText = text
+  row.token = parseToken(text.trim())
+  _syncing = false
+  const el = getRawEl(rowIdx)
+  if (el) {
+    renderHighlight(rowIdx)
+    nextTick(() => setCursorOffset(el, text.length))
+  }
 }
 
 function syncRawText(rowIdx: number, text: string) {
   if (_syncing) return
-  _syncing = true
   const row = rows[rowIdx]
+  row.undoStack.push(row.rawText)
+  row.redoStack.length = 0
+  _syncing = true
   row.rawText = text
   row.token = parseToken(text.trim())
   _syncing = false
@@ -649,7 +684,7 @@ const qualifierOptions = Array.from(QUALIFIER_SET).map(q => ({ value: `q:${q}`, 
               contenteditable="plaintext-only"
               spellcheck="false"
               @input="onRawEditableInput(i, $event)"
-              @keydown="onRawKeydown($event)"
+              @keydown="onRawKeydown($event, i)"
               @compositionstart="onCompositionStart"
               @compositionend="onCompositionEnd(i)"
             ></div>
