@@ -440,6 +440,10 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
 
   &__line-add {
     flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
     padding: 2px 8px;
     border: var(--eqt-border-width) dashed var(--eqt-border);
     border-radius: 3px;
@@ -448,7 +452,6 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
     cursor: pointer;
     font-size: 12px;
     line-height: 1.4;
-    text-align: center;
 
     &:hover {
       background: var(--eqt-bg-hover);
