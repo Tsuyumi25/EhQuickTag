@@ -503,7 +503,7 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
     padding: 0 6px;
     border: var(--eqt-border-width) solid var(--eqt-border);
     border-radius: 3px;
-    background: transparent;
+    background: var(--eqt-bg-btn);
     color: var(--eqt-text-hint);
     cursor: pointer;
     font-size: 11px;
@@ -540,7 +540,7 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
     width: 100%;
     padding: 0;
     border: none;
-    background: transparent;
+    background: var(--eqt-bg-btn);
     color: var(--eqt-text-secondary);
     cursor: pointer;
     font-size: 13px;
@@ -615,7 +615,7 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
     padding: 2px 8px;
     border: var(--eqt-border-width) solid var(--eqt-border);
     border-radius: 3px;
-    background: transparent;
+    background: var(--eqt-bg-btn);
     color: var(--eqt-text-secondary);
     cursor: pointer;
     font-size: 12px;
@@ -691,7 +691,7 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
     padding: 2px 6px;
     border: var(--eqt-border-width) solid var(--eqt-border);
     border-radius: 3px;
-    background: transparent;
+    background: var(--eqt-bg-btn);
     color: var(--eqt-text-secondary);
     cursor: pointer;
     font-size: 12px;
