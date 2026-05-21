@@ -386,10 +386,13 @@ function onGlobalKeydown(e: KeyboardEvent) {
     e.preventDefault()
     onSave()
   } else if (e.key === 'Escape') {
-    const activeRowState = activeRow.value >= 0 ? rows[activeRow.value] : null
-    if (activeRowState?.suggestions.length) {
-      activeRowState.suggestions = []
-      activeRowState.selectedIdx = -1
+    const activeIdx = activeRow.value
+    if (activeIdx >= 0) {
+      const row = rows[activeIdx]
+      row.suggestions = []
+      row.selectedIdx = -1
+      activeRow.value = -1
+      tagInputRefs.value[activeIdx]?.blur()
     } else {
       emit('close')
     }
