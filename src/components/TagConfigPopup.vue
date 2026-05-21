@@ -345,8 +345,8 @@ function closeAutocomplete(rowIdx: number) {
   activeRow.value = -1
 }
 
-const ITEM_HEIGHT = 29 // must match .eqt-popup__suggestion { height }
-const OVERSCAN = 5
+const EST_ITEM_HEIGHT = 32
+const OVERSCAN = 10
 const suggestEl = ref<HTMLElement | null>(null)
 const scrollTop = ref(0)
 
@@ -359,8 +359,8 @@ const visibleRange = computed(() => {
   const total = activeSuggestions.value.length
   if (!total) return { start: 0, end: 0 }
   const containerH = suggestEl.value?.clientHeight ?? 300
-  const start = Math.max(0, Math.floor(scrollTop.value / ITEM_HEIGHT) - OVERSCAN)
-  const end = Math.min(total, Math.ceil((scrollTop.value + containerH) / ITEM_HEIGHT) + OVERSCAN)
+  const start = Math.max(0, Math.floor(scrollTop.value / EST_ITEM_HEIGHT) - OVERSCAN)
+  const end = Math.min(total, Math.ceil((scrollTop.value + containerH) / EST_ITEM_HEIGHT) + OVERSCAN)
   return { start, end }
 })
 
@@ -372,8 +372,8 @@ const virtualSuggestions = computed(() =>
 )
 
 const wrapperStyle = computed(() => ({
-  height: `${activeSuggestions.value.length * ITEM_HEIGHT}px`,
-  paddingTop: `${visibleRange.value.start * ITEM_HEIGHT}px`,
+  height: `${activeSuggestions.value.length * EST_ITEM_HEIGHT}px`,
+  paddingTop: `${visibleRange.value.start * EST_ITEM_HEIGHT}px`,
   boxSizing: 'border-box' as const,
 }))
 
@@ -383,11 +383,9 @@ function onSuggestScroll(e: Event) {
 }
 
 function scrollToSuggestion(idx: number) {
-  const el = suggestEl.value
-  if (!el || idx < 0) return
-  const top = idx * ITEM_HEIGHT
-  if (top < el.scrollTop) el.scrollTop = top
-  else if (top + ITEM_HEIGHT > el.scrollTop + el.clientHeight) el.scrollTop = top + ITEM_HEIGHT - el.clientHeight
+  if (!suggestEl.value || idx < 0) return
+  const active = suggestEl.value.querySelector('.eqt-popup__suggestion--active') as HTMLElement | null
+  active?.scrollIntoView({ block: 'nearest' })
 }
 
 watch(activeSuggestions, () => {
@@ -945,12 +943,12 @@ const qualifierOptions = Array.from(QUALIFIER_SET).map(q => ({ value: `q:${q}`, 
 
   &__suggestion {
     display: flex;
-    justify-content: space-between;
     align-items: center;
     padding: 4px 8px;
-    height: 29px;
     box-sizing: border-box;
     cursor: pointer;
+    flex-wrap: wrap;
+    gap: 0 8px;
 
     &:hover,
     &--active {
@@ -974,6 +972,7 @@ const qualifierOptions = Array.from(QUALIFIER_SET).map(q => ({ value: `q:${q}`, 
     font-size: 11px;
     color: var(--eqt-text-hint);
     flex-shrink: 0;
+    margin-left: auto;
   }
 
   &__modes {
