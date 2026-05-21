@@ -399,6 +399,16 @@ function onGlobalKeydown(e: KeyboardEvent) {
   }
 }
 
+function onTagInputBlur(rowIdx: number) {
+  requestAnimationFrame(() => {
+    if (activeRow.value === rowIdx) {
+      rows[rowIdx].suggestions = []
+      rows[rowIdx].selectedIdx = -1
+      activeRow.value = -1
+    }
+  })
+}
+
 function onTagKeydown(e: KeyboardEvent, rowIdx: number) {
   const row = rows[rowIdx]
   if (row.suggestions.length) {
@@ -589,6 +599,7 @@ const qualifierOptions = Array.from(QUALIFIER_SET).map(q => ({ value: `q:${q}`, 
                 :disabled="!dbReady"
                 @input="onTagInput(i, ($event.target as HTMLInputElement).value)"
                 @focus="onTagInputFocus(i)"
+                @blur="onTagInputBlur(i)"
                 @keydown="onTagKeydown($event, i)"
               />
               <div v-if="activeRow === i && dbReady && row.token.tag.trim() && !row.suggestions.length && !row.token.qualifier" class="eqt-popup__no-result">
