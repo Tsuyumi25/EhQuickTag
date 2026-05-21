@@ -154,7 +154,6 @@ export async function refreshTagDb(opts: LoadTagDbOptions = {}): Promise<void> {
 const enum MatchTier {
   Prefix = 0,    // tag starts with search term
   WordStart = 1, // a word in the tag starts with search term
-  Substring = 2, // search term found anywhere
 }
 
 // nh "tag" type only covers these EH namespaces
@@ -176,23 +175,20 @@ const NS_ALIASES: Record<string, string> = {
   x: 'mixed', l: 'language', o: 'other', loc: 'location',
 }
 
-function getMatchTier(entry: TagEntry, search: string): MatchTier | null {
+function getMatchTier(entry: TagEntry, search: string, searchIsAscii: boolean): MatchTier | null {
   // prefix: entire field starts with search
   if (entry.rawLow.startsWith(search) || entry.nameLow.startsWith(search)) {
     return MatchTier.Prefix
   }
 
-  // word-start: any subsequent word in raw starts with search, or name contains it
+  // word-start: any subsequent word in raw starts with search
   if (entry.rawWords !== null) {
     for (const word of entry.rawWords) {
       if (word.startsWith(search)) return MatchTier.WordStart
     }
   }
-  if (entry.nameLow.includes(search)) return MatchTier.WordStart
-
-  // substring: anywhere in raw
-  if (entry.rawLow.includes(search)) return MatchTier.Substring
-
+  // CJK name substring: CJK has no word boundaries, so includes is needed
+  if (!searchIsAscii && entry.nameLow.includes(search)) return MatchTier.WordStart
   return null
 }
 
@@ -239,8 +235,9 @@ export function searchTags(query: string, opts: SearchOptions = {}): TagEntry[] 
   if (!q) return pool
 
   // build search terms: original + CJK variants
+  const qIsAscii = isASCII(q)
   let terms = [q]
-  if (!isASCII(q)) {
+  if (!qIsAscii) {
     terms.push(toCN(q), ...toJP(q))
     terms = [...new Set(terms)]
   }
@@ -254,7 +251,7 @@ export function searchTags(query: string, opts: SearchOptions = {}): TagEntry[] 
 
     let matchTier: MatchTier | null = null
     for (const term of terms) {
-      matchTier = getMatchTier(entry, term)
+      matchTier = getMatchTier(entry, term, qIsAscii)
       if (matchTier !== null) break
     }
 
