@@ -72,18 +72,22 @@ function onConfigure(lineIdx: number, tagIdx: number) {
   }
 }
 
+const draftTag = ref<import('@/types').QuickTag>({ tag: '', label: '' })
+
 function onAdd(type: 'tag' | 'url' = 'tag') {
-  const lastIdx = tagLines.length - 1
-  tagLines[lastIdx].push(type === 'url' ? { tag: '', url: '', label: '' } : { tag: '', label: '' })
-  editingLine.value = lastIdx
-  editingIdx.value = tagLines[lastIdx].length - 1
+  draftTag.value = type === 'url' ? { tag: '', url: '', label: '' } : { tag: '', label: '' }
+  editingLine.value = tagLines.length - 1
   pendingAdd.value = true
   if (type === 'url') showUrlPopup.value = true
   else showTagPopup.value = true
 }
 
 function onSave(updated: import('@/types').QuickTag) {
-  tagLines[editingLine.value][editingIdx.value] = updated
+  if (pendingAdd.value) {
+    tagLines[editingLine.value].push(updated)
+  } else {
+    tagLines[editingLine.value][editingIdx.value] = updated
+  }
   pendingAdd.value = false
   showTagPopup.value = false
   showUrlPopup.value = false
@@ -97,10 +101,7 @@ function onDelete() {
 }
 
 function onClose() {
-  if (pendingAdd.value) {
-    tagLines[editingLine.value].splice(editingIdx.value, 1)
-    pendingAdd.value = false
-  }
+  pendingAdd.value = false
   showTagPopup.value = false
   showUrlPopup.value = false
 }
@@ -170,7 +171,7 @@ watch(searchText, (val) => {
 
   <TagConfigPopup
     v-if="showTagPopup"
-    :tag="tagLines[editingLine][editingIdx]"
+    :tag="pendingAdd ? draftTag : tagLines[editingLine][editingIdx]"
     :is-add="pendingAdd"
     :use-nh-weight="useNhWeight"
     :ns-order="effectiveNsOrder"
@@ -183,7 +184,7 @@ watch(searchText, (val) => {
 
   <UrlConfigPopup
     v-if="showUrlPopup"
-    :tag="tagLines[editingLine][editingIdx]"
+    :tag="pendingAdd ? draftTag : tagLines[editingLine][editingIdx]"
     :is-add="pendingAdd"
     @save="onSave"
     @delete="onDelete"
