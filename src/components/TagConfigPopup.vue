@@ -254,10 +254,7 @@ function syncRawText(rowIdx: number, text: string) {
   _syncing = false
   renderHighlight(rowIdx)
 
-  // close any open autocomplete when editing raw syntax
-  row.suggestions = []
-  row.selectedIdx = -1
-  activeRow.value = -1
+  closeAutocomplete(rowIdx)
 }
 
 // --- structured control handlers ---
@@ -340,7 +337,63 @@ function getNsFormatLabel(token: SearchToken): string {
   return token.namespaceRaw === token.namespace ? t('settings.nsFormatLong') : t('settings.nsFormatShort')
 }
 
-// --- autocomplete ---
+// --- autocomplete & virtual scroll ---
+
+function closeAutocomplete(rowIdx: number) {
+  rows[rowIdx].suggestions = []
+  rows[rowIdx].selectedIdx = -1
+  activeRow.value = -1
+}
+
+const ITEM_HEIGHT = 29 // must match .eqt-popup__suggestion { height }
+const OVERSCAN = 5
+const suggestEl = ref<HTMLElement | null>(null)
+const scrollTop = ref(0)
+
+const activeSuggestions = computed(() => {
+  const idx = activeRow.value
+  return idx >= 0 ? rows[idx].suggestions : []
+})
+
+const visibleRange = computed(() => {
+  const total = activeSuggestions.value.length
+  if (!total) return { start: 0, end: 0 }
+  const containerH = suggestEl.value?.clientHeight ?? 300
+  const start = Math.max(0, Math.floor(scrollTop.value / ITEM_HEIGHT) - OVERSCAN)
+  const end = Math.min(total, Math.ceil((scrollTop.value + containerH) / ITEM_HEIGHT) + OVERSCAN)
+  return { start, end }
+})
+
+const virtualSuggestions = computed(() =>
+  activeSuggestions.value.slice(visibleRange.value.start, visibleRange.value.end).map((data, i) => ({
+    data,
+    index: visibleRange.value.start + i,
+  })),
+)
+
+const wrapperStyle = computed(() => ({
+  height: `${activeSuggestions.value.length * ITEM_HEIGHT}px`,
+  paddingTop: `${visibleRange.value.start * ITEM_HEIGHT}px`,
+  boxSizing: 'border-box' as const,
+}))
+
+function onSuggestScroll(e: Event) {
+  const top = (e.target as HTMLElement).scrollTop
+  if (top !== scrollTop.value) scrollTop.value = top
+}
+
+function scrollToSuggestion(idx: number) {
+  const el = suggestEl.value
+  if (!el || idx < 0) return
+  const top = idx * ITEM_HEIGHT
+  if (top < el.scrollTop) el.scrollTop = top
+  else if (top + ITEM_HEIGHT > el.scrollTop + el.clientHeight) el.scrollTop = top + ITEM_HEIGHT - el.clientHeight
+}
+
+watch(activeSuggestions, () => {
+  scrollTop.value = 0
+  if (suggestEl.value) suggestEl.value.scrollTop = 0
+})
 
 let searchTimer = 0
 onScopeDispose(() => clearTimeout(searchTimer))
@@ -392,9 +445,7 @@ function pickSuggestion(entry: TagEntry, rowIdx: number) {
     row.token.suffix = '$'
   }
   onStructuredChange(rowIdx)
-  row.suggestions = []
-  row.selectedIdx = -1
-  activeRow.value = -1
+  closeAutocomplete(rowIdx)
 }
 
 // --- row management ---
@@ -423,10 +474,7 @@ function onGlobalKeydown(e: KeyboardEvent) {
   } else if (e.key === 'Escape') {
     const activeIdx = activeRow.value
     if (activeIdx >= 0) {
-      const row = rows[activeIdx]
-      row.suggestions = []
-      row.selectedIdx = -1
-      activeRow.value = -1
+      closeAutocomplete(activeIdx)
       tagInputRefs.value[activeIdx]?.blur()
     } else {
       emit('close')
@@ -437,9 +485,7 @@ function onGlobalKeydown(e: KeyboardEvent) {
 function onTagInputBlur(rowIdx: number) {
   requestAnimationFrame(() => {
     if (activeRow.value === rowIdx) {
-      rows[rowIdx].suggestions = []
-      rows[rowIdx].selectedIdx = -1
-      activeRow.value = -1
+      closeAutocomplete(rowIdx)
     }
   })
 }
@@ -450,9 +496,11 @@ function onTagKeydown(e: KeyboardEvent, rowIdx: number) {
     if (e.key === 'ArrowDown') {
       e.preventDefault()
       if (row.selectedIdx < row.suggestions.length - 1) row.selectedIdx++
+      scrollToSuggestion(row.selectedIdx)
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
       if (row.selectedIdx > 0) row.selectedIdx--
+      scrollToSuggestion(row.selectedIdx)
     } else if (e.key === 'Enter') {
       e.preventDefault()
       if (row.selectedIdx >= 0 && row.suggestions[row.selectedIdx]) {
@@ -640,20 +688,27 @@ const qualifierOptions = Array.from(QUALIFIER_SET).map(q => ({ value: `q:${q}`, 
               <div v-if="activeRow === i && dbReady && row.token.tag.trim() && !row.suggestions.length && !row.token.qualifier" class="eqt-popup__no-result">
                 {{ t('tagConfig.noResult') }}
               </div>
-              <ul v-if="activeRow === i && row.suggestions.length" class="eqt-popup__suggestions">
-                <li
-                  v-for="(entry, si) in row.suggestions"
-                  :key="entry.fullTag"
-                  class="eqt-popup__suggestion"
-                  :class="{ 'eqt-popup__suggestion--active': si === row.selectedIdx }"
-                  @mousedown.prevent="pickSuggestion(entry, i)"
-                  @mouseenter="row.selectedIdx = si"
-                >
-                  <span class="eqt-popup__suggestion-ns">{{ t('ns.' + entry.ns) }}：</span>
-                  <span class="eqt-popup__suggestion-name">{{ isCJK ? entry.name : entry.raw }}</span>
-                  <span class="eqt-popup__suggestion-tag">{{ entry.fullTag }}</span>
-                </li>
-              </ul>
+              <div
+                v-if="activeRow === i && row.suggestions.length"
+                ref="suggestEl"
+                class="eqt-popup__suggestions"
+                @scroll="onSuggestScroll"
+              >
+                <div :style="wrapperStyle">
+                  <div
+                    v-for="{ data: entry, index: si } in virtualSuggestions"
+                    :key="entry.fullTag"
+                    class="eqt-popup__suggestion"
+                    :class="{ 'eqt-popup__suggestion--active': si === row.selectedIdx }"
+                    @mousedown.prevent="pickSuggestion(entry, i)"
+                    @mouseenter="row.selectedIdx = si"
+                  >
+                    <span class="eqt-popup__suggestion-ns">{{ t('ns.' + entry.ns) }}：</span>
+                    <span class="eqt-popup__suggestion-name">{{ isCJK ? entry.name : entry.raw }}</span>
+                    <span class="eqt-popup__suggestion-tag">{{ entry.fullTag }}</span>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <button
@@ -880,7 +935,6 @@ const qualifierOptions = Array.from(QUALIFIER_SET).map(q => ({ value: `q:${q}`, 
     top: 100%;
     margin: 2px 0 0;
     padding: 0;
-    list-style: none;
     background: var(--eqt-bg-elevated);
     border: var(--eqt-border-width) solid var(--eqt-border);
     border-radius: 3px;
@@ -894,6 +948,8 @@ const qualifierOptions = Array.from(QUALIFIER_SET).map(q => ({ value: `q:${q}`, 
     justify-content: space-between;
     align-items: center;
     padding: 4px 8px;
+    height: 29px;
+    box-sizing: border-box;
     cursor: pointer;
 
     &:hover,
