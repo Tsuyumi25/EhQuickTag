@@ -7,6 +7,7 @@ import { tokenize, getState as _getState, removeTag, addTag, getNextRightClickSt
 import { tagLines, dblClickLeft, dblClickRight, type DblClickAction } from '@/services/store'
 import { baseDragOptions } from '@/utils/drag'
 import { t } from '@/composables/useI18n'
+import { currentTagStyleClass } from '@/composables/useTagStyle'
 
 const ACTION_KEYS: Record<DblClickAction, string> = {
   search: 'tagbar.search',
@@ -205,7 +206,7 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
 </script>
 
 <template>
-  <div class="eqt-tag-bar" @dblclick="onBarDblClick" @contextmenu="onBarContextMenu">
+  <div class="eqt-tag-bar" :class="currentTagStyleClass" @dblclick="onBarDblClick" @contextmenu="onBarContextMenu">
     <span class="eqt-tag-bar__info"><Info :size="16" /><span class="eqt-tag-bar__info-text">{{ t('tagbar.infoTooltip', { left: t(ACTION_KEYS[dblClickLeft]), right: t(ACTION_KEYS[dblClickRight]) }) }}</span></span>
     <div class="eqt-tag-bar__lines">
       <div class="eqt-tag-bar__profile-row">
@@ -628,37 +629,6 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
 
     &--url {
       text-decoration: none;
-    }
-
-    &--include {
-      background: #4a7c59;
-      border-color: #3d6b4a;
-      color: #fff;
-
-      &:hover {
-        background: #3d6b4a;
-      }
-    }
-
-    &--or {
-      background: #b8860b;
-      border-color: #9a7209;
-      color: #fff;
-
-      &:hover {
-        background: #9a7209;
-      }
-    }
-
-    &--exclude {
-      background: #8c3333;
-      border-color: #743030;
-      color: #fff;
-      text-decoration: line-through;
-
-      &:hover {
-        background: #743030;
-      }
     }
 
     &--editing {

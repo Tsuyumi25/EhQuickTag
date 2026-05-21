@@ -12,8 +12,9 @@ import {
   deleteProfile, restoreProfile, purgeProfile, reorderProfiles, updateProfileTagLines,
   fontFamily, fontWeight, getDefaultTagLines, tagLines,
   dblClickLeft, dblClickRight, newTabActive, nsFormat, defaultExactMatch,
-  tagDbMirror, tagDbTtlDays, type DblClickAction,
+  tagDbMirror, tagDbTtlDays, tagStylePreset, type DblClickAction,
 } from '@/services/store'
+import { TAG_STYLE_PRESETS, currentTagStyleClass } from '@/composables/useTagStyle'
 
 const props = defineProps<{
   useNhWeight: boolean
@@ -375,6 +376,18 @@ function onEditorExport() {
               >{{ opt.label }}</button>
             </div>
 
+            <h4 class="eqt-settings__subtitle">{{ t('settings.tagStyle') }}</h4>
+            <div class="eqt-settings__locale-row">
+              <button
+                v-for="preset in TAG_STYLE_PRESETS"
+                :key="preset.id"
+                type="button"
+                class="eqt-settings__locale-btn"
+                :class="{ 'eqt-settings__locale-btn--active': tagStylePreset === preset.id }"
+                @click="tagStylePreset = preset.id"
+              >{{ t(preset.labelKey) }}</button>
+            </div>
+
             <h4 class="eqt-settings__subtitle">{{ t('settings.fontFamily') }}</h4>
             <div class="eqt-settings__font-row">
               <input
@@ -403,7 +416,7 @@ function onEditorExport() {
             </div>
 
             <h4 class="eqt-settings__subtitle">{{ t('settings.preview') }}</h4>
-            <div class="eqt-settings__font-preview" :style="{ fontFamily: fontFamily || 'inherit', fontWeight: fontWeight || 'inherit' }">
+            <div class="eqt-settings__font-preview" :class="currentTagStyleClass" :style="{ fontFamily: fontFamily || 'inherit', fontWeight: fontWeight || 'inherit' }">
               <template v-for="(line, li) in previewTagLines" :key="li">
                 <div v-if="line.length" class="eqt-settings__preview-line">
                   <span
@@ -490,7 +503,7 @@ function onEditorExport() {
             </div>
           </div>
 
-          <div v-if="editorPreview" class="eqt-settings__font-preview eqt-json-editor__preview">
+          <div v-if="editorPreview" class="eqt-settings__font-preview eqt-json-editor__preview" :class="currentTagStyleClass">
             <template v-for="(line, li) in editorPreview" :key="li">
               <div v-if="line.length" class="eqt-settings__preview-line">
                 <span

@@ -1,0 +1,197 @@
+@mixin tag-state-modifiers {
+  &.eqt-tag-bar__btn--include {
+    background: color-mix(in srgb, var(--eqt-status-include) 55%, transparent);
+
+    &:hover {
+      background: color-mix(in srgb, var(--eqt-status-include) 70%, transparent);
+    }
+  }
+
+  &.eqt-tag-bar__btn--or {
+    background: color-mix(in srgb, var(--eqt-status-or) 55%, transparent);
+
+    &:hover {
+      background: color-mix(in srgb, var(--eqt-status-or) 70%, transparent);
+    }
+  }
+
+  &.eqt-tag-bar__btn--exclude {
+    background: color-mix(in srgb, var(--eqt-status-exclude) 55%, transparent);
+    text-decoration: line-through;
+    text-decoration-thickness: 2px;
+
+    &:hover {
+      background: color-mix(in srgb, var(--eqt-status-exclude) 70%, transparent);
+    }
+  }
+}
+
+// Apply baseline status colors to all tag buttons regardless of preset.
+// Each preset scope below also @includes the mixin so its higher specificity
+// wins over the preset's own default :hover background.
+.eqt-tag-bar__btn {
+  @include tag-state-modifiers;
+}
+
+// 3D border preset: vertical hard shadow + lift on hover
+.eqt-tag-style-3d {
+  .eqt-tag-bar__btn,
+  .eqt-settings__preview-tag {
+    border-color: var(--eqt-border);
+    box-shadow: 0 2px 0 0 var(--eqt-border);
+    background: transparent;
+    color: var(--eqt-text-secondary);
+    transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s ease, box-shadow 0.1s ease;
+  }
+
+  .eqt-tag-bar__btn {
+    &:hover {
+      background: var(--eqt-bg-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 3px 0 0 var(--eqt-border);
+    }
+
+    &:active {
+      transform: translateY(2px);
+      box-shadow: none;
+    }
+
+    @include tag-state-modifiers;
+
+    &.eqt-tag-bar__btn--editing {
+      border-style: dashed;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+
+      &:hover {
+        background: var(--eqt-bg-hover);
+        transform: none;
+        box-shadow: 0 2px 0 0 var(--eqt-border);
+      }
+    }
+
+    &.eqt-tag-bar__btn--drag {
+      box-shadow: 0 2px 0 0 var(--eqt-border), 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+  }
+}
+
+// Pushable preset: ::before pedestal + main button presses down into it.
+// preserve-3d + translate3d(z=-1em) so ::before paints behind the button's
+// own background, not just behind its text. z-index: -1 won't work — that
+// places ::before on top of the parent bg, exposing --eqt-bg-active
+// through the main button. Tradeoff: each button promotes to a compositor
+// layer; acceptable for typical TagBar sizes (~20 buttons).
+.eqt-tag-style-pushable {
+  .eqt-tag-bar__btn,
+  .eqt-settings__preview-tag {
+    position: relative;
+    border-color: var(--eqt-border);
+    background: var(--eqt-bg-btn);
+    color: var(--eqt-text-secondary);
+    border-radius: 0.5em;
+    font-weight: 600;
+    transform-style: preserve-3d;
+    transition: background 150ms cubic-bezier(0, 0, 0.58, 1), transform 150ms cubic-bezier(0, 0, 0.58, 1);
+  }
+
+  .eqt-tag-bar__btn::before,
+  .eqt-settings__preview-tag::before {
+    position: absolute;
+    content: '';
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    background: var(--eqt-bg-active);
+    border-radius: inherit;
+    box-shadow: 0 0 0 2px var(--eqt-border);
+    transform: translate3d(0, 0.3em, -1em);
+    transition: transform 150ms cubic-bezier(0, 0, 0.58, 1);
+  }
+
+  .eqt-tag-bar__btn {
+    &:hover {
+      background: var(--eqt-bg-hover);
+      transform: translate(0, 0.1em);
+
+      &::before {
+        transform: translate3d(0, 0.2em, -1em);
+      }
+    }
+
+    &:active {
+      background: var(--eqt-bg-hover);
+      transform: translate(0, 0.3em);
+
+      &::before {
+        transform: translate3d(0, 0, -1em);
+      }
+    }
+
+    @include tag-state-modifiers;
+
+    &.eqt-tag-bar__btn--editing {
+      border-style: dashed;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+
+      &:hover {
+        background: var(--eqt-bg-hover);
+        transform: none;
+
+        &::before {
+          transform: translate3d(0, 0.3em, -1em);
+        }
+      }
+    }
+
+    &.eqt-tag-bar__btn--drag {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+
+      &::before {
+        display: none;
+      }
+    }
+  }
+}
+
+// Offset shadow preset: diagonal hard shadow + press-down on active
+.eqt-tag-style-offset {
+  .eqt-tag-bar__btn,
+  .eqt-settings__preview-tag {
+    border-color: var(--eqt-border);
+    background: transparent;
+    color: var(--eqt-text-secondary);
+    border-radius: 5px;
+    font-weight: 600;
+    box-shadow: 1.5px 1.5px 0 0 var(--eqt-border);
+    transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s ease, box-shadow 0.1s ease;
+  }
+
+  .eqt-tag-bar__btn {
+    &:hover {
+      background: var(--eqt-bg-hover);
+    }
+
+    &:active {
+      transform: translate(1.5px, 1.5px);
+      box-shadow: 0 0 0 0 transparent;
+    }
+
+    @include tag-state-modifiers;
+
+    &.eqt-tag-bar__btn--editing {
+      border-style: dashed;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+
+      &:hover {
+        background: var(--eqt-bg-hover);
+        transform: none;
+        box-shadow: 1.5px 1.5px 0 0 var(--eqt-border);
+      }
+    }
+
+    &.eqt-tag-bar__btn--drag {
+      box-shadow: 1.5px 1.5px 0 0 var(--eqt-border), 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+  }
+}

@@ -2,6 +2,7 @@ import { createApp } from 'vue'
 import App from '@/App.vue'
 import { loadStore, startAutoSave } from '@/services/store'
 import '@/styles/theme.scss'
+import '@/styles/tag-style.scss'
 
 ;(async () => {
   await loadStore()
