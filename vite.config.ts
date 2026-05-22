@@ -4,7 +4,12 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import monkey from 'vite-plugin-monkey'
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+  define: {
+    // dev mode 暴露 Vue DevTools hook 讓 browser extension 能 attach；
+    // production build 關掉避免 production user 多載幾 KB hook code。
+    __VUE_PROD_DEVTOOLS__: command === 'serve' ? 'true' : 'false',
+  },
   plugins: [
     vue(),
     monkey({
@@ -49,4 +54,4 @@ export default defineConfig({
       'vuedraggable': 'vuedraggable/src/vuedraggable.js',
     },
   },
-})
+}))
