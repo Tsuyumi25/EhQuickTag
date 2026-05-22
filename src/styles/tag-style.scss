@@ -89,7 +89,6 @@
     background: var(--eqt-bg-btn);
     color: var(--eqt-text-secondary);
     border-radius: 0.5em;
-    font-weight: 600;
     transform-style: preserve-3d;
     transition: background 150ms cubic-bezier(0, 0, 0.58, 1), transform 150ms cubic-bezier(0, 0, 0.58, 1);
   }
@@ -162,7 +161,6 @@
     background: transparent;
     color: var(--eqt-text-secondary);
     border-radius: 5px;
-    font-weight: 600;
     box-shadow: 1.5px 1.5px 0 0 var(--eqt-border);
     transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s ease, box-shadow 0.1s ease;
   }

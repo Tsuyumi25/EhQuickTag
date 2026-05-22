@@ -1,12 +1,18 @@
-#eqt-bar-anchor,
-#eqt-app {
+#eqt-bar-anchor {
   font-family: var(--eqt-font-family, inherit);
   font-weight: var(--eqt-font-weight, inherit);
   line-height: 1.4;
 }
 
+#eqt-app {
+  font-family: var(--eqt-font-family, inherit);
+  line-height: 1.4;
+}
+
 #eqt-app button,
-#eqt-bar-anchor button {
+#eqt-app a,
+#eqt-bar-anchor button,
+#eqt-bar-anchor a {
   font-family: inherit;
   font-weight: inherit;
   line-height: inherit;
