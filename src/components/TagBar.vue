@@ -13,6 +13,7 @@ const ACTION_KEYS: Record<DblClickAction, string> = {
   search: 'tagbar.search',
   searchNewTab: 'tagbar.searchNewTab',
   clearSearch: 'tagbar.clearSearch',
+  none: 'tagbar.none',
 }
 
 const STATE_CLASS: Record<TagState, string | null> = {
@@ -74,6 +75,7 @@ function onBarContextMenu(e: MouseEvent) {
 }
 
 function execDblClickAction(action: DblClickAction) {
+  if (action === 'none') return
   if (action === 'clearSearch') {
     emit('update:searchText', '')
   } else {

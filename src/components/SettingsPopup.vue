@@ -302,6 +302,7 @@ function onEditorExport() {
                 <option value="search">{{ t('settings.actionSearchCurrent') }}</option>
                 <option value="searchNewTab">{{ t('settings.actionSearchNewTab') }}</option>
                 <option value="clearSearch">{{ t('settings.actionClear') }}</option>
+                <option value="none">{{ t('settings.actionNone') }}</option>
               </select>
             </div>
             <label class="eqt-settings__row" style="margin-top: 6px">

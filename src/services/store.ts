@@ -17,7 +17,7 @@ export interface Profile {
   isDefault?: boolean
 }
 
-export type DblClickAction = 'search' | 'searchNewTab' | 'clearSearch'
+export type DblClickAction = 'search' | 'searchNewTab' | 'clearSearch' | 'none'
 
 interface PersistedSettings {
   useNhWeight: boolean
