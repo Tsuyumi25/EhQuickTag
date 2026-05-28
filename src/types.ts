@@ -12,6 +12,12 @@ export interface QuickTag {
   label?: string
   url?: string
   disabledModes?: readonly TagMode[]
+  color?: string
+}
+
+export interface TagLine {
+  tags: QuickTag[]
+  color?: string
 }
 
 export function splitMultiTag(tag: string): string[] {

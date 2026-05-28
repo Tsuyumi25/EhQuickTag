@@ -2,6 +2,9 @@
 import { reactive, ref, watch, onMounted, onScopeDispose, nextTick, computed } from 'vue'
 import { onClickOutside, useScrollLock, useEventListener } from '@vueuse/core'
 import { ExternalLink } from '@lucide/vue'
+import LineColorSwatch from '@/components/LineColorSwatch.vue'
+import { currentTagStyleClass } from '@/composables/useTagStyle'
+import { useContentEditableName } from '@/composables/useContentEditableName'
 import { type QuickTag, type TagMode, splitMultiTag } from '@/types'
 import { t, isCJKLocale } from '@/composables/useI18n'
 import { loadTagDb, searchTags, type TagEntry, ALL_NAMESPACES } from '@/services/tagDb'
@@ -12,6 +15,7 @@ import {
 
 const props = defineProps<{
   tag: QuickTag
+  lineColor?: string
   isAdd?: boolean
   useNhWeight?: boolean
   nsOrder?: string[]
@@ -37,7 +41,10 @@ interface RowState {
   redoStack: string[]
 }
 
-const label = ref('')
+const { label, nameInputEl, onNameInput, onNameCompositionStart, onNameCompositionEnd } = useContentEditableName()
+const color = ref<string | undefined>(undefined)
+const effectiveColor = computed(() => color.value ?? props.lineColor)
+
 const rows = reactive<RowState[]>([])
 const tagInputRefs = ref<HTMLInputElement[]>([])
 const dbReady = ref(false)
@@ -50,6 +57,7 @@ const popupEl = ref<HTMLElement | null>(null)
 
 watch(() => props.tag, (t) => {
   label.value = t.label ?? ''
+  color.value = t.color
   const parts = t.tag ? splitMultiTag(t.tag) : []
   rows.splice(0, rows.length, ...parts.map(makeRow))
   if (props.isAdd || !parts.length) rows.push(makeRow(''))
@@ -73,7 +81,7 @@ function makeRow(raw: string): RowState {
 
 // --- click outside & scroll lock ---
 
-onClickOutside(popupEl, () => emit('close'))
+onClickOutside(popupEl, () => emit('close'), { ignore: ['.eqt-line-color__popup'] })
 useScrollLock(document.body, true)
 useEventListener(document, 'keydown', onGlobalKeydown)
 
@@ -581,6 +589,7 @@ function onSave() {
   emit('save', {
     tag: joined,
     label: label.value.trim() || undefined,
+    color: color.value,
     disabledModes: disabled.length ? disabled : undefined,
   })
 }
@@ -609,11 +618,24 @@ const qualifierOptions = Array.from(QUALIFIER_SET).map(q => ({ value: `q:${q}`, 
     <div ref="popupEl" class="eqt-popup">
       <div class="eqt-popup__field">
         <label class="eqt-popup__label">{{ t('tagConfig.displayName') }}</label>
-        <input
-          v-model="label"
-          class="eqt-popup__input"
-          :placeholder="t('tagConfig.displayNameHint')"
-        />
+        <div class="eqt-popup__field-row" :class="currentTagStyleClass">
+          <span
+            ref="nameInputEl"
+            class="eqt-popup__name-input"
+            contenteditable="plaintext-only"
+            spellcheck="false"
+            :data-placeholder="t('tagConfig.displayNameHint')"
+            :style="effectiveColor ? { '--line-color': effectiveColor } : undefined"
+            @input="onNameInput"
+            @keydown.enter.prevent
+            @compositionstart="onNameCompositionStart"
+            @compositionend="onNameCompositionEnd"
+          ></span>
+          <LineColorSwatch
+            v-model="color"
+            :title="t('common.itemColor')"
+          />
+        </div>
       </div>
 
       <hr class="eqt-popup__divider" />
@@ -806,6 +828,37 @@ const qualifierOptions = Array.from(QUALIFIER_SET).map(q => ({ value: `q:${q}`, 
   &__field {
     margin-bottom: 10px;
     position: relative;
+  }
+
+  &__field-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  &__name-input {
+    display: inline-block;
+    padding: 2px 8px;
+    border: var(--eqt-border-width) solid var(--line-color, var(--eqt-border));
+    border-radius: 3px;
+    background: color-mix(in srgb, var(--line-color, var(--eqt-bg-btn)) 15%, var(--eqt-bg-btn));
+    color: var(--eqt-text-secondary);
+    font-size: 12px;
+    line-height: 1.4;
+    outline: none;
+    cursor: text;
+    min-width: 6em;
+    white-space: nowrap;
+
+    // ::after for placeholder so pushable preset's ::before (pedestal) doesn't clash.
+    &:empty::after {
+      content: attr(data-placeholder);
+      color: var(--eqt-text-hint);
+    }
+
+    &:focus {
+      border-color: var(--eqt-border-focus);
+    }
   }
 
   &__label-row {

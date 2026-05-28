@@ -1,4 +1,7 @@
 export default {
+  // Common
+  'common.itemColor': '按钮颜色',
+
   // TagBar
   'tagbar.search': '搜索',
   'tagbar.searchNewTab': '新标签页搜索',
@@ -8,6 +11,8 @@ export default {
   'tagbar.newProfile': '点击命名新标签组',
   'tagbar.handleTitle': '拖拽排序行',
   'tagbar.deleteLine': '删除空行',
+  'tagbar.lineColor': '行颜色',
+  'tagbar.lineColorClear': '清除颜色',
   'tagbar.addLine': '新增行',
   'tagbar.addTag': '新增标签',
   'tagbar.addUrl': '新增网址',
@@ -64,6 +69,7 @@ export default {
   'settings.editorCopy': '复制',
   'settings.editorExport': '导出文件',
   'settings.editorJsonError': 'JSON 格式错误：{message}',
+  'settings.editorInvalidShape': '数据格式与当前版本不兼容',
   'settings.restoreProfile': '恢复标签组',
   'settings.purgeProfile': '永久删除',
   'settings.save': '保存',

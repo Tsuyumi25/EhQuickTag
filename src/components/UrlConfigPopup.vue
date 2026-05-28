@@ -1,13 +1,17 @@
 <script setup lang="ts">
-import { ref, watch, onScopeDispose } from 'vue'
+import { ref, watch, computed, onScopeDispose } from 'vue'
 import { onClickOutside, useScrollLock, useEventListener } from '@vueuse/core'
 import { GM_xmlhttpRequest } from '$'
 import { hasGMXHR } from '@/services/gmStorage'
+import LineColorSwatch from '@/components/LineColorSwatch.vue'
+import { currentTagStyleClass } from '@/composables/useTagStyle'
+import { useContentEditableName } from '@/composables/useContentEditableName'
 import type { QuickTag } from '@/types'
 import { t } from '@/composables/useI18n'
 
 const props = defineProps<{
   tag: QuickTag
+  lineColor?: string
   isAdd?: boolean
 }>()
 
@@ -17,7 +21,10 @@ const emit = defineEmits<{
   'close': []
 }>()
 
-const label = ref('')
+const { label, nameInputEl, onNameInput, onNameCompositionStart, onNameCompositionEnd } = useContentEditableName()
+const color = ref<string | undefined>(undefined)
+const effectiveColor = computed(() => color.value ?? props.lineColor)
+
 const url = ref('')
 const urlMode = ref<'eh' | 'full'>('eh')
 const fetchingTitle = ref(false)
@@ -40,6 +47,7 @@ function detectMode(raw: string): { mode: 'eh' | 'full'; path: string } {
 
 watch(() => props.tag, (t) => {
   label.value = t.label ?? ''
+  color.value = t.color
   const detected = detectMode(t.url ?? '')
   urlMode.value = detected.mode
   url.value = detected.path
@@ -57,7 +65,7 @@ function onGlobalKeydown(e: KeyboardEvent) {
 let abortFetch: { abort(): void } | null = null
 onScopeDispose(() => abortFetch?.abort())
 
-onClickOutside(popupEl, () => emit('close'))
+onClickOutside(popupEl, () => emit('close'), { ignore: ['.eqt-line-color__popup'] })
 useScrollLock(document.body, true)
 useEventListener(document, 'keydown', onGlobalKeydown)
 
@@ -91,7 +99,7 @@ function onSave() {
   const trimmedUrl = url.value.trim()
   if (!trimmedUrl) return
   const finalUrl = urlMode.value === 'eh' ? detectMode(trimmedUrl).path : trimmedUrl
-  emit('save', { tag: '', url: finalUrl, label: label.value.trim() || undefined })
+  emit('save', { tag: '', url: finalUrl, label: label.value.trim() || undefined, color: color.value })
 }
 </script>
 
@@ -100,11 +108,24 @@ function onSave() {
     <div ref="popupEl" class="eqt-popup eqt-popup--url">
       <div class="eqt-popup__field">
         <label class="eqt-popup__label">{{ t('urlConfig.displayName') }}</label>
-        <input
-          v-model="label"
-          class="eqt-popup__input"
-          :placeholder="t('urlConfig.displayNameHint')"
-        />
+        <div class="eqt-popup__field-row" :class="currentTagStyleClass">
+          <span
+            ref="nameInputEl"
+            class="eqt-popup__name-input"
+            contenteditable="plaintext-only"
+            spellcheck="false"
+            :data-placeholder="t('urlConfig.displayNameHint')"
+            :style="effectiveColor ? { '--line-color': effectiveColor } : undefined"
+            @input="onNameInput"
+            @keydown.enter.prevent
+            @compositionstart="onNameCompositionStart"
+            @compositionend="onNameCompositionEnd"
+          ></span>
+          <LineColorSwatch
+            v-model="color"
+            :title="t('common.itemColor')"
+          />
+        </div>
       </div>
 
       <hr class="eqt-popup__divider" />

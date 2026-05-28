@@ -1,19 +1,19 @@
 import { GM } from '$'
 import { reactive, ref, watch, nextTick } from 'vue'
-import type { QuickTag } from '@/types'
+import type { QuickTag, TagLine } from '@/types'
 import { DEFAULT_NS_ORDER, type TagDbMirror } from '@/services/tagDb'
 import { locale, setLocale, detectLocale, t, type Locale } from '@/composables/useI18n'
 import { PRESETS_BY_ID, type TagStylePresetId } from '@/composables/useTagStyle'
 
 const KEYS = {
   profiles: 'eqt_profiles',
-  tags: 'eqt_tags',        // legacy, for migration
+  corrupted: 'eqt_profiles_corrupted',  // 解析失敗時備份原始 JSON 到此 key
   settings: 'eqt_settings',
 }
 
 export interface Profile {
   name: string
-  tagLines: QuickTag[][]
+  tagLines: TagLine[]
   isDefault?: boolean
 }
 
@@ -62,15 +62,65 @@ const DEFAULT_TAG_DEFS: { tag: string; url?: string; labelKey: string; disabledM
   [],
 ]
 
-export function getDefaultTagLines(): QuickTag[][] {
-  return DEFAULT_TAG_DEFS.map(line =>
-    line.map(({ tag, url, labelKey, disabledModes }) => ({
+export function getDefaultTagLines(): TagLine[] {
+  return DEFAULT_TAG_DEFS.map(line => ({
+    tags: line.map(({ tag, url, labelKey, disabledModes }) => ({
       tag,
       ...(url ? { url } : {}),
       label: t(labelKey),
       ...(disabledModes ? { disabledModes } : {}),
     })),
-  )
+  }))
+}
+
+// Type guards — strict additive 策略下，只驗證 required 欄位存在且型別正確，
+// 未知欄位由 JS 物件天然 tolerate（不刪不報錯），forward-compatible。
+// 任何未來新增欄位都應為 optional，這些 guard 不需要改動。
+
+function isValidQuickTag(x: unknown): x is QuickTag {
+  if (!x || typeof x !== 'object') return false
+  const o = x as QuickTag
+  if (typeof o.tag !== 'string') return false
+  // QuickTag 的 discriminant：至少要有 non-empty tag 或 non-empty url
+  // （tag 為空字串 + url 是 URL entry 的形式）
+  const hasTag = o.tag !== ''
+  const hasUrl = typeof o.url === 'string' && o.url !== ''
+  return hasTag || hasUrl
+}
+
+export function isValidTagLine(x: unknown): x is TagLine {
+  if (!x || typeof x !== 'object') return false
+  const tags = (x as TagLine).tags
+  return Array.isArray(tags) && tags.every(isValidQuickTag)
+}
+
+interface ProfilesData {
+  active: number
+  profiles: Profile[]
+  deleted?: Profile[]
+}
+
+function isValidProfile(x: unknown): x is Profile {
+  if (!x || typeof x !== 'object') return false
+  const o = x as Record<string, unknown>
+  return typeof o.name === 'string'
+    && Array.isArray(o.tagLines)
+    && o.tagLines.every(isValidTagLine)
+}
+
+function isValidProfilesData(x: unknown): x is ProfilesData {
+  if (!x || typeof x !== 'object') return false
+  const o = x as Record<string, unknown>
+  return typeof o.active === 'number'
+    && Array.isArray(o.profiles) && o.profiles.every(isValidProfile)
+    && (o.deleted === undefined || (Array.isArray(o.deleted) && o.deleted.every(isValidProfile)))
+}
+
+// 解析失敗時備份原始 JSON 到獨立 key，避免靜默丟失用戶資料。
+// 之後可透過 GM 工具或 browser console 從 KEYS.corrupted 手動恢復。
+async function backupCorrupted(raw: string, reason: string) {
+  await GM.setValue(KEYS.corrupted, raw)
+  console.error(`[eqt] profiles parse failed (${reason}). Original data preserved at GM storage key: ${KEYS.corrupted}`)
 }
 
 
@@ -96,7 +146,7 @@ const DEFAULT_SETTINGS: PersistedSettings = {
 export const profiles = reactive<Profile[]>([])
 export const deletedProfiles = reactive<Profile[]>([])
 export const activeProfileIdx = ref(0)
-export const tagLines = reactive<QuickTag[][]>([])
+export const tagLines = reactive<TagLine[]>([])
 export const useNhWeight = ref(true)
 export const nsOrder = ref<string[]>([...DEFAULT_NS_ORDER])
 export const disabledNs = ref(new Set<string>())
@@ -114,29 +164,28 @@ export const tagStylePreset = ref<TagStylePresetId>('flat')
 // --- load from GM ---
 
 export async function loadStore(): Promise<void> {
-  const [savedProfiles, savedTags, savedSettings] = await Promise.all([
+  const [savedProfiles, savedSettings] = await Promise.all([
     GM.getValue<string>(KEYS.profiles, ''),
-    GM.getValue<string>(KEYS.tags, ''),
     GM.getValue<string>(KEYS.settings, ''),
   ])
 
-  // profiles — migrate from legacy eqt_tags if needed
+  // profiles — strict additive 策略：不做 migration。
+  // 解析失敗（JSON syntax / schema mismatch）就備份原始資料 + 載入 default。
+  let loaded = false
   if (savedProfiles) {
-    const data = JSON.parse(savedProfiles) as { active: number; profiles: Profile[]; deleted?: Profile[] }
-    profiles.splice(0, profiles.length, ...data.profiles)
-    deletedProfiles.splice(0, deletedProfiles.length, ...(data.deleted ?? []))
-    activeProfileIdx.value = Math.min(Math.max(data.active, 0), profiles.length - 1)
-  } else {
-    let lines: QuickTag[][]
-    let isDefault = false
-    if (savedTags) {
-      const parsed = JSON.parse(savedTags)
-      lines = (parsed.length === 0 || Array.isArray(parsed[0])) ? parsed : [parsed]
-    } else {
-      lines = getDefaultTagLines()
-      isDefault = true
+    try {
+      const data: unknown = JSON.parse(savedProfiles)
+      if (!isValidProfilesData(data)) throw new Error('schema mismatch')
+      profiles.splice(0, profiles.length, ...data.profiles)
+      deletedProfiles.splice(0, deletedProfiles.length, ...(data.deleted ?? []))
+      activeProfileIdx.value = Math.min(Math.max(data.active, 0), profiles.length - 1)
+      loaded = true
+    } catch (err) {
+      await backupCorrupted(savedProfiles, (err as Error).message)
     }
-    profiles.splice(0, profiles.length, { name: t('default.profileName'), tagLines: lines, isDefault })
+  }
+  if (!loaded) {
+    profiles.splice(0, profiles.length, { name: t('default.profileName'), tagLines: getDefaultTagLines(), isDefault: true })
     activeProfileIdx.value = 0
   }
 
@@ -187,9 +236,9 @@ export function renameProfile(idx: number, name: string): void {
 export function createProfile(name: string): void {
   syncTagLinesToActiveProfile()
   const lineCount = tagLines.length
-  profiles.push({ name, tagLines: Array.from({ length: lineCount }, () => []) })
+  profiles.push({ name, tagLines: Array.from({ length: lineCount }, () => ({ tags: [] })) })
   activeProfileIdx.value = profiles.length - 1
-  tagLines.splice(0, tagLines.length, ...Array.from({ length: lineCount }, () => []))
+  tagLines.splice(0, tagLines.length, ...Array.from({ length: lineCount }, () => ({ tags: [] })))
 }
 
 export function deleteProfile(idx: number): void {
@@ -229,7 +278,7 @@ export function reorderProfiles(fromIdx: number, toIdx: number): void {
   saveProfiles()
 }
 
-export function updateProfileTagLines(idx: number, newTagLines: QuickTag[][]): void {
+export function updateProfileTagLines(idx: number, newTagLines: TagLine[]): void {
   profiles[idx].tagLines = newTagLines
   if (profiles[idx].isDefault) profiles[idx].isDefault = false
   if (idx === activeProfileIdx.value) {

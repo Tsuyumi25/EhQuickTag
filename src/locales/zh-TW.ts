@@ -1,4 +1,7 @@
 export default {
+  // Common
+  'common.itemColor': '按鈕顏色',
+
   // TagBar
   'tagbar.search': '搜尋',
   'tagbar.searchNewTab': '新分頁搜尋',
@@ -8,6 +11,8 @@ export default {
   'tagbar.newProfile': '點擊命名新標籤組',
   'tagbar.handleTitle': '拖曳排序行',
   'tagbar.deleteLine': '刪除空行',
+  'tagbar.lineColor': '行顏色',
+  'tagbar.lineColorClear': '清除顏色',
   'tagbar.addLine': '新增行',
   'tagbar.addTag': '新增標籤',
   'tagbar.addUrl': '新增網址',
@@ -64,6 +69,7 @@ export default {
   'settings.editorCopy': '複製',
   'settings.editorExport': '匯出檔案',
   'settings.editorJsonError': 'JSON 格式錯誤：{message}',
+  'settings.editorInvalidShape': '資料格式與當前版本不相容',
   'settings.restoreProfile': '恢復標籤組',
   'settings.purgeProfile': '永久刪除',
   'settings.save': '儲存',

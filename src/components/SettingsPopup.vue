@@ -4,7 +4,7 @@ import { onClickOutside, useScrollLock, useClipboard, useTimeoutFn } from '@vueu
 import { Trash2, Copy, Download, Check, RotateCcw, CircleAlert, ExternalLink, Code } from '@lucide/vue'
 import Draggable from 'vuedraggable'
 import { baseDragOptions } from '@/utils/drag'
-import type { QuickTag } from '@/types'
+import type { TagLine } from '@/types'
 import { t, locale, setLocale, type Locale } from '@/composables/useI18n'
 import { DEFAULT_NS_ORDER, refreshTagDb, TAG_DB_MIRRORS, type TagDbMirror } from '@/services/tagDb'
 import {
@@ -13,6 +13,7 @@ import {
   fontFamily, fontWeight, getDefaultTagLines, tagLines,
   dblClickLeft, dblClickRight, newTabActive, nsFormat, defaultExactMatch,
   tagDbMirror, tagDbTtlDays, tagStylePreset, type DblClickAction,
+  isValidTagLine,
 } from '@/services/store'
 import { TAG_STYLE_PRESETS, currentTagStyleClass } from '@/composables/useTagStyle'
 
@@ -66,6 +67,15 @@ const localeOptions: { value: Locale; label: string }[] = [
 ]
 
 const previewTagLines = computed(() => getDefaultTagLines())
+
+function tagCount(lines: TagLine[]): number {
+  return lines.reduce((sum, l) => sum + l.tags.length, 0)
+}
+
+const tagCounts = computed(() => profiles.map((p, i) =>
+  tagCount(i === activeProfileIdx.value ? tagLines : p.tagLines),
+))
+const deletedTagCounts = computed(() => deletedProfiles.map(p => tagCount(p.tagLines)))
 
 // --- nsOrder change handler ---
 
@@ -147,11 +157,11 @@ const editorCopied = ref(false)
 const { copy: clipboardCopy } = useClipboard({ legacy: true })
 const { start: startCopiedTimer } = useTimeoutFn(() => { editorCopied.value = false }, 1500, { immediate: false })
 
-const editorPreview = computed<QuickTag[][] | null>(() => {
+const editorPreview = computed<TagLine[] | null>(() => {
   try {
-    const parsed = JSON.parse(editorText.value)
-    if (!Array.isArray(parsed)) return null
-    return parsed as QuickTag[][]
+    const parsed: unknown = JSON.parse(editorText.value)
+    if (!Array.isArray(parsed) || !parsed.every(isValidTagLine)) return null
+    return parsed
   } catch { return null }
 })
 
@@ -199,7 +209,11 @@ function openEditor(idx: number, deleted = false) {
 function onEditorSave() {
   if (editingDeleted.value) return
   try {
-    const parsed = JSON.parse(editorText.value)
+    const parsed: unknown = JSON.parse(editorText.value)
+    if (!Array.isArray(parsed) || !parsed.every(isValidTagLine)) {
+      editorError.value = t('settings.editorInvalidShape')
+      return
+    }
     editorError.value = ''
     updateProfileTagLines(editingProfileIdx.value, parsed)
   } catch (err) {
@@ -419,9 +433,9 @@ function onEditorExport() {
             <h4 class="eqt-settings__subtitle">{{ t('settings.preview') }}</h4>
             <div class="eqt-settings__font-preview" :class="currentTagStyleClass" :style="{ fontFamily: fontFamily || 'inherit', fontWeight: fontWeight || 'inherit' }">
               <template v-for="(line, li) in previewTagLines" :key="li">
-                <div v-if="line.length" class="eqt-settings__preview-line">
+                <div v-if="line.tags.length" class="eqt-settings__preview-line">
                   <span
-                    v-for="(qt, ti) in line"
+                    v-for="(qt, ti) in line.tags"
                     :key="ti"
                     class="eqt-settings__preview-tag"
                     :class="{ 'eqt-settings__preview-tag--url': !!qt.url }"
@@ -506,9 +520,9 @@ function onEditorExport() {
 
           <div v-if="editorPreview" class="eqt-settings__font-preview eqt-json-editor__preview" :class="currentTagStyleClass">
             <template v-for="(line, li) in editorPreview" :key="li">
-              <div v-if="line.length" class="eqt-settings__preview-line">
+              <div v-if="line.tags?.length" class="eqt-settings__preview-line">
                 <span
-                  v-for="(qt, ti) in line"
+                  v-for="(qt, ti) in line.tags"
                   :key="ti"
                   class="eqt-settings__preview-tag"
                   :class="{ 'eqt-settings__preview-tag--url': !!qt.url }"
@@ -563,7 +577,7 @@ function onEditorExport() {
                 {{ p.name }}
                 <span v-if="i === activeProfileIdx" class="eqt-settings__active-badge">{{ t('settings.activeBadge') }}</span>
               </span>
-              <span class="eqt-settings__item-count">{{ (i === activeProfileIdx ? tagLines : p.tagLines).flat().length }}</span>
+              <span class="eqt-settings__item-count">{{ tagCounts[i] }}</span>
               <button
                 v-if="profiles.length > 1"
                 class="eqt-settings__item-btn eqt-settings__item-btn--purge"
@@ -586,7 +600,7 @@ function onEditorExport() {
               @click="openEditor(i, true)"
             >
               <span class="eqt-settings__item-name">{{ p.name }}</span>
-              <span class="eqt-settings__item-count">{{ p.tagLines.flat().length }}</span>
+              <span class="eqt-settings__item-count">{{ deletedTagCounts[i] }}</span>
             </li>
           </ul>
         </template>

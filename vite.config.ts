@@ -11,7 +11,13 @@ export default defineConfig(({ command }) => ({
     __VUE_PROD_DEVTOOLS__: command === 'serve' ? 'true' : 'false',
   },
   plugins: [
-    vue(),
+    vue({
+      template: {
+        compilerOptions: {
+          isCustomElement: (tag) => tag === 'hex-alpha-color-picker',
+        },
+      },
+    }),
     monkey({
       entry: 'src/main.ts',
       userscript: {

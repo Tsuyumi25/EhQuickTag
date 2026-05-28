@@ -1,4 +1,7 @@
 export default {
+  // Common
+  'common.itemColor': 'Button color',
+
   // TagBar
   'tagbar.search': 'Search',
   'tagbar.searchNewTab': 'Search in new tab',
@@ -8,6 +11,8 @@ export default {
   'tagbar.newProfile': 'Click to name new profile',
   'tagbar.handleTitle': 'Drag to reorder rows',
   'tagbar.deleteLine': 'Delete empty row',
+  'tagbar.lineColor': 'Row color',
+  'tagbar.lineColorClear': 'Clear color',
   'tagbar.addLine': 'Add row',
   'tagbar.addTag': 'Add tag',
   'tagbar.addUrl': 'Add URL',
@@ -64,6 +69,7 @@ export default {
   'settings.editorCopy': 'Copy',
   'settings.editorExport': 'Export file',
   'settings.editorJsonError': 'JSON format error: {message}',
+  'settings.editorInvalidShape': 'Data shape incompatible with current version',
   'settings.restoreProfile': 'Restore profile',
   'settings.purgeProfile': 'Delete permanently',
   'settings.save': 'Save',

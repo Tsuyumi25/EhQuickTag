@@ -1,9 +1,9 @@
 @mixin tag-state-modifiers {
   &.eqt-tag-bar__btn--include {
-    background: color-mix(in srgb, var(--eqt-status-include) 55%, transparent);
+    background: color-mix(in srgb, var(--line-color, var(--eqt-status-include)) 55%, transparent);
 
     &:hover {
-      background: color-mix(in srgb, var(--eqt-status-include) 70%, transparent);
+      background: color-mix(in srgb, var(--line-color, var(--eqt-status-include)) 70%, transparent);
     }
   }
 
@@ -36,10 +36,11 @@
 // 3D border preset: vertical hard shadow + lift on hover
 .eqt-tag-style-3d {
   .eqt-tag-bar__btn,
-  .eqt-settings__preview-tag {
-    border-color: var(--eqt-border);
-    box-shadow: 0 2px 0 0 var(--eqt-border);
-    background: transparent;
+  .eqt-settings__preview-tag,
+  .eqt-popup__name-input {
+    border-color: var(--line-color, var(--eqt-border));
+    box-shadow: 0 2px 0 0 var(--line-color, var(--eqt-border));
+    background: color-mix(in srgb, var(--line-color, transparent) 15%, transparent);
     color: var(--eqt-text-secondary);
     transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s ease, box-shadow 0.1s ease;
   }
@@ -48,7 +49,7 @@
     &:hover {
       background: var(--eqt-bg-hover);
       transform: translateY(-1px);
-      box-shadow: 0 3px 0 0 var(--eqt-border);
+      box-shadow: 0 3px 0 0 var(--line-color, var(--eqt-border));
     }
 
     &:active {
@@ -59,18 +60,17 @@
     @include tag-state-modifiers;
 
     &.eqt-tag-bar__btn--editing {
-      border-style: dashed;
       transition: background 0.15s, border-color 0.15s, color 0.15s;
 
       &:hover {
         background: var(--eqt-bg-hover);
         transform: none;
-        box-shadow: 0 2px 0 0 var(--eqt-border);
+        box-shadow: 0 2px 0 0 var(--line-color, var(--eqt-border));
       }
     }
 
     &.eqt-tag-bar__btn--drag {
-      box-shadow: 0 2px 0 0 var(--eqt-border), 0 2px 8px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 2px 0 0 var(--line-color, var(--eqt-border)), 0 2px 8px rgba(0, 0, 0, 0.2);
     }
   }
 }
@@ -83,10 +83,11 @@
 // layer; acceptable for typical TagBar sizes (~20 buttons).
 .eqt-tag-style-pushable {
   .eqt-tag-bar__btn,
-  .eqt-settings__preview-tag {
+  .eqt-settings__preview-tag,
+  .eqt-popup__name-input {
     position: relative;
-    border-color: var(--eqt-border);
-    background: var(--eqt-bg-btn);
+    border-color: var(--line-color, var(--eqt-border));
+    background: color-mix(in srgb, var(--line-color, var(--eqt-bg-btn)) 15%, var(--eqt-bg-btn));
     color: var(--eqt-text-secondary);
     border-radius: 0.5em;
     transform-style: preserve-3d;
@@ -94,16 +95,17 @@
   }
 
   .eqt-tag-bar__btn::before,
-  .eqt-settings__preview-tag::before {
+  .eqt-settings__preview-tag::before,
+  .eqt-popup__name-input::before {
     position: absolute;
     content: '';
     width: 100%;
     height: 100%;
     top: 0;
     left: 0;
-    background: var(--eqt-bg-active);
+    background: color-mix(in srgb, var(--line-color, var(--eqt-bg-active)) 70%, var(--eqt-bg-active));
     border-radius: inherit;
-    box-shadow: 0 0 0 2px var(--eqt-border);
+    box-shadow: 0 0 0 2px var(--line-color, var(--eqt-border));
     transform: translate3d(0, 0.3em, -1em);
     transition: transform 150ms cubic-bezier(0, 0, 0.58, 1);
   }
@@ -130,7 +132,6 @@
     @include tag-state-modifiers;
 
     &.eqt-tag-bar__btn--editing {
-      border-style: dashed;
       transition: background 0.15s, border-color 0.15s, color 0.15s;
 
       &:hover {
@@ -156,12 +157,13 @@
 // Offset shadow preset: diagonal hard shadow + press-down on active
 .eqt-tag-style-offset {
   .eqt-tag-bar__btn,
-  .eqt-settings__preview-tag {
-    border-color: var(--eqt-border);
-    background: transparent;
+  .eqt-settings__preview-tag,
+  .eqt-popup__name-input {
+    border-color: var(--line-color, var(--eqt-border));
+    background: color-mix(in srgb, var(--line-color, transparent) 15%, transparent);
     color: var(--eqt-text-secondary);
     border-radius: 5px;
-    box-shadow: 1.5px 1.5px 0 0 var(--eqt-border);
+    box-shadow: 1.5px 1.5px 0 0 var(--line-color, var(--eqt-border));
     transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s ease, box-shadow 0.1s ease;
   }
 
@@ -178,18 +180,17 @@
     @include tag-state-modifiers;
 
     &.eqt-tag-bar__btn--editing {
-      border-style: dashed;
       transition: background 0.15s, border-color 0.15s, color 0.15s;
 
       &:hover {
         background: var(--eqt-bg-hover);
         transform: none;
-        box-shadow: 1.5px 1.5px 0 0 var(--eqt-border);
+        box-shadow: 1.5px 1.5px 0 0 var(--line-color, var(--eqt-border));
       }
     }
 
     &.eqt-tag-bar__btn--drag {
-      box-shadow: 1.5px 1.5px 0 0 var(--eqt-border), 0 2px 8px rgba(0, 0, 0, 0.2);
+      box-shadow: 1.5px 1.5px 0 0 var(--line-color, var(--eqt-border)), 0 2px 8px rgba(0, 0, 0, 0.2);
     }
   }
 }
