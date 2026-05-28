@@ -14,6 +14,9 @@ importers:
       '@vueuse/core':
         specifier: ^14.3.0
         version: 14.3.0(vue@3.5.34(typescript@6.0.3))
+      vanilla-colorful:
+        specifier: ^0.7.2
+        version: 0.7.2
       vue:
         specifier: ^3.5.34
         version: 3.5.34(typescript@6.0.3)
@@ -1458,6 +1461,9 @@ packages:
     resolution: {integrity: sha512-n2huDr9h9yzd6exQVnH/jU5mr+Pfx08LRXXZhkLLetAMESRj+anQsTAh940iMrIetKAmry9coFuZQ2jY8/p3WA==}
     engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
 
+  vanilla-colorful@0.7.2:
+    resolution: {integrity: sha512-z2YZusTFC6KnLERx1cgoIRX2CjPRP0W75N+3CC6gbvdX5Ch47rZkEMGO2Xnf+IEmi3RiFLxS18gayMA27iU7Kg==}
+
   vite-plugin-monkey@8.0.5:
     resolution: {integrity: sha512-2ByJCxGEebg6ElEbBkor1RNXtk7PgbfRT1CGmTO13P4wtYPIcMat5c2uN6eMX6t1eB1URG23Ioh1ZM/bDUAmDw==}
     peerDependencies:
@@ -2879,6 +2885,8 @@ snapshots:
   universal-user-agent@7.0.3: {}
 
   url-join@5.0.0: {}
+
+  vanilla-colorful@0.7.2: {}
 
   vite-plugin-monkey@8.0.5(postcss@8.5.14)(vite@8.0.13(jiti@2.7.0)(sass@1.99.0)):
     dependencies:
