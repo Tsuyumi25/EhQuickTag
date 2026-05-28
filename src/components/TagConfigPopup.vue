@@ -2,6 +2,7 @@
 import { reactive, ref, watch, onMounted, onScopeDispose, nextTick, computed } from 'vue'
 import { onClickOutside, useScrollLock, useEventListener } from '@vueuse/core'
 import { ExternalLink } from '@lucide/vue'
+import LineColorSwatch from '@/components/LineColorSwatch.vue'
 import { type QuickTag, type TagMode, splitMultiTag } from '@/types'
 import { t, isCJKLocale } from '@/composables/useI18n'
 import { loadTagDb, searchTags, type TagEntry, ALL_NAMESPACES } from '@/services/tagDb'
@@ -38,6 +39,7 @@ interface RowState {
 }
 
 const label = ref('')
+const color = ref<string | undefined>(undefined)
 const rows = reactive<RowState[]>([])
 const tagInputRefs = ref<HTMLInputElement[]>([])
 const dbReady = ref(false)
@@ -50,6 +52,7 @@ const popupEl = ref<HTMLElement | null>(null)
 
 watch(() => props.tag, (t) => {
   label.value = t.label ?? ''
+  color.value = t.color
   const parts = t.tag ? splitMultiTag(t.tag) : []
   rows.splice(0, rows.length, ...parts.map(makeRow))
   if (props.isAdd || !parts.length) rows.push(makeRow(''))
@@ -73,7 +76,7 @@ function makeRow(raw: string): RowState {
 
 // --- click outside & scroll lock ---
 
-onClickOutside(popupEl, () => emit('close'))
+onClickOutside(popupEl, () => emit('close'), { ignore: ['.eqt-line-color__popup'] })
 useScrollLock(document.body, true)
 useEventListener(document, 'keydown', onGlobalKeydown)
 
@@ -581,6 +584,7 @@ function onSave() {
   emit('save', {
     tag: joined,
     label: label.value.trim() || undefined,
+    color: color.value,
     disabledModes: disabled.length ? disabled : undefined,
   })
 }
@@ -609,11 +613,17 @@ const qualifierOptions = Array.from(QUALIFIER_SET).map(q => ({ value: `q:${q}`, 
     <div ref="popupEl" class="eqt-popup">
       <div class="eqt-popup__field">
         <label class="eqt-popup__label">{{ t('tagConfig.displayName') }}</label>
-        <input
-          v-model="label"
-          class="eqt-popup__input"
-          :placeholder="t('tagConfig.displayNameHint')"
-        />
+        <div class="eqt-popup__field-row">
+          <input
+            v-model="label"
+            class="eqt-popup__input"
+            :placeholder="t('tagConfig.displayNameHint')"
+          />
+          <LineColorSwatch
+            v-model="color"
+            :title="t('common.itemColor')"
+          />
+        </div>
       </div>
 
       <hr class="eqt-popup__divider" />
@@ -806,6 +816,12 @@ const qualifierOptions = Array.from(QUALIFIER_SET).map(q => ({ value: `q:${q}`, 
   &__field {
     margin-bottom: 10px;
     position: relative;
+  }
+
+  &__field-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
   }
 
   &__label-row {

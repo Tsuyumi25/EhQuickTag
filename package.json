@@ -10,6 +10,7 @@
     "release": "release-it"
   },
   "dependencies": {
+    "@floating-ui/vue": "^1.1.11",
     "@lucide/vue": "^1.16.0",
     "@vueuse/core": "^14.3.0",
     "vanilla-colorful": "^0.7.2",

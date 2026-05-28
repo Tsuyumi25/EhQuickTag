@@ -2,6 +2,7 @@
 import { ref, computed, nextTick } from 'vue'
 import Draggable from 'vuedraggable'
 import { ChevronLeft, ChevronRight, ExternalLink, GripVertical, Trash2, Pencil, Check, Settings, Plus, Info } from '@lucide/vue'
+import LineColorSwatch from '@/components/LineColorSwatch.vue'
 import { TagState, type QuickTag } from '@/types'
 import { tokenize, getState as _getState, removeTag, addTag, getNextRightClickState } from '@/services/tagState'
 import { tagLines, dblClickLeft, dblClickRight, type DblClickAction } from '@/services/store'
@@ -267,7 +268,14 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
       >
         <template #item="{ element: line, index: li }">
           <div class="eqt-tag-bar__line-wrap">
-            <div class="eqt-tag-bar__handle" :class="{ 'eqt-tag-bar__handle--hidden': !editing }" :title="t('tagbar.handleTitle')"><GripVertical :size="14" /></div>
+            <div class="eqt-tag-bar__line-controls">
+              <LineColorSwatch
+                v-if="editing"
+                :model-value="line.color"
+                @update:model-value="line.color = $event"
+              />
+              <div class="eqt-tag-bar__handle" :class="{ 'eqt-tag-bar__handle--hidden': !editing }" :title="t('tagbar.handleTitle')"><GripVertical :size="14" /></div>
+            </div>
             <button
               v-if="editing && line.tags.length === 0"
               class="eqt-tag-bar__line-delete"
@@ -282,6 +290,7 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
               :disabled="!editing"
               tag="div"
               class="eqt-tag-bar__line"
+              :style="{ '--line-color': line.color }"
               @change="onTagChange(li, $event)"
               @start="onTagStart"
               @end="onTagEnd"
@@ -291,12 +300,14 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
                   v-if="qt.url && !editing"
                   :href="qt.url"
                   class="eqt-tag-bar__btn eqt-tag-bar__btn--url"
+                  :style="qt.color ? { '--line-color': qt.color } : undefined"
                 ><ExternalLink :size="12" /> {{ qt.label || qt.url }}</a>
 
                 <button
                   v-else-if="qt.url"
                   class="eqt-tag-bar__btn eqt-tag-bar__btn--editing"
                   type="button"
+                  :style="qt.color ? { '--line-color': qt.color } : undefined"
                   @click="onConfigure(li, ti)"
                 ><ExternalLink :size="12" /> {{ qt.label || qt.url }}</button>
 
@@ -305,6 +316,7 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
                   class="eqt-tag-bar__btn"
                   :class="editing ? 'eqt-tag-bar__btn--editing' : STATE_CLASS[getState(qt.tag)]"
                   type="button"
+                  :style="qt.color ? { '--line-color': qt.color } : undefined"
                   @click="editing ? onConfigure(li, ti) : onLeftClick(qt.tag)"
                   @contextmenu.prevent="!editing && onRightClick($event, qt)"
                 >{{ qt.label || qt.tag }}</button>
@@ -410,17 +422,23 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
     }
   }
 
-  &__handle {
+  &__line-controls {
     position: absolute;
     right: 100%;
     top: 0;
     display: flex;
     align-items: center;
     height: 24px;
+  }
+
+  &__handle {
+    display: flex;
+    align-items: center;
+    height: 24px;
+    padding: 0 4px;
     cursor: grab;
     color: var(--eqt-text-hint);
     user-select: none;
-    padding: 0 4px 0 0;
 
     &:hover {
       color: var(--eqt-text-secondary);
@@ -617,9 +635,9 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
     align-items: center;
     gap: 4px;
     padding: 2px 8px;
-    border: var(--eqt-border-width) solid var(--eqt-border);
+    border: var(--eqt-border-width) solid var(--line-color, var(--eqt-border));
     border-radius: 3px;
-    background: var(--eqt-bg-btn);
+    background: color-mix(in srgb, var(--line-color, var(--eqt-bg-btn)) 15%, var(--eqt-bg-btn));
     color: var(--eqt-text-secondary);
     cursor: pointer;
     font-size: 12px;
@@ -635,7 +653,6 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
     }
 
     &--editing {
-      border-style: dashed;
       cursor: grab;
 
       &:hover {

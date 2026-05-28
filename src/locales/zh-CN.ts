@@ -1,4 +1,7 @@
 export default {
+  // Common
+  'common.itemColor': '按钮颜色',
+
   // TagBar
   'tagbar.search': '搜索',
   'tagbar.searchNewTab': '新标签页搜索',
@@ -8,6 +11,8 @@ export default {
   'tagbar.newProfile': '点击命名新标签组',
   'tagbar.handleTitle': '拖拽排序行',
   'tagbar.deleteLine': '删除空行',
+  'tagbar.lineColor': '行颜色',
+  'tagbar.lineColorClear': '清除颜色',
   'tagbar.addLine': '新增行',
   'tagbar.addTag': '新增标签',
   'tagbar.addUrl': '新增网址',

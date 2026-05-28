@@ -1,4 +1,7 @@
 export default {
+  // Common
+  'common.itemColor': '按鈕顏色',
+
   // TagBar
   'tagbar.search': '搜尋',
   'tagbar.searchNewTab': '新分頁搜尋',
@@ -8,6 +11,8 @@ export default {
   'tagbar.newProfile': '點擊命名新標籤組',
   'tagbar.handleTitle': '拖曳排序行',
   'tagbar.deleteLine': '刪除空行',
+  'tagbar.lineColor': '行顏色',
+  'tagbar.lineColorClear': '清除顏色',
   'tagbar.addLine': '新增行',
   'tagbar.addTag': '新增標籤',
   'tagbar.addUrl': '新增網址',

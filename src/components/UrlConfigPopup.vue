@@ -3,6 +3,7 @@ import { ref, watch, onScopeDispose } from 'vue'
 import { onClickOutside, useScrollLock, useEventListener } from '@vueuse/core'
 import { GM_xmlhttpRequest } from '$'
 import { hasGMXHR } from '@/services/gmStorage'
+import LineColorSwatch from '@/components/LineColorSwatch.vue'
 import type { QuickTag } from '@/types'
 import { t } from '@/composables/useI18n'
 
@@ -18,6 +19,7 @@ const emit = defineEmits<{
 }>()
 
 const label = ref('')
+const color = ref<string | undefined>(undefined)
 const url = ref('')
 const urlMode = ref<'eh' | 'full'>('eh')
 const fetchingTitle = ref(false)
@@ -40,6 +42,7 @@ function detectMode(raw: string): { mode: 'eh' | 'full'; path: string } {
 
 watch(() => props.tag, (t) => {
   label.value = t.label ?? ''
+  color.value = t.color
   const detected = detectMode(t.url ?? '')
   urlMode.value = detected.mode
   url.value = detected.path
@@ -57,7 +60,7 @@ function onGlobalKeydown(e: KeyboardEvent) {
 let abortFetch: { abort(): void } | null = null
 onScopeDispose(() => abortFetch?.abort())
 
-onClickOutside(popupEl, () => emit('close'))
+onClickOutside(popupEl, () => emit('close'), { ignore: ['.eqt-line-color__popup'] })
 useScrollLock(document.body, true)
 useEventListener(document, 'keydown', onGlobalKeydown)
 
@@ -91,7 +94,7 @@ function onSave() {
   const trimmedUrl = url.value.trim()
   if (!trimmedUrl) return
   const finalUrl = urlMode.value === 'eh' ? detectMode(trimmedUrl).path : trimmedUrl
-  emit('save', { tag: '', url: finalUrl, label: label.value.trim() || undefined })
+  emit('save', { tag: '', url: finalUrl, label: label.value.trim() || undefined, color: color.value })
 }
 </script>
 
@@ -100,11 +103,17 @@ function onSave() {
     <div ref="popupEl" class="eqt-popup eqt-popup--url">
       <div class="eqt-popup__field">
         <label class="eqt-popup__label">{{ t('urlConfig.displayName') }}</label>
-        <input
-          v-model="label"
-          class="eqt-popup__input"
-          :placeholder="t('urlConfig.displayNameHint')"
-        />
+        <div class="eqt-popup__field-row">
+          <input
+            v-model="label"
+            class="eqt-popup__input"
+            :placeholder="t('urlConfig.displayNameHint')"
+          />
+          <LineColorSwatch
+            v-model="color"
+            :title="t('common.itemColor')"
+          />
+        </div>
       </div>
 
       <hr class="eqt-popup__divider" />

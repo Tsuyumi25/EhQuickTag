@@ -1,4 +1,7 @@
 export default {
+  // Common
+  'common.itemColor': 'ボタンの色',
+
   // TagBar
   'tagbar.search': '検索',
   'tagbar.searchNewTab': '新しいタブで検索',
@@ -8,6 +11,8 @@ export default {
   'tagbar.newProfile': 'クリックして新しいプロファイルに名前を付ける',
   'tagbar.handleTitle': 'ドラッグして行を並べ替え',
   'tagbar.deleteLine': '空行を削除',
+  'tagbar.lineColor': '行の色',
+  'tagbar.lineColorClear': '色をクリア',
   'tagbar.addLine': '行を追加',
   'tagbar.addTag': 'タグを追加',
   'tagbar.addUrl': 'URLを追加',
