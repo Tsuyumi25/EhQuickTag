@@ -64,7 +64,7 @@ function onConfigure(lineIdx: number, tagIdx: number) {
   editingLine.value = lineIdx
   editingIdx.value = tagIdx
   pendingAdd.value = false
-  const qt = tagLines[lineIdx][tagIdx]
+  const qt = tagLines[lineIdx].tags[tagIdx]
   if (qt.url) {
     showUrlPopup.value = true
   } else {
@@ -84,9 +84,9 @@ function onAdd(type: 'tag' | 'url' = 'tag') {
 
 function onSave(updated: import('@/types').QuickTag) {
   if (pendingAdd.value) {
-    tagLines[editingLine.value].push(updated)
+    tagLines[editingLine.value].tags.push(updated)
   } else {
-    tagLines[editingLine.value][editingIdx.value] = updated
+    tagLines[editingLine.value].tags[editingIdx.value] = updated
   }
   pendingAdd.value = false
   showTagPopup.value = false
@@ -94,7 +94,7 @@ function onSave(updated: import('@/types').QuickTag) {
 }
 
 function onDelete() {
-  tagLines[editingLine.value].splice(editingIdx.value, 1)
+  tagLines[editingLine.value].tags.splice(editingIdx.value, 1)
   pendingAdd.value = false
   showTagPopup.value = false
   showUrlPopup.value = false
@@ -171,7 +171,7 @@ watch(searchText, (val) => {
 
   <TagConfigPopup
     v-if="showTagPopup"
-    :tag="pendingAdd ? draftTag : tagLines[editingLine][editingIdx]"
+    :tag="pendingAdd ? draftTag : tagLines[editingLine].tags[editingIdx]"
     :is-add="pendingAdd"
     :use-nh-weight="useNhWeight"
     :ns-order="effectiveNsOrder"
@@ -184,7 +184,7 @@ watch(searchText, (val) => {
 
   <UrlConfigPopup
     v-if="showUrlPopup"
-    :tag="pendingAdd ? draftTag : tagLines[editingLine][editingIdx]"
+    :tag="pendingAdd ? draftTag : tagLines[editingLine].tags[editingIdx]"
     :is-add="pendingAdd"
     @save="onSave"
     @delete="onDelete"

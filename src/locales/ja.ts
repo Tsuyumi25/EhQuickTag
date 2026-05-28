@@ -64,6 +64,7 @@ export default {
   'settings.editorCopy': 'コピー',
   'settings.editorExport': 'ファイルをエクスポート',
   'settings.editorJsonError': 'JSON 形式エラー：{message}',
+  'settings.editorInvalidShape': 'データ形式が現在のバージョンと互換性がありません',
   'settings.restoreProfile': 'プロファイルを復元',
   'settings.purgeProfile': '完全に削除',
   'settings.save': '保存',

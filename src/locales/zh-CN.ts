@@ -64,6 +64,7 @@ export default {
   'settings.editorCopy': '复制',
   'settings.editorExport': '导出文件',
   'settings.editorJsonError': 'JSON 格式错误：{message}',
+  'settings.editorInvalidShape': '数据格式与当前版本不兼容',
   'settings.restoreProfile': '恢复标签组',
   'settings.purgeProfile': '永久删除',
   'settings.save': '保存',

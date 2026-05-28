@@ -137,22 +137,23 @@ function onLineChange(evt: any) {
 }
 
 function onTagChange(lineIdx: number, evt: any) {
+  const line = tagLines[lineIdx]
   if (evt.added) {
-    tagLines[lineIdx].splice(evt.added.newIndex, 0, evt.added.element)
+    line.tags.splice(evt.added.newIndex, 0, evt.added.element)
   }
   if (evt.removed) {
-    tagLines[lineIdx].splice(evt.removed.oldIndex, 1)
+    line.tags.splice(evt.removed.oldIndex, 1)
   }
   if (evt.moved) {
-    const [item] = tagLines[lineIdx].splice(evt.moved.oldIndex, 1)
-    tagLines[lineIdx].splice(evt.moved.newIndex, 0, item)
+    const [item] = line.tags.splice(evt.moved.oldIndex, 1)
+    line.tags.splice(evt.moved.newIndex, 0, item)
   }
 }
 
 function onTagStart() { tagDragging = true }
 function onTagEnd() { setTimeout(() => { tagDragging = false }, 0) }
 
-function onAddLine() { tagLines.push([]) }
+function onAddLine() { tagLines.push({ tags: [] }) }
 function onDeleteLine(li: number) { tagLines.splice(li, 1) }
 
 function onConfigure(li: number, ti: number) {
@@ -268,7 +269,7 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
           <div class="eqt-tag-bar__line-wrap">
             <div class="eqt-tag-bar__handle" :class="{ 'eqt-tag-bar__handle--hidden': !editing }" :title="t('tagbar.handleTitle')"><GripVertical :size="14" /></div>
             <button
-              v-if="editing && line.length === 0"
+              v-if="editing && line.tags.length === 0"
               class="eqt-tag-bar__line-delete"
               type="button"
               :title="t('tagbar.deleteLine')"
@@ -276,7 +277,7 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
             ><Trash2 :size="12" /></button>
             <Draggable
               v-bind="tagDragOptions"
-              :model-value="tagLines[li]"
+              :model-value="line.tags"
               :item-key="tagKey"
               :disabled="!editing"
               tag="div"

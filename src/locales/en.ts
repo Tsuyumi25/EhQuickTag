@@ -64,6 +64,7 @@ export default {
   'settings.editorCopy': 'Copy',
   'settings.editorExport': 'Export file',
   'settings.editorJsonError': 'JSON format error: {message}',
+  'settings.editorInvalidShape': 'Data shape incompatible with current version',
   'settings.restoreProfile': 'Restore profile',
   'settings.purgeProfile': 'Delete permanently',
   'settings.save': 'Save',
