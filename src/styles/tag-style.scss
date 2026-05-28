@@ -36,7 +36,8 @@
 // 3D border preset: vertical hard shadow + lift on hover
 .eqt-tag-style-3d {
   .eqt-tag-bar__btn,
-  .eqt-settings__preview-tag {
+  .eqt-settings__preview-tag,
+  .eqt-popup__name-input {
     border-color: var(--line-color, var(--eqt-border));
     box-shadow: 0 2px 0 0 var(--line-color, var(--eqt-border));
     background: color-mix(in srgb, var(--line-color, transparent) 15%, transparent);
@@ -82,7 +83,8 @@
 // layer; acceptable for typical TagBar sizes (~20 buttons).
 .eqt-tag-style-pushable {
   .eqt-tag-bar__btn,
-  .eqt-settings__preview-tag {
+  .eqt-settings__preview-tag,
+  .eqt-popup__name-input {
     position: relative;
     border-color: var(--line-color, var(--eqt-border));
     background: color-mix(in srgb, var(--line-color, var(--eqt-bg-btn)) 15%, var(--eqt-bg-btn));
@@ -93,7 +95,8 @@
   }
 
   .eqt-tag-bar__btn::before,
-  .eqt-settings__preview-tag::before {
+  .eqt-settings__preview-tag::before,
+  .eqt-popup__name-input::before {
     position: absolute;
     content: '';
     width: 100%;
@@ -154,7 +157,8 @@
 // Offset shadow preset: diagonal hard shadow + press-down on active
 .eqt-tag-style-offset {
   .eqt-tag-bar__btn,
-  .eqt-settings__preview-tag {
+  .eqt-settings__preview-tag,
+  .eqt-popup__name-input {
     border-color: var(--line-color, var(--eqt-border));
     background: color-mix(in srgb, var(--line-color, transparent) 15%, transparent);
     color: var(--eqt-text-secondary);

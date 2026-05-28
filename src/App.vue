@@ -172,6 +172,7 @@ watch(searchText, (val) => {
   <TagConfigPopup
     v-if="showTagPopup"
     :tag="pendingAdd ? draftTag : tagLines[editingLine].tags[editingIdx]"
+    :line-color="tagLines[editingLine]?.color"
     :is-add="pendingAdd"
     :use-nh-weight="useNhWeight"
     :ns-order="effectiveNsOrder"
@@ -185,6 +186,7 @@ watch(searchText, (val) => {
   <UrlConfigPopup
     v-if="showUrlPopup"
     :tag="pendingAdd ? draftTag : tagLines[editingLine].tags[editingIdx]"
+    :line-color="tagLines[editingLine]?.color"
     :is-add="pendingAdd"
     @save="onSave"
     @delete="onDelete"
