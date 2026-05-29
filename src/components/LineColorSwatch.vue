@@ -44,6 +44,7 @@ function clearColor() {
 <template>
   <button
     ref="triggerEl"
+    v-bind="$attrs"
     type="button"
     class="eqt-line-color__trigger"
     :style="modelValue ? { color: modelValue } : undefined"

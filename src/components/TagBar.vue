@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, nextTick } from 'vue'
+import { useResizeObserver } from '@vueuse/core'
 import Draggable from 'vuedraggable'
 import { ChevronLeft, ChevronRight, ExternalLink, GripVertical, Trash2, Pencil, Check, Settings, Plus, Info } from '@lucide/vue'
 import LineColorSwatch from '@/components/LineColorSwatch.vue'
@@ -48,6 +49,15 @@ const emit = defineEmits<{
 }>()
 
 const editing = ref(false)
+
+const controlsEl = ref<HTMLElement | null>(null)
+const controlsWidth = ref<number | null>(null)
+useResizeObserver(controlsEl, ([entry]) => {
+  controlsWidth.value = entry.contentRect.width
+})
+function captureControlsEl(el: unknown, li: number) {
+  if (li === 0) controlsEl.value = (el as HTMLElement) ?? null
+}
 
 let lastRightClickTime = 0
 
@@ -210,7 +220,7 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
 </script>
 
 <template>
-  <div class="eqt-tag-bar" :class="currentTagStyleClass" @dblclick="onBarDblClick" @contextmenu="onBarContextMenu">
+  <div class="eqt-tag-bar" :class="currentTagStyleClass" :style="controlsWidth !== null ? { '--eqt-controls-w': controlsWidth + 'px' } : undefined" @dblclick="onBarDblClick" @contextmenu="onBarContextMenu">
     <span class="eqt-tag-bar__info"><Info :size="16" /><span class="eqt-tag-bar__info-text">{{ t('tagbar.infoTooltip', { left: t(ACTION_KEYS[dblClickLeft]), right: t(ACTION_KEYS[dblClickRight]) }) }}</span></span>
     <div class="eqt-tag-bar__lines">
       <div class="eqt-tag-bar__profile-row">
@@ -268,9 +278,12 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
       >
         <template #item="{ element: line, index: li }">
           <div class="eqt-tag-bar__line-wrap">
-            <div class="eqt-tag-bar__line-controls">
+            <div
+              :ref="(el) => captureControlsEl(el, li)"
+              class="eqt-tag-bar__line-controls"
+            >
               <LineColorSwatch
-                v-if="editing"
+                :class="{ 'eqt-tag-bar__line-color-swatch--hidden': !editing }"
                 :model-value="line.color"
                 @update:model-value="line.color = $event"
               />
@@ -401,7 +414,7 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
     display: flex;
     flex-direction: column;
     gap: 4px;
-    width: 80%;
+    width: calc(100% - 2 * var(--eqt-controls-w, 10%));
     margin: 0 auto;
   }
 
@@ -429,6 +442,11 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
     display: flex;
     align-items: center;
     height: 24px;
+  }
+
+  &__line-color-swatch--hidden {
+    visibility: hidden;
+    pointer-events: none;
   }
 
   &__handle {
