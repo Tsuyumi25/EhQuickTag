@@ -8,7 +8,10 @@ import { GM_openInTab } from '$'
 import { tagLines, useNhWeight, nsOrder, disabledNs, fontFamily, fontWeight, profiles, activeProfileIdx, switchProfile, renameProfile, createProfile, deleteProfile, newTabActive, nsFormat, defaultExactMatch, tagDbMirror, tagDbTtlDays, type DblClickAction } from '@/services/store'
 import { loadTagDb } from '@/services/tagDb'
 
-const effectiveNsOrder = computed(() => nsOrder.value.filter(ns => !disabledNs.value.has(ns)))
+const effectiveNsOrder = computed(() => {
+  const disabled = new Set(disabledNs.value)
+  return nsOrder.value.filter(ns => !disabled.has(ns))
+})
 
 watch([fontFamily, fontWeight], () => {
   const root = document.documentElement

@@ -20,13 +20,13 @@ import { TAG_STYLE_PRESETS, currentTagStyleClass } from '@/composables/useTagSty
 const props = defineProps<{
   useNhWeight: boolean
   nsOrder: string[]
-  disabledNs: Set<string>
+  disabledNs: readonly string[]
 }>()
 
 const emit = defineEmits<{
   'update:useNhWeight': [value: boolean]
   'update:nsOrder': [value: string[]]
-  'update:disabledNs': [value: Set<string>]
+  'update:disabledNs': [value: string[]]
   'close': []
 }>()
 
@@ -90,7 +90,7 @@ function onNsOrderChange(evt: any) {
 
 function resetNsOrder() {
   emit('update:nsOrder', [...DEFAULT_NS_ORDER])
-  emit('update:disabledNs', new Set())
+  emit('update:disabledNs', [])
 }
 
 const popupEl = ref<HTMLElement | null>(null)
@@ -107,9 +107,10 @@ async function onRefreshTagDb() {
 // --- toggle ---
 
 function toggleNs(ns: string) {
-  const next = new Set(props.disabledNs)
-  if (next.has(ns)) next.delete(ns)
-  else next.add(ns)
+  const next = [...props.disabledNs]
+  const idx = next.indexOf(ns)
+  if (idx >= 0) next.splice(idx, 1)
+  else next.push(ns)
   emit('update:disabledNs', next)
 }
 
@@ -349,7 +350,7 @@ function onEditorExport() {
                 <li class="eqt-settings__ns-item eqt-settings__ns-item--draggable">
                   <input
                     type="checkbox"
-                    :checked="!disabledNs.has(ns)"
+                    :checked="!disabledNs.includes(ns)"
                     @change="toggleNs(ns)"
                   />
                   <span class="eqt-settings__ns-label">{{ t('ns.' + ns) }}</span>

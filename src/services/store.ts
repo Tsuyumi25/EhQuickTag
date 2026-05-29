@@ -1,5 +1,5 @@
 import { GM } from '$'
-import { reactive, ref, watch, nextTick } from 'vue'
+import { reactive, ref, watch, nextTick, type Ref } from 'vue'
 import type { QuickTag, TagLine } from '@/types'
 import { DEFAULT_NS_ORDER, type TagDbMirror } from '@/services/tagDb'
 import { locale, setLocale, detectLocale, t, type Locale } from '@/composables/useI18n'
@@ -19,21 +19,59 @@ export interface Profile {
 
 export type DblClickAction = 'search' | 'searchNewTab' | 'clearSearch' | 'none'
 
-interface PersistedSettings {
-  useNhWeight: boolean
-  nsOrder: string[]
-  disabledNs: string[]
-  fontFamily: string
-  fontWeight: string
-  dblClickLeft: DblClickAction
-  dblClickRight: DblClickAction
-  newTabActive: boolean
-  locale: Locale | ''
-  nsFormat: 'long' | 'short'
-  defaultExactMatch: boolean
-  tagDbMirror: TagDbMirror
-  tagDbTtlDays: number
-  tagStylePreset: TagStylePresetId
+// --- settings: single source of truth ---
+// 新增 setting 只要：① INITIAL_SETTINGS 加一欄 + ② 加一行 named export。
+// load / save / watch 自動掃描 refs。locale 走獨立處理（從 useI18n import）。
+const INITIAL_SETTINGS = {
+  useNhWeight: true,
+  nsOrder: [...DEFAULT_NS_ORDER] as string[],
+  disabledNs: [] as string[],
+  fontFamily: '',
+  fontWeight: '',
+  dblClickLeft: 'search' as DblClickAction,
+  dblClickRight: 'searchNewTab' as DblClickAction,
+  newTabActive: true,
+  nsFormat: 'long' as 'long' | 'short',
+  defaultExactMatch: true,
+  tagDbMirror: 'jsdelivr' as TagDbMirror,
+  tagDbTtlDays: 7,
+  tagStylePreset: 'flat' as TagStylePresetId,
+}
+
+type Settings = typeof INITIAL_SETTINGS
+type SettingKey = keyof Settings
+
+const refs = Object.fromEntries(
+  Object.entries(INITIAL_SETTINGS).map(([k, v]) => [k, ref(v)]),
+) as { [K in SettingKey]: Ref<Settings[K]> }
+
+export const useNhWeight       = refs.useNhWeight
+export const nsOrder           = refs.nsOrder
+export const disabledNs        = refs.disabledNs
+export const fontFamily        = refs.fontFamily
+export const fontWeight        = refs.fontWeight
+export const dblClickLeft      = refs.dblClickLeft
+export const dblClickRight     = refs.dblClickRight
+export const newTabActive      = refs.newTabActive
+export const nsFormat          = refs.nsFormat
+export const defaultExactMatch = refs.defaultExactMatch
+export const tagDbMirror       = refs.tagDbMirror
+export const tagDbTtlDays      = refs.tagDbTtlDays
+export const tagStylePreset    = refs.tagStylePreset
+
+function loadAllSettings(persisted: Partial<Settings>): void {
+  for (const key of Object.keys(INITIAL_SETTINGS) as SettingKey[]) {
+    if (key in persisted) {
+      (refs[key].value as Settings[typeof key]) = persisted[key]!
+    }
+  }
+}
+
+function serializeAllSettings(): Settings & { locale: Locale | '' } {
+  const out = Object.fromEntries(
+    Object.entries(refs).map(([k, r]) => [k, r.value]),
+  ) as Settings
+  return { ...out, locale: locale.value }
 }
 
 // Tag definitions without labels — labels are filled by getDefaultTagLines() based on locale
@@ -123,43 +161,12 @@ async function backupCorrupted(raw: string, reason: string) {
   console.error(`[eqt] profiles parse failed (${reason}). Original data preserved at GM storage key: ${KEYS.corrupted}`)
 }
 
-
-const DEFAULT_SETTINGS: PersistedSettings = {
-  useNhWeight: true,
-  nsOrder: DEFAULT_NS_ORDER,
-  disabledNs: [],
-  fontFamily: '',
-  fontWeight: '',
-  dblClickLeft: 'search',
-  dblClickRight: 'searchNewTab',
-  newTabActive: true,
-  locale: '',
-  nsFormat: 'long',
-  defaultExactMatch: true,
-  tagDbMirror: 'jsdelivr',
-  tagDbTtlDays: 7,
-  tagStylePreset: 'flat',
-}
-
-// --- reactive state ---
+// --- reactive state (profiles) ---
 
 export const profiles = reactive<Profile[]>([])
 export const deletedProfiles = reactive<Profile[]>([])
 export const activeProfileIdx = ref(0)
 export const tagLines = reactive<TagLine[]>([])
-export const useNhWeight = ref(true)
-export const nsOrder = ref<string[]>([...DEFAULT_NS_ORDER])
-export const disabledNs = ref(new Set<string>())
-export const fontFamily = ref('')
-export const fontWeight = ref('')
-export const dblClickLeft = ref<DblClickAction>('search')
-export const dblClickRight = ref<DblClickAction>('searchNewTab')
-export const newTabActive = ref(true)
-export const nsFormat = ref<'long' | 'short'>('long')
-export const defaultExactMatch = ref(true)
-export const tagDbMirror = ref<TagDbMirror>('jsdelivr')
-export const tagDbTtlDays = ref(7)
-export const tagStylePreset = ref<TagStylePresetId>('flat')
 
 // --- load from GM ---
 
@@ -192,23 +199,11 @@ export async function loadStore(): Promise<void> {
   tagLines.splice(0, tagLines.length, ...profiles[activeProfileIdx.value].tagLines)
 
   // settings
-  const s: PersistedSettings = savedSettings
-    ? { ...DEFAULT_SETTINGS, ...JSON.parse(savedSettings) }
-    : DEFAULT_SETTINGS
-  useNhWeight.value = s.useNhWeight
-  nsOrder.value = s.nsOrder
-  disabledNs.value = new Set(s.disabledNs)
-  fontFamily.value = s.fontFamily
-  fontWeight.value = s.fontWeight
-  dblClickLeft.value = s.dblClickLeft
-  dblClickRight.value = s.dblClickRight
-  newTabActive.value = s.newTabActive
-  nsFormat.value = s.nsFormat
-  defaultExactMatch.value = s.defaultExactMatch
-  tagDbMirror.value = s.tagDbMirror
-  tagDbTtlDays.value = s.tagDbTtlDays
-  tagStylePreset.value = PRESETS_BY_ID.has(s.tagStylePreset) ? s.tagStylePreset : 'flat'
-  setLocale(s.locale ? s.locale as Locale : detectLocale())
+  const parsed = savedSettings ? JSON.parse(savedSettings) as Partial<Settings & { locale?: Locale | '' }> : {}
+  loadAllSettings(parsed)
+  // tagStylePreset 需要對「不認得的 preset id」做 fallback（其他 setting 走 strict additive）
+  if (!PRESETS_BY_ID.has(tagStylePreset.value)) tagStylePreset.value = 'flat'
+  setLocale(parsed.locale ? parsed.locale as Locale : detectLocale())
 }
 
 // --- profile switching ---
@@ -301,28 +296,13 @@ function saveProfiles() {
 }
 
 function saveSettings() {
-  const data: PersistedSettings = {
-    useNhWeight: useNhWeight.value,
-    nsOrder: nsOrder.value,
-    disabledNs: [...disabledNs.value],
-    fontFamily: fontFamily.value,
-    fontWeight: fontWeight.value,
-    dblClickLeft: dblClickLeft.value,
-    dblClickRight: dblClickRight.value,
-    newTabActive: newTabActive.value,
-    locale: locale.value,
-    nsFormat: nsFormat.value,
-    defaultExactMatch: defaultExactMatch.value,
-    tagDbMirror: tagDbMirror.value,
-    tagDbTtlDays: tagDbTtlDays.value,
-    tagStylePreset: tagStylePreset.value,
-  }
-  GM.setValue(KEYS.settings, JSON.stringify(data))
+  GM.setValue(KEYS.settings, JSON.stringify(serializeAllSettings()))
 }
 
 export function startAutoSave(): void {
   watch([tagLines, deletedProfiles], saveProfiles)
-  watch([useNhWeight, nsOrder, disabledNs, fontFamily, fontWeight, dblClickLeft, dblClickRight, newTabActive, locale, nsFormat, defaultExactMatch, tagDbMirror, tagDbTtlDays, tagStylePreset], saveSettings, { deep: true })
+  // locale 是從 useI18n import 的獨立 ref，不在 refs 物件裡——明確加進 watch list
+  watch([...Object.values(refs), locale], saveSettings, { deep: true })
 
   // When locale changes, update default profiles' labels
   watch(locale, async () => {
