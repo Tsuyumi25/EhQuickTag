@@ -1,8 +1,8 @@
 import { TagState, type QuickTag, splitMultiTag } from '@/types'
-import { parseToken, serializeToken, TOKEN_RE } from './searchSyntax'
+import { parseTerm, serializeTerm, TERM_RE } from './searchSyntax'
 
 export function tokenize(text: string): string[] {
-  return text.match(TOKEN_RE) ?? []
+  return text.match(TERM_RE) ?? []
 }
 
 /** Normalize namespace to long form for comparison. Preserves prefix, suffix, quoting. */
@@ -10,9 +10,9 @@ const _nsCache = new Map<string, string>()
 export function normalizeNs(tokenStr: string): string {
   let result = _nsCache.get(tokenStr)
   if (result !== undefined) return result
-  const parsed = parseToken(tokenStr)
-  // namespaceRaw: null forces serializeToken to use nsFormat fallback instead of preserving raw form
-  result = parsed.parseError ? tokenStr : serializeToken({ ...parsed, namespaceRaw: null }, { nsFormat: 'long' })
+  const parsed = parseTerm(tokenStr)
+  // namespaceRaw: null forces serializeTerm to use nsFormat fallback instead of preserving raw form
+  result = parsed.parseError ? tokenStr : serializeTerm({ ...parsed, namespaceRaw: null }, { nsFormat: 'long' })
   _nsCache.set(tokenStr, result)
   return result
 }

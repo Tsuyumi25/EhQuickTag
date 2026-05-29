@@ -4,7 +4,7 @@ export type Prefix = '-' | '~' | null
 export type Suffix = '$' | '*' | '%' | null
 export type Qualifier = 'tag' | 'weak' | 'title' | 'uploader' | 'uploaduid' | 'gid' | 'comment' | 'favnote'
 
-export interface SearchToken {
+export interface SearchTerm {
   prefix: Prefix
   qualifier: Qualifier | null
   namespace: string | null
@@ -62,8 +62,8 @@ function resolveColonPrefix(candidate: string): { qualifier: Qualifier | null; n
   return { qualifier: null, namespace: null, namespaceRaw: null }
 }
 
-export function parseToken(raw: string): SearchToken {
-  const token: SearchToken = {
+export function parseTerm(raw: string): SearchTerm {
+  const token: SearchTerm = {
     prefix: null, qualifier: null, namespace: null, namespaceRaw: null,
     tag: '', quoted: false, suffix: null, raw,
   }
@@ -166,7 +166,7 @@ export interface SerializeOptions {
   nsFormat?: 'long' | 'short'
 }
 
-export function serializeToken(token: SearchToken, opts?: SerializeOptions): string {
+export function serializeTerm(token: SearchTerm, opts?: SerializeOptions): string {
   // error tokens: emit raw for round-trip fidelity
   if (token.parseError && token.tag === token.raw) {
     return token.raw
@@ -206,14 +206,14 @@ export function serializeToken(token: SearchToken, opts?: SerializeOptions): str
 // ---- query-level functions ----
 
 /** Tokenization regex shared with tagState.ts — handles quoted strings with spaces */
-export const TOKEN_RE = /[^"\s]*"[^"]*"[^\s]*|[^\s"]+/g
+export const TERM_RE = /[^"\s]*"[^"]*"[^\s]*|[^\s"]+/g
 
-export function parseQuery(input: string): SearchToken[] {
-  const matches = input.match(TOKEN_RE)
+export function parseQuery(input: string): SearchTerm[] {
+  const matches = input.match(TERM_RE)
   if (!matches) return []
-  return matches.map(parseToken)
+  return matches.map(parseTerm)
 }
 
-export function serializeQuery(tokens: SearchToken[], opts?: SerializeOptions): string {
-  return tokens.map(t => serializeToken(t, opts)).join(' ')
+export function serializeQuery(tokens: SearchTerm[], opts?: SerializeOptions): string {
+  return tokens.map(t => serializeTerm(t, opts)).join(' ')
 }

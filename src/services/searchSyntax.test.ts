@@ -1,19 +1,19 @@
 import { describe, it, expect } from 'vitest'
 import {
-  parseToken,
-  serializeToken,
+  parseTerm,
+  serializeTerm,
   parseQuery,
   serializeQuery,
-  type SearchToken,
+  type SearchTerm,
 } from './searchSyntax'
 
 // ============================================================
-// parseToken — bare words
+// parseTerm — bare words
 // ============================================================
 
-describe('parseToken (bare word)', () => {
+describe('parseTerm (bare word)', () => {
   it('plain word', () => {
-    const t = parseToken('lolicon')
+    const t = parseTerm('lolicon')
     expect(t.prefix).toBeNull()
     expect(t.qualifier).toBeNull()
     expect(t.namespace).toBeNull()
@@ -23,31 +23,31 @@ describe('parseToken (bare word)', () => {
   })
 
   it('with $ suffix', () => {
-    const t = parseToken('lolicon$')
+    const t = parseTerm('lolicon$')
     expect(t.tag).toBe('lolicon')
     expect(t.suffix).toBe('$')
   })
 
   it('with * wildcard', () => {
-    const t = parseToken('loli*')
+    const t = parseTerm('loli*')
     expect(t.tag).toBe('loli')
     expect(t.suffix).toBe('*')
   })
 
   it('with % wildcard', () => {
-    const t = parseToken('loli%')
+    const t = parseTerm('loli%')
     expect(t.tag).toBe('loli')
     expect(t.suffix).toBe('%')
   })
 })
 
 // ============================================================
-// parseToken — with namespace
+// parseTerm — with namespace
 // ============================================================
 
-describe('parseToken (namespace)', () => {
+describe('parseTerm (namespace)', () => {
   it('full namespace, quoted tag, exact', () => {
-    const t = parseToken('female:"big breasts"$')
+    const t = parseTerm('female:"big breasts"$')
     expect(t.namespace).toBe('female')
     expect(t.namespaceRaw).toBe('female')
     expect(t.tag).toBe('big breasts')
@@ -57,7 +57,7 @@ describe('parseToken (namespace)', () => {
   })
 
   it('short alias resolved', () => {
-    const t = parseToken('f:"big breasts"$')
+    const t = parseTerm('f:"big breasts"$')
     expect(t.namespace).toBe('female')
     expect(t.namespaceRaw).toBe('f')
     expect(t.tag).toBe('big breasts')
@@ -65,7 +65,7 @@ describe('parseToken (namespace)', () => {
   })
 
   it('unquoted tag with namespace', () => {
-    const t = parseToken('l:chinese$')
+    const t = parseTerm('l:chinese$')
     expect(t.namespace).toBe('language')
     expect(t.namespaceRaw).toBe('l')
     expect(t.tag).toBe('chinese')
@@ -83,21 +83,21 @@ describe('parseToken (namespace)', () => {
       ['lang:', 'language'], ['series:', 'parody'],
     ]
     for (const [alias, expected] of cases) {
-      const t = parseToken(`${alias}test$`)
+      const t = parseTerm(`${alias}test$`)
       expect(t.namespace).toBe(expected)
     }
   })
 
   it('full namespace names work directly', () => {
     for (const ns of ['female', 'male', 'artist', 'character', 'parody', 'language', 'other', 'mixed', 'reclass', 'cosplayer', 'group', 'location', 'temp']) {
-      const t = parseToken(`${ns}:test$`)
+      const t = parseTerm(`${ns}:test$`)
       expect(t.namespace).toBe(ns)
       expect(t.namespaceRaw).toBe(ns)
     }
   })
 
   it('namespace without suffix', () => {
-    const t = parseToken('female:lolicon')
+    const t = parseTerm('female:lolicon')
     expect(t.namespace).toBe('female')
     expect(t.tag).toBe('lolicon')
     expect(t.suffix).toBeNull()
@@ -105,12 +105,12 @@ describe('parseToken (namespace)', () => {
 })
 
 // ============================================================
-// parseToken — with qualifier
+// parseTerm — with qualifier
 // ============================================================
 
-describe('parseToken (qualifier)', () => {
+describe('parseTerm (qualifier)', () => {
   it('tag: qualifier', () => {
-    const t = parseToken('tag:rimjob$')
+    const t = parseTerm('tag:rimjob$')
     expect(t.qualifier).toBe('tag')
     expect(t.namespace).toBeNull()
     expect(t.tag).toBe('rimjob')
@@ -118,7 +118,7 @@ describe('parseToken (qualifier)', () => {
   })
 
   it('title: qualifier with quoted', () => {
-    const t = parseToken('title:"comic aun"')
+    const t = parseTerm('title:"comic aun"')
     expect(t.qualifier).toBe('title')
     expect(t.tag).toBe('comic aun')
     expect(t.quoted).toBe(true)
@@ -126,13 +126,13 @@ describe('parseToken (qualifier)', () => {
   })
 
   it('uploader: qualifier', () => {
-    const t = parseToken('uploader:bob')
+    const t = parseTerm('uploader:bob')
     expect(t.qualifier).toBe('uploader')
     expect(t.tag).toBe('bob')
   })
 
   it('weak: qualifier', () => {
-    const t = parseToken('weak:rimjob$')
+    const t = parseTerm('weak:rimjob$')
     expect(t.qualifier).toBe('weak')
     expect(t.tag).toBe('rimjob')
     expect(t.suffix).toBe('$')
@@ -140,7 +140,7 @@ describe('parseToken (qualifier)', () => {
 
   it('all qualifiers recognized', () => {
     for (const q of ['tag', 'weak', 'title', 'uploader', 'uploaduid', 'gid', 'comment', 'favnote']) {
-      const t = parseToken(`${q}:test`)
+      const t = parseTerm(`${q}:test`)
       expect(t.qualifier).toBe(q)
       expect(t.namespace).toBeNull()
     }
@@ -148,12 +148,12 @@ describe('parseToken (qualifier)', () => {
 })
 
 // ============================================================
-// parseToken — with prefix
+// parseTerm — with prefix
 // ============================================================
 
-describe('parseToken (prefix)', () => {
+describe('parseTerm (prefix)', () => {
   it('exclude prefix -', () => {
-    const t = parseToken('-female:"big breasts"$')
+    const t = parseTerm('-female:"big breasts"$')
     expect(t.prefix).toBe('-')
     expect(t.namespace).toBe('female')
     expect(t.tag).toBe('big breasts')
@@ -161,14 +161,14 @@ describe('parseToken (prefix)', () => {
   })
 
   it('or prefix ~', () => {
-    const t = parseToken('~l:chinese$')
+    const t = parseTerm('~l:chinese$')
     expect(t.prefix).toBe('~')
     expect(t.namespace).toBe('language')
     expect(t.tag).toBe('chinese')
   })
 
   it('prefix with bare word, no namespace', () => {
-    const t = parseToken('-lolicon$')
+    const t = parseTerm('-lolicon$')
     expect(t.prefix).toBe('-')
     expect(t.namespace).toBeNull()
     expect(t.tag).toBe('lolicon')
@@ -176,7 +176,7 @@ describe('parseToken (prefix)', () => {
   })
 
   it('prefix with qualifier', () => {
-    const t = parseToken('-title:2007')
+    const t = parseTerm('-title:2007')
     expect(t.prefix).toBe('-')
     expect(t.qualifier).toBe('title')
     expect(t.tag).toBe('2007')
@@ -184,12 +184,12 @@ describe('parseToken (prefix)', () => {
 })
 
 // ============================================================
-// parseToken — complex real-world examples
+// parseTerm — complex real-world examples
 // ============================================================
 
-describe('parseToken (real-world)', () => {
+describe('parseTerm (real-world)', () => {
   it('-other:"ai generated$" (suffix inside quotes)', () => {
-    const t = parseToken('-other:"ai generated$"')
+    const t = parseTerm('-other:"ai generated$"')
     expect(t.prefix).toBe('-')
     expect(t.namespace).toBe('other')
     expect(t.tag).toBe('ai generated')
@@ -198,7 +198,7 @@ describe('parseToken (real-world)', () => {
   })
 
   it('mixed:"ffm threesome$" (official EH format)', () => {
-    const t = parseToken('mixed:"ffm threesome$"')
+    const t = parseTerm('mixed:"ffm threesome$"')
     expect(t.namespace).toBe('mixed')
     expect(t.tag).toBe('ffm threesome')
     expect(t.quoted).toBe(true)
@@ -206,7 +206,7 @@ describe('parseToken (real-world)', () => {
   })
 
   it('other:"full color$"', () => {
-    const t = parseToken('other:"full color$"')
+    const t = parseTerm('other:"full color$"')
     expect(t.namespace).toBe('other')
     expect(t.tag).toBe('full color')
     expect(t.quoted).toBe(true)
@@ -214,7 +214,7 @@ describe('parseToken (real-world)', () => {
   })
 
   it('~language:"chinese$"', () => {
-    const t = parseToken('~language:"chinese$"')
+    const t = parseTerm('~language:"chinese$"')
     expect(t.prefix).toBe('~')
     expect(t.namespace).toBe('language')
     expect(t.tag).toBe('chinese')
@@ -223,43 +223,43 @@ describe('parseToken (real-world)', () => {
 })
 
 // ============================================================
-// parseToken — legacy format (suffix outside quotes)
+// parseTerm — legacy format (suffix outside quotes)
 // ============================================================
 
-describe('parseToken (legacy: suffix outside quotes)', () => {
+describe('parseTerm (legacy: suffix outside quotes)', () => {
   it('-other:"ai generated"$ → same parse result', () => {
-    const t = parseToken('-other:"ai generated"$')
+    const t = parseTerm('-other:"ai generated"$')
     expect(t.tag).toBe('ai generated')
     expect(t.suffix).toBe('$')
   })
 
   it('other:"full color"$ → same parse result', () => {
-    const t = parseToken('other:"full color"$')
+    const t = parseTerm('other:"full color"$')
     expect(t.tag).toBe('full color')
     expect(t.suffix).toBe('$')
   })
 
   it('legacy form serializes to canonical form', () => {
-    const legacy = parseToken('female:"big breasts"$')
-    const canonical = parseToken('female:"big breasts$"')
-    expect(serializeToken(legacy)).toBe(serializeToken(canonical))
-    expect(serializeToken(legacy)).toBe('female:"big breasts$"')
+    const legacy = parseTerm('female:"big breasts"$')
+    const canonical = parseTerm('female:"big breasts$"')
+    expect(serializeTerm(legacy)).toBe(serializeTerm(canonical))
+    expect(serializeTerm(legacy)).toBe('female:"big breasts$"')
   })
 })
 
 // ============================================================
-// parseToken — error recovery
+// parseTerm — error recovery
 // ============================================================
 
-describe('parseToken (error recovery)', () => {
+describe('parseTerm (error recovery)', () => {
   it('empty string → parseError', () => {
-    const t = parseToken('')
+    const t = parseTerm('')
     expect(t.parseError).toBeDefined()
     expect(t.raw).toBe('')
   })
 
   it('unknown colon prefix treated as bare word', () => {
-    const t = parseToken('unknown:value$')
+    const t = parseTerm('unknown:value$')
     // 'unknown' is not a known ns or qualifier
     expect(t.namespace).toBeNull()
     expect(t.qualifier).toBeNull()
@@ -270,81 +270,81 @@ describe('parseToken (error recovery)', () => {
 
   it('preserves raw for round-trip', () => {
     const raw = 'some-weird-input'
-    const t = parseToken(raw)
+    const t = parseTerm(raw)
     expect(t.raw).toBe(raw)
   })
 })
 
 // ============================================================
-// serializeToken
+// serializeTerm
 // ============================================================
 
-describe('serializeToken', () => {
+describe('serializeTerm', () => {
   it('bare word', () => {
-    expect(serializeToken({
+    expect(serializeTerm({
       prefix: null, qualifier: null, namespace: null, namespaceRaw: null,
       tag: 'lolicon', quoted: false, suffix: null, raw: '',
     })).toBe('lolicon')
   })
 
   it('full form with namespace (suffix inside quotes)', () => {
-    expect(serializeToken({
+    expect(serializeTerm({
       prefix: null, qualifier: null, namespace: 'female', namespaceRaw: 'female',
       tag: 'big breasts', quoted: true, suffix: '$', raw: '',
     })).toBe('female:"big breasts$"')
   })
 
   it('namespaceRaw preserved when set', () => {
-    expect(serializeToken({
+    expect(serializeTerm({
       prefix: '-', qualifier: null, namespace: 'language', namespaceRaw: 'l',
       tag: 'chinese', quoted: false, suffix: '$', raw: '',
     })).toBe('-l:chinese$')
   })
 
   it('nsFormat: short fallback when namespaceRaw is null', () => {
-    expect(serializeToken({
+    expect(serializeTerm({
       prefix: null, qualifier: null, namespace: 'female', namespaceRaw: null,
       tag: 'big breasts', quoted: true, suffix: '$', raw: '',
     }, { nsFormat: 'short' })).toBe('f:"big breasts$"')
   })
 
   it('nsFormat: long fallback when namespaceRaw is null', () => {
-    expect(serializeToken({
+    expect(serializeTerm({
       prefix: null, qualifier: null, namespace: 'language', namespaceRaw: null,
       tag: 'chinese', quoted: false, suffix: '$', raw: '',
     })).toBe('language:chinese$')
   })
 
   it('with qualifier', () => {
-    expect(serializeToken({
+    expect(serializeTerm({
       prefix: null, qualifier: 'title', namespace: null, namespaceRaw: null,
       tag: 'comic aun', quoted: true, suffix: null, raw: '',
     })).toBe('title:"comic aun"')
   })
 
   it('with prefix (namespaceRaw preserved)', () => {
-    expect(serializeToken({
+    expect(serializeTerm({
       prefix: '~', qualifier: null, namespace: 'male', namespaceRaw: 'm',
       tag: 'yaoi', quoted: false, suffix: '$', raw: '',
     })).toBe('~m:yaoi$')
   })
 
   it('auto-quotes tag with spaces (suffix inside quotes)', () => {
-    expect(serializeToken({
+    expect(serializeTerm({
       prefix: null, qualifier: null, namespace: 'female', namespaceRaw: 'female',
       tag: 'big breasts', quoted: false, suffix: '$', raw: '',
     })).toBe('female:"big breasts$"')
   })
 
   it('wildcard suffix', () => {
-    expect(serializeToken({
+    expect(serializeTerm({
       prefix: null, qualifier: null, namespace: 'female', namespaceRaw: 'female',
       tag: 'big', quoted: false, suffix: '*', raw: '',
     })).toBe('female:big*')
   })
 
   it('quoted flag ignored for single-word tags', () => {
-    expect(serializeToken({
+    expect(serializeTerm({
       prefix: null, qualifier: null, namespace: 'language', namespaceRaw: 'language',
       tag: 'chinese', quoted: true, suffix: '$', raw: '',
     })).toBe('language:chinese$')
@@ -352,7 +352,7 @@ describe('serializeToken', () => {
 
   it('error token emits raw', () => {
     const raw = 'broken::stuff'
-    expect(serializeToken({
+    expect(serializeTerm({
       prefix: null, qualifier: null, namespace: null, namespaceRaw: null,
       tag: raw, quoted: false, suffix: null, raw, parseError: 'test',
     })).toBe(raw)
@@ -382,16 +382,16 @@ describe('round-trip', () => {
 
   for (const raw of cases) {
     it(`round-trips: ${raw}`, () => {
-      const parsed = parseToken(raw)
+      const parsed = parseTerm(raw)
       // serialize with the original namespace format
       const nsFormat = parsed.namespaceRaw && parsed.namespace
         ? (parsed.namespaceRaw === parsed.namespace ? 'long' : 'short')
         : 'long'
-      const serialized = serializeToken(parsed, { nsFormat })
+      const serialized = serializeTerm(parsed, { nsFormat })
       expect(serialized).toBe(raw)
 
       // re-parse and compare structure
-      const reparsed = parseToken(serialized)
+      const reparsed = parseTerm(serialized)
       expect(reparsed.prefix).toBe(parsed.prefix)
       expect(reparsed.qualifier).toBe(parsed.qualifier)
       expect(reparsed.namespace).toBe(parsed.namespace)
