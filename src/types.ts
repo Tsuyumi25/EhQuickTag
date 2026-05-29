@@ -15,9 +15,23 @@ export interface QuickTag {
   color?: string
 }
 
+export type SeparatorStyle = 'solid' | 'dashed' | 'none'
+export type SeparatorPreset = 'divider' | 'header'
+export type SeparatorTextAlign = 'left' | 'center'
+
+export interface LineSeparator {
+  label?: string
+  style: SeparatorStyle           // 'none' = 沒有線
+  preset?: SeparatorPreset        // default 'divider'
+  textAlign?: SeparatorTextAlign  // default 'center'
+  textSize?: number               // px, default 12
+  lineThickness?: number          // px, default 2
+}
+
 export interface TagLine {
   tags: QuickTag[]
   color?: string
+  separator?: LineSeparator
 }
 
 export function splitMultiTag(tag: string): string[] {

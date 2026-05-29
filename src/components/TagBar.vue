@@ -4,7 +4,8 @@ import { useResizeObserver } from '@vueuse/core'
 import Draggable from 'vuedraggable'
 import { ChevronLeft, ChevronRight, ExternalLink, GripVertical, Trash2, Pencil, Check, Settings, Plus, Info } from '@lucide/vue'
 import LineColorSwatch from '@/components/LineColorSwatch.vue'
-import { TagState, type QuickTag } from '@/types'
+import SeparatorSettingsPopup from '@/components/SeparatorSettingsPopup.vue'
+import { TagState, type QuickTag, type TagLine } from '@/types'
 import { tokenize, getState as _getState, removeTag, addTag, getNextRightClickState } from '@/services/tagState'
 import { tagLines, dblClickLeft, dblClickRight, type DblClickAction } from '@/services/store'
 import { baseDragOptions } from '@/utils/drag'
@@ -134,6 +135,52 @@ function finishRenameOrCreate() {
     emit('renameProfile', trimmed)
   }
   renamingProfile.value = false
+}
+
+// --- separator label inline edit (contenteditable) ---
+
+// ref callback：mount 時把 label 寫進 innerText。不用 v-once + interpolation
+// 是因為 Vue 的 `{{ '' }}` 會塞空 text node，讓 :empty 不匹配 → placeholder
+// 不出現。直接 set innerText 才能保證空 label 時 element 真的 empty。之後不
+// 再從 Vue sync DOM——contenteditable 自己管，input handler 同步回 model。
+function initSepLabel(el: unknown, line: TagLine) {
+  if (!el || !line.separator) return
+  const text = line.separator.label ?? ''
+  if ((el as HTMLElement).innerText !== text) (el as HTMLElement).innerText = text
+}
+
+function syncSepLabel(target: HTMLElement, line: TagLine) {
+  if (!line.separator) return
+  const text = target.innerText
+  // 全選刪光後瀏覽器塞 <br>，清空 innerHTML 才能讓 :empty::before placeholder 重現
+  if (!text || text === '\n') {
+    if (target.innerHTML !== '') target.innerHTML = ''
+    line.separator.label = undefined
+  } else {
+    line.separator.label = text
+  }
+}
+
+// IME-safe：用原生 InputEvent.isComposing 取代自維護 boolean
+// （Firefox bug 1305387：input 跟 compositionend 順序與 Chrome 相反）。
+//
+// ⚠️ 不要對這個 element 掛 @beforeinput listener。經驗：
+// Firefox + Linux Fcitx5 下，element 上**存在** beforeinput 監聽器這件事本身
+// 就會讓 Fcitx5 走 romaji → kana 轉換路徑，輸入「test」+ 空白會被轉成「テスト」
+// （即使用戶沒切到 JP IME）。Chrome 沒這問題。原因不明（可能 Fcitx5 偵測到
+// 頁面在攔 input 路徑就 fallback 到 composition path），但 attach 空 handler
+// 就會復發。如果未來需要攔 insertReplacementText（TSF reconversion）等場景，
+// 找其他方法（譬如在 onSepLabelInput 裡用 e.inputType 判斷）。
+function onSepLabelInput(e: Event, line: TagLine) {
+  if ((e as InputEvent).isComposing) return
+  syncSepLabel(e.target as HTMLElement, line)
+}
+
+// Chrome 上 compositionend 之後不會 fire input，所以這裡補一次 sync。
+// Firefox 會多 fire 一次 input(isComposing=false)，也會跑 syncSepLabel，
+// 但 set 同個值是 idempotent。
+function onSepLabelCompositionEnd(e: CompositionEvent, line: TagLine) {
+  syncSepLabel(e.target as HTMLElement, line)
 }
 
 // --- draggable change handlers ---
@@ -282,21 +329,36 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
               :ref="(el) => captureControlsEl(el, li)"
               class="eqt-tag-bar__line-controls"
             >
-              <LineColorSwatch
-                :class="{ 'eqt-tag-bar__line-color-swatch--hidden': !editing }"
-                :model-value="line.color"
-                @update:model-value="line.color = $event"
-              />
               <div class="eqt-tag-bar__handle" :class="{ 'eqt-tag-bar__handle--hidden': !editing }" :title="t('tagbar.handleTitle')"><GripVertical :size="14" /></div>
             </div>
-            <button
-              v-if="editing && line.tags.length === 0"
-              class="eqt-tag-bar__line-delete"
-              type="button"
-              :title="t('tagbar.deleteLine')"
-              @click="onDeleteLine(li)"
-            ><Trash2 :size="12" /></button>
+            <div
+              v-if="line.separator"
+              class="eqt-tag-bar__line eqt-tag-bar__line--separator"
+              :class="[
+                `eqt-tag-bar__line--separator-${line.separator.style}`,
+                `eqt-tag-bar__line--separator-${line.separator.preset ?? 'header'}`,
+                `eqt-tag-bar__line--separator-align-${line.separator.textAlign ?? 'left'}`,
+              ]"
+              :style="{
+                '--line-color': line.color,
+                '--separator-line-thickness': `${line.separator.lineThickness ?? 2}px`,
+                fontSize: `${line.separator.textSize ?? 10}px`,
+              }"
+            >
+              <span
+                v-if="editing"
+                :ref="(el) => initSepLabel(el, line)"
+                contenteditable="plaintext-only"
+                class="eqt-tag-bar__separator-label eqt-tag-bar__separator-label--editing"
+                :data-placeholder="t('tagbar.separatorLabelPlaceholder')"
+                @input="onSepLabelInput($event, line)"
+                @compositionend="onSepLabelCompositionEnd($event, line)"
+                @keydown.enter.prevent
+              ></span>
+              <span v-else-if="line.separator.label" class="eqt-tag-bar__separator-label">{{ line.separator.label }}</span>
+            </div>
             <Draggable
+              v-else
               v-bind="tagDragOptions"
               :model-value="line.tags"
               :item-key="tagKey"
@@ -335,6 +397,24 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
                 >{{ qt.label || qt.tag }}</button>
               </template>
             </Draggable>
+            <SeparatorSettingsPopup
+              v-if="editing"
+              :model-value="line.separator"
+              :disabled="line.tags.length > 0"
+              @update:model-value="line.separator = $event"
+            />
+            <LineColorSwatch
+              v-if="editing"
+              :model-value="line.color"
+              @update:model-value="line.color = $event"
+            />
+            <button
+              v-if="editing"
+              class="eqt-tag-bar__line-delete"
+              type="button"
+              :title="t('tagbar.deleteLine')"
+              @click="onDeleteLine(li)"
+            ><Trash2 :size="12" /></button>
           </div>
         </template>
       </Draggable>
@@ -471,11 +551,6 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
     height: var(--eqt-row-h);
   }
 
-  &__line-color-swatch--hidden {
-    visibility: hidden;
-    pointer-events: none;
-  }
-
   &__handle {
     display: flex;
     align-items: center;
@@ -532,12 +607,13 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
     flex-shrink: 0;
     display: flex;
     align-items: center;
+    justify-content: center;
     height: var(--eqt-row-h);
     border: none;
     background: transparent;
     color: var(--eqt-text-hint);
     cursor: pointer;
-    padding: 0 2px;
+    padding: 0 4px;
 
     &:hover {
       color: #8c3333;
@@ -545,10 +621,93 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
   }
 
   &__line {
+    flex: 1;
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
     min-height: var(--eqt-row-h);
+  }
+
+  &__line--separator {
+    flex-wrap: nowrap;
+    gap: 0;
+    align-items: center;
+    color: var(--line-color, var(--eqt-text-hint));
+    line-height: 1.4;
+
+    &::before,
+    &::after {
+      content: '';
+      flex: 1;
+      border-top: var(--separator-line-thickness, 2px) solid var(--line-color, var(--eqt-divider));
+    }
+  }
+
+  &__line--separator-divider:has(.eqt-tag-bar__separator-label) {
+    gap: 8px;
+  }
+
+  &__line--separator-header {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-end;
+
+    &::before { display: none; }
+    &::after {
+      flex: 0 0 auto;
+      height: 0;
+      width: 100%;
+    }
+  }
+
+  &__line--separator-dashed {
+    &::before,
+    &::after {
+      border-top-style: dashed;
+    }
+  }
+
+  // 'none' 樣式：兩條 pseudo 全部隱藏，純文字
+  &__line--separator-none {
+    &::before,
+    &::after {
+      display: none;
+    }
+  }
+
+  // Divider preset + align-left: 隱藏左側線段，文字貼左，線只在右側延伸
+  &__line--separator-divider.eqt-tag-bar__line--separator-align-left::before {
+    display: none;
+  }
+
+  // Header preset：label 文字對齊（預設 center；可改 left）
+  &__line--separator-header .eqt-tag-bar__separator-label {
+    text-align: center;
+  }
+  &__line--separator-header.eqt-tag-bar__line--separator-align-left .eqt-tag-bar__separator-label {
+    text-align: left;
+  }
+
+  &__separator-label {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  // editing 時用 contenteditable span 做 in-place 編輯（WYSIWYG）
+  // 跟非編輯狀態的 __separator-label 共用一套樣式（font / color / text-align），
+  // 只多 cursor 跟 placeholder。元素本身在 template 上掛了 lang="en"——
+  // 解 Linux + IBus 在「英文模式」下仍會把 romaji reverse 成 kana 的 bug。
+  &__separator-label--editing {
+    cursor: text;
+    outline: none;
+    min-width: 3ch;
+
+    &:empty::before {
+      content: attr(data-placeholder);
+      color: var(--eqt-text-hint);
+      opacity: 0.5;
+      pointer-events: none;
+    }
   }
 
   &__controls {
