@@ -485,7 +485,7 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
     justify-content: center;
     gap: 4px;
     padding: 2px 8px;
-    border: var(--eqt-border-width) dashed var(--eqt-border);
+    border: var(--eqt-border-width) solid var(--eqt-border);
     border-radius: 3px;
     background: transparent;
     color: var(--eqt-text-hint);
