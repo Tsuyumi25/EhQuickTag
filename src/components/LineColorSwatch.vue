@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, inject, watch } from 'vue'
 import { onClickOutside } from '@vueuse/core'
 import { useFloating, autoUpdate, flip, shift, offset } from '@floating-ui/vue'
 import { Palette, X } from '@lucide/vue'
 import ColorPicker from '@/components/ColorPicker.vue'
+import { POPUP_IGNORE_KEY, type PopupIgnoreRegister } from '@/composables/usePopupBehavior'
 import { t } from '@/composables/useI18n'
 
 defineProps<{
@@ -23,6 +24,16 @@ const { floatingStyles } = useFloating(triggerEl, popupEl, {
 })
 
 onClickOutside(popupEl, () => { open.value = false }, { ignore: [triggerEl] })
+
+// 在 parent popup 裡使用時，自己向 parent 登記「這個 teleport 出去的浮層 el
+// 屬於 popup 一部分」，避免 parent 的 onClickOutside 誤判點浮層 = 點外面。
+// open 切換時 popupEl 變 null/element，watch 自動清掉舊 el。
+const registerIgnore = inject<PopupIgnoreRegister | undefined>(POPUP_IGNORE_KEY, undefined)
+let unregister: (() => void) | null = null
+watch(popupEl, (el) => {
+  if (unregister) { unregister(); unregister = null }
+  if (el && registerIgnore) unregister = registerIgnore(el)
+})
 
 function clearColor() {
   emit('update:modelValue', undefined)

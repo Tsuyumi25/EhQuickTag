@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, toRaw } from 'vue'
-import { onClickOutside, useScrollLock, useClipboard, useTimeoutFn } from '@vueuse/core'
+import { useClipboard, useTimeoutFn } from '@vueuse/core'
+import { usePopupBehavior } from '@/composables/usePopupBehavior'
 import { Trash2, Copy, Download, Check, RotateCcw, CircleAlert, ExternalLink, Code } from '@lucide/vue'
 import Draggable from 'vuedraggable'
 import { baseDragOptions } from '@/utils/drag'
@@ -29,10 +30,6 @@ const emit = defineEmits<{
   'update:disabledNs': [value: string[]]
   'close': []
 }>()
-
-function onKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape') emit('close')
-}
 
 const dragOptions = {
   ...baseDragOptions,
@@ -94,8 +91,7 @@ function resetNsOrder() {
 }
 
 const popupEl = ref<HTMLElement | null>(null)
-onClickOutside(popupEl, () => emit('close'))
-useScrollLock(document.body, true)
+usePopupBehavior({ popupEl, onClose: () => emit('close') })
 
 const mirrorOptions = Object.entries(TAG_DB_MIRRORS).map(([k, v]) => ({ value: k as TagDbMirror, label: v.label }))
 const refreshing = ref(false)
@@ -240,7 +236,7 @@ function onEditorExport() {
 </script>
 
 <template>
-  <div class="eqt-popup-overlay" @keydown="onKeydown">
+  <div class="eqt-popup-overlay">
     <div ref="popupEl" class="eqt-popup eqt-settings__layout">
       <nav class="eqt-settings__sidebar">
         <h3 class="eqt-popup__title">{{ t('settings.title') }}</h3>

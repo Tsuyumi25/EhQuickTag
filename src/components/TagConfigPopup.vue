@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { reactive, ref, watch, onMounted, onScopeDispose, nextTick, computed } from 'vue'
-import { onClickOutside, useScrollLock, useEventListener } from '@vueuse/core'
 import { ExternalLink } from '@lucide/vue'
 import LineColorSwatch from '@/components/LineColorSwatch.vue'
 import { currentTagStyleClass } from '@/composables/useTagStyle'
 import { useContentEditableName } from '@/composables/useContentEditableName'
+import { usePopupBehavior } from '@/composables/usePopupBehavior'
 import { type QuickTag, type TagMode, splitMultiTag } from '@/types'
 import { t, isCJKLocale } from '@/composables/useI18n'
 import { loadTagDb, searchTags, type TagEntry, ALL_NAMESPACES } from '@/services/tagDb'
@@ -79,11 +79,19 @@ function makeRow(raw: string): RowState {
   }
 }
 
-// --- click outside & scroll lock ---
+// --- popup behavior (click outside / scroll lock / Esc / Ctrl+Enter) ---
+// Esc 優先級：如果有 active 的 autocomplete，先關 autocomplete 再 emit close。
+function handleClose() {
+  const activeIdx = activeRow.value
+  if (activeIdx >= 0) {
+    closeAutocomplete(activeIdx)
+    tagInputRefs.value[activeIdx]?.blur()
+  } else {
+    emit('close')
+  }
+}
 
-onClickOutside(popupEl, () => emit('close'), { ignore: ['.eqt-line-color__popup'] })
-useScrollLock(document.body, true)
-useEventListener(document, 'keydown', onGlobalKeydown)
+usePopupBehavior({ popupEl, onClose: handleClose, onSave })
 
 // --- DB loading ---
 
@@ -472,21 +480,6 @@ function removeRow(idx: number) {
 }
 
 // --- keyboard ---
-
-function onGlobalKeydown(e: KeyboardEvent) {
-  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-    e.preventDefault()
-    onSave()
-  } else if (e.key === 'Escape') {
-    const activeIdx = activeRow.value
-    if (activeIdx >= 0) {
-      closeAutocomplete(activeIdx)
-      tagInputRefs.value[activeIdx]?.blur()
-    } else {
-      emit('close')
-    }
-  }
-}
 
 function onTagInputBlur(rowIdx: number) {
   requestAnimationFrame(() => {

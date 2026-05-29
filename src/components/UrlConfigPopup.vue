@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { ref, watch, computed, onScopeDispose } from 'vue'
-import { onClickOutside, useScrollLock, useEventListener } from '@vueuse/core'
 import { GM_xmlhttpRequest } from '$'
 import { hasGMXHR } from '@/services/gmStorage'
 import LineColorSwatch from '@/components/LineColorSwatch.vue'
 import { currentTagStyleClass } from '@/composables/useTagStyle'
 import { useContentEditableName } from '@/composables/useContentEditableName'
+import { usePopupBehavior } from '@/composables/usePopupBehavior'
 import type { QuickTag } from '@/types'
 import { t } from '@/composables/useI18n'
 
@@ -53,21 +53,14 @@ watch(() => props.tag, (t) => {
   url.value = detected.path
 }, { immediate: true })
 
-function onGlobalKeydown(e: KeyboardEvent) {
-  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-    e.preventDefault()
-    onSave()
-  } else if (e.key === 'Escape') {
-    emit('close')
-  }
-}
-
 let abortFetch: { abort(): void } | null = null
 onScopeDispose(() => abortFetch?.abort())
 
-onClickOutside(popupEl, () => emit('close'), { ignore: ['.eqt-line-color__popup'] })
-useScrollLock(document.body, true)
-useEventListener(document, 'keydown', onGlobalKeydown)
+usePopupBehavior({
+  popupEl,
+  onClose: () => emit('close'),
+  onSave,
+})
 
 function fetchTitle() {
   const trimmed = url.value.trim()
