@@ -221,9 +221,9 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
 
 <template>
   <div class="eqt-tag-bar" :class="currentTagStyleClass" :style="controlsWidth !== null ? { '--eqt-controls-w': controlsWidth + 'px' } : undefined" @dblclick="onBarDblClick" @contextmenu="onBarContextMenu">
-    <span class="eqt-tag-bar__info"><Info :size="16" /><span class="eqt-tag-bar__info-text">{{ t('tagbar.infoTooltip', { left: t(ACTION_KEYS[dblClickLeft]), right: t(ACTION_KEYS[dblClickRight]) }) }}</span></span>
     <div class="eqt-tag-bar__lines">
       <div class="eqt-tag-bar__profile-row">
+        <span class="eqt-tag-bar__info"><Info :size="16" /><span class="eqt-tag-bar__info-text">{{ t('tagbar.infoTooltip', { left: t(ACTION_KEYS[dblClickLeft]), right: t(ACTION_KEYS[dblClickRight]) }) }}</span></span>
         <button
           class="eqt-tag-bar__profile-nav eqt-tag-bar__profile-nav--prev"
           type="button"
@@ -380,14 +380,28 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
   position: relative;
   padding: 6px 0;
 
-  &:has(.eqt-tag-bar__info:hover) {
-    background: var(--eqt-bg-hover);
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-color: var(--eqt-bg);
+    background-image: linear-gradient(var(--eqt-bg-hover), var(--eqt-bg-hover));
+    clip-path: circle(0 at 14px 14px);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 1;
+    transition: clip-path 0.4s ease-out, opacity 0.4s ease-out;
+  }
+
+  &:has(.eqt-tag-bar__info:hover)::before {
+    clip-path: circle(150% at 14px 14px);
+    opacity: 0.9;
   }
 
   &__info {
     position: absolute;
-    top: 4px;
-    left: 4px;
+    right: 100%;
+    top: 0;
     display: inline-flex;
     align-items: center;
     gap: 4px;
@@ -396,17 +410,27 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
     color: var(--eqt-text-secondary);
     font-size: 11px;
     user-select: none;
-
-    &:hover {
-      background: var(--eqt-bg-btn);
-    }
+    z-index: 2;
   }
 
   &__info-text {
     display: none;
+    position: absolute;
+    left: 100%;
+    top: 0;
+    margin-left: 6px;
+    padding: 2px 8px;
+    background: var(--eqt-bg);
+    border: var(--eqt-border-width) solid var(--eqt-border);
+    border-radius: 3px;
+    color: var(--eqt-text-secondary);
+    font-size: 11px;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 1;
 
     .eqt-tag-bar__info:hover & {
-      display: inline;
+      display: block;
     }
   }
 
@@ -529,6 +553,7 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
   }
 
   &__profile-row {
+    position: relative;
     display: flex;
     align-items: stretch;
     gap: 4px;
