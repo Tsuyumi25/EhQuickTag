@@ -1,5 +1,5 @@
-import { GM } from '$'
 import { reactive, ref, watch, nextTick, type Ref } from 'vue'
+import { cacheGet, cacheSet } from '@/services/gmStorage'
 import type { QuickTag, TagLine } from '@/types'
 import { DEFAULT_NS_ORDER, type TagDbMirror } from '@/services/tagDb'
 import { locale, setLocale, detectLocale, t, type Locale } from '@/composables/useI18n'
@@ -157,8 +157,8 @@ function isValidProfilesData(x: unknown): x is ProfilesData {
 // 解析失敗時備份原始 JSON 到獨立 key，避免靜默丟失用戶資料。
 // 之後可透過 GM 工具或 browser console 從 KEYS.corrupted 手動恢復。
 async function backupCorrupted(raw: string, reason: string) {
-  await GM.setValue(KEYS.corrupted, raw)
-  console.error(`[eqt] profiles parse failed (${reason}). Original data preserved at GM storage key: ${KEYS.corrupted}`)
+  await cacheSet(KEYS.corrupted, raw)
+  console.error(`[eqt] profiles parse failed (${reason}). Original data preserved at storage key: ${KEYS.corrupted}`)
 }
 
 // --- reactive state (profiles) ---
@@ -172,8 +172,8 @@ export const tagLines = reactive<TagLine[]>([])
 
 export async function loadStore(): Promise<void> {
   const [savedProfiles, savedSettings] = await Promise.all([
-    GM.getValue<string>(KEYS.profiles, ''),
-    GM.getValue<string>(KEYS.settings, ''),
+    cacheGet(KEYS.profiles),
+    cacheGet(KEYS.settings),
   ])
 
   // profiles — strict additive 策略：不做 migration。
@@ -288,7 +288,7 @@ export function updateProfileTagLines(idx: number, newTagLines: TagLine[]): void
 
 function saveProfiles() {
   syncTagLinesToActiveProfile()
-  GM.setValue(KEYS.profiles, JSON.stringify({
+  cacheSet(KEYS.profiles, JSON.stringify({
     active: activeProfileIdx.value,
     profiles: profiles.map(p => ({ name: p.name, tagLines: p.tagLines, ...(p.isDefault ? { isDefault: true } : {}) })),
     deleted: deletedProfiles.map(p => ({ name: p.name, tagLines: p.tagLines })),
@@ -296,7 +296,7 @@ function saveProfiles() {
 }
 
 function saveSettings() {
-  GM.setValue(KEYS.settings, JSON.stringify(serializeAllSettings()))
+  cacheSet(KEYS.settings, JSON.stringify(serializeAllSettings()))
 }
 
 export function startAutoSave(): void {
