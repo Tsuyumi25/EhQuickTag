@@ -69,7 +69,7 @@ function clearColor() {
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 24px;
+    height: var(--eqt-row-h);
     padding: 0 4px;
     border: none;
     background: transparent;

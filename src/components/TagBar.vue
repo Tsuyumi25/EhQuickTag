@@ -441,7 +441,7 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
     top: 0;
     display: flex;
     align-items: center;
-    height: 24px;
+    height: var(--eqt-row-h);
   }
 
   &__line-color-swatch--hidden {
@@ -452,7 +452,7 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
   &__handle {
     display: flex;
     align-items: center;
-    height: 24px;
+    height: var(--eqt-row-h);
     padding: 0 4px;
     cursor: grab;
     color: var(--eqt-text-hint);
@@ -503,7 +503,7 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
     flex-shrink: 0;
     display: flex;
     align-items: center;
-    height: 24px;
+    height: var(--eqt-row-h);
     border: none;
     background: transparent;
     color: var(--eqt-text-hint);
@@ -519,7 +519,7 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
-    min-height: 24px;
+    min-height: var(--eqt-row-h);
   }
 
   &__controls {
@@ -652,7 +652,9 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    padding: 2px 8px;
+    box-sizing: border-box;
+    height: var(--eqt-row-h);
+    padding: 0 8px;
     border: var(--eqt-border-width) solid var(--line-color, var(--eqt-border));
     border-radius: 3px;
     background: color-mix(in srgb, var(--line-color, var(--eqt-bg-btn)) 15%, var(--eqt-bg-btn));
