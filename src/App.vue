@@ -6,7 +6,7 @@ import UrlConfigPopup from '@/components/UrlConfigPopup.vue'
 import SettingsPopup from '@/components/SettingsPopup.vue'
 import { GM_openInTab } from '$'
 import type { Button, TagButton, UrlButton } from '@/types'
-import { tagLines, useNhWeight, nsOrder, disabledNs, fontFamily, fontWeight, profiles, activeProfileIdx, switchProfile, renameProfile, createProfile, deleteProfile, newTabActive, nsFormat, defaultExactMatch, tagDbMirror, tagDbTtlDays, type DblClickAction } from '@/services/store'
+import { lines, useNhWeight, nsOrder, disabledNs, fontFamily, fontWeight, profiles, activeProfileIdx, switchProfile, renameProfile, createProfile, deleteProfile, newTabActive, nsFormat, defaultExactMatch, tagDbMirror, tagDbTtlDays, type DblClickAction } from '@/services/store'
 import { loadTagDb } from '@/services/tagDb'
 
 const effectiveNsOrder = computed(() => {
@@ -72,7 +72,7 @@ function onConfigure(lineIdx: number, tagIdx: number) {
   editingLine.value = lineIdx
   editingIdx.value = tagIdx
   pendingAdd.value = false
-  const line = tagLines[lineIdx]
+  const line = lines[lineIdx]
   if (line.kind !== 'buttons') return
   const b = line.buttons[tagIdx]
   if (b.kind === 'url') showUrlPopup.value = true
@@ -84,18 +84,18 @@ function onAdd(type: 'tag' | 'url' = 'tag') {
   else draftTagButton.value = { kind: 'tag', tags: [], label: '' }
   // 末行不是 ButtonLine 時 push 一個新空行——SeparatorLine 不能容納 button，
   // 也避免在末行是 separator 時新 button 被塞到看不見的位置
-  const last = tagLines[tagLines.length - 1]
+  const last = lines[lines.length - 1]
   if (!last || last.kind !== 'buttons') {
-    tagLines.push({ kind: 'buttons', buttons: [] })
+    lines.push({ kind: 'buttons', buttons: [] })
   }
-  editingLine.value = tagLines.length - 1
+  editingLine.value = lines.length - 1
   pendingAdd.value = true
   if (type === 'url') showUrlPopup.value = true
   else showTagPopup.value = true
 }
 
 function onSave(updated: Button) {
-  const line = tagLines[editingLine.value]
+  const line = lines[editingLine.value]
   if (line.kind !== 'buttons') return
   if (pendingAdd.value) line.buttons.push(updated)
   else line.buttons[editingIdx.value] = updated
@@ -105,7 +105,7 @@ function onSave(updated: Button) {
 }
 
 function onDelete() {
-  const line = tagLines[editingLine.value]
+  const line = lines[editingLine.value]
   if (line.kind === 'buttons') line.buttons.splice(editingIdx.value, 1)
   pendingAdd.value = false
   showTagPopup.value = false
@@ -123,7 +123,7 @@ function onClose() {
 const tagPopupValue = computed<TagButton | null>(() => {
   if (!showTagPopup.value) return null
   if (pendingAdd.value) return draftTagButton.value
-  const line = tagLines[editingLine.value]
+  const line = lines[editingLine.value]
   if (!line || line.kind !== 'buttons') return null
   const b = line.buttons[editingIdx.value]
   return b && b.kind === 'tag' ? b : null
@@ -132,14 +132,14 @@ const tagPopupValue = computed<TagButton | null>(() => {
 const urlPopupValue = computed<UrlButton | null>(() => {
   if (!showUrlPopup.value) return null
   if (pendingAdd.value) return draftUrlButton.value
-  const line = tagLines[editingLine.value]
+  const line = lines[editingLine.value]
   if (!line || line.kind !== 'buttons') return null
   const b = line.buttons[editingIdx.value]
   return b && b.kind === 'url' ? b : null
 })
 
 const editingLineColor = computed(() => {
-  const line = tagLines[editingLine.value]
+  const line = lines[editingLine.value]
   return line?.kind === 'buttons' ? line.color : undefined
 })
 

@@ -10,8 +10,8 @@ import { t, locale, setLocale, type Locale } from '@/composables/useI18n'
 import { DEFAULT_NS_ORDER, refreshTagDb, TAG_DB_MIRRORS, type TagDbMirror } from '@/services/tagDb'
 import {
   profiles, activeProfileIdx, deletedProfiles, corruptedProfiles, type Profile,
-  deleteProfile, restoreProfile, purgeProfile, purgeCorrupted, reorderProfiles, updateProfileTagLines,
-  fontFamily, fontWeight, getDefaultTagLines, tagLines,
+  deleteProfile, restoreProfile, purgeProfile, purgeCorrupted, reorderProfiles, updateProfileLines,
+  fontFamily, fontWeight, getDefaultLines, lines,
   dblClickLeft, dblClickRight, newTabActive, nsFormat, defaultExactMatch,
   tagDbMirror, tagDbTtlDays, tagStylePreset, type DblClickAction,
   isValidLine,
@@ -63,16 +63,16 @@ const localeOptions: { value: Locale; label: string }[] = [
   { value: 'ja', label: '日本語' },
 ]
 
-const previewTagLines = computed(() => getDefaultTagLines())
+const previewLines = computed(() => getDefaultLines())
 
 function tagCount(lines: Line[]): number {
   return lines.reduce((sum, l) => sum + (l.kind === 'buttons' ? l.buttons.length : 0), 0)
 }
 
 const tagCounts = computed(() => profiles.map((p, i) =>
-  tagCount(i === activeProfileIdx.value ? tagLines : p.tagLines),
+  tagCount(i === activeProfileIdx.value ? lines : p.lines),
 ))
-const deletedTagCounts = computed(() => deletedProfiles.map(p => tagCount(p.tagLines)))
+const deletedTagCounts = computed(() => deletedProfiles.map(p => tagCount(p.lines)))
 
 // --- nsOrder change handler ---
 
@@ -219,8 +219,8 @@ function openEditor(idx: number, deleted = false) {
   editingCorrupted.value = false
   editorError.value = ''
   const data = deleted
-    ? deletedProfiles[idx].tagLines
-    : idx === activeProfileIdx.value ? tagLines : profiles[idx].tagLines
+    ? deletedProfiles[idx].lines
+    : idx === activeProfileIdx.value ? lines : profiles[idx].lines
   editorText.value = JSON.stringify(data, null, 2)
 }
 
@@ -242,7 +242,7 @@ function onEditorSave() {
       return
     }
     editorError.value = ''
-    updateProfileTagLines(editingProfileIdx.value, parsed)
+    updateProfileLines(editingProfileIdx.value, parsed)
   } catch (err) {
     editorError.value = (err as Error).message
   }
@@ -459,7 +459,7 @@ function onEditorExport() {
 
             <h4 class="eqt-settings__subtitle">{{ t('settings.preview') }}</h4>
             <div class="eqt-settings__font-preview" :class="currentTagStyleClass" :style="{ fontFamily: fontFamily || 'inherit', fontWeight: fontWeight || 'inherit' }">
-              <template v-for="(line, li) in previewTagLines" :key="li">
+              <template v-for="(line, li) in previewLines" :key="li">
                 <div v-if="line.kind === 'buttons' && line.buttons.length" class="eqt-settings__preview-line">
                   <span
                     v-for="(b, ti) in line.buttons"

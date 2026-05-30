@@ -42,10 +42,6 @@ const lineLengthValue = computed<number>(() => props.line.style?.lineLength ?? 1
 
 function updateStyle(patch: Partial<SeparatorStyle>) {
   const merged: SeparatorStyle = { ...props.line.style, ...patch }
-  // 清掉 undefined key 以保持 storage 乾淨
-  for (const k of Object.keys(merged) as (keyof SeparatorStyle)[]) {
-    if (merged[k] === undefined) delete merged[k]
-  }
   emit('update:line', {
     ...props.line,
     style: Object.keys(merged).length ? merged : undefined,

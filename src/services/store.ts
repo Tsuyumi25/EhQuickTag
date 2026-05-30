@@ -21,7 +21,7 @@ export interface CorruptedProfile {
 
 export interface Profile {
   name: string
-  tagLines: Line[]
+  lines: Line[]
   isDefault?: boolean
 }
 
@@ -82,7 +82,7 @@ function serializeAllSettings(): Settings & { locale: Locale | '' } {
   return { ...out, locale: locale.value }
 }
 
-// Tag definitions without labels — labels are filled by getDefaultTagLines() based on locale
+// Line definitions without labels — labels are filled by getDefaultLines() based on locale
 type DefaultButtonDef =
   | { kind: 'tag'; tags: string[]; labelKey: string; disabledModes?: readonly TagMode[] }
   | { kind: 'url'; url: string; labelKey: string }
@@ -118,7 +118,7 @@ const DEFAULT_LINE_DEFS: DefaultLineDef[] = [
   { kind: 'buttons', buttons: [] },
 ]
 
-export function getDefaultTagLines(): Line[] {
+export function getDefaultLines(): Line[] {
   return DEFAULT_LINE_DEFS.map<Line>(def => {
     if (def.kind === 'separator') {
       return {
@@ -228,8 +228,8 @@ function isValidProfile(x: unknown): x is Profile {
   if (!x || typeof x !== 'object') return false
   const o = x as Record<string, unknown>
   return typeof o.name === 'string'
-    && Array.isArray(o.tagLines)
-    && o.tagLines.every(isValidLine)
+    && Array.isArray(o.lines)
+    && o.lines.every(isValidLine)
 }
 
 function isValidProfilesData(x: unknown): x is ProfilesData {
@@ -242,10 +242,13 @@ function isValidProfilesData(x: unknown): x is ProfilesData {
 
 // load 時對每個 line 跑 migration。已是新格式直接 return；舊格式轉換後 isValidLine
 // 會接住。drop 掉的 line 是 corrupted/empty/不認識的 entry。
+// 舊版欄位叫 `tagLines`（已 rename 為 `lines`），這裡同時接受兩個 key。
 function migrateProfile(p: any): Profile | null {
-  if (!p || typeof p !== 'object' || typeof p.name !== 'string' || !Array.isArray(p.tagLines)) return null
-  const lines = p.tagLines.map(migrateLegacyLine).filter((l: Line | null): l is Line => l !== null && isValidLine(l))
-  return { name: p.name, tagLines: lines, ...(p.isDefault ? { isDefault: true } : {}) }
+  if (!p || typeof p !== 'object' || typeof p.name !== 'string') return null
+  const rawLines = Array.isArray(p.lines) ? p.lines : Array.isArray(p.tagLines) ? p.tagLines : null
+  if (!rawLines) return null
+  const lines = rawLines.map(migrateLegacyLine).filter((l: Line | null): l is Line => l !== null && isValidLine(l))
+  return { name: p.name, lines, ...(p.isDefault ? { isDefault: true } : {}) }
 }
 
 function migrateProfilesData(data: any): ProfilesData | null {
@@ -270,7 +273,7 @@ export const profiles = reactive<Profile[]>([])
 export const deletedProfiles = reactive<Profile[]>([])
 export const corruptedProfiles = reactive<CorruptedProfile[]>([])
 export const activeProfileIdx = ref(0)
-export const tagLines = reactive<Line[]>([])
+export const lines = reactive<Line[]>([])
 
 // --- load from GM ---
 
@@ -314,11 +317,11 @@ export async function loadStore(): Promise<void> {
     }
   }
   if (!loaded) {
-    profiles.splice(0, profiles.length, { name: t('default.profileName'), tagLines: getDefaultTagLines(), isDefault: true })
+    profiles.splice(0, profiles.length, { name: t('default.profileName'), lines: getDefaultLines(), isDefault: true })
     activeProfileIdx.value = 0
   }
 
-  tagLines.splice(0, tagLines.length, ...profiles[activeProfileIdx.value].tagLines)
+  lines.splice(0, lines.length, ...profiles[activeProfileIdx.value].lines)
 
   // settings
   const parsed = savedSettings ? JSON.parse(savedSettings) as Partial<Settings & { locale?: Locale | '' }> : {}
@@ -332,17 +335,17 @@ export async function loadStore(): Promise<void> {
 
 let localeChanging = false
 
-function syncTagLinesToActiveProfile() {
+function syncLinesToActiveProfile() {
   const p = profiles[activeProfileIdx.value]
-  p.tagLines = JSON.parse(JSON.stringify(tagLines))
+  p.lines = JSON.parse(JSON.stringify(lines))
   if (p.isDefault && !localeChanging) p.isDefault = false
 }
 
 export function switchProfile(idx: number): void {
   if (idx < 0 || idx >= profiles.length || idx === activeProfileIdx.value) return
-  syncTagLinesToActiveProfile()
+  syncLinesToActiveProfile()
   activeProfileIdx.value = idx
-  tagLines.splice(0, tagLines.length, ...profiles[idx].tagLines)
+  lines.splice(0, lines.length, ...profiles[idx].lines)
 }
 
 export function renameProfile(idx: number, name: string): void {
@@ -351,23 +354,23 @@ export function renameProfile(idx: number, name: string): void {
 }
 
 export function createProfile(name: string): void {
-  syncTagLinesToActiveProfile()
-  const lineCount = tagLines.length
+  syncLinesToActiveProfile()
+  const lineCount = lines.length
   const emptyLines = (): Line[] => Array.from({ length: lineCount }, () => ({ kind: 'buttons', buttons: [] }))
-  profiles.push({ name, tagLines: emptyLines() })
+  profiles.push({ name, lines: emptyLines() })
   activeProfileIdx.value = profiles.length - 1
-  tagLines.splice(0, tagLines.length, ...emptyLines())
+  lines.splice(0, lines.length, ...emptyLines())
 }
 
 export function deleteProfile(idx: number): void {
   if (profiles.length <= 1) return
-  syncTagLinesToActiveProfile()
+  syncLinesToActiveProfile()
   const [removed] = profiles.splice(idx, 1)
   deletedProfiles.push(removed)
   const active = activeProfileIdx.value
   const newIdx = idx < active ? active - 1 : Math.min(idx, profiles.length - 1)
   activeProfileIdx.value = newIdx
-  tagLines.splice(0, tagLines.length, ...profiles[newIdx].tagLines)
+  lines.splice(0, lines.length, ...profiles[newIdx].lines)
 }
 
 export function restoreProfile(idx: number): void {
@@ -385,7 +388,7 @@ export function purgeCorrupted(idx: number): void {
 
 export function reorderProfiles(fromIdx: number, toIdx: number): void {
   if (fromIdx === toIdx) return
-  syncTagLinesToActiveProfile()
+  syncLinesToActiveProfile()
   const [moved] = profiles.splice(fromIdx, 1)
   profiles.splice(toIdx, 0, moved)
   // update activeProfileIdx to follow the active profile
@@ -400,12 +403,12 @@ export function reorderProfiles(fromIdx: number, toIdx: number): void {
   saveProfiles()
 }
 
-export function updateProfileTagLines(idx: number, newTagLines: Line[]): void {
-  profiles[idx].tagLines = newTagLines
+export function updateProfileLines(idx: number, newLines: Line[]): void {
+  profiles[idx].lines = newLines
   if (profiles[idx].isDefault) profiles[idx].isDefault = false
   if (idx === activeProfileIdx.value) {
-    tagLines.splice(0, tagLines.length, ...newTagLines)
-    // watcher on tagLines will call saveProfiles()
+    lines.splice(0, lines.length, ...newLines)
+    // watcher on `lines` will call saveProfiles()
   } else {
     saveProfiles()
   }
@@ -414,11 +417,11 @@ export function updateProfileTagLines(idx: number, newTagLines: Line[]): void {
 // --- auto-save on change ---
 
 function saveProfiles() {
-  syncTagLinesToActiveProfile()
+  syncLinesToActiveProfile()
   cacheSet(KEYS.profiles, JSON.stringify({
     active: activeProfileIdx.value,
-    profiles: profiles.map(p => ({ name: p.name, tagLines: p.tagLines, ...(p.isDefault ? { isDefault: true } : {}) })),
-    deleted: deletedProfiles.map(p => ({ name: p.name, tagLines: p.tagLines })),
+    profiles: profiles.map(p => ({ name: p.name, lines: p.lines, ...(p.isDefault ? { isDefault: true } : {}) })),
+    deleted: deletedProfiles.map(p => ({ name: p.name, lines: p.lines })),
   }))
 }
 
@@ -431,7 +434,7 @@ function saveCorrupted() {
 }
 
 export function startAutoSave(): void {
-  watch([tagLines, deletedProfiles], saveProfiles)
+  watch([lines, deletedProfiles], saveProfiles)
   watch(corruptedProfiles, saveCorrupted, { deep: true })
   // locale 是從 useI18n import 的獨立 ref，不在 refs 物件裡——明確加進 watch list
   watch([...Object.values(refs), locale], saveSettings, { deep: true })
@@ -442,15 +445,12 @@ export function startAutoSave(): void {
     for (const p of profiles) {
       if (!p.isDefault) continue
       p.name = t('default.profileName')
-      p.tagLines = getDefaultTagLines()
+      p.lines = getDefaultLines()
       if (activeProfileIdx.value === profiles.indexOf(p)) {
-        tagLines.splice(0, tagLines.length, ...p.tagLines)
+        lines.splice(0, lines.length, ...p.lines)
       }
     }
     await nextTick()
     localeChanging = false
   })
 }
-
-// re-export for components that need to construct empty button lines etc.
-export type { Line, Button, ButtonLine, SeparatorLine, TagButton, UrlButton } from '@/types'

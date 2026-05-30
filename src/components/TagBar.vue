@@ -8,7 +8,7 @@ import LineColorSwatch from '@/components/LineColorSwatch.vue'
 import SeparatorSettingsPopup from '@/components/SeparatorSettingsPopup.vue'
 import { TagState, type Line, type Button, type TagButton } from '@/types'
 import { tokenize, getState as _getState, removeTag, addTag, getNextRightClickState } from '@/services/tagState'
-import { tagLines, dblClickLeft, dblClickRight, type DblClickAction } from '@/services/store'
+import { lines, dblClickLeft, dblClickRight, type DblClickAction } from '@/services/store'
 import { baseDragOptions } from '@/utils/drag'
 import { t } from '@/composables/useI18n'
 import { currentTagStyleClass } from '@/composables/useTagStyle'
@@ -144,13 +144,13 @@ let tagDragging = false
 
 function onLineChange(evt: any) {
   if (evt.moved) {
-    const [line] = tagLines.splice(evt.moved.oldIndex, 1)
-    tagLines.splice(evt.moved.newIndex, 0, line)
+    const [line] = lines.splice(evt.moved.oldIndex, 1)
+    lines.splice(evt.moved.newIndex, 0, line)
   }
 }
 
 function onTagChange(lineIdx: number, evt: any) {
-  const line = tagLines[lineIdx]
+  const line = lines[lineIdx]
   if (line.kind !== 'buttons') return
   if (evt.added) {
     line.buttons.splice(evt.added.newIndex, 0, evt.added.element)
@@ -167,8 +167,8 @@ function onTagChange(lineIdx: number, evt: any) {
 function onTagStart() { tagDragging = true }
 function onTagEnd() { setTimeout(() => { tagDragging = false }, 0) }
 
-function onAddButtonLine() { tagLines.push({ kind: 'buttons', buttons: [] }) }
-function onAddSeparatorLine() { tagLines.push({ kind: 'separator' }) }
+function onAddButtonLine() { lines.push({ kind: 'buttons', buttons: [] }) }
+function onAddSeparatorLine() { lines.push({ kind: 'separator' }) }
 
 // 空行可以直接刪（誤按零損失）；有內容才彈 confirm：
 //   ButtonLine 有 button、SeparatorLine 有 label 或調過 style 視為「有內容」
@@ -177,8 +177,8 @@ function isLineEmpty(line: Line): boolean {
   return !line.label && (!line.style || Object.keys(line.style).length === 0)
 }
 function onDeleteLine(li: number) {
-  if (!isLineEmpty(tagLines[li]) && !confirm(t('tagbar.deleteLineConfirm'))) return
-  tagLines.splice(li, 1)
+  if (!isLineEmpty(lines[li]) && !confirm(t('tagbar.deleteLineConfirm'))) return
+  lines.splice(li, 1)
 }
 
 function onConfigure(li: number, ti: number) {
@@ -191,7 +191,7 @@ function buttonKey(b: Button) {
 }
 
 function onUpdateLine(li: number, newLine: Line) {
-  tagLines[li] = newLine
+  lines[li] = newLine
 }
 
 const lineDragOptions = {
@@ -282,14 +282,14 @@ function onRightClick(event: MouseEvent, b: TagButton) {
         ><ChevronRight :size="12" /> {{ onCreationPage ? '' : nextProfileName }}</button>
       </div>
       <template v-if="onCreationPage">
-        <div v-for="n in tagLines.length" :key="n" class="eqt-tag-bar__line-wrap">
+        <div v-for="n in lines.length" :key="n" class="eqt-tag-bar__line-wrap">
           <div class="eqt-tag-bar__line"></div>
         </div>
       </template>
       <Draggable
         v-else
         v-bind="lineDragOptions"
-        :model-value="tagLines"
+        :model-value="lines"
         :item-key="(_: any, i: number) => i"
         handle=".eqt-tag-bar__handle"
         :disabled="!editing"
