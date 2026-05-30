@@ -167,7 +167,8 @@ function onTagChange(lineIdx: number, evt: any) {
 function onTagStart() { tagDragging = true }
 function onTagEnd() { setTimeout(() => { tagDragging = false }, 0) }
 
-function onAddLine() { tagLines.push({ kind: 'buttons', buttons: [] }) }
+function onAddButtonLine() { tagLines.push({ kind: 'buttons', buttons: [] }) }
+function onAddSeparatorLine() { tagLines.push({ kind: 'separator' }) }
 function onDeleteLine(li: number) { tagLines.splice(li, 1) }
 
 function onConfigure(li: number, ti: number) {
@@ -364,9 +365,8 @@ function onRightClick(event: MouseEvent, b: TagButton) {
             </Draggable>
 
             <SeparatorSettingsPopup
-              v-if="editing"
+              v-if="editing && line.kind === 'separator'"
               :line="line"
-              :disabled="line.kind === 'buttons' && line.buttons.length > 0"
               @update:line="onUpdateLine(li, $event)"
             />
             <LineColorSwatch
@@ -385,12 +385,18 @@ function onRightClick(event: MouseEvent, b: TagButton) {
         </template>
       </Draggable>
       <div class="eqt-tag-bar__bottom-row">
-        <button
-          v-if="editing"
-          class="eqt-tag-bar__line-add"
-          type="button"
-          @click="onAddLine"
-        ><Plus :size="12" /> {{ t('tagbar.addLine') }}</button>
+        <div v-if="editing" class="eqt-tag-bar__line-add">
+          <button
+            class="eqt-tag-bar__line-add-btn"
+            type="button"
+            @click="onAddButtonLine"
+          ><Plus :size="12" /> {{ t('tagbar.addButtonLine') }}</button>
+          <button
+            class="eqt-tag-bar__line-add-btn"
+            type="button"
+            @click="onAddSeparatorLine"
+          ><Plus :size="12" /> {{ t('tagbar.addSeparatorLine') }}</button>
+        </div>
         <div class="eqt-tag-bar__controls">
           <button
             class="eqt-tag-bar__ctrl"
@@ -548,15 +554,23 @@ function onRightClick(event: MouseEvent, b: TagButton) {
     gap: 4px;
   }
 
+  // split layout: 左半「+ 行」右半「+ 分隔線」對稱，中間垂直 divider
   &__line-add {
+    flex: 1;
+    display: flex;
+    border: var(--eqt-border-width) solid var(--eqt-border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  &__line-add-btn {
     flex: 1;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 4px;
     padding: 2px 8px;
-    border: var(--eqt-border-width) solid var(--eqt-border);
-    border-radius: 3px;
+    border: none;
     background: transparent;
     color: var(--eqt-text-hint);
     cursor: pointer;
@@ -566,6 +580,10 @@ function onRightClick(event: MouseEvent, b: TagButton) {
     &:hover {
       background: var(--eqt-bg-hover);
       color: var(--eqt-text-secondary);
+    }
+
+    & + & {
+      border-left: var(--eqt-border-width) solid var(--eqt-border);
     }
   }
 

@@ -3,15 +3,14 @@ import { ref, inject, computed, watch } from 'vue'
 import { onClickOutside } from '@vueuse/core'
 import { useFloating, autoUpdate, flip, shift, offset } from '@floating-ui/vue'
 import { Settings } from '@lucide/vue'
-import type { Line, SeparatorLine, SeparatorStyle } from '@/types'
+import type { SeparatorLine, SeparatorStyle } from '@/types'
 import { POPUP_IGNORE_KEY, type PopupIgnoreRegister } from '@/composables/usePopupBehavior'
 import { t } from '@/composables/useI18n'
 
 const props = defineProps<{
-  line: Line
-  disabled?: boolean
+  line: SeparatorLine
 }>()
-const emit = defineEmits<{ 'update:line': [value: Line] }>()
+const emit = defineEmits<{ 'update:line': [value: SeparatorLine] }>()
 
 const open = ref(false)
 const triggerEl = ref<HTMLElement | null>(null)
@@ -32,35 +31,22 @@ watch(popupEl, (el) => {
   if (el && registerIgnore) unregister = registerIgnore(el)
 })
 
-const enabled = computed(() => props.line.kind === 'separator')
-const sepLine = computed<SeparatorLine | null>(() => props.line.kind === 'separator' ? props.line : null)
-
 // 顯示用：沒設過的欄位 fallback 到「視覺預設值」（跟 CSS 預設保持一致）
 // 這些 fallback 只給 UI 顯示用，不寫進資料。
-const lineStyleValue = computed<SeparatorStyle['line']>(() => sepLine.value?.style?.line ?? 'solid')
-const linePositionValue = computed<SeparatorStyle['linePosition']>(() => sepLine.value?.style?.linePosition ?? 'middle')
-const textAlignValue = computed<SeparatorStyle['textAlign']>(() => sepLine.value?.style?.textAlign ?? 'center')
-const textSizeValue = computed<number>(() => sepLine.value?.style?.textSize ?? 10)
-const lineThicknessValue = computed<number>(() => sepLine.value?.style?.lineThickness ?? 2)
-
-function toggleEnabled(next: boolean) {
-  if (next) {
-    // 不寫預設值——所有視覺由 CSS 給。使用者調整時才寫進 style。
-    emit('update:line', { kind: 'separator' })
-  } else {
-    emit('update:line', { kind: 'buttons', buttons: [] })
-  }
-}
+const lineStyleValue = computed<SeparatorStyle['line']>(() => props.line.style?.line ?? 'solid')
+const linePositionValue = computed<SeparatorStyle['linePosition']>(() => props.line.style?.linePosition ?? 'middle')
+const textAlignValue = computed<SeparatorStyle['textAlign']>(() => props.line.style?.textAlign ?? 'center')
+const textSizeValue = computed<number>(() => props.line.style?.textSize ?? 10)
+const lineThicknessValue = computed<number>(() => props.line.style?.lineThickness ?? 2)
 
 function updateStyle(patch: Partial<SeparatorStyle>) {
-  if (!sepLine.value) return
-  const merged: SeparatorStyle = { ...sepLine.value.style, ...patch }
+  const merged: SeparatorStyle = { ...props.line.style, ...patch }
   // 清掉 undefined key 以保持 storage 乾淨
   for (const k of Object.keys(merged) as (keyof SeparatorStyle)[]) {
     if (merged[k] === undefined) delete merged[k]
   }
   emit('update:line', {
-    ...sepLine.value,
+    ...props.line,
     style: Object.keys(merged).length ? merged : undefined,
   })
 }
@@ -78,59 +64,46 @@ function updateStyle(patch: Partial<SeparatorStyle>) {
   </button>
   <Teleport to="body">
     <div v-if="open" ref="popupEl" class="eqt-line-sep__popup" :style="floatingStyles">
-      <label class="eqt-line-sep__row" :class="{ 'eqt-line-sep__row--disabled': disabled }">
-        <input
-          type="checkbox"
-          :checked="enabled"
-          :disabled="disabled"
-          @change="toggleEnabled(($event.target as HTMLInputElement).checked)"
-        />
-        <span>{{ t('tagbar.separatorEnable') }}</span>
-      </label>
-      <p v-if="disabled" class="eqt-line-sep__hint">{{ t('tagbar.separatorEmptyOnly') }}</p>
-      <div class="eqt-line-sep__row eqt-line-sep__row--col" :class="{ 'eqt-line-sep__row--disabled': !enabled }">
+      <div class="eqt-line-sep__row eqt-line-sep__row--col">
         <span>{{ t('tagbar.separatorLinePosition') }}</span>
         <div class="eqt-line-sep__styles">
           <label v-for="opt in (['top', 'middle', 'bottom'] as const)" :key="opt" class="eqt-line-sep__style-opt">
             <input
               type="radio"
               :checked="linePositionValue === opt"
-              :disabled="!enabled"
               @change="updateStyle({ linePosition: opt })"
             />
             <span>{{ t(`tagbar.separatorLinePosition_${opt}`) }}</span>
           </label>
         </div>
       </div>
-      <div class="eqt-line-sep__row eqt-line-sep__row--col" :class="{ 'eqt-line-sep__row--disabled': !enabled }">
+      <div class="eqt-line-sep__row eqt-line-sep__row--col">
         <span>{{ t('tagbar.separatorStyle') }}</span>
         <div class="eqt-line-sep__styles">
           <label v-for="opt in (['solid', 'dashed', 'none'] as const)" :key="opt" class="eqt-line-sep__style-opt">
             <input
               type="radio"
               :checked="lineStyleValue === opt"
-              :disabled="!enabled"
               @change="updateStyle({ line: opt })"
             />
             <span>{{ t(`tagbar.separatorStyle_${opt}`) }}</span>
           </label>
         </div>
       </div>
-      <div class="eqt-line-sep__row eqt-line-sep__row--col" :class="{ 'eqt-line-sep__row--disabled': !enabled }">
+      <div class="eqt-line-sep__row eqt-line-sep__row--col">
         <span>{{ t('tagbar.separatorTextAlign') }}</span>
         <div class="eqt-line-sep__styles">
           <label v-for="opt in (['left', 'center', 'right'] as const)" :key="opt" class="eqt-line-sep__style-opt">
             <input
               type="radio"
               :checked="textAlignValue === opt"
-              :disabled="!enabled"
               @change="updateStyle({ textAlign: opt })"
             />
             <span>{{ t(`tagbar.separatorTextAlign_${opt}`) }}</span>
           </label>
         </div>
       </div>
-      <div class="eqt-line-sep__row eqt-line-sep__row--col" :class="{ 'eqt-line-sep__row--disabled': !enabled }">
+      <div class="eqt-line-sep__row eqt-line-sep__row--col">
         <div class="eqt-line-sep__slider-head">
           <span>{{ t('tagbar.separatorTextSize') }}</span>
           <span class="eqt-line-sep__slider-value">{{ textSizeValue }}px</span>
@@ -141,11 +114,10 @@ function updateStyle(patch: Partial<SeparatorStyle>) {
           max="20"
           step="1"
           :value="textSizeValue"
-          :disabled="!enabled"
           @input="updateStyle({ textSize: Number(($event.target as HTMLInputElement).value) })"
         />
       </div>
-      <div class="eqt-line-sep__row eqt-line-sep__row--col" :class="{ 'eqt-line-sep__row--disabled': !enabled }">
+      <div class="eqt-line-sep__row eqt-line-sep__row--col">
         <div class="eqt-line-sep__slider-head">
           <span>{{ t('tagbar.separatorLineThickness') }}</span>
           <span class="eqt-line-sep__slider-value">{{ lineThicknessValue }}px</span>
@@ -156,7 +128,7 @@ function updateStyle(patch: Partial<SeparatorStyle>) {
           max="6"
           step="1"
           :value="lineThicknessValue"
-          :disabled="!enabled || lineStyleValue === 'none'"
+          :disabled="lineStyleValue === 'none'"
           @input="updateStyle({ lineThickness: Number(($event.target as HTMLInputElement).value) })"
         />
       </div>
@@ -207,22 +179,12 @@ function updateStyle(patch: Partial<SeparatorStyle>) {
       align-items: stretch;
       gap: 4px;
     }
-
-    &--disabled {
-      opacity: 0.5;
-    }
   }
 
   &__styles {
     display: flex;
     gap: 12px;
     flex-wrap: wrap;
-  }
-
-  &__hint {
-    margin: 0;
-    color: var(--eqt-text-hint);
-    font-size: 11px;
   }
 
   &__style-opt {
