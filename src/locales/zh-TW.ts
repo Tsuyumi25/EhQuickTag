@@ -80,6 +80,8 @@ export default {
   'settings.tagStyle3dBorder': '下方陰影',
   'settings.tagStyleOffsetShadow': '右下陰影',
   'settings.tagStylePushable': '立體按壓',
+  'settings.useAccentOnInclude': '選中按鈕一律顯示綠色',
+  'settings.useAccentOnIncludeHint': '關閉時，有設定自訂顏色的按鈕在選中（include）狀態會用自訂色；開啟時一律覆蓋為綠色。',
   'settings.profilesTitle': '標籤組',
   'settings.activeBadge': '目前',
   'settings.moveToTrash': '移入垃圾桶',

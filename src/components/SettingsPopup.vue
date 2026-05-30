@@ -13,7 +13,7 @@ import {
   deleteProfile, restoreProfile, purgeProfile, purgeCorrupted, reorderProfiles, updateProfileLines,
   fontFamily, fontWeight, getDefaultLines, lines,
   dblClickLeft, dblClickRight, newTabActive, nsFormat, defaultExactMatch,
-  tagDbMirror, tagDbTtlDays, tagStylePreset, type DblClickAction,
+  tagDbMirror, tagDbTtlDays, tagStylePreset, useAccentOnInclude, type DblClickAction,
   isValidLine,
 } from '@/services/store'
 import { TAG_STYLE_PRESETS, currentTagStyleClass } from '@/composables/useTagStyle'
@@ -431,6 +431,18 @@ function onEditorExport() {
                 @click="tagStylePreset = preset.id"
               >{{ t(preset.labelKey) }}</button>
             </div>
+
+            <label class="eqt-settings__row">
+              <input
+                type="checkbox"
+                :checked="useAccentOnInclude"
+                @change="useAccentOnInclude = ($event.target as HTMLInputElement).checked"
+              />
+              <span class="eqt-settings__label">{{ t('settings.useAccentOnInclude') }}</span>
+            </label>
+            <p class="eqt-settings__hint">
+              {{ t('settings.useAccentOnIncludeHint') }}
+            </p>
 
             <h4 class="eqt-settings__subtitle">{{ t('settings.fontFamily') }}</h4>
             <div class="eqt-settings__font-row">

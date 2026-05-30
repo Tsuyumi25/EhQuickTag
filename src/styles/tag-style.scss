@@ -1,9 +1,12 @@
+// --include-base 預設 fallback 到 line-color（自定義色覆蓋 status 綠色，
+// 現有行為）。設了 useAccentOnInclude 的 modifier class 會把這個 var 強制
+// 設成 status 綠色，讓 line-color 對 include 狀態的影響「被關掉」。
 @mixin tag-state-modifiers {
   &.eqt-tag-bar__btn--include {
-    background: color-mix(in srgb, var(--line-color, var(--eqt-status-include)) 55%, transparent);
+    background: color-mix(in srgb, var(--include-base, var(--line-color, var(--eqt-status-include))) 55%, transparent);
 
     &:hover {
-      background: color-mix(in srgb, var(--line-color, var(--eqt-status-include)) 70%, transparent);
+      background: color-mix(in srgb, var(--include-base, var(--line-color, var(--eqt-status-include))) 70%, transparent);
     }
   }
 

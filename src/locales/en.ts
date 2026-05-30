@@ -80,6 +80,8 @@ export default {
   'settings.tagStyle3dBorder': 'Bottom shadow',
   'settings.tagStyleOffsetShadow': 'Bottom-right shadow',
   'settings.tagStylePushable': 'Pushable 3D',
+  'settings.useAccentOnInclude': 'Always use accent green for active buttons',
+  'settings.useAccentOnIncludeHint': 'When off, buttons with a custom color use their custom color in the include state. When on, they always switch to the accent green.',
   'settings.profilesTitle': 'Profiles',
   'settings.activeBadge': 'Active',
   'settings.moveToTrash': 'Move to trash',

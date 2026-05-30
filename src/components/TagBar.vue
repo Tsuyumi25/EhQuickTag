@@ -8,7 +8,7 @@ import LineColorSwatch from '@/components/LineColorSwatch.vue'
 import SeparatorSettingsPopup from '@/components/SeparatorSettingsPopup.vue'
 import { TagState, type Line, type Button, type TagButton } from '@/types'
 import { tokenize, getState as _getState, removeTag, addTag, getNextRightClickState } from '@/services/tagState'
-import { lines, dblClickLeft, dblClickRight, type DblClickAction } from '@/services/store'
+import { lines, dblClickLeft, dblClickRight, useAccentOnInclude, type DblClickAction } from '@/services/store'
 import { baseDragOptions } from '@/utils/drag'
 import { t } from '@/composables/useI18n'
 import { currentTagStyleClass } from '@/composables/useTagStyle'
@@ -240,7 +240,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
 </script>
 
 <template>
-  <div class="eqt-tag-bar" :class="currentTagStyleClass" :style="controlsWidth !== null ? { '--eqt-controls-w': controlsWidth + 'px' } : undefined" @dblclick="onBarDblClick" @contextmenu="onBarContextMenu">
+  <div class="eqt-tag-bar" :class="[currentTagStyleClass, { 'eqt-tag-bar--accent-on-include': useAccentOnInclude }]" :style="controlsWidth !== null ? { '--eqt-controls-w': controlsWidth + 'px' } : undefined" @dblclick="onBarDblClick" @contextmenu="onBarContextMenu">
     <div class="eqt-tag-bar__lines">
       <div class="eqt-tag-bar__profile-row">
         <span class="eqt-tag-bar__info"><Info :size="16" /><span class="eqt-tag-bar__info-text">{{ t('tagbar.infoTooltip', { left: t(ACTION_KEYS[dblClickLeft]), right: t(ACTION_KEYS[dblClickRight]) }) }}</span></span>
@@ -475,6 +475,13 @@ function onRightClick(event: MouseEvent, b: TagButton) {
 .eqt-tag-bar {
   position: relative;
   padding: 6px 0;
+
+  // 強制 include 走 status 綠色：把 --include-base 設成 status-include，
+  // tag-style.scss mixin 的 var(--include-base, var(--line-color, ...)) 就會
+  // resolve 到綠色，line-color 對 include 狀態的影響被「關掉」。
+  &--accent-on-include {
+    --include-base: var(--eqt-status-include);
+  }
 
   &::before {
     content: '';

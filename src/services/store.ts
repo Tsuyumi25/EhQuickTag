@@ -44,6 +44,8 @@ const INITIAL_SETTINGS = {
   tagDbMirror: 'jsdelivr' as TagDbMirror,
   tagDbTtlDays: 7,
   tagStylePreset: 'flat' as TagStylePresetId,
+  // on: include 狀態用 status 綠色（忽略自定義 line-color）；off: 沿用 line-color（預設沿用既有行為）
+  useAccentOnInclude: false,
 }
 
 type Settings = typeof INITIAL_SETTINGS
@@ -66,6 +68,7 @@ export const defaultExactMatch = refs.defaultExactMatch
 export const tagDbMirror       = refs.tagDbMirror
 export const tagDbTtlDays      = refs.tagDbTtlDays
 export const tagStylePreset    = refs.tagStylePreset
+export const useAccentOnInclude = refs.useAccentOnInclude
 
 function loadAllSettings(persisted: Partial<Settings>): void {
   for (const key of Object.keys(INITIAL_SETTINGS) as SettingKey[]) {

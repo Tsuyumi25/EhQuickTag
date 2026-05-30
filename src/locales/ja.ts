@@ -80,6 +80,8 @@ export default {
   'settings.tagStyle3dBorder': '下シャドウ',
   'settings.tagStyleOffsetShadow': '右下シャドウ',
   'settings.tagStylePushable': 'プッシュ 3D',
+  'settings.useAccentOnInclude': '選択中のボタンを常にアクセントグリーンで表示',
+  'settings.useAccentOnIncludeHint': 'オフのとき、カスタム色を設定したボタンは選択（include）状態でもカスタム色を使います。オンにすると常にアクセントグリーンに上書きされます。',
   'settings.profilesTitle': 'プロファイル',
   'settings.activeBadge': '使用中',
   'settings.moveToTrash': 'ゴミ箱に移動',
