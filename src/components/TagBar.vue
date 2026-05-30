@@ -3,6 +3,7 @@ import { ref, computed, nextTick } from 'vue'
 import { useResizeObserver } from '@vueuse/core'
 import Draggable from 'vuedraggable'
 import { ChevronLeft, ChevronRight, ExternalLink, GripVertical, Trash2, Pencil, Check, Settings, Plus, Info } from '@lucide/vue'
+import ContentEditable from 'vue-contenteditable'
 import LineColorSwatch from '@/components/LineColorSwatch.vue'
 import SeparatorSettingsPopup from '@/components/SeparatorSettingsPopup.vue'
 import { TagState, type QuickTag, type TagLine } from '@/types'
@@ -135,52 +136,6 @@ function finishRenameOrCreate() {
     emit('renameProfile', trimmed)
   }
   renamingProfile.value = false
-}
-
-// --- separator label inline edit (contenteditable) ---
-
-// ref callback：mount 時把 label 寫進 innerText。不用 v-once + interpolation
-// 是因為 Vue 的 `{{ '' }}` 會塞空 text node，讓 :empty 不匹配 → placeholder
-// 不出現。直接 set innerText 才能保證空 label 時 element 真的 empty。之後不
-// 再從 Vue sync DOM——contenteditable 自己管，input handler 同步回 model。
-function initSepLabel(el: unknown, line: TagLine) {
-  if (!el || !line.separator) return
-  const text = line.separator.label ?? ''
-  if ((el as HTMLElement).innerText !== text) (el as HTMLElement).innerText = text
-}
-
-function syncSepLabel(target: HTMLElement, line: TagLine) {
-  if (!line.separator) return
-  const text = target.innerText
-  // 全選刪光後瀏覽器塞 <br>，清空 innerHTML 才能讓 :empty::before placeholder 重現
-  if (!text || text === '\n') {
-    if (target.innerHTML !== '') target.innerHTML = ''
-    line.separator.label = undefined
-  } else {
-    line.separator.label = text
-  }
-}
-
-// IME-safe：用原生 InputEvent.isComposing 取代自維護 boolean
-// （Firefox bug 1305387：input 跟 compositionend 順序與 Chrome 相反）。
-//
-// ⚠️ 不要對這個 element 掛 @beforeinput listener。經驗：
-// Firefox + Linux Fcitx5 下，element 上**存在** beforeinput 監聽器這件事本身
-// 就會讓 Fcitx5 走 romaji → kana 轉換路徑，輸入「test」+ 空白會被轉成「テスト」
-// （即使用戶沒切到 JP IME）。Chrome 沒這問題。原因不明（可能 Fcitx5 偵測到
-// 頁面在攔 input 路徑就 fallback 到 composition path），但 attach 空 handler
-// 就會復發。如果未來需要攔 insertReplacementText（TSF reconversion）等場景，
-// 找其他方法（譬如在 onSepLabelInput 裡用 e.inputType 判斷）。
-function onSepLabelInput(e: Event, line: TagLine) {
-  if ((e as InputEvent).isComposing) return
-  syncSepLabel(e.target as HTMLElement, line)
-}
-
-// Chrome 上 compositionend 之後不會 fire input，所以這裡補一次 sync。
-// Firefox 會多 fire 一次 input(isComposing=false)，也會跑 syncSepLabel，
-// 但 set 同個值是 idempotent。
-function onSepLabelCompositionEnd(e: CompositionEvent, line: TagLine) {
-  syncSepLabel(e.target as HTMLElement, line)
 }
 
 // --- draggable change handlers ---
@@ -345,16 +300,17 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
                 fontSize: `${line.separator.textSize ?? 10}px`,
               }"
             >
-              <span
+              <ContentEditable
                 v-if="editing"
-                :ref="(el) => initSepLabel(el, line)"
-                contenteditable="plaintext-only"
+                tag="span"
+                :model-value="line.separator?.label ?? ''"
+                @update:model-value="(v: string) => { if (line.separator) line.separator.label = (v && v !== '\n') ? v : undefined }"
+                :contenteditable="'plaintext-only'"
                 class="eqt-tag-bar__separator-label eqt-tag-bar__separator-label--editing"
                 :data-placeholder="t('tagbar.separatorLabelPlaceholder')"
-                @input="onSepLabelInput($event, line)"
-                @compositionend="onSepLabelCompositionEnd($event, line)"
-                @keydown.enter.prevent
-              ></span>
+                spellcheck="false"
+                no-nl
+              />
               <span v-else-if="line.separator.label" class="eqt-tag-bar__separator-label">{{ line.separator.label }}</span>
             </div>
             <Draggable
@@ -702,7 +658,8 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
     outline: none;
     min-width: 3ch;
 
-    &:empty::before {
+    &:empty::before,
+    &:has(> br:only-child)::before {
       content: attr(data-placeholder);
       color: var(--eqt-text-hint);
       opacity: 0.5;

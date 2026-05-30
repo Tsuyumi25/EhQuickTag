@@ -23,6 +23,9 @@ importers:
       vue:
         specifier: ^3.5.34
         version: 3.5.34(typescript@6.0.3)
+      vue-contenteditable:
+        specifier: ^4.1.0
+        version: 4.1.0(vue@3.5.34(typescript@6.0.3))
       vuedraggable:
         specifier: ^4.1.0
         version: 4.1.0(vue@3.5.34(typescript@6.0.3))
@@ -1574,6 +1577,11 @@ packages:
   vscode-uri@3.1.0:
     resolution: {integrity: sha512-/BpdSx+yCQGnCvecbyXdxHDkuk55/G3xwnC0GqY4gmQ3j+A+g8kzzgB4Nk/SINjqn6+waqw3EgbVF2QKExkRxQ==}
 
+  vue-contenteditable@4.1.0:
+    resolution: {integrity: sha512-PCQD8JNYt6lbocYvquHB0p3SWd0QGtHNydfbO4Ma3wOMiUTwjJiCyBv3vJRf7WvTkuLObn66GqEYUurfBLfrRQ==}
+    peerDependencies:
+      vue: ^3.2.25
+
   vue-demi@0.14.10:
     resolution: {integrity: sha512-nMZBOwuzabUO0nLgIcc6rycZEebF6eeUfaiQx9+WSk8e29IbLvPU9feI6tqW4kTo3hvoYAJkMh8n8D0fuISphg==}
     engines: {node: '>=12'}
@@ -2990,6 +2998,10 @@ snapshots:
       - msw
 
   vscode-uri@3.1.0: {}
+
+  vue-contenteditable@4.1.0(vue@3.5.34(typescript@6.0.3)):
+    dependencies:
+      vue: 3.5.34(typescript@6.0.3)
 
   vue-demi@0.14.10(vue@3.5.34(typescript@6.0.3)):
     dependencies:

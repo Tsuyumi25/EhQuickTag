@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { reactive, ref, watch, onMounted, nextTick, computed } from 'vue'
 import { ExternalLink } from '@lucide/vue'
+import ContentEditable from 'vue-contenteditable'
 import LineColorSwatch from '@/components/LineColorSwatch.vue'
 import SearchTermEditor from '@/components/SearchTermEditor.vue'
 import { currentTagStyleClass } from '@/composables/useTagStyle'
-import { useContentEditableName } from '@/composables/useContentEditableName'
 import { usePopupBehavior } from '@/composables/usePopupBehavior'
 import { makeRow, type RowState } from '@/composables/useSearchTerm'
 import { type QuickTag, type TagMode, splitMultiTag } from '@/types'
@@ -29,7 +29,7 @@ const emit = defineEmits<{
 
 // --- name + color ---
 
-const { label, nameInputEl, onNameInput, onNameCompositionStart, onNameCompositionEnd } = useContentEditableName()
+const label = ref('')
 const color = ref<string | undefined>(undefined)
 const effectiveColor = computed(() => color.value ?? props.lineColor)
 
@@ -134,18 +134,17 @@ const syntaxHelpUrl = computed(() =>
       <div class="eqt-popup__field">
         <label class="eqt-popup__label">{{ t('tagConfig.displayName') }}</label>
         <div class="eqt-popup__field-row" :class="currentTagStyleClass">
-          <span
-            ref="nameInputEl"
+          <ContentEditable
+            tag="span"
+            :model-value="label"
+            @update:model-value="(v: string) => label = v === '\n' ? '' : v"
+            :contenteditable="'plaintext-only'"
             class="eqt-popup__name-input"
-            contenteditable="plaintext-only"
             spellcheck="false"
             :data-placeholder="t('tagConfig.displayNameHint')"
             :style="effectiveColor ? { '--line-color': effectiveColor } : undefined"
-            @input="onNameInput"
-            @keydown.enter.prevent
-            @compositionstart="onNameCompositionStart"
-            @compositionend="onNameCompositionEnd"
-          ></span>
+            no-nl
+          />
           <LineColorSwatch
             v-model="color"
             :title="t('common.itemColor')"
@@ -271,7 +270,9 @@ const syntaxHelpUrl = computed(() =>
     white-space: nowrap;
 
     // ::after for placeholder so pushable preset's ::before (pedestal) doesn't clash.
-    &:empty::after {
+    // :has(> br:only-child) covers contenteditable 全選刪光後的 <br> 幽靈情況。
+    &:empty::after,
+    &:has(> br:only-child)::after {
       content: attr(data-placeholder);
       color: var(--eqt-text-hint);
     }

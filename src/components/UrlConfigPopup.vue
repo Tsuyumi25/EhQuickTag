@@ -2,9 +2,9 @@
 import { ref, watch, computed, onScopeDispose } from 'vue'
 import { GM_xmlhttpRequest } from '$'
 import { hasGMXHR } from '@/services/gmStorage'
+import ContentEditable from 'vue-contenteditable'
 import LineColorSwatch from '@/components/LineColorSwatch.vue'
 import { currentTagStyleClass } from '@/composables/useTagStyle'
-import { useContentEditableName } from '@/composables/useContentEditableName'
 import { usePopupBehavior } from '@/composables/usePopupBehavior'
 import type { QuickTag } from '@/types'
 import { t } from '@/composables/useI18n'
@@ -21,7 +21,7 @@ const emit = defineEmits<{
   'close': []
 }>()
 
-const { label, nameInputEl, onNameInput, onNameCompositionStart, onNameCompositionEnd } = useContentEditableName()
+const label = ref('')
 const color = ref<string | undefined>(undefined)
 const effectiveColor = computed(() => color.value ?? props.lineColor)
 
@@ -102,18 +102,17 @@ function onSave() {
       <div class="eqt-popup__field">
         <label class="eqt-popup__label">{{ t('urlConfig.displayName') }}</label>
         <div class="eqt-popup__field-row" :class="currentTagStyleClass">
-          <span
-            ref="nameInputEl"
+          <ContentEditable
+            tag="span"
+            :model-value="label"
+            @update:model-value="(v: string) => label = v === '\n' ? '' : v"
+            :contenteditable="'plaintext-only'"
             class="eqt-popup__name-input"
-            contenteditable="plaintext-only"
             spellcheck="false"
             :data-placeholder="t('urlConfig.displayNameHint')"
             :style="effectiveColor ? { '--line-color': effectiveColor } : undefined"
-            @input="onNameInput"
-            @keydown.enter.prevent
-            @compositionstart="onNameCompositionStart"
-            @compositionend="onNameCompositionEnd"
-          ></span>
+            no-nl
+          />
           <LineColorSwatch
             v-model="color"
             :title="t('common.itemColor')"
