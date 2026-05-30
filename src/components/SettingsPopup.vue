@@ -65,6 +65,8 @@ const localeOptions: { value: Locale; label: string }[] = [
 
 const previewLines = computed(() => getDefaultLines())
 
+const appVersion = __APP_VERSION__
+
 function tagCount(lines: Line[]): number {
   return lines.reduce((sum, l) => sum + (l.kind === 'buttons' ? l.buttons.length : 0), 0)
 }
@@ -476,7 +478,7 @@ function onEditorExport() {
           <div v-show="activeTab === 'about'" class="eqt-settings__about">
             <div class="eqt-about__hero">
               <div class="eqt-about__title">EH Quick Tag</div>
-              <div class="eqt-about__version">v0.1.0</div>
+              <div class="eqt-about__version">v{{ appVersion }}</div>
               <div class="eqt-about__desc">{{ t('about.desc') }}</div>
               <div class="eqt-about__actions">
                 <a class="eqt-about__action-btn" href="https://github.com/Tsuyumi25/EhQuickTag" target="_blank" rel="noopener"><Code :size="14" /> GitHub</a>

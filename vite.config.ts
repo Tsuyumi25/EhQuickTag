@@ -3,12 +3,17 @@ import { fileURLToPath, URL } from 'url'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import monkey from 'vite-plugin-monkey'
+import pkg from './package.json'
 
 export default defineConfig(({ command }) => ({
   define: {
     // dev mode 暴露 Vue DevTools hook 讓 browser extension 能 attach；
     // production build 關掉避免 production user 多載幾 KB hook code。
     __VUE_PROD_DEVTOOLS__: command === 'serve' ? 'true' : 'false',
+    // 編譯時把 package.json version 注入 client code；release 改版號後 about 區
+    // 自動同步。userscript header 的 @version 由 vite-plugin-monkey 自己讀 pkg，
+    // 這邊只負責 UI 顯示。
+    __APP_VERSION__: JSON.stringify(pkg.version),
   },
   plugins: [
     vue({
