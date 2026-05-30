@@ -38,6 +38,7 @@ const linePositionValue = computed<SeparatorStyle['linePosition']>(() => props.l
 const textAlignValue = computed<SeparatorStyle['textAlign']>(() => props.line.style?.textAlign ?? 'center')
 const textSizeValue = computed<number>(() => props.line.style?.textSize ?? 10)
 const lineThicknessValue = computed<number>(() => props.line.style?.lineThickness ?? 2)
+const lineLengthValue = computed<number>(() => props.line.style?.lineLength ?? 100)
 
 function updateStyle(patch: Partial<SeparatorStyle>) {
   const merged: SeparatorStyle = { ...props.line.style, ...patch }
@@ -130,6 +131,21 @@ function updateStyle(patch: Partial<SeparatorStyle>) {
           :value="lineThicknessValue"
           :disabled="lineStyleValue === 'none'"
           @input="updateStyle({ lineThickness: Number(($event.target as HTMLInputElement).value) })"
+        />
+      </div>
+      <div class="eqt-line-sep__row eqt-line-sep__row--col">
+        <div class="eqt-line-sep__slider-head">
+          <span>{{ t('tagbar.separatorLineLength') }}</span>
+          <span class="eqt-line-sep__slider-value">{{ lineLengthValue }}%</span>
+        </div>
+        <input
+          type="range"
+          min="1"
+          max="100"
+          step="1"
+          :value="lineLengthValue"
+          :disabled="lineStyleValue === 'none'"
+          @input="updateStyle({ lineLength: Number(($event.target as HTMLInputElement).value) === 100 ? undefined : Number(($event.target as HTMLInputElement).value) })"
         />
       </div>
     </div>

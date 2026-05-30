@@ -51,6 +51,7 @@ export interface SeparatorStyle {
   textAlign?: 'left' | 'center' | 'right'
   textSize?: number
   lineThickness?: number
+  lineLength?: number  // 1-100 (%)，預設 100；依 textAlign 從對應端內縮
 }
 
 export type Line = ButtonLine | SeparatorLine

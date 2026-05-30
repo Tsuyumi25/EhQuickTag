@@ -25,6 +25,7 @@ export default {
   'tagbar.separatorLinePosition_bottom': 'Bottom',
   'tagbar.separatorTextSize': 'Text size',
   'tagbar.separatorLineThickness': 'Line thickness',
+  'tagbar.separatorLineLength': 'Line length',
   'tagbar.separatorTextAlign': 'Text align',
   'tagbar.separatorTextAlign_left': 'Left',
   'tagbar.separatorTextAlign_center': 'Center',

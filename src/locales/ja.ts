@@ -25,6 +25,7 @@ export default {
   'tagbar.separatorLinePosition_bottom': '下',
   'tagbar.separatorTextSize': '文字サイズ',
   'tagbar.separatorLineThickness': '線の太さ',
+  'tagbar.separatorLineLength': '線の長さ',
   'tagbar.separatorTextAlign': '文字揃え',
   'tagbar.separatorTextAlign_left': '左揃え',
   'tagbar.separatorTextAlign_center': '中央',

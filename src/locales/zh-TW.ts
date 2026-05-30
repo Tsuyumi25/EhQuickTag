@@ -25,6 +25,7 @@ export default {
   'tagbar.separatorLinePosition_bottom': '下方',
   'tagbar.separatorTextSize': '文字大小',
   'tagbar.separatorLineThickness': '線條粗細',
+  'tagbar.separatorLineLength': '線長',
   'tagbar.separatorTextAlign': '文字對齊',
   'tagbar.separatorTextAlign_left': '靠左',
   'tagbar.separatorTextAlign_center': '置中',

@@ -306,6 +306,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
               :style="{
                 ...(line.color ? { '--line-color': line.color } : {}),
                 ...(line.style?.lineThickness ? { '--separator-line-thickness': `${line.style.lineThickness}px` } : {}),
+                ...(line.style?.lineLength !== undefined ? { '--separator-line-length': `${line.style.lineLength}%` } : {}),
                 ...(line.style?.textSize ? { fontSize: `${line.style.textSize}px` } : {}),
               }"
             >
@@ -636,6 +637,8 @@ function onRightClick(event: MouseEvent, b: TagButton) {
     color: var(--line-color, var(--eqt-text-hint));
     font-size: 10px;
     line-height: 1.4;
+    // 線長 1-100%，預設 100%；由 SeparatorStyle.lineLength inline :style 設定
+    --separator-line-length: 100%;
 
     &::before,
     &::after {
@@ -645,8 +648,9 @@ function onRightClick(event: MouseEvent, b: TagButton) {
   }
 
   // middle：row flex
-  //   無 label：::after 隱藏，::before 單條取整個寬度（避免兩段 subpixel 縫隙）
+  //   無 label：::after 隱藏，::before 單條取 lineLength，align 決定 justify
   //   有 label：::before / ::after 兩段 flex:1 把 label 推中間，align 控制比例
+  //   lineLength: middle 用 max-width 限制 ::before / ::after 寬度
   &__line--separator-pos-middle {
     display: flex;
     flex-direction: row;
@@ -657,25 +661,36 @@ function onRightClick(event: MouseEvent, b: TagButton) {
       flex: 1;
     }
 
-    &:not(:has(.eqt-tag-bar__separator-label))::after {
-      display: none;
+    &:not(:has(.eqt-tag-bar__separator-label)) {
+      &::after { display: none; }
+      &::before { max-width: var(--separator-line-length); }
+      &.eqt-tag-bar__line--separator-align-left { justify-content: flex-start; }
+      &.eqt-tag-bar__line--separator-align-center { justify-content: center; }
+      &.eqt-tag-bar__line--separator-align-right { justify-content: flex-end; }
     }
 
     &:has(.eqt-tag-bar__separator-label) {
       gap: 8px;
 
-      &.eqt-tag-bar__line--separator-align-left::before {
-        flex: 0;
-        border-top: 0;
+      // default center: 兩線各 max lineLength/2
+      &::before,
+      &::after {
+        max-width: calc(var(--separator-line-length) / 2);
       }
-      &.eqt-tag-bar__line--separator-align-right::after {
-        flex: 0;
-        border-top: 0;
+
+      &.eqt-tag-bar__line--separator-align-left {
+        &::before { flex: 0; border-top: 0; }
+        &::after { max-width: var(--separator-line-length); }
+      }
+      &.eqt-tag-bar__line--separator-align-right {
+        &::after { flex: 0; border-top: 0; }
+        &::before { max-width: var(--separator-line-length); }
       }
     }
   }
 
   // top：::before absolute 釘容器頂，label align flex-start
+  //   lineLength 透過 left/right inset 控制線寬範圍
   &__line--separator-pos-top {
     display: flex;
     align-items: flex-start;
@@ -685,13 +700,26 @@ function onRightClick(event: MouseEvent, b: TagButton) {
     &::before {
       position: absolute;
       top: 0;
-      left: 0;
-      right: 0;
+      // default align-center: 兩端對稱 inset
+      left: calc((100% - var(--separator-line-length)) / 2);
+      right: calc((100% - var(--separator-line-length)) / 2);
     }
     &::after { display: none; }
 
-    &.eqt-tag-bar__line--separator-align-left { justify-content: flex-start; }
-    &.eqt-tag-bar__line--separator-align-right { justify-content: flex-end; }
+    &.eqt-tag-bar__line--separator-align-left {
+      justify-content: flex-start;
+      &::before {
+        left: 0;
+        right: calc(100% - var(--separator-line-length));
+      }
+    }
+    &.eqt-tag-bar__line--separator-align-right {
+      justify-content: flex-end;
+      &::before {
+        left: calc(100% - var(--separator-line-length));
+        right: 0;
+      }
+    }
   }
 
   // bottom：::after absolute 釘容器底，label align flex-end
@@ -705,12 +733,24 @@ function onRightClick(event: MouseEvent, b: TagButton) {
     &::after {
       position: absolute;
       bottom: 0;
-      left: 0;
-      right: 0;
+      left: calc((100% - var(--separator-line-length)) / 2);
+      right: calc((100% - var(--separator-line-length)) / 2);
     }
 
-    &.eqt-tag-bar__line--separator-align-left { justify-content: flex-start; }
-    &.eqt-tag-bar__line--separator-align-right { justify-content: flex-end; }
+    &.eqt-tag-bar__line--separator-align-left {
+      justify-content: flex-start;
+      &::after {
+        left: 0;
+        right: calc(100% - var(--separator-line-length));
+      }
+    }
+    &.eqt-tag-bar__line--separator-align-right {
+      justify-content: flex-end;
+      &::after {
+        left: calc(100% - var(--separator-line-length));
+        right: 0;
+      }
+    }
   }
 
   // 線型修飾
