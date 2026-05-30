@@ -673,7 +673,10 @@ function onRightClick(event: MouseEvent, b: TagButton) {
   &__line--separator {
     position: relative;
     min-height: var(--eqt-row-h);
-    color: var(--line-color, var(--eqt-text-hint));
+    // 文字色 / 線色 fallback 都用 --eqt-border：EX 的 --eqt-divider 很暗
+    // (#4f535b 接近 bg)，分隔線幾乎看不見；統一用 --eqt-border (#8d8d8d)
+    // 讓無 line-color 時也有最低能見度，跟其他 UI border 視覺一致。
+    color: var(--line-color, var(--eqt-border));
     font-size: 10px;
     line-height: 1.4;
     // 線長 1-100%，預設 100%；由 SeparatorStyle.lineLength inline :style 設定
@@ -682,7 +685,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
     &::before,
     &::after {
       content: '';
-      border-top: var(--separator-line-thickness, 2px) solid var(--line-color, var(--eqt-divider));
+      border-top: var(--separator-line-thickness, 2px) solid var(--line-color, var(--eqt-border));
     }
   }
 
