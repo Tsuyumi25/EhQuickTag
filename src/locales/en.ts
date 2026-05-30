@@ -176,4 +176,5 @@ export default {
   'default.tankoubon': 'Tankoubon',
   'default.anthology': 'Anthology',
   'default.profileName': 'Default',
+  'default.general': 'General',
 } as Record<string, string>

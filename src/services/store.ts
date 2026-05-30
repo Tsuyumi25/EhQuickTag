@@ -87,39 +87,54 @@ type DefaultButtonDef =
   | { kind: 'tag'; tags: string[]; labelKey: string; disabledModes?: readonly TagMode[] }
   | { kind: 'url'; url: string; labelKey: string }
 
-const DEFAULT_BUTTON_DEFS: DefaultButtonDef[][] = [
-  [
+type DefaultLineDef =
+  | { kind: 'separator'; labelKey?: string; style?: SeparatorLine['style'] }
+  | { kind: 'buttons'; buttons: DefaultButtonDef[] }
+
+const DEFAULT_LINE_DEFS: DefaultLineDef[] = [
+  { kind: 'separator', labelKey: 'default.general', style: { textAlign: 'left' } },
+  { kind: 'buttons', buttons: [
     { kind: 'tag', tags: ['language:chinese$'], labelKey: 'default.chinese' },
     { kind: 'tag', tags: ['language:english$'], labelKey: 'default.english' },
     { kind: 'tag', tags: ['language:korean$'], labelKey: 'default.korean' },
     { kind: 'tag', tags: ['-language:english$', '-language:chinese$', '-language:korean$'], labelKey: 'default.japanese', disabledModes: ['or', 'exclude'] },
-  ],
-  [
+  ] },
+  { kind: 'buttons', buttons: [
     { kind: 'tag', tags: ['other:"full color$"'], labelKey: 'default.fullColor' },
     { kind: 'tag', tags: ['other:uncensored$'], labelKey: 'default.uncensored' },
     { kind: 'tag', tags: ['language:translated$'], labelKey: 'default.translated' },
     { kind: 'tag', tags: ['language:speechless$'], labelKey: 'default.speechless' },
     { kind: 'tag', tags: ['-other:"ai generated$"'], labelKey: 'default.excludeAI', disabledModes: ['or', 'exclude'] },
     { kind: 'tag', tags: ['-other:"rough translation$"'], labelKey: 'default.excludeRoughTL', disabledModes: ['or', 'exclude'] },
-  ],
-  [
+  ] },
+  { kind: 'buttons', buttons: [
     { kind: 'url', url: '?f_cats=0&f_search=other%3A%22how+to%24%22', labelKey: 'default.howto' },
     { kind: 'url', url: '?f_cats=0&f_search=o%3Aartbook%24', labelKey: 'default.artbook' },
     { kind: 'url', url: '?f_cats=991', labelKey: 'default.imageset' },
     { kind: 'url', url: '?f_cats=1019&f_search=o%3Atankoubon%24', labelKey: 'default.tankoubon' },
     { kind: 'url', url: '?f_cats=1019&f_search=o%3Aanthology%24', labelKey: 'default.anthology' },
-  ],
-  [],
+  ] },
+  { kind: 'separator', style: { textAlign: 'left' } },
+  { kind: 'buttons', buttons: [] },
 ]
 
 export function getDefaultTagLines(): Line[] {
-  return DEFAULT_BUTTON_DEFS.map<ButtonLine>(line => ({
-    kind: 'buttons',
-    buttons: line.map<Button>(def => def.kind === 'tag'
-      ? { kind: 'tag', tags: def.tags, label: t(def.labelKey), ...(def.disabledModes ? { disabledModes: def.disabledModes } : {}) }
-      : { kind: 'url', url: def.url, label: t(def.labelKey) },
-    ),
-  }))
+  return DEFAULT_LINE_DEFS.map<Line>(def => {
+    if (def.kind === 'separator') {
+      return {
+        kind: 'separator',
+        ...(def.labelKey ? { label: t(def.labelKey) } : {}),
+        ...(def.style ? { style: def.style } : {}),
+      }
+    }
+    return {
+      kind: 'buttons',
+      buttons: def.buttons.map<Button>(b => b.kind === 'tag'
+        ? { kind: 'tag', tags: b.tags, label: t(b.labelKey), ...(b.disabledModes ? { disabledModes: b.disabledModes } : {}) }
+        : { kind: 'url', url: b.url, label: t(b.labelKey) },
+      ),
+    }
+  })
 }
 
 // --- legacy migration ---

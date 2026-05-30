@@ -176,4 +176,5 @@ export default {
   'default.tankoubon': '単行本',
   'default.anthology': 'アンソロジー',
   'default.profileName': 'デフォルト',
+  'default.general': '一般',
 } as Record<string, string>
