@@ -43,7 +43,7 @@
   .eqt-popup__name-input {
     border-color: var(--line-color, var(--eqt-border));
     box-shadow: 0 2px 0 0 var(--line-color, var(--eqt-border));
-    background: color-mix(in srgb, var(--line-color, transparent) 15%, transparent);
+    background: color-mix(in srgb, var(--line-color, var(--eqt-bg-btn)) 15%, var(--eqt-bg-btn));
     color: var(--eqt-text-secondary);
     transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s ease, box-shadow 0.1s ease;
   }
@@ -163,7 +163,7 @@
   .eqt-settings__preview-tag,
   .eqt-popup__name-input {
     border-color: var(--line-color, var(--eqt-border));
-    background: color-mix(in srgb, var(--line-color, transparent) 15%, transparent);
+    background: color-mix(in srgb, var(--line-color, var(--eqt-bg-btn)) 15%, var(--eqt-bg-btn));
     color: var(--eqt-text-secondary);
     border-radius: 5px;
     box-shadow: 1.5px 1.5px 0 0 var(--line-color, var(--eqt-border));
