@@ -409,17 +409,18 @@ function onRightClick(event: MouseEvent, b: TagButton) {
           ><Plus :size="12" /> {{ t('tagbar.addSeparatorLine') }}</button>
         </div>
         <div class="eqt-tag-bar__controls">
-          <button
-            class="eqt-tag-bar__ctrl"
-            type="button"
-            @click="emit('add')"
-          ><Plus :size="12" /> {{ t('tagbar.addTag') }}</button>
-
-          <button
-            class="eqt-tag-bar__ctrl"
-            type="button"
-            @click="emit('addUrl')"
-          ><ExternalLink :size="12" /> {{ t('tagbar.addUrl') }}</button>
+          <div class="eqt-tag-bar__ctrl-split">
+            <button
+              class="eqt-tag-bar__ctrl-split-btn"
+              type="button"
+              @click="emit('add')"
+            ><Plus :size="12" /> {{ t('tagbar.addTag') }}</button>
+            <button
+              class="eqt-tag-bar__ctrl-split-btn"
+              type="button"
+              @click="emit('addUrl')"
+            ><ExternalLink :size="12" /> {{ t('tagbar.addUrl') }}</button>
+          </div>
 
           <button
             class="eqt-tag-bar__ctrl eqt-tag-bar__ctrl--toggle"
@@ -439,6 +440,38 @@ function onRightClick(event: MouseEvent, b: TagButton) {
 </template>
 
 <style lang="scss">
+// 兩顆 button 共用外框 + 中間 divider 的 split 群組樣式。
+// 給編輯態的「+ 行 / + 分隔線」和 ctrl 區的「+ 標籤 / + URL」共用視覺。
+@mixin button-split-group {
+  display: flex;
+  border: var(--eqt-border-width) solid var(--eqt-border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+@mixin button-split-item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: none;
+  background: transparent;
+  color: var(--eqt-text-hint);
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1.4;
+
+  &:hover {
+    background: var(--eqt-bg-hover);
+    color: var(--eqt-text-secondary);
+  }
+
+  & + & {
+    border-left: var(--eqt-border-width) solid var(--eqt-border);
+  }
+}
+
 .eqt-tag-bar {
   position: relative;
   padding: 6px 0;
@@ -565,37 +598,26 @@ function onRightClick(event: MouseEvent, b: TagButton) {
     gap: 4px;
   }
 
-  // split layout: 左半「+ 行」右半「+ 分隔線」對稱，中間垂直 divider
+  // 編輯態下方的「+ 行 / + 分隔線」split。flex: 1 撐滿剩餘空間
   &__line-add {
     flex: 1;
-    display: flex;
-    border: var(--eqt-border-width) solid var(--eqt-border);
-    border-radius: 3px;
-    overflow: hidden;
+    @include button-split-group;
   }
-
   &__line-add-btn {
     flex: 1;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    padding: 2px 8px;
-    border: none;
-    background: transparent;
-    color: var(--eqt-text-hint);
-    cursor: pointer;
-    font-size: 12px;
-    line-height: 1.4;
+    @include button-split-item;
+  }
 
-    &:hover {
-      background: var(--eqt-bg-hover);
-      color: var(--eqt-text-secondary);
-    }
-
-    & + & {
-      border-left: var(--eqt-border-width) solid var(--eqt-border);
-    }
+  // 右下 ctrl 區的「+ 標籤 / + URL」split；hug content 不撐。
+  // 色彩 override mixin 預設的「外框 + hint 文字」，改成跟旁邊獨立 ctrl
+  // 一致的「bg-btn 填充 + secondary 文字」，視覺權重才不會掉一階。
+  &__ctrl-split {
+    @include button-split-group;
+    background: var(--eqt-bg-btn);
+  }
+  &__ctrl-split-btn {
+    @include button-split-item;
+    color: var(--eqt-text-secondary);
   }
 
   &__line-delete {
