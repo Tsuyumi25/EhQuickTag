@@ -5,7 +5,7 @@ import { usePopupBehavior } from '@/composables/usePopupBehavior'
 import { Trash2, Copy, Download, Check, RotateCcw, CircleAlert, ExternalLink, Code } from '@lucide/vue'
 import Draggable from 'vuedraggable'
 import { baseDragOptions } from '@/utils/drag'
-import type { TagLine } from '@/types'
+import type { Line } from '@/types'
 import { t, locale, setLocale, type Locale } from '@/composables/useI18n'
 import { DEFAULT_NS_ORDER, refreshTagDb, TAG_DB_MIRRORS, type TagDbMirror } from '@/services/tagDb'
 import {
@@ -14,7 +14,7 @@ import {
   fontFamily, fontWeight, getDefaultTagLines, tagLines,
   dblClickLeft, dblClickRight, newTabActive, nsFormat, defaultExactMatch,
   tagDbMirror, tagDbTtlDays, tagStylePreset, type DblClickAction,
-  isValidTagLine,
+  isValidLine,
 } from '@/services/store'
 import { TAG_STYLE_PRESETS, currentTagStyleClass } from '@/composables/useTagStyle'
 
@@ -65,8 +65,8 @@ const localeOptions: { value: Locale; label: string }[] = [
 
 const previewTagLines = computed(() => getDefaultTagLines())
 
-function tagCount(lines: TagLine[]): number {
-  return lines.reduce((sum, l) => sum + l.tags.length, 0)
+function tagCount(lines: Line[]): number {
+  return lines.reduce((sum, l) => sum + (l.kind === 'buttons' ? l.buttons.length : 0), 0)
 }
 
 const tagCounts = computed(() => profiles.map((p, i) =>
@@ -154,10 +154,10 @@ const editorCopied = ref(false)
 const { copy: clipboardCopy } = useClipboard({ legacy: true })
 const { start: startCopiedTimer } = useTimeoutFn(() => { editorCopied.value = false }, 1500, { immediate: false })
 
-const editorPreview = computed<TagLine[] | null>(() => {
+const editorPreview = computed<Line[] | null>(() => {
   try {
     const parsed: unknown = JSON.parse(editorText.value)
-    if (!Array.isArray(parsed) || !parsed.every(isValidTagLine)) return null
+    if (!Array.isArray(parsed) || !parsed.every(isValidLine)) return null
     return parsed
   } catch { return null }
 })
@@ -207,7 +207,7 @@ function onEditorSave() {
   if (editingDeleted.value) return
   try {
     const parsed: unknown = JSON.parse(editorText.value)
-    if (!Array.isArray(parsed) || !parsed.every(isValidTagLine)) {
+    if (!Array.isArray(parsed) || !parsed.every(isValidLine)) {
       editorError.value = t('settings.editorInvalidShape')
       return
     }
@@ -430,13 +430,13 @@ function onEditorExport() {
             <h4 class="eqt-settings__subtitle">{{ t('settings.preview') }}</h4>
             <div class="eqt-settings__font-preview" :class="currentTagStyleClass" :style="{ fontFamily: fontFamily || 'inherit', fontWeight: fontWeight || 'inherit' }">
               <template v-for="(line, li) in previewTagLines" :key="li">
-                <div v-if="line.tags.length" class="eqt-settings__preview-line">
+                <div v-if="line.kind === 'buttons' && line.buttons.length" class="eqt-settings__preview-line">
                   <span
-                    v-for="(qt, ti) in line.tags"
+                    v-for="(b, ti) in line.buttons"
                     :key="ti"
                     class="eqt-settings__preview-tag"
-                    :class="{ 'eqt-settings__preview-tag--url': !!qt.url }"
-                  >{{ qt.label || qt.tag }}</span>
+                    :class="{ 'eqt-settings__preview-tag--url': b.kind === 'url' }"
+                  >{{ b.label || (b.kind === 'tag' ? b.tags.join(', ') : b.url) }}</span>
                 </div>
               </template>
             </div>
@@ -517,13 +517,13 @@ function onEditorExport() {
 
           <div v-if="editorPreview" class="eqt-settings__font-preview eqt-json-editor__preview" :class="currentTagStyleClass">
             <template v-for="(line, li) in editorPreview" :key="li">
-              <div v-if="line.tags?.length" class="eqt-settings__preview-line">
+              <div v-if="line.kind === 'buttons' && line.buttons.length" class="eqt-settings__preview-line">
                 <span
-                  v-for="(qt, ti) in line.tags"
+                  v-for="(b, ti) in line.buttons"
                   :key="ti"
                   class="eqt-settings__preview-tag"
-                  :class="{ 'eqt-settings__preview-tag--url': !!qt.url }"
-                >{{ qt.label || qt.tag || t('settings.emptyTag') }}</span>
+                  :class="{ 'eqt-settings__preview-tag--url': b.kind === 'url' }"
+                >{{ b.label || (b.kind === 'tag' ? b.tags.join(', ') : b.url) || t('settings.emptyTag') }}</span>
               </div>
             </template>
           </div>

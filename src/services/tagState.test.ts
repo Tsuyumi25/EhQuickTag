@@ -1,17 +1,33 @@
 import { describe, it, expect } from 'vitest'
-import { TagState } from '@/types'
+import { TagState, type TagMode } from '@/types'
 import {
   tokenize,
   normalizeNs,
   applyState,
   allForms,
   detectState,
-  getState,
-  removeTag,
-  addTag,
-  getEffectiveModifiers,
-  getNextRightClickState,
+  getState as _getStateArr,
+  removeTag as _removeTagArr,
+  addTag as _addTagArr,
+  getEffectiveModifiers as _getEffectiveModifiersArr,
+  getNextRightClickState as _getNextRightClickStateArr,
 } from './tagState'
+
+// Legacy comma-separated tag string adapter — these tests were written when
+// the public API took a single `tag: string` (with `splitMultiTag` inside).
+// 後來 API 簽名改為 `tags: string[]`，邏輯本身沒變。為了不重寫整個檔案，
+// 在這裡留 shim：把字串 split 後餵給新 signature。
+function splitMultiTag(tag: string): string[] {
+  return tag.split(',').map(s => s.trim()).filter(Boolean)
+}
+type LegacyQt = { tag: string; disabledModes?: readonly TagMode[] }
+
+const getState = (tag: string, tokens: Set<string>) => _getStateArr(splitMultiTag(tag), tokens)
+const removeTag = (text: string, tag: string) => _removeTagArr(text, splitMultiTag(tag))
+const addTag = (text: string, tag: string, state: TagState) => _addTagArr(text, splitMultiTag(tag), state)
+const getEffectiveModifiers = (qt: LegacyQt) => _getEffectiveModifiersArr(splitMultiTag(qt.tag), qt.disabledModes)
+const getNextRightClickState = (qt: LegacyQt, state: TagState) =>
+  _getNextRightClickStateArr(splitMultiTag(qt.tag), qt.disabledModes, state)
 
 // ============================================================
 // tokenize

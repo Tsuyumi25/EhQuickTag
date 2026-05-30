@@ -1,4 +1,4 @@
-import { TagState, type QuickTag, splitMultiTag } from '@/types'
+import { TagState, type TagMode } from '@/types'
 import { parseTerm, serializeTerm, TERM_RE } from './searchSyntax'
 
 export function tokenize(text: string): string[] {
@@ -66,8 +66,8 @@ export function detectState(part: string, tokens: Set<string>): TagState | null 
   return null
 }
 
-export function getState(tag: string, tokens: Set<string>): TagState {
-  const [first, ...rest] = splitMultiTag(tag)
+export function getState(tags: string[], tokens: Set<string>): TagState {
+  const [first, ...rest] = tags
   if (!first) return TagState.Off
 
   const state = detectState(first, tokens)
@@ -76,15 +76,15 @@ export function getState(tag: string, tokens: Set<string>): TagState {
   return TagState.Off
 }
 
-export function removeTag(text: string, tag: string): string {
+export function removeTag(text: string, tags: string[]): string {
   const tokens = tokenize(text)
-  const forms = new Set(splitMultiTag(tag).flatMap(allForms))
+  const forms = new Set(tags.flatMap(allForms))
   return tokens.filter(t => !forms.has(normalizeNs(t))).join(' ')
 }
 
-export function addTag(text: string, tag: string, state: TagState): string {
+export function addTag(text: string, tags: string[], state: TagState): string {
   const tokens = tokenize(text)
-  for (const p of splitMultiTag(tag)) {
+  for (const p of tags) {
     tokens.push(applyState(p, state))
   }
   return tokens.join(' ')
@@ -92,16 +92,16 @@ export function addTag(text: string, tag: string, state: TagState): string {
 
 const MODE_TO_STATE: Record<string, TagState> = { or: TagState.Or, exclude: TagState.Exclude }
 
-export function getEffectiveModifiers(qt: QuickTag): TagState[] {
-  const disabled = new Set((qt.disabledModes ?? []).map(m => MODE_TO_STATE[m]))
-  const hasPrefix = splitMultiTag(qt.tag).some(p => p.startsWith('-') || p.startsWith('~'))
+export function getEffectiveModifiers(tags: string[], disabledModes?: readonly TagMode[]): TagState[] {
+  const disabled = new Set((disabledModes ?? []).map(m => MODE_TO_STATE[m]))
+  const hasPrefix = tags.some(p => p.startsWith('-') || p.startsWith('~'))
   return [TagState.Or, TagState.Exclude]
     .filter(s => !disabled.has(s))
     .filter(s => !(hasPrefix && s === TagState.Or))
 }
 
-export function getNextRightClickState(qt: QuickTag, currentState: TagState): TagState | null {
-  const modifiers = getEffectiveModifiers(qt)
+export function getNextRightClickState(tags: string[], disabledModes: readonly TagMode[] | undefined, currentState: TagState): TagState | null {
+  const modifiers = getEffectiveModifiers(tags, disabledModes)
   if (!modifiers.length) return null
 
   if (currentState === TagState.Off || currentState === TagState.Include) {

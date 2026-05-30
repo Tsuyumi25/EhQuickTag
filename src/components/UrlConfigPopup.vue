@@ -6,17 +6,17 @@ import ContentEditable from 'vue-contenteditable'
 import LineColorSwatch from '@/components/LineColorSwatch.vue'
 import { currentTagStyleClass } from '@/composables/useTagStyle'
 import { usePopupBehavior } from '@/composables/usePopupBehavior'
-import type { QuickTag } from '@/types'
+import type { UrlButton } from '@/types'
 import { t } from '@/composables/useI18n'
 
 const props = defineProps<{
-  tag: QuickTag
+  tag: UrlButton
   lineColor?: string
   isAdd?: boolean
 }>()
 
 const emit = defineEmits<{
-  'save': [value: QuickTag]
+  'save': [value: UrlButton]
   'delete': []
   'close': []
 }>()
@@ -52,6 +52,8 @@ watch(() => props.tag, (t) => {
   urlMode.value = detected.mode
   url.value = detected.path
 }, { immediate: true })
+
+// 註：t.url 是 required，但「新增」流程會傳一個 url='' 的 draft 進來，所以仍要 ?? ''
 
 let abortFetch: { abort(): void } | null = null
 onScopeDispose(() => abortFetch?.abort())
@@ -92,7 +94,7 @@ function onSave() {
   const trimmedUrl = url.value.trim()
   if (!trimmedUrl) return
   const finalUrl = urlMode.value === 'eh' ? detectMode(trimmedUrl).path : trimmedUrl
-  emit('save', { tag: '', url: finalUrl, label: label.value.trim() || undefined, color: color.value })
+  emit('save', { kind: 'url', url: finalUrl, label: label.value.trim() || undefined, color: color.value })
 }
 </script>
 

@@ -7,12 +7,12 @@ import SearchTermEditor from '@/components/SearchTermEditor.vue'
 import { currentTagStyleClass } from '@/composables/useTagStyle'
 import { usePopupBehavior } from '@/composables/usePopupBehavior'
 import { makeRow, type RowState } from '@/composables/useSearchTerm'
-import { type QuickTag, type TagMode, splitMultiTag } from '@/types'
+import { type TagButton, type TagMode } from '@/types'
 import { t, isCJKLocale } from '@/composables/useI18n'
 import { loadTagDb } from '@/services/tagDb'
 
 const props = defineProps<{
-  tag: QuickTag
+  tag: TagButton
   lineColor?: string
   isAdd?: boolean
   useNhWeight?: boolean
@@ -22,7 +22,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  'save': [value: QuickTag]
+  'save': [value: TagButton]
   'delete': []
   'close': []
 }>()
@@ -46,7 +46,7 @@ const editorRefs = ref<Array<InstanceType<typeof SearchTermEditor> | null>>([])
 watch(() => props.tag, (t) => {
   label.value = t.label ?? ''
   color.value = t.color
-  const parts = t.tag ? splitMultiTag(t.tag) : []
+  const parts = t.tags ?? []
   rows.splice(0, rows.length, ...parts.map(makeRow))
   if (props.isAdd || !parts.length) rows.push(makeRow(''))
   const disabled = new Set(t.disabledModes ?? [])
@@ -104,13 +104,13 @@ onMounted(async () => {
 function onSave(): void {
   const parts = rows.map(r => r.rawText.trim()).filter(Boolean)
   if (!parts.length) return
-  const joined = parts.join(', ')
   const disabled: TagMode[] = []
   if (!orEnabled.value) disabled.push('or')
   if (!excludeEnabled.value) disabled.push('exclude')
 
   emit('save', {
-    tag: joined,
+    kind: 'tag',
+    tags: parts,
     label: label.value.trim() || undefined,
     color: color.value,
     disabledModes: disabled.length ? disabled : undefined,

@@ -1,6 +1,6 @@
 import { reactive, ref, watch, nextTick, type Ref } from 'vue'
 import { cacheGet, cacheSet } from '@/services/gmStorage'
-import type { QuickTag, TagLine } from '@/types'
+import type { Line, Button, ButtonLine, SeparatorLine, TagButton, UrlButton, TagMode } from '@/types'
 import { DEFAULT_NS_ORDER, type TagDbMirror } from '@/services/tagDb'
 import { locale, setLocale, detectLocale, t, type Locale } from '@/composables/useI18n'
 import { PRESETS_BY_ID, type TagStylePresetId } from '@/composables/useTagStyle'
@@ -13,7 +13,7 @@ const KEYS = {
 
 export interface Profile {
   name: string
-  tagLines: TagLine[]
+  tagLines: Line[]
   isDefault?: boolean
 }
 
@@ -75,61 +75,124 @@ function serializeAllSettings(): Settings & { locale: Locale | '' } {
 }
 
 // Tag definitions without labels — labels are filled by getDefaultTagLines() based on locale
-const DEFAULT_TAG_DEFS: { tag: string; url?: string; labelKey: string; disabledModes?: readonly ('or' | 'exclude')[] }[][] = [
+type DefaultButtonDef =
+  | { kind: 'tag'; tags: string[]; labelKey: string; disabledModes?: readonly TagMode[] }
+  | { kind: 'url'; url: string; labelKey: string }
+
+const DEFAULT_BUTTON_DEFS: DefaultButtonDef[][] = [
   [
-    { tag: 'language:chinese$', labelKey: 'default.chinese' },
-    { tag: 'language:english$', labelKey: 'default.english' },
-    { tag: 'language:korean$', labelKey: 'default.korean' },
-    { tag: '-language:english$, -language:chinese$, -language:korean$', labelKey: 'default.japanese', disabledModes: ['or', 'exclude'] },
+    { kind: 'tag', tags: ['language:chinese$'], labelKey: 'default.chinese' },
+    { kind: 'tag', tags: ['language:english$'], labelKey: 'default.english' },
+    { kind: 'tag', tags: ['language:korean$'], labelKey: 'default.korean' },
+    { kind: 'tag', tags: ['-language:english$', '-language:chinese$', '-language:korean$'], labelKey: 'default.japanese', disabledModes: ['or', 'exclude'] },
   ],
   [
-    { tag: 'other:"full color$"', labelKey: 'default.fullColor' },
-    { tag: 'other:uncensored$', labelKey: 'default.uncensored' },
-    { tag: 'language:translated$', labelKey: 'default.translated' },
-    { tag: 'language:speechless$', labelKey: 'default.speechless' },
-    { tag: '-other:"ai generated$"', labelKey: 'default.excludeAI', disabledModes: ['or', 'exclude'] },
-    { tag: '-other:"rough translation$"', labelKey: 'default.excludeRoughTL', disabledModes: ['or', 'exclude'] },
+    { kind: 'tag', tags: ['other:"full color$"'], labelKey: 'default.fullColor' },
+    { kind: 'tag', tags: ['other:uncensored$'], labelKey: 'default.uncensored' },
+    { kind: 'tag', tags: ['language:translated$'], labelKey: 'default.translated' },
+    { kind: 'tag', tags: ['language:speechless$'], labelKey: 'default.speechless' },
+    { kind: 'tag', tags: ['-other:"ai generated$"'], labelKey: 'default.excludeAI', disabledModes: ['or', 'exclude'] },
+    { kind: 'tag', tags: ['-other:"rough translation$"'], labelKey: 'default.excludeRoughTL', disabledModes: ['or', 'exclude'] },
   ],
   [
-    { tag: '', url: '?f_cats=0&f_search=other%3A%22how+to%24%22', labelKey: 'default.howto' },
-    { tag: '', url: '?f_cats=0&f_search=o%3Aartbook%24', labelKey: 'default.artbook' },
-    { tag: '', url: '?f_cats=991', labelKey: 'default.imageset' },
-    { tag: '', url: '?f_cats=1019&f_search=o%3Atankoubon%24', labelKey: 'default.tankoubon' },
-    { tag: '', url: '?f_cats=1019&f_search=o%3Aanthology%24', labelKey: 'default.anthology' },
+    { kind: 'url', url: '?f_cats=0&f_search=other%3A%22how+to%24%22', labelKey: 'default.howto' },
+    { kind: 'url', url: '?f_cats=0&f_search=o%3Aartbook%24', labelKey: 'default.artbook' },
+    { kind: 'url', url: '?f_cats=991', labelKey: 'default.imageset' },
+    { kind: 'url', url: '?f_cats=1019&f_search=o%3Atankoubon%24', labelKey: 'default.tankoubon' },
+    { kind: 'url', url: '?f_cats=1019&f_search=o%3Aanthology%24', labelKey: 'default.anthology' },
   ],
   [],
 ]
 
-export function getDefaultTagLines(): TagLine[] {
-  return DEFAULT_TAG_DEFS.map(line => ({
-    tags: line.map(({ tag, url, labelKey, disabledModes }) => ({
-      tag,
-      ...(url ? { url } : {}),
-      label: t(labelKey),
-      ...(disabledModes ? { disabledModes } : {}),
-    })),
+export function getDefaultTagLines(): Line[] {
+  return DEFAULT_BUTTON_DEFS.map<ButtonLine>(line => ({
+    kind: 'buttons',
+    buttons: line.map<Button>(def => def.kind === 'tag'
+      ? { kind: 'tag', tags: def.tags, label: t(def.labelKey), ...(def.disabledModes ? { disabledModes: def.disabledModes } : {}) }
+      : { kind: 'url', url: def.url, label: t(def.labelKey) },
+    ),
   }))
 }
 
-// Type guards — strict additive 策略下，只驗證 required 欄位存在且型別正確，
-// 未知欄位由 JS 物件天然 tolerate（不刪不報錯），forward-compatible。
-// 任何未來新增欄位都應為 optional，這些 guard 不需要改動。
+// --- legacy migration ---
+// 一次性 read-time adapter：把舊版 { tags: QuickTag[], color?, separator? } 結構
+// 轉成新版 Line union。load 後寫回 storage 就是純新格式，下次 load 直接走 fast path。
+// 既有欄位永不改名/改型別/改語意（strict additive）；未來新增功能用 union variant 或
+// optional 欄位處理，不再需要 migration。
 
-function isValidQuickTag(x: unknown): x is QuickTag {
-  if (!x || typeof x !== 'object') return false
-  const o = x as QuickTag
-  if (typeof o.tag !== 'string') return false
-  // QuickTag 的 discriminant：至少要有 non-empty tag 或 non-empty url
-  // （tag 為空字串 + url 是 URL entry 的形式）
-  const hasTag = o.tag !== ''
-  const hasUrl = typeof o.url === 'string' && o.url !== ''
-  return hasTag || hasUrl
+function splitMultiTagLegacy(tag: string): string[] {
+  return tag.split(',').map(s => s.trim()).filter(Boolean)
 }
 
-export function isValidTagLine(x: unknown): x is TagLine {
+function migrateLegacyButton(x: unknown): Button | null {
+  if (!x || typeof x !== 'object') return null
+  const o = x as any
+  // 已是新格式
+  if (o.kind === 'tag' || o.kind === 'url') return o as Button
+  // 舊 QuickTag：tag='' + url 非空 = URL entry；否則 tag entry
+  if (typeof o.url === 'string' && o.url !== '') {
+    return { kind: 'url', url: o.url, ...(o.label ? { label: o.label } : {}), ...(o.color ? { color: o.color } : {}) }
+  }
+  if (typeof o.tag === 'string' && o.tag !== '') {
+    return {
+      kind: 'tag',
+      tags: splitMultiTagLegacy(o.tag),
+      ...(o.label ? { label: o.label } : {}),
+      ...(o.color ? { color: o.color } : {}),
+      ...(o.disabledModes ? { disabledModes: o.disabledModes } : {}),
+    }
+  }
+  return null
+}
+
+function migrateLegacyLine(x: unknown): Line | null {
+  if (!x || typeof x !== 'object') return null
+  const o = x as any
+  // 已是新格式
+  if (o.kind === 'buttons' || o.kind === 'separator') return o as Line
+  // 舊 TagLine：有 separator 欄位 → SeparatorLine；否則 ButtonLine
+  if (o.separator && typeof o.separator === 'object') {
+    const sep = o.separator
+    const style: SeparatorLine['style'] = {}
+    if (typeof sep.style === 'string') style.line = sep.style
+    if (typeof sep.textAlign === 'string') style.textAlign = sep.textAlign
+    if (typeof sep.textSize === 'number') style.textSize = sep.textSize
+    if (typeof sep.lineThickness === 'number') style.lineThickness = sep.lineThickness
+    // 舊 preset → linePosition：header 樣式（label 上、線下）= bottom；
+    // divider 樣式（label 中、線兩邊）= middle（也是新預設，省略不寫）
+    if (sep.preset === 'header') style.linePosition = 'bottom'
+    return {
+      kind: 'separator',
+      ...(sep.label ? { label: sep.label } : {}),
+      ...(Object.keys(style).length ? { style } : {}),
+      ...(o.color ? { color: o.color } : {}),
+    }
+  }
+  if (Array.isArray(o.tags)) {
+    const buttons = o.tags.map(migrateLegacyButton).filter((b: Button | null): b is Button => b !== null)
+    return { kind: 'buttons', buttons, ...(o.color ? { color: o.color } : {}) }
+  }
+  return null
+}
+
+// --- type guards ---
+// strict additive 策略：只驗 discriminant + required 欄位。未知欄位由 JS 物件天然 tolerate。
+// 未來新增功能用 optional 欄位 / 新 union variant，這些 guard 不需要改動。
+
+function isValidButton(x: unknown): x is Button {
   if (!x || typeof x !== 'object') return false
-  const tags = (x as TagLine).tags
-  return Array.isArray(tags) && tags.every(isValidQuickTag)
+  const o = x as any
+  if (o.kind === 'tag') return Array.isArray(o.tags) && o.tags.every((t: unknown) => typeof t === 'string' && t !== '')
+  if (o.kind === 'url') return typeof o.url === 'string' && o.url !== ''
+  return false
+}
+
+export function isValidLine(x: unknown): x is Line {
+  if (!x || typeof x !== 'object') return false
+  const o = x as any
+  if (o.kind === 'buttons') return Array.isArray(o.buttons) && o.buttons.every(isValidButton)
+  if (o.kind === 'separator') return true
+  return false
 }
 
 interface ProfilesData {
@@ -143,7 +206,7 @@ function isValidProfile(x: unknown): x is Profile {
   const o = x as Record<string, unknown>
   return typeof o.name === 'string'
     && Array.isArray(o.tagLines)
-    && o.tagLines.every(isValidTagLine)
+    && o.tagLines.every(isValidLine)
 }
 
 function isValidProfilesData(x: unknown): x is ProfilesData {
@@ -152,6 +215,22 @@ function isValidProfilesData(x: unknown): x is ProfilesData {
   return typeof o.active === 'number'
     && Array.isArray(o.profiles) && o.profiles.every(isValidProfile)
     && (o.deleted === undefined || (Array.isArray(o.deleted) && o.deleted.every(isValidProfile)))
+}
+
+// load 時對每個 line 跑 migration。已是新格式直接 return；舊格式轉換後 isValidLine
+// 會接住。drop 掉的 line 是 corrupted/empty/不認識的 entry。
+function migrateProfile(p: any): Profile | null {
+  if (!p || typeof p !== 'object' || typeof p.name !== 'string' || !Array.isArray(p.tagLines)) return null
+  const lines = p.tagLines.map(migrateLegacyLine).filter((l: Line | null): l is Line => l !== null && isValidLine(l))
+  return { name: p.name, tagLines: lines, ...(p.isDefault ? { isDefault: true } : {}) }
+}
+
+function migrateProfilesData(data: any): ProfilesData | null {
+  if (!data || typeof data !== 'object' || typeof data.active !== 'number' || !Array.isArray(data.profiles)) return null
+  const profiles = data.profiles.map(migrateProfile).filter((p: Profile | null): p is Profile => p !== null)
+  if (!profiles.length) return null
+  const deleted = Array.isArray(data.deleted) ? data.deleted.map(migrateProfile).filter((p: Profile | null): p is Profile => p !== null) : undefined
+  return { active: data.active, profiles, ...(deleted ? { deleted } : {}) }
 }
 
 // 解析失敗時備份原始 JSON 到獨立 key，避免靜默丟失用戶資料。
@@ -166,7 +245,7 @@ async function backupCorrupted(raw: string, reason: string) {
 export const profiles = reactive<Profile[]>([])
 export const deletedProfiles = reactive<Profile[]>([])
 export const activeProfileIdx = ref(0)
-export const tagLines = reactive<TagLine[]>([])
+export const tagLines = reactive<Line[]>([])
 
 // --- load from GM ---
 
@@ -176,13 +255,13 @@ export async function loadStore(): Promise<void> {
     cacheGet(KEYS.settings),
   ])
 
-  // profiles — strict additive 策略：不做 migration。
-  // 解析失敗（JSON syntax / schema mismatch）就備份原始資料 + 載入 default。
+  // profiles — 先試 strict 驗證，失敗就跑一次 legacy migration。兩者都失敗才備份 + 用 default。
   let loaded = false
   if (savedProfiles) {
     try {
-      const data: unknown = JSON.parse(savedProfiles)
-      if (!isValidProfilesData(data)) throw new Error('schema mismatch')
+      const raw: unknown = JSON.parse(savedProfiles)
+      const data = isValidProfilesData(raw) ? raw : migrateProfilesData(raw)
+      if (!data) throw new Error('schema mismatch')
       profiles.splice(0, profiles.length, ...data.profiles)
       deletedProfiles.splice(0, deletedProfiles.length, ...(data.deleted ?? []))
       activeProfileIdx.value = Math.min(Math.max(data.active, 0), profiles.length - 1)
@@ -231,9 +310,10 @@ export function renameProfile(idx: number, name: string): void {
 export function createProfile(name: string): void {
   syncTagLinesToActiveProfile()
   const lineCount = tagLines.length
-  profiles.push({ name, tagLines: Array.from({ length: lineCount }, () => ({ tags: [] })) })
+  const emptyLines = (): Line[] => Array.from({ length: lineCount }, () => ({ kind: 'buttons', buttons: [] }))
+  profiles.push({ name, tagLines: emptyLines() })
   activeProfileIdx.value = profiles.length - 1
-  tagLines.splice(0, tagLines.length, ...Array.from({ length: lineCount }, () => ({ tags: [] })))
+  tagLines.splice(0, tagLines.length, ...emptyLines())
 }
 
 export function deleteProfile(idx: number): void {
@@ -273,7 +353,7 @@ export function reorderProfiles(fromIdx: number, toIdx: number): void {
   saveProfiles()
 }
 
-export function updateProfileTagLines(idx: number, newTagLines: TagLine[]): void {
+export function updateProfileTagLines(idx: number, newTagLines: Line[]): void {
   profiles[idx].tagLines = newTagLines
   if (profiles[idx].isDefault) profiles[idx].isDefault = false
   if (idx === activeProfileIdx.value) {
@@ -319,3 +399,6 @@ export function startAutoSave(): void {
     localeChanging = false
   })
 }
+
+// re-export for components that need to construct empty button lines etc.
+export type { Line, Button, ButtonLine, SeparatorLine, TagButton, UrlButton } from '@/types'

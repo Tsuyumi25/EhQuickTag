@@ -3,15 +3,15 @@ import { ref, inject, computed, watch } from 'vue'
 import { onClickOutside } from '@vueuse/core'
 import { useFloating, autoUpdate, flip, shift, offset } from '@floating-ui/vue'
 import { Settings } from '@lucide/vue'
-import type { LineSeparator, SeparatorStyle, SeparatorPreset, SeparatorTextAlign } from '@/types'
+import type { Line, SeparatorLine, SeparatorStyle } from '@/types'
 import { POPUP_IGNORE_KEY, type PopupIgnoreRegister } from '@/composables/usePopupBehavior'
 import { t } from '@/composables/useI18n'
 
 const props = defineProps<{
-  modelValue: LineSeparator | undefined
+  line: Line
   disabled?: boolean
 }>()
-const emit = defineEmits<{ 'update:modelValue': [value: LineSeparator | undefined] }>()
+const emit = defineEmits<{ 'update:line': [value: Line] }>()
 
 const open = ref(false)
 const triggerEl = ref<HTMLElement | null>(null)
@@ -32,50 +32,37 @@ watch(popupEl, (el) => {
   if (el && registerIgnore) unregister = registerIgnore(el)
 })
 
-const enabled = computed(() => !!props.modelValue)
-const style = computed<SeparatorStyle>(() => props.modelValue?.style ?? 'solid')
-const preset = computed<SeparatorPreset>(() => props.modelValue?.preset ?? 'header')
-const textAlign = computed<SeparatorTextAlign>(() => props.modelValue?.textAlign ?? 'left')
-const textSize = computed<number>(() => props.modelValue?.textSize ?? 10)
-const lineThickness = computed<number>(() => props.modelValue?.lineThickness ?? 2)
+const enabled = computed(() => props.line.kind === 'separator')
+const sepLine = computed<SeparatorLine | null>(() => props.line.kind === 'separator' ? props.line : null)
+
+// 顯示用：沒設過的欄位 fallback 到「視覺預設值」（跟 CSS 預設保持一致）
+// 這些 fallback 只給 UI 顯示用，不寫進資料。
+const lineStyleValue = computed<SeparatorStyle['line']>(() => sepLine.value?.style?.line ?? 'solid')
+const linePositionValue = computed<SeparatorStyle['linePosition']>(() => sepLine.value?.style?.linePosition ?? 'middle')
+const textAlignValue = computed<SeparatorStyle['textAlign']>(() => sepLine.value?.style?.textAlign ?? 'center')
+const textSizeValue = computed<number>(() => sepLine.value?.style?.textSize ?? 10)
+const lineThicknessValue = computed<number>(() => sepLine.value?.style?.lineThickness ?? 2)
 
 function toggleEnabled(next: boolean) {
   if (next) {
-    emit('update:modelValue', {
-      style: 'solid',
-      preset: 'header',
-      textAlign: 'left',
-      textSize: 10,
-      lineThickness: 2,
-    })
+    // 不寫預設值——所有視覺由 CSS 給。使用者調整時才寫進 style。
+    emit('update:line', { kind: 'separator' })
   } else {
-    emit('update:modelValue', undefined)
+    emit('update:line', { kind: 'buttons', buttons: [] })
   }
 }
 
-function setStyle(value: SeparatorStyle) {
-  if (!props.modelValue) return
-  emit('update:modelValue', { ...props.modelValue, style: value })
-}
-
-function setPreset(value: SeparatorPreset) {
-  if (!props.modelValue) return
-  emit('update:modelValue', { ...props.modelValue, preset: value })
-}
-
-function setTextAlign(value: SeparatorTextAlign) {
-  if (!props.modelValue) return
-  emit('update:modelValue', { ...props.modelValue, textAlign: value })
-}
-
-function setTextSize(value: number) {
-  if (!props.modelValue) return
-  emit('update:modelValue', { ...props.modelValue, textSize: value })
-}
-
-function setLineThickness(value: number) {
-  if (!props.modelValue) return
-  emit('update:modelValue', { ...props.modelValue, lineThickness: value })
+function updateStyle(patch: Partial<SeparatorStyle>) {
+  if (!sepLine.value) return
+  const merged: SeparatorStyle = { ...sepLine.value.style, ...patch }
+  // 清掉 undefined key 以保持 storage 乾淨
+  for (const k of Object.keys(merged) as (keyof SeparatorStyle)[]) {
+    if (merged[k] === undefined) delete merged[k]
+  }
+  emit('update:line', {
+    ...sepLine.value,
+    style: Object.keys(merged).length ? merged : undefined,
+  })
 }
 </script>
 
@@ -102,16 +89,16 @@ function setLineThickness(value: number) {
       </label>
       <p v-if="disabled" class="eqt-line-sep__hint">{{ t('tagbar.separatorEmptyOnly') }}</p>
       <div class="eqt-line-sep__row eqt-line-sep__row--col" :class="{ 'eqt-line-sep__row--disabled': !enabled }">
-        <span>{{ t('tagbar.separatorPreset') }}</span>
+        <span>{{ t('tagbar.separatorLinePosition') }}</span>
         <div class="eqt-line-sep__styles">
-          <label v-for="opt in (['divider', 'header'] as const)" :key="opt" class="eqt-line-sep__style-opt">
+          <label v-for="opt in (['top', 'middle', 'bottom'] as const)" :key="opt" class="eqt-line-sep__style-opt">
             <input
               type="radio"
-              :checked="preset === opt"
+              :checked="linePositionValue === opt"
               :disabled="!enabled"
-              @change="setPreset(opt)"
+              @change="updateStyle({ linePosition: opt })"
             />
-            <span>{{ t(`tagbar.separatorPreset_${opt}`) }}</span>
+            <span>{{ t(`tagbar.separatorLinePosition_${opt}`) }}</span>
           </label>
         </div>
       </div>
@@ -121,9 +108,9 @@ function setLineThickness(value: number) {
           <label v-for="opt in (['solid', 'dashed', 'none'] as const)" :key="opt" class="eqt-line-sep__style-opt">
             <input
               type="radio"
-              :checked="style === opt"
+              :checked="lineStyleValue === opt"
               :disabled="!enabled"
-              @change="setStyle(opt)"
+              @change="updateStyle({ line: opt })"
             />
             <span>{{ t(`tagbar.separatorStyle_${opt}`) }}</span>
           </label>
@@ -132,12 +119,12 @@ function setLineThickness(value: number) {
       <div class="eqt-line-sep__row eqt-line-sep__row--col" :class="{ 'eqt-line-sep__row--disabled': !enabled }">
         <span>{{ t('tagbar.separatorTextAlign') }}</span>
         <div class="eqt-line-sep__styles">
-          <label v-for="opt in (['left', 'center'] as const)" :key="opt" class="eqt-line-sep__style-opt">
+          <label v-for="opt in (['left', 'center', 'right'] as const)" :key="opt" class="eqt-line-sep__style-opt">
             <input
               type="radio"
-              :checked="textAlign === opt"
+              :checked="textAlignValue === opt"
               :disabled="!enabled"
-              @change="setTextAlign(opt)"
+              @change="updateStyle({ textAlign: opt })"
             />
             <span>{{ t(`tagbar.separatorTextAlign_${opt}`) }}</span>
           </label>
@@ -146,31 +133,31 @@ function setLineThickness(value: number) {
       <div class="eqt-line-sep__row eqt-line-sep__row--col" :class="{ 'eqt-line-sep__row--disabled': !enabled }">
         <div class="eqt-line-sep__slider-head">
           <span>{{ t('tagbar.separatorTextSize') }}</span>
-          <span class="eqt-line-sep__slider-value">{{ textSize }}px</span>
+          <span class="eqt-line-sep__slider-value">{{ textSizeValue }}px</span>
         </div>
         <input
           type="range"
           min="9"
           max="20"
           step="1"
-          :value="textSize"
+          :value="textSizeValue"
           :disabled="!enabled"
-          @input="setTextSize(Number(($event.target as HTMLInputElement).value))"
+          @input="updateStyle({ textSize: Number(($event.target as HTMLInputElement).value) })"
         />
       </div>
       <div class="eqt-line-sep__row eqt-line-sep__row--col" :class="{ 'eqt-line-sep__row--disabled': !enabled }">
         <div class="eqt-line-sep__slider-head">
           <span>{{ t('tagbar.separatorLineThickness') }}</span>
-          <span class="eqt-line-sep__slider-value">{{ lineThickness }}px</span>
+          <span class="eqt-line-sep__slider-value">{{ lineThicknessValue }}px</span>
         </div>
         <input
           type="range"
           min="1"
           max="6"
           step="1"
-          :value="lineThickness"
-          :disabled="!enabled || style === 'none'"
-          @input="setLineThickness(Number(($event.target as HTMLInputElement).value))"
+          :value="lineThicknessValue"
+          :disabled="!enabled || lineStyleValue === 'none'"
+          @input="updateStyle({ lineThickness: Number(($event.target as HTMLInputElement).value) })"
         />
       </div>
     </div>

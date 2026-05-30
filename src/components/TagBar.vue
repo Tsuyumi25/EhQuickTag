@@ -6,7 +6,7 @@ import { ChevronLeft, ChevronRight, ExternalLink, GripVertical, Trash2, Pencil, 
 import ContentEditable from 'vue-contenteditable'
 import LineColorSwatch from '@/components/LineColorSwatch.vue'
 import SeparatorSettingsPopup from '@/components/SeparatorSettingsPopup.vue'
-import { TagState, type QuickTag, type TagLine } from '@/types'
+import { TagState, type Line, type Button, type TagButton } from '@/types'
 import { tokenize, getState as _getState, removeTag, addTag, getNextRightClickState } from '@/services/tagState'
 import { tagLines, dblClickLeft, dblClickRight, type DblClickAction } from '@/services/store'
 import { baseDragOptions } from '@/utils/drag'
@@ -151,22 +151,23 @@ function onLineChange(evt: any) {
 
 function onTagChange(lineIdx: number, evt: any) {
   const line = tagLines[lineIdx]
+  if (line.kind !== 'buttons') return
   if (evt.added) {
-    line.tags.splice(evt.added.newIndex, 0, evt.added.element)
+    line.buttons.splice(evt.added.newIndex, 0, evt.added.element)
   }
   if (evt.removed) {
-    line.tags.splice(evt.removed.oldIndex, 1)
+    line.buttons.splice(evt.removed.oldIndex, 1)
   }
   if (evt.moved) {
-    const [item] = line.tags.splice(evt.moved.oldIndex, 1)
-    line.tags.splice(evt.moved.newIndex, 0, item)
+    const [item] = line.buttons.splice(evt.moved.oldIndex, 1)
+    line.buttons.splice(evt.moved.newIndex, 0, item)
   }
 }
 
 function onTagStart() { tagDragging = true }
 function onTagEnd() { setTimeout(() => { tagDragging = false }, 0) }
 
-function onAddLine() { tagLines.push({ tags: [] }) }
+function onAddLine() { tagLines.push({ kind: 'buttons', buttons: [] }) }
 function onDeleteLine(li: number) { tagLines.splice(li, 1) }
 
 function onConfigure(li: number, ti: number) {
@@ -174,7 +175,13 @@ function onConfigure(li: number, ti: number) {
   emit('configure', li, ti)
 }
 
-function tagKey(qt: QuickTag) { return qt.tag || qt.url || '' }
+function buttonKey(b: Button) {
+  return b.kind === 'tag' ? b.tags.join(',') : b.url
+}
+
+function onUpdateLine(li: number, newLine: Line) {
+  tagLines[li] = newLine
+}
 
 const lineDragOptions = {
   ...baseDragOptions,
@@ -193,31 +200,31 @@ const tagDragOptions = {
 
 const tokenSet = computed(() => new Set(tokenize(props.searchText)))
 
-function getState(tag: string): TagState {
-  return _getState(tag, tokenSet.value)
+function getState(b: TagButton): TagState {
+  return _getState(b.tags, tokenSet.value)
 }
 
 // --- normal mode handlers ---
 
-function onLeftClick(tag: string) {
-  const state = getState(tag)
-  const cleaned = removeTag(props.searchText, tag)
+function onLeftClick(b: TagButton) {
+  const state = getState(b)
+  const cleaned = removeTag(props.searchText, b.tags)
 
   emit(
     'update:searchText',
-    state === TagState.Off ? addTag(cleaned, tag, TagState.Include) : cleaned,
+    state === TagState.Off ? addTag(cleaned, b.tags, TagState.Include) : cleaned,
   )
 }
 
-function onRightClick(event: MouseEvent, qt: QuickTag) {
+function onRightClick(event: MouseEvent, b: TagButton) {
   event.preventDefault()
 
-  const state = getState(qt.tag)
-  const next = getNextRightClickState(qt, state)
+  const state = getState(b)
+  const next = getNextRightClickState(b.tags, b.disabledModes, state)
   if (next === null) return
 
-  const cleaned = removeTag(props.searchText, qt.tag)
-  emit('update:searchText', next === TagState.Off ? cleaned : addTag(cleaned, qt.tag, next))
+  const cleaned = removeTag(props.searchText, b.tags)
+  emit('update:searchText', next === TagState.Off ? cleaned : addTag(cleaned, b.tags, next))
 }
 </script>
 
@@ -286,78 +293,81 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
             >
               <div class="eqt-tag-bar__handle" :class="{ 'eqt-tag-bar__handle--hidden': !editing }" :title="t('tagbar.handleTitle')"><GripVertical :size="14" /></div>
             </div>
+
             <div
-              v-if="line.separator"
+              v-if="line.kind === 'separator'"
               class="eqt-tag-bar__line eqt-tag-bar__line--separator"
               :class="[
-                `eqt-tag-bar__line--separator-${line.separator.style}`,
-                `eqt-tag-bar__line--separator-${line.separator.preset ?? 'header'}`,
-                `eqt-tag-bar__line--separator-align-${line.separator.textAlign ?? 'left'}`,
+                `eqt-tag-bar__line--separator-${line.style?.line ?? 'solid'}`,
+                `eqt-tag-bar__line--separator-pos-${line.style?.linePosition ?? 'middle'}`,
+                `eqt-tag-bar__line--separator-align-${line.style?.textAlign ?? 'center'}`,
               ]"
               :style="{
-                '--line-color': line.color,
-                '--separator-line-thickness': `${line.separator.lineThickness ?? 2}px`,
-                fontSize: `${line.separator.textSize ?? 10}px`,
+                ...(line.color ? { '--line-color': line.color } : {}),
+                ...(line.style?.lineThickness ? { '--separator-line-thickness': `${line.style.lineThickness}px` } : {}),
+                ...(line.style?.textSize ? { fontSize: `${line.style.textSize}px` } : {}),
               }"
             >
               <ContentEditable
                 v-if="editing"
                 tag="span"
-                :model-value="line.separator?.label ?? ''"
-                @update:model-value="(v: string) => { if (line.separator) line.separator.label = (v && v !== '\n') ? v : undefined }"
+                :model-value="line.label ?? ''"
+                @update:model-value="(v: string) => line.label = (v && v !== '\n') ? v : undefined"
                 :contenteditable="'plaintext-only'"
                 class="eqt-tag-bar__separator-label eqt-tag-bar__separator-label--editing"
                 :data-placeholder="t('tagbar.separatorLabelPlaceholder')"
                 spellcheck="false"
                 no-nl
               />
-              <span v-else-if="line.separator.label" class="eqt-tag-bar__separator-label">{{ line.separator.label }}</span>
+              <span v-else-if="line.label" class="eqt-tag-bar__separator-label">{{ line.label }}</span>
             </div>
+
             <Draggable
               v-else
               v-bind="tagDragOptions"
-              :model-value="line.tags"
-              :item-key="tagKey"
+              :model-value="line.buttons"
+              :item-key="buttonKey"
               :disabled="!editing"
               tag="div"
               class="eqt-tag-bar__line"
-              :style="{ '--line-color': line.color }"
+              :style="line.color ? { '--line-color': line.color } : undefined"
               @change="onTagChange(li, $event)"
               @start="onTagStart"
               @end="onTagEnd"
             >
-              <template #item="{ element: qt, index: ti }">
+              <template #item="{ element: b, index: ti }">
                 <a
-                  v-if="qt.url && !editing"
-                  :href="qt.url"
+                  v-if="b.kind === 'url' && !editing"
+                  :href="b.url"
                   class="eqt-tag-bar__btn eqt-tag-bar__btn--url"
-                  :style="qt.color ? { '--line-color': qt.color } : undefined"
-                ><ExternalLink :size="12" /> {{ qt.label || qt.url }}</a>
+                  :style="b.color ? { '--line-color': b.color } : undefined"
+                ><ExternalLink :size="12" /> {{ b.label || b.url }}</a>
 
                 <button
-                  v-else-if="qt.url"
+                  v-else-if="b.kind === 'url'"
                   class="eqt-tag-bar__btn eqt-tag-bar__btn--editing"
                   type="button"
-                  :style="qt.color ? { '--line-color': qt.color } : undefined"
+                  :style="b.color ? { '--line-color': b.color } : undefined"
                   @click="onConfigure(li, ti)"
-                ><ExternalLink :size="12" /> {{ qt.label || qt.url }}</button>
+                ><ExternalLink :size="12" /> {{ b.label || b.url }}</button>
 
                 <button
                   v-else
                   class="eqt-tag-bar__btn"
-                  :class="editing ? 'eqt-tag-bar__btn--editing' : STATE_CLASS[getState(qt.tag)]"
+                  :class="editing ? 'eqt-tag-bar__btn--editing' : STATE_CLASS[getState(b)]"
                   type="button"
-                  :style="qt.color ? { '--line-color': qt.color } : undefined"
-                  @click="editing ? onConfigure(li, ti) : onLeftClick(qt.tag)"
-                  @contextmenu.prevent="!editing && onRightClick($event, qt)"
-                >{{ qt.label || qt.tag }}</button>
+                  :style="b.color ? { '--line-color': b.color } : undefined"
+                  @click="editing ? onConfigure(li, ti) : onLeftClick(b)"
+                  @contextmenu.prevent="!editing && onRightClick($event, b)"
+                >{{ b.label || b.tags.join(', ') }}</button>
               </template>
             </Draggable>
+
             <SeparatorSettingsPopup
               v-if="editing"
-              :model-value="line.separator"
-              :disabled="line.tags.length > 0"
-              @update:model-value="line.separator = $event"
+              :line="line"
+              :disabled="line.kind === 'buttons' && line.buttons.length > 0"
+              @update:line="onUpdateLine(li, $event)"
             />
             <LineColorSwatch
               v-if="editing"
@@ -584,38 +594,108 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
     min-height: var(--eqt-row-h);
   }
 
+  // Separator line：base 預設為 middle layout（左線 + label + 右線）。
+  // 預設視覺定義在這裡——沒被使用者覆寫的欄位走 CSS 預設，覆寫的欄位透過
+  // inline `:style` (fontSize / --separator-line-thickness) 或修飾 class
+  // (--separator-{solid|dashed|none}、--separator-pos-{top|middle|bottom}、
+  // --separator-align-{left|center|right}) override。
+  //
+  // linePosition 三種 layout：
+  //   middle（預設）：row flex，label 在線中間，::before/::after 各為一段線
+  //   top：column flex，::before 是頂部全寬線，label 在下
+  //   bottom：column flex，::after 是底部全寬線，label 在上
+  //
+  // textAlign 在 middle 模式下控制線比例（label 居左 / 中 / 右）；
+  // 在 top / bottom 模式下控制 label 文字對齊。
+  // Separator line：容器是「絕對空間」，linePosition 決定線釘在哪個邊緣。
+  //   middle：線在容器中軸，靠 ::before/::after 兩段 flex item 達成（線會避開 label）
+  //   top：::before absolute 釘容器頂，label 在容器內 align flex-start
+  //   bottom：::after absolute 釘容器底，label 在容器內 align flex-end
+  // textAlign 在 middle 模式控制 ::before/::after 比例；在 top/bottom 模式控制 label justify
   &__line--separator {
-    flex-wrap: nowrap;
-    gap: 0;
-    align-items: center;
+    position: relative;
+    min-height: var(--eqt-row-h);
     color: var(--line-color, var(--eqt-text-hint));
+    font-size: 10px;
     line-height: 1.4;
 
     &::before,
     &::after {
       content: '';
-      flex: 1;
       border-top: var(--separator-line-thickness, 2px) solid var(--line-color, var(--eqt-divider));
     }
   }
 
-  &__line--separator-divider:has(.eqt-tag-bar__separator-label) {
-    gap: 8px;
-  }
+  // middle：row flex
+  //   無 label：::after 隱藏，::before 單條取整個寬度（避免兩段 subpixel 縫隙）
+  //   有 label：::before / ::after 兩段 flex:1 把 label 推中間，align 控制比例
+  &__line--separator-pos-middle {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
 
-  &__line--separator-header {
-    flex-direction: column;
-    align-items: stretch;
-    justify-content: flex-end;
-
-    &::before { display: none; }
+    &::before,
     &::after {
-      flex: 0 0 auto;
-      height: 0;
-      width: 100%;
+      flex: 1;
+    }
+
+    &:not(:has(.eqt-tag-bar__separator-label))::after {
+      display: none;
+    }
+
+    &:has(.eqt-tag-bar__separator-label) {
+      gap: 8px;
+
+      &.eqt-tag-bar__line--separator-align-left::before {
+        flex: 0;
+        border-top: 0;
+      }
+      &.eqt-tag-bar__line--separator-align-right::after {
+        flex: 0;
+        border-top: 0;
+      }
     }
   }
 
+  // top：::before absolute 釘容器頂，label align flex-start
+  &__line--separator-pos-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: calc(var(--separator-line-thickness, 2px) + 2px);
+
+    &::before {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+    }
+    &::after { display: none; }
+
+    &.eqt-tag-bar__line--separator-align-left { justify-content: flex-start; }
+    &.eqt-tag-bar__line--separator-align-right { justify-content: flex-end; }
+  }
+
+  // bottom：::after absolute 釘容器底，label align flex-end
+  &__line--separator-pos-bottom {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: calc(var(--separator-line-thickness, 2px) + 2px);
+
+    &::before { display: none; }
+    &::after {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+    }
+
+    &.eqt-tag-bar__line--separator-align-left { justify-content: flex-start; }
+    &.eqt-tag-bar__line--separator-align-right { justify-content: flex-end; }
+  }
+
+  // 線型修飾
   &__line--separator-dashed {
     &::before,
     &::after {
@@ -623,25 +703,11 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
     }
   }
 
-  // 'none' 樣式：兩條 pseudo 全部隱藏，純文字
   &__line--separator-none {
     &::before,
     &::after {
-      display: none;
+      border-top: 0;
     }
-  }
-
-  // Divider preset + align-left: 隱藏左側線段，文字貼左，線只在右側延伸
-  &__line--separator-divider.eqt-tag-bar__line--separator-align-left::before {
-    display: none;
-  }
-
-  // Header preset：label 文字對齊（預設 center；可改 left）
-  &__line--separator-header .eqt-tag-bar__separator-label {
-    text-align: center;
-  }
-  &__line--separator-header.eqt-tag-bar__line--separator-align-left .eqt-tag-bar__separator-label {
-    text-align: left;
   }
 
   &__separator-label {
@@ -651,8 +717,7 @@ function onRightClick(event: MouseEvent, qt: QuickTag) {
 
   // editing 時用 contenteditable span 做 in-place 編輯（WYSIWYG）
   // 跟非編輯狀態的 __separator-label 共用一套樣式（font / color / text-align），
-  // 只多 cursor 跟 placeholder。元素本身在 template 上掛了 lang="en"——
-  // 解 Linux + IBus 在「英文模式」下仍會把 romaji reverse 成 kana 的 bug。
+  // 只多 cursor 跟 placeholder。
   &__separator-label--editing {
     cursor: text;
     outline: none;
