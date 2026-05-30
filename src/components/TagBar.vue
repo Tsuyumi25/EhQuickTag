@@ -169,7 +169,17 @@ function onTagEnd() { setTimeout(() => { tagDragging = false }, 0) }
 
 function onAddButtonLine() { tagLines.push({ kind: 'buttons', buttons: [] }) }
 function onAddSeparatorLine() { tagLines.push({ kind: 'separator' }) }
-function onDeleteLine(li: number) { tagLines.splice(li, 1) }
+
+// 空行可以直接刪（誤按零損失）；有內容才彈 confirm：
+//   ButtonLine 有 button、SeparatorLine 有 label 或調過 style 視為「有內容」
+function isLineEmpty(line: Line): boolean {
+  if (line.kind === 'buttons') return line.buttons.length === 0
+  return !line.label && (!line.style || Object.keys(line.style).length === 0)
+}
+function onDeleteLine(li: number) {
+  if (!isLineEmpty(tagLines[li]) && !confirm(t('tagbar.deleteLineConfirm'))) return
+  tagLines.splice(li, 1)
+}
 
 function onConfigure(li: number, ti: number) {
   if (tagDragging) return

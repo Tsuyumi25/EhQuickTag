@@ -11,6 +11,7 @@ export default {
   'tagbar.newProfile': '点击命名新标签组',
   'tagbar.handleTitle': '拖拽排序行',
   'tagbar.deleteLine': '删除此行',
+  'tagbar.deleteLineConfirm': '确定删除这行吗？此操作无法撤销。',
   'tagbar.lineColor': '行颜色',
   'tagbar.lineColorClear': '清除颜色',
   'tagbar.separatorSettings': '分隔线设置',

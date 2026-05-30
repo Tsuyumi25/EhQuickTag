@@ -11,6 +11,7 @@ export default {
   'tagbar.newProfile': 'クリックして新しいプロファイルに名前を付ける',
   'tagbar.handleTitle': 'ドラッグして行を並べ替え',
   'tagbar.deleteLine': 'この行を削除',
+  'tagbar.deleteLineConfirm': 'この行を削除しますか？この操作は元に戻せません。',
   'tagbar.lineColor': '行の色',
   'tagbar.lineColorClear': '色をクリア',
   'tagbar.separatorSettings': '区切り線の設定',

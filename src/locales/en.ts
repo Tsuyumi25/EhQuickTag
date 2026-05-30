@@ -11,6 +11,7 @@ export default {
   'tagbar.newProfile': 'Click to name new profile',
   'tagbar.handleTitle': 'Drag to reorder rows',
   'tagbar.deleteLine': 'Delete this row',
+  'tagbar.deleteLineConfirm': 'Delete this row? This cannot be undone.',
   'tagbar.lineColor': 'Row color',
   'tagbar.lineColorClear': 'Clear color',
   'tagbar.separatorSettings': 'Separator settings',
