@@ -92,6 +92,8 @@ export default {
   'settings.purgeProfile': 'Delete permanently',
   'settings.save': 'Save',
   'settings.purgeConfirm': 'Permanently delete "{name}"? This cannot be undone.',
+  'settings.corrupted': 'Corrupted data',
+  'settings.corruptedReason': 'Reason: {reason}',
   'settings.emptyTag': '(empty)',
 
   // TagConfigPopup

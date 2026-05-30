@@ -92,6 +92,8 @@ export default {
   'settings.purgeProfile': '永久刪除',
   'settings.save': '儲存',
   'settings.purgeConfirm': '確定要永久刪除「{name}」嗎？此操作無法復原。',
+  'settings.corrupted': '損壞的資料',
+  'settings.corruptedReason': '原因：{reason}',
   'settings.emptyTag': '(空)',
 
   // TagConfigPopup

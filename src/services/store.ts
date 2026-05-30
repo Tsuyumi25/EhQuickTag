@@ -7,8 +7,16 @@ import { PRESETS_BY_ID, type TagStylePresetId } from '@/composables/useTagStyle'
 
 const KEYS = {
   profiles: 'eqt_profiles',
-  corrupted: 'eqt_profiles_corrupted',  // 解析失敗時備份原始 JSON 到此 key
+  corrupted: 'eqt_profiles_corrupted',  // 解析失敗時備份原始 JSON 列表（CorruptedProfile[]）
   settings: 'eqt_settings',
+}
+
+// 無法解析的舊版 profiles 原始資料，列在 SettingsPopup「損壞的資料」section
+// 給使用者匯出 / 永久刪除。觸發場景：使用者更新插件後 schema 不相容導致 parse / migration 全部失敗。
+export interface CorruptedProfile {
+  raw: string         // 原始 JSON 字串（無法解析的整份 profiles 資料）
+  savedAt: number     // 偵測到失敗的時間戳
+  reason: string      // parse 失敗原因（譬如 JSON syntax error 或 'schema mismatch'）
 }
 
 export interface Profile {
@@ -233,27 +241,47 @@ function migrateProfilesData(data: any): ProfilesData | null {
   return { active: data.active, profiles, ...(deleted ? { deleted } : {}) }
 }
 
-// 解析失敗時備份原始 JSON 到獨立 key，避免靜默丟失用戶資料。
-// 之後可透過 GM 工具或 browser console 從 KEYS.corrupted 手動恢復。
-async function backupCorrupted(raw: string, reason: string) {
-  await cacheSet(KEYS.corrupted, raw)
-  console.error(`[eqt] profiles parse failed (${reason}). Original data preserved at storage key: ${KEYS.corrupted}`)
+// 解析失敗時備份原始 JSON 到 corruptedProfiles reactive list。
+// 透過 startAutoSave 的 watcher 持久化到 KEYS.corrupted（陣列格式）。
+// 使用者可在 SettingsPopup「損壞的資料」section 查看 / 匯出 / 永久刪除。
+function backupCorrupted(raw: string, reason: string) {
+  corruptedProfiles.push({ raw, savedAt: Date.now(), reason })
+  console.error(`[eqt] profiles parse failed (${reason}). Preserved in corrupted list (see SettingsPopup → 損壞的資料).`)
 }
 
 // --- reactive state (profiles) ---
 
 export const profiles = reactive<Profile[]>([])
 export const deletedProfiles = reactive<Profile[]>([])
+export const corruptedProfiles = reactive<CorruptedProfile[]>([])
 export const activeProfileIdx = ref(0)
 export const tagLines = reactive<Line[]>([])
 
 // --- load from GM ---
 
 export async function loadStore(): Promise<void> {
-  const [savedProfiles, savedSettings] = await Promise.all([
+  const [savedProfiles, savedSettings, savedCorrupted] = await Promise.all([
     cacheGet(KEYS.profiles),
     cacheGet(KEYS.settings),
+    cacheGet(KEYS.corrupted),
   ])
+
+  // corrupted list — 先載入既有列表，這樣 backupCorrupted 在 parse profiles 失敗時可以 append
+  if (savedCorrupted) {
+    try {
+      const arr: unknown = JSON.parse(savedCorrupted)
+      if (Array.isArray(arr)) {
+        const valid = arr.filter((c): c is CorruptedProfile =>
+          !!c && typeof c === 'object'
+            && typeof (c as any).raw === 'string'
+            && typeof (c as any).savedAt === 'number'
+            && typeof (c as any).reason === 'string'
+        )
+        corruptedProfiles.splice(0, corruptedProfiles.length, ...valid)
+      }
+      // 舊版單一 raw string 格式不 migrate（不是 JSON array），忽略
+    } catch { /* parse 失敗忽略（譬如舊單 string 格式） */ }
+  }
 
   // profiles — 先試 strict 驗證，失敗就跑一次 legacy migration。兩者都失敗才備份 + 用 default。
   let loaded = false
@@ -267,7 +295,7 @@ export async function loadStore(): Promise<void> {
       activeProfileIdx.value = Math.min(Math.max(data.active, 0), profiles.length - 1)
       loaded = true
     } catch (err) {
-      await backupCorrupted(savedProfiles, (err as Error).message)
+      backupCorrupted(savedProfiles, (err as Error).message)
     }
   }
   if (!loaded) {
@@ -336,6 +364,10 @@ export function purgeProfile(idx: number): void {
   deletedProfiles.splice(idx, 1)
 }
 
+export function purgeCorrupted(idx: number): void {
+  corruptedProfiles.splice(idx, 1)
+}
+
 export function reorderProfiles(fromIdx: number, toIdx: number): void {
   if (fromIdx === toIdx) return
   syncTagLinesToActiveProfile()
@@ -379,8 +411,13 @@ function saveSettings() {
   cacheSet(KEYS.settings, JSON.stringify(serializeAllSettings()))
 }
 
+function saveCorrupted() {
+  cacheSet(KEYS.corrupted, JSON.stringify(corruptedProfiles))
+}
+
 export function startAutoSave(): void {
   watch([tagLines, deletedProfiles], saveProfiles)
+  watch(corruptedProfiles, saveCorrupted, { deep: true })
   // locale 是從 useI18n import 的獨立 ref，不在 refs 物件裡——明確加進 watch list
   watch([...Object.values(refs), locale], saveSettings, { deep: true })
 

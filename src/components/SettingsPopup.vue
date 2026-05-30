@@ -9,8 +9,8 @@ import type { Line } from '@/types'
 import { t, locale, setLocale, type Locale } from '@/composables/useI18n'
 import { DEFAULT_NS_ORDER, refreshTagDb, TAG_DB_MIRRORS, type TagDbMirror } from '@/services/tagDb'
 import {
-  profiles, activeProfileIdx, deletedProfiles, type Profile,
-  deleteProfile, restoreProfile, purgeProfile, reorderProfiles, updateProfileTagLines,
+  profiles, activeProfileIdx, deletedProfiles, corruptedProfiles, type Profile,
+  deleteProfile, restoreProfile, purgeProfile, purgeCorrupted, reorderProfiles, updateProfileTagLines,
   fontFamily, fontWeight, getDefaultTagLines, tagLines,
   dblClickLeft, dblClickRight, newTabActive, nsFormat, defaultExactMatch,
   tagDbMirror, tagDbTtlDays, tagStylePreset, type DblClickAction,
@@ -148,6 +148,8 @@ function onProfileEnd() { setTimeout(() => { profileDragging = false }, 0) }
 
 const editingProfileIdx = ref(-1)
 const editingDeleted = ref(false)
+// corrupted 模式：editor 顯示 raw JSON readonly，footer 只有「匯出 / 永久刪除」
+const editingCorrupted = ref(false)
 const editorText = ref('')
 const editorError = ref('')
 const editorCopied = ref(false)
@@ -165,11 +167,21 @@ const editorPreview = computed<Line[] | null>(() => {
 const editingName = computed(() => {
   const idx = editingProfileIdx.value
   if (idx < 0) return ''
+  if (editingCorrupted.value) {
+    const c = corruptedProfiles[idx]
+    return c ? new Date(c.savedAt).toLocaleString() : ''
+  }
   return editingDeleted.value ? deletedProfiles[idx]?.name : profiles[idx]?.name
 })
 
 function adjustEditorIdxOnRemove(removedIdx: number, fromDeleted: boolean) {
-  if (editingDeleted.value !== fromDeleted) return
+  if (editingDeleted.value !== fromDeleted || editingCorrupted.value) return
+  if (editingProfileIdx.value === removedIdx) editingProfileIdx.value = -1
+  else if (editingProfileIdx.value > removedIdx) editingProfileIdx.value--
+}
+
+function adjustEditorIdxOnCorruptedRemove(removedIdx: number) {
+  if (!editingCorrupted.value) return
   if (editingProfileIdx.value === removedIdx) editingProfileIdx.value = -1
   else if (editingProfileIdx.value > removedIdx) editingProfileIdx.value--
 }
@@ -191,16 +203,34 @@ function onPurge(idx: number) {
   purgeProfile(idx)
 }
 
+function onPurgeCorrupted(idx: number) {
+  const c = corruptedProfiles[idx]
+  const name = c ? new Date(c.savedAt).toLocaleString() : ''
+  if (!confirm(t('settings.purgeConfirm', { name }))) return
+  adjustEditorIdxOnCorruptedRemove(idx)
+  purgeCorrupted(idx)
+}
+
 function openEditor(idx: number, deleted = false) {
   if (profileDragging) return
   activeTab.value = null
   editingProfileIdx.value = idx
   editingDeleted.value = deleted
+  editingCorrupted.value = false
   editorError.value = ''
   const data = deleted
     ? deletedProfiles[idx].tagLines
     : idx === activeProfileIdx.value ? tagLines : profiles[idx].tagLines
   editorText.value = JSON.stringify(data, null, 2)
+}
+
+function openCorrupted(idx: number) {
+  activeTab.value = null
+  editingProfileIdx.value = idx
+  editingDeleted.value = false
+  editingCorrupted.value = true
+  editorError.value = ''
+  editorText.value = corruptedProfiles[idx]?.raw ?? ''
 }
 
 function onEditorSave() {
@@ -533,12 +563,16 @@ function onEditorExport() {
             class="eqt-json-editor__textarea"
             spellcheck="false"
             autocomplete="off"
-            :readonly="editingDeleted"
+            :readonly="editingDeleted || editingCorrupted"
           />
 
           <p v-if="editorError" class="eqt-json-editor__error">{{ t('settings.editorJsonError', { message: editorError }) }}</p>
 
-          <div v-if="editingDeleted" class="eqt-popup__actions" style="justify-content: center">
+          <div v-if="editingCorrupted" class="eqt-popup__actions">
+            <p v-if="corruptedProfiles[editingProfileIdx]" class="eqt-json-editor__corrupted-reason">{{ t('settings.corruptedReason', { reason: corruptedProfiles[editingProfileIdx].reason }) }}</p>
+            <button class="eqt-popup__btn eqt-popup__btn--delete" type="button" @click="onPurgeCorrupted(editingProfileIdx)">{{ t('settings.purgeProfile') }}</button>
+          </div>
+          <div v-else-if="editingDeleted" class="eqt-popup__actions" style="justify-content: center">
             <button class="eqt-popup__btn eqt-popup__btn--primary" type="button" @click="onRestore(editingProfileIdx)">{{ t('settings.restoreProfile') }}</button>
             <button class="eqt-popup__btn eqt-popup__btn--delete" type="button" @click="onPurge(editingProfileIdx)">{{ t('settings.purgeProfile') }}</button>
           </div>
@@ -567,7 +601,7 @@ function onEditorExport() {
           <template #item="{ element: p, index: i }">
             <li
               class="eqt-settings__ns-item eqt-settings__ns-item--clickable"
-              :class="{ 'eqt-settings__ns-item--chosen': editingProfileIdx === i && !editingDeleted }"
+              :class="{ 'eqt-settings__ns-item--chosen': editingProfileIdx === i && !editingDeleted && !editingCorrupted }"
               @click="openEditor(i)"
             >
               <span class="eqt-settings__item-name">
@@ -598,6 +632,21 @@ function onEditorExport() {
             >
               <span class="eqt-settings__item-name">{{ p.name }}</span>
               <span class="eqt-settings__item-count">{{ deletedTagCounts[i] }}</span>
+            </li>
+          </ul>
+        </template>
+
+        <template v-if="corruptedProfiles.length">
+          <h4 class="eqt-settings__subtitle">{{ t('settings.corrupted') }}</h4>
+          <ul class="eqt-settings__ns-list">
+            <li
+              v-for="(c, i) in corruptedProfiles"
+              :key="i"
+              class="eqt-settings__ns-item eqt-settings__ns-item--clickable"
+              :class="{ 'eqt-settings__ns-item--chosen': editingProfileIdx === i && editingCorrupted }"
+              @click="openCorrupted(i)"
+            >
+              <span class="eqt-settings__item-name">{{ new Date(c.savedAt).toLocaleString() }}</span>
             </li>
           </ul>
         </template>
@@ -1063,6 +1112,22 @@ function onEditorExport() {
     color: #c33;
     background: rgba(204, 51, 51, 0.08);
     border-radius: 3px;
+  }
+
+  // 損壞 profile 的失敗原因——擠在 corrupted footer 的「永久刪除」左邊。
+  // flex:1 + min-width:0 讓 reason 吃滿剩餘空間、過長自然換行（white-space
+  // 走預設 normal）；general sibling combinator 給後面的 button 加
+  // flex-shrink:0 確保按鈕文字永遠完整、不被 reason 推爆。
+  &__corrupted-reason {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    color: #c33;
+    font-size: 12px;
+
+    ~ .eqt-popup__btn {
+      flex-shrink: 0;
+    }
   }
 }
 

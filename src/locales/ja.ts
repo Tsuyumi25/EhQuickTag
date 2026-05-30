@@ -92,6 +92,8 @@ export default {
   'settings.purgeProfile': '完全に削除',
   'settings.save': '保存',
   'settings.purgeConfirm': '「{name}」を完全に削除しますか？この操作は元に戻せません。',
+  'settings.corrupted': '破損したデータ',
+  'settings.corruptedReason': '原因：{reason}',
   'settings.emptyTag': '(空)',
 
   // TagConfigPopup
