@@ -35,7 +35,7 @@ watch(popupEl, (el) => {
 // 這些 fallback 只給 UI 顯示用，不寫進資料。
 const lineStyleValue = computed<SeparatorStyle['line']>(() => props.line.style?.line ?? 'solid')
 const linePositionValue = computed<SeparatorStyle['linePosition']>(() => props.line.style?.linePosition ?? 'middle')
-const textAlignValue = computed<SeparatorStyle['textAlign']>(() => props.line.style?.textAlign ?? 'center')
+const textAlignValue = computed<SeparatorStyle['textAlign']>(() => props.line.style?.textAlign ?? 'left')
 const textSizeValue = computed<number>(() => props.line.style?.textSize ?? 10)
 const lineThicknessValue = computed<number>(() => props.line.style?.lineThickness ?? 2)
 const lineLengthValue = computed<number>(() => props.line.style?.lineLength ?? 100)

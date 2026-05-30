@@ -311,7 +311,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
               :class="[
                 `eqt-tag-bar__line--separator-${line.style?.line ?? 'solid'}`,
                 `eqt-tag-bar__line--separator-pos-${line.style?.linePosition ?? 'middle'}`,
-                `eqt-tag-bar__line--separator-align-${line.style?.textAlign ?? 'center'}`,
+                `eqt-tag-bar__line--separator-align-${line.style?.textAlign ?? 'left'}`,
               ]"
               :style="{
                 ...(line.color ? { '--line-color': line.color } : {}),
@@ -789,7 +789,6 @@ function onRightClick(event: MouseEvent, b: TagButton) {
   &__separator-label--editing {
     cursor: text;
     outline: none;
-    min-width: 3ch;
 
     &:empty::before,
     &:has(> br:only-child)::before {
