@@ -79,6 +79,11 @@ const draftTag = ref<import('@/types').QuickTag>({ tag: '', label: '' })
 
 function onAdd(type: 'tag' | 'url' = 'tag') {
   draftTag.value = type === 'url' ? { tag: '', url: '', label: '' } : { tag: '', label: '' }
+  // 末行是 separator 時 push 新空行——separator 的 template 不 render tags
+  // 陣列，直接塞進去看不見。新 tag 永遠在 list 最底是最可預期的行為。
+  if (tagLines.length === 0 || tagLines[tagLines.length - 1].separator) {
+    tagLines.push({ tags: [] })
+  }
   editingLine.value = tagLines.length - 1
   pendingAdd.value = true
   if (type === 'url') showUrlPopup.value = true
