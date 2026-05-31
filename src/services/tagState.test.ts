@@ -307,6 +307,14 @@ describe('getState (composite positive — multi-positive)', () => {
   it('Off when parts have mixed states', () => {
     expect(getState(tag, new Set(['female:"yuri"$', '~female:"lolicon"$']))).toBe(TagState.Off)
   })
+
+  // multi-positive Exclude 是 shape-disabled（嚴格 inverse 是 OR-of-negation 不合法）。
+  // search 欄偶然湊到全 -X 也不該把按鈕亮成 Exclude。
+  it('Off when all -X (Exclude form) present (shape-disabled, no visual lie)', () => {
+    expect(getState(tag, new Set([
+      '-female:"yuri"$', '-female:"lolicon"$',
+    ]))).toBe(TagState.Off)
+  })
 })
 
 describe('getState (composite negative — multi-neg, De Morgan)', () => {
@@ -367,13 +375,14 @@ describe('getState (composite mixed)', () => {
     ]))).toBe(TagState.Include)
   })
 
-  // mixed Exclude per-token: positive → -X，negative → X（雙否定）
-  // 注意：mixed 按鈕的 Exclude 在 getEffectiveModifiers 是 disabled，但 getState 仍偵測
-  // 用戶可能手動打的這個形狀
-  it('Exclude when per-token inverted form present', () => {
+  // mixed 按鈕的 Exclude 在 getEffectiveModifiers 是 shape-disabled。getState 偵測層級
+  // 也要對齊——即使 token 偶然湊到 per-tag 翻轉形式（每 tag detectState 都回 Exclude），
+  // 也要回 Off 而不是 Exclude，避免在 search 欄偶然存在反向 token 時把按鈕亮成 Exclude
+  // 的視覺謊言。
+  it('Off when per-token inverted form present (shape-disabled, no visual lie)', () => {
     expect(getState(tag, new Set([
       '-language:"chinese"$', 'language:"english"$',
-    ]))).toBe(TagState.Exclude)
+    ]))).toBe(TagState.Off)
   })
 
   it('Off when mixed states between parts', () => {

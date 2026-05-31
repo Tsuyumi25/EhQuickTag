@@ -105,12 +105,48 @@ export function detectState(part: string, tokens: Set<string>): TagState | null 
   return null
 }
 
+/**
+ * 此 state 是否邏輯上能在此 shape + tag 數量下存在。
+ * shape-level 規則的單一真理來源——getState（防偵測撒謊）、getEffectiveModifiers
+ * （UI cycle 限制）、TagConfigPopup（chip 啟用判斷）都從這裡讀，避免規則漂移。
+ *
+ * 規則架構（單層 + 一致性）：
+ *   Exclude / Or 統一定義為 Include 集合的嚴格補集（de Morgan inverse）。
+ *   當補集寫成 e站文法必須含 `~-X` 或 `-~X`（兩者皆不合法），該態禁用。
+ *
+ * 不接受 per-tag 翻轉（symbol flip）作為補集 fallback——那會把 multi-tag 按鈕
+ * 的「視覺撒謊 bug」加回來（per-tag 翻轉抓到的是另一個小集合，不是補集）。
+ * 例如 mixed [A, -B] 的 per-tag 翻轉 -A B 是 ¬A ∩ B，並非補集 ¬A ∪ B。
+ *
+ * Include 永遠允許（所有 shape 的左鍵預設態）。
+ * 禁用 case（全部來自上面那一條規則）：
+ *   - all-positive (N≥2) 的 Exclude：補集 `~-X1 ~-X2` 不合法
+ *   - all-negative 的 Or：補集 `~-X` 不合法
+ *   - mixed 的 Or / Exclude：補集都含 `~-X` 不合法
+ *
+ * 採 fail-fast：禁用該態，UI 文案引導用戶拆按鈕。詳見 tagConfig.cycleSkipReason*
+ * 系列 i18n key。
+ */
+export function isStateShapeAllowed(shape: ButtonShape, count: number, state: TagState): boolean {
+  if (state === TagState.Include) return true
+  if (state === TagState.Or) {
+    return shape === 'all-positive' || shape === 'all-or'
+  }
+  if (state === TagState.Exclude) {
+    return shape === 'all-negative' ||
+           shape === 'all-or' ||
+           (shape === 'all-positive' && count === 1)
+  }
+  return false
+}
+
 export function getState(tags: string[], tokens: Set<string>): TagState {
   if (!tags.length) return TagState.Off
   const shape = getButtonShape(tags)
+  const count = tags.length
 
   // multi-neg 按鈕：Exclude 走 De Morgan，偵測 ~base 形式
-  if (shape === 'all-negative' && tags.length >= 2) {
+  if (shape === 'all-negative' && count >= 2) {
     const nt = normSet(tokens)
     const normTags = tags.map(normalizeNs)
     if (normTags.every(p => nt.has(p))) return TagState.Include
@@ -118,14 +154,19 @@ export function getState(tags: string[], tokens: Set<string>): TagState {
     return TagState.Off
   }
 
-  // multi-or 按鈕：Exclude 走 De Morgan，偵測 -base 形式（每個 tag 的 Exclude = -base，
-  // 跟 single-tag detectState 對 ~X 的 Exclude 一致，所以走預設路徑就行）
   // 其他形狀：每 tag 用 single-tag context 偵測，全 consistent 才算
   const [first, ...rest] = tags
   const state = detectState(first, tokens)
   if (state === null) return TagState.Off
-  if (rest.every(p => detectState(p, tokens) === state)) return state
-  return TagState.Off
+  if (!rest.every(p => detectState(p, tokens) === state)) return TagState.Off
+
+  // shape-level 防撒謊：mixed / multi-positive 按 token 湊出 Exclude / Or 形式時，
+  // detectState 全 consistent 但此 state 的嚴格補集在 shape 規則上禁用（補集寫不出來，
+  // 詳見 isStateShapeAllowed）——視為 Off，避免 search 欄偶然湊到反向 token（per-tag
+  // 翻轉等等）時把按鈕亮成 Exclude 之類的視覺謊言。
+  if (!isStateShapeAllowed(shape, count, state)) return TagState.Off
+
+  return state
 }
 
 export function removeTag(text: string, tags: string[]): string {
@@ -155,13 +196,14 @@ const MODE_TO_STATE: Record<string, TagState> = { or: TagState.Or, exclude: TagS
 
 /**
  * 哪些 modifier state 對這個按鈕**邏輯上能存在**。
+ * 共用 isStateShapeAllowed 推導——shape-level 規則的細節跟禁用理由詳見那裡。
  *
- * 規則（按 button shape）：
+ * 規則速查：
  * - all-positive (N=1)：Or ✓ Exclude ✓
- * - all-positive (N≥2)：Or ✓ Exclude ✗（嚴格 inverse 是 OR-of-negations，e站文法不支援）
- * - all-negative (任意 N)：Or ✗（OR-of-negations 不支援） Exclude ✓
- * - all-or (任意 N)：Or ✓（維持） Exclude ✓
- * - mixed：Or ✗ Exclude ✗（兩者嚴格 inverse 都含 `~-X` 等不合法形式）
+ * - all-positive (N≥2)：Or ✓ Exclude ✗
+ * - all-negative (任意 N)：Or ✗ Exclude ✓
+ * - all-or (任意 N)：Or ✓ Exclude ✓
+ * - mixed：Or ✗ Exclude ✗
  *
  * disabledModes 提供 user-level 覆蓋，可進一步強制禁用。
  */
@@ -170,14 +212,13 @@ export function getEffectiveModifiers(tags: string[], disabledModes?: readonly T
   const shape = getButtonShape(tags)
   const count = tags.length
 
-  const orAllowed = shape === 'all-positive' || shape === 'all-or'
-  const excludeAllowed = shape === 'all-negative' ||
-                         shape === 'all-or' ||
-                         (shape === 'all-positive' && count === 1)
-
   const result: TagState[] = []
-  if (orAllowed && !disabled.has(TagState.Or)) result.push(TagState.Or)
-  if (excludeAllowed && !disabled.has(TagState.Exclude)) result.push(TagState.Exclude)
+  if (isStateShapeAllowed(shape, count, TagState.Or) && !disabled.has(TagState.Or)) {
+    result.push(TagState.Or)
+  }
+  if (isStateShapeAllowed(shape, count, TagState.Exclude) && !disabled.has(TagState.Exclude)) {
+    result.push(TagState.Exclude)
+  }
   return result
 }
 
