@@ -88,8 +88,10 @@ describe('applyState (negative part)', () => {
     expect(applyState(p, TagState.Or)).toBe(p)
   })
 
-  it('Exclude → strips -, double negative = positive', () => {
-    expect(applyState(p, TagState.Exclude)).toBe('other:"ai generated"$')
+  // -X 的 Exclude 映射到 ~X（OR group 形式），不是 X（雙重否定的 AND 形式）。
+  // 多 tag 負集合按鈕的 inverse 透過 De Morgan 是 OR-of-positives，必須用 ~ 表達。
+  it('Exclude → ~base form (OR group member, De Morgan inverse)', () => {
+    expect(applyState(p, TagState.Exclude)).toBe('~other:"ai generated"$')
   })
 })
 
@@ -122,8 +124,8 @@ describe('allForms', () => {
     expect(allForms('foo$')).toEqual(['foo$', '~foo$', '-foo$'])
   })
 
-  it('negative part → 2 forms (with and without -)', () => {
-    expect(allForms('-foo$')).toEqual(['-foo$', 'foo$'])
+  it('negative part → 3 forms (-X, X, ~X)', () => {
+    expect(allForms('-foo$')).toEqual(['-foo$', 'foo$', '~foo$'])
   })
 
   it('Or-prefixed part → 2 forms (~form and -form)', () => {
@@ -171,16 +173,23 @@ describe('detectState (negative part)', () => {
     expect(detectState(p, new Set([p]))).toBe(TagState.Include)
   })
 
-  it('Exclude when base (positive) token present (double negative)', () => {
-    expect(detectState(p, new Set([base]))).toBe(TagState.Exclude)
+  // Exclude state 對 -X 對應 ~X（OR group），不再對應 X（AND 形式）。
+  // 這個改動修正了多 tag 負集合按鈕的視覺謊言（例：日語按鈕在用戶 include
+  // EN/CH/KO 時不再誤判為 Exclude）。
+  it('Exclude when ~base (OR-form) token present', () => {
+    expect(detectState(p, new Set([`~${base}`]))).toBe(TagState.Exclude)
+  })
+
+  it('null when positive base alone present (not Exclude—use ~base for that)', () => {
+    expect(detectState(p, new Set([base]))).toBeNull()
   })
 
   it('null when neither present', () => {
     expect(detectState(p, new Set())).toBeNull()
   })
 
-  it('Exclude takes priority over Include', () => {
-    expect(detectState(p, new Set([p, base]))).toBe(TagState.Exclude)
+  it('Include when -token present, even if positive base also present', () => {
+    expect(detectState(p, new Set([p, base]))).toBe(TagState.Include)
   })
 
   it('does not detect Or (no ~-token form)', () => {
@@ -245,8 +254,12 @@ describe('getState (single negative tag)', () => {
     expect(getState(tag, new Set([tag]))).toBe(TagState.Include)
   })
 
-  it('Exclude when base present (double negative)', () => {
-    expect(getState(tag, new Set([base]))).toBe(TagState.Exclude)
+  it('Exclude when ~base present (OR-form, De Morgan inverse)', () => {
+    expect(getState(tag, new Set([`~${base}`]))).toBe(TagState.Exclude)
+  })
+
+  it('Off when only positive base present (not Exclude state)', () => {
+    expect(getState(tag, new Set([base]))).toBe(TagState.Off)
   })
 })
 
@@ -283,10 +296,20 @@ describe('getState (composite negative — e.g. Japanese)', () => {
     ]))).toBe(TagState.Include)
   })
 
-  it('Exclude when all base parts present (double negative)', () => {
+  // Exclude state = 真實 inverse = OR-of-positives，由 ~ form 表達
+  it('Exclude when all ~base parts present (OR group form)', () => {
+    expect(getState(tag, new Set([
+      '~language:"english"$', '~language:"chinese"$', '~language:"korean"$',
+    ]))).toBe(TagState.Exclude)
+  })
+
+  // 關鍵修法：用戶 include 全部三個語言（AND of positives）≠ 日按鈕的 inverse
+  // （OR of positives）。前者 = 三語言全擁有的稀少多語本子；後者 = 至少有一種
+  // 語言的所有本子。兩者根本不是同一個集合。日按鈕的視覺不該被誤導成 Exclude。
+  it('Off when all positive base parts present (AND ≠ true inverse, no visual lie)', () => {
     expect(getState(tag, new Set([
       'language:"english"$', 'language:"chinese"$', 'language:"korean"$',
-    ]))).toBe(TagState.Exclude)
+    ]))).toBe(TagState.Off)
   })
 
   it('Off when mixed', () => {
@@ -305,10 +328,20 @@ describe('getState (composite mixed positive/negative)', () => {
     ]))).toBe(TagState.Include)
   })
 
-  it('Exclude when both in inverted form', () => {
+  // 對 positive part: Exclude form 是 -X；對 negative part: Exclude form 是 ~base
+  it('Exclude when both in inverted form (-X for positive, ~base for negative)', () => {
+    expect(getState(tag, new Set([
+      '-language:"chinese"$', '~language:"english"$',
+    ]))).toBe(TagState.Exclude)
+  })
+
+  // 舊版誤判：positive part 的 -X 偵到 Exclude，negative part 的 base 也偵到
+  // Exclude（雙重否定 AND 形式），全員一致 → Exclude。新版只認 ~base 為 Exclude，
+  // 所以這組混合不再被誤判
+  it('Off when negative part has positive base (AND form, not OR group)', () => {
     expect(getState(tag, new Set([
       '-language:"chinese"$', 'language:"english"$',
-    ]))).toBe(TagState.Exclude)
+    ]))).toBe(TagState.Off)
   })
 
   it('Off when mixed states', () => {
@@ -339,8 +372,8 @@ describe('mixed tag: Or→Exclude transition does not produce ~- or --', () => {
     const orText = '~language:"chinese"$ -other:"ai generated"$'
     const cleaned = removeTag(orText, tag)
     const result = addTag(cleaned, tag, TagState.Exclude)
-    // Should be -chinese ai, NOT ~-chinese ai
-    expect(result).toBe('-language:"chinese"$ other:"ai generated"$')
+    // positive 取得 -prefix；negative 走 De Morgan 變 ~base
+    expect(result).toBe('-language:"chinese"$ ~other:"ai generated"$')
     expect(result).not.toContain('~-')
     expect(result).not.toContain('--')
   })
@@ -349,7 +382,7 @@ describe('mixed tag: Or→Exclude transition does not produce ~- or --', () => {
     const includeText = 'language:"chinese"$ -other:"ai generated"$'
     const cleaned = removeTag(includeText, tag)
     const result = addTag(cleaned, tag, TagState.Exclude)
-    expect(result).toBe('-language:"chinese"$ other:"ai generated"$')
+    expect(result).toBe('-language:"chinese"$ ~other:"ai generated"$')
   })
 })
 
@@ -363,8 +396,9 @@ describe('user-reported: composite tag with -rough and ~chinese', () => {
     expect(getState(tag, tokens)).toBe(TagState.Include)
   })
 
-  it('Exclude state detected when both parts negated', () => {
-    const tokens = new Set(tokenize('other:"rough translation"$ -language:"chinese"$'))
+  // Exclude form: negative part 走 ~base (De Morgan)；or part 走 -base
+  it('Exclude state detected when both parts in inverted form', () => {
+    const tokens = new Set(tokenize('~other:"rough translation"$ -language:"chinese"$'))
     expect(getState(tag, tokens)).toBe(TagState.Exclude)
   })
 
@@ -380,7 +414,8 @@ describe('user-reported: composite tag with -rough and ~chinese', () => {
     expect(cleaned).toBe('')
 
     const result = addTag(cleaned, tag, TagState.Exclude)
-    expect(result).toBe('other:"rough translation"$ -language:"chinese"$')
+    // negative 走 ~base，or 走 -base
+    expect(result).toBe('~other:"rough translation"$ -language:"chinese"$')
     expect(result).not.toContain('~-')
     expect(result).not.toContain('--')
     expect(result).not.toContain('-~')
@@ -391,7 +426,7 @@ describe('user-reported: composite tag with -rough and ~chinese', () => {
   })
 
   it('removeTag cleans Exclude form', () => {
-    expect(removeTag('other:"rough translation"$ -language:"chinese"$', tag)).toBe('')
+    expect(removeTag('~other:"rough translation"$ -language:"chinese"$', tag)).toBe('')
   })
 })
 
@@ -468,8 +503,8 @@ describe('addTag (negative tag)', () => {
     expect(addTag('', tag, TagState.Or)).toBe('-other:"ai generated"$')
   })
 
-  it('Exclude strips -, double negative', () => {
-    expect(addTag('', tag, TagState.Exclude)).toBe('other:"ai generated"$')
+  it('Exclude adds ~base (OR group form, De Morgan inverse)', () => {
+    expect(addTag('', tag, TagState.Exclude)).toBe('~other:"ai generated"$')
   })
 })
 
@@ -481,9 +516,10 @@ describe('addTag (composite negative)', () => {
       .toBe('-language:"english"$ -language:"chinese"$')
   })
 
-  it('Exclude strips all -, double negative', () => {
+  // Exclude = (¬X1 ∩ ¬X2)' = X1 ∪ X2，e站表達成 ~X1 ~X2 OR group
+  it('Exclude outputs ~base for each (OR group, true inverse)', () => {
     expect(addTag('', tag, TagState.Exclude))
-      .toBe('language:"english"$ language:"chinese"$')
+      .toBe('~language:"english"$ ~language:"chinese"$')
   })
 })
 
@@ -500,9 +536,9 @@ describe('addTag (composite mixed)', () => {
       .toBe('~language:"chinese"$ -language:"english"$')
   })
 
-  it('Exclude: positive gets -, negative stripped', () => {
+  it('Exclude: positive gets -, negative becomes ~base', () => {
     expect(addTag('', tag, TagState.Exclude))
-      .toBe('-language:"chinese"$ language:"english"$')
+      .toBe('-language:"chinese"$ ~language:"english"$')
   })
 })
 
@@ -682,15 +718,16 @@ describe('round-trip: negative tag (e.g. exclude AI)', () => {
     expect(getState(tag, new Set(tokenize(text)))).toBe(TagState.Off)
   })
 
-  it('right-click: Off → Exclude (double negative = positive)', () => {
+  it('right-click: Off → Exclude outputs ~base (OR-form, De Morgan)', () => {
     let text = addTag('', tag, TagState.Exclude)
-    expect(text).toBe('other:"ai generated"$')
+    expect(text).toBe('~other:"ai generated"$')
     expect(getState(tag, new Set(tokenize(text)))).toBe(TagState.Exclude)
   })
 
-  it('removeTag cleans both forms', () => {
+  it('removeTag cleans all forms (-X, X, ~X)', () => {
     expect(removeTag('-other:"ai generated"$', tag)).toBe('')
     expect(removeTag('other:"ai generated"$', tag)).toBe('')
+    expect(removeTag('~other:"ai generated"$', tag)).toBe('')
   })
 })
 
@@ -703,9 +740,9 @@ describe('round-trip: composite negative (Japanese)', () => {
     expect(getState(tag, new Set(tokenize(text)))).toBe(TagState.Include)
   })
 
-  it('Exclude double-negates all to positive', () => {
+  it('Exclude outputs ~base for each (OR group = De Morgan inverse)', () => {
     const text = addTag('', tag, TagState.Exclude)
-    expect(text).toBe('language:"english"$ language:"chinese"$ language:"korean"$')
+    expect(text).toBe('~language:"english"$ ~language:"chinese"$ ~language:"korean"$')
     expect(getState(tag, new Set(tokenize(text)))).toBe(TagState.Exclude)
   })
 
@@ -716,7 +753,16 @@ describe('round-trip: composite negative (Japanese)', () => {
     )).toBe('')
   })
 
-  it('removeTag cleans Exclude (double-negative) form', () => {
+  it('removeTag cleans Exclude (~base) form', () => {
+    expect(removeTag(
+      '~language:"english"$ ~language:"chinese"$ ~language:"korean"$',
+      tag,
+    )).toBe('')
+  })
+
+  // 向前相容：用戶 search bar 手動打的 positive base form（舊版 Exclude 輸出）
+  // 仍能被 removeTag 清掉，避免歷史儲存的 search text 卡住
+  it('removeTag still cleans legacy positive base form', () => {
     expect(removeTag(
       'language:"english"$ language:"chinese"$ language:"korean"$',
       tag,
@@ -733,9 +779,9 @@ describe('round-trip: composite mixed (chinese + exclude AI)', () => {
     expect(getState(tag, new Set(tokenize(text)))).toBe(TagState.Include)
   })
 
-  it('Exclude: -chinese + ai (both flip)', () => {
+  it('Exclude: -chinese + ~ai (positive flips to -, negative flips to ~base)', () => {
     const text = addTag('', tag, TagState.Exclude)
-    expect(text).toBe('-language:"chinese"$ other:"ai generated"$')
+    expect(text).toBe('-language:"chinese"$ ~other:"ai generated"$')
     expect(getState(tag, new Set(tokenize(text)))).toBe(TagState.Exclude)
   })
 

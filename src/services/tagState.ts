@@ -23,16 +23,23 @@ export function applyState(part: string, state: TagState): string {
   if (state === TagState.Include) return part
   if (state === TagState.Or) return (neg || or) ? part : `~${part}`
   if (state === TagState.Exclude) {
-    if (neg) return part.slice(1)       // -foo → foo (double negative)
-    if (or) return `-${part.slice(1)}`  // ~foo → -foo (negate underlying)
-    return `-${part}`                    // foo → -foo
+    // -X 的 Exclude state 對應到 ~X，不是 X。這是 De Morgan 的鏡像：對多 tag
+    // 負集合按鈕 [-X1, -X2, -X3]（Include 集合 = ¬X1 ∩ ¬X2 ∩ ¬X3），其真實
+    // inverse 是 X1 ∪ X2 ∪ X3 = OR-of-positives，e站表達成 ~X1 ~X2 ~X3 OR group。
+    // 寫成 X1 X2 X3（AND of positives）會變成「同時擁有三個語言」的奇怪交集，
+    // 跟集合論意義上的 inverse 完全不對應。
+    if (neg) return `~${part.slice(1)}`  // -foo → ~foo (OR group member)
+    if (or) return `-${part.slice(1)}`   // ~foo → -foo (negate underlying)
+    return `-${part}`                     // foo → -foo
   }
   return part
 }
 
 export function allForms(part: string): string[] {
   const p = normalizeNs(part)
-  if (p.startsWith('-')) return [p, p.slice(1)]
+  // 負 tag: applyState 在 Exclude state 會輸出 ~base（De Morgan），所以
+  // removeTag 也得認得 ~base 形式來做乾淨清理
+  if (p.startsWith('-')) return [p, p.slice(1), `~${p.slice(1)}`]
   if (p.startsWith('~')) return [p, `-${p.slice(1)}`]
   return [p, `~${p}`, `-${p}`]
 }
@@ -53,7 +60,9 @@ export function detectState(part: string, tokens: Set<string>): TagState | null 
   const or = p.startsWith('~')
   const base = (neg || or) ? p.slice(1) : p
   if (neg) {
-    if (nt.has(base)) return TagState.Exclude
+    // Exclude state 對 -X 對應的是 tokens 含 ~X（OR group 形式），不是含 X
+    // （AND 形式）。詳見 applyState 的對應註解 + De Morgan 鏡像。
+    if (nt.has(`~${base}`)) return TagState.Exclude
     if (nt.has(p)) return TagState.Include
   } else if (or) {
     if (nt.has(`-${base}`)) return TagState.Exclude
