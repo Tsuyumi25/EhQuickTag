@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import { reactive, ref, watch, onMounted, nextTick, computed } from 'vue'
-import { ExternalLink } from '@lucide/vue'
+import { ExternalLink, ChevronRight, Lock, MousePointerClick } from '@lucide/vue'
 import ContentEditable from 'vue-contenteditable'
 import LineColorSwatch from '@/components/LineColorSwatch.vue'
 import SearchTermEditor from '@/components/SearchTermEditor.vue'
 import { currentTagStyleClass } from '@/composables/useTagStyle'
 import { usePopupBehavior } from '@/composables/usePopupBehavior'
 import { makeRow, type RowState } from '@/composables/useSearchTerm'
-import { type TagButton, type TagMode } from '@/types'
+import { TagState, type TagButton, type TagMode } from '@/types'
 import { t, isCJKLocale } from '@/composables/useI18n'
 import { loadTagDb } from '@/services/tagDb'
+import { getButtonShape, isStateShapeAllowed, getEffectiveModifiers, addTag, type ButtonShape } from '@/services/tagState'
 
 const props = defineProps<{
   tag: TagButton
@@ -125,6 +126,91 @@ const syntaxHelpUrl = computed(() =>
     ? 'https://ehwiki.org/wiki/Gallery_Searching/Chinese'
     : 'https://ehwiki.org/wiki/Gallery_Searching',
 )
+
+// --- right-click cycle shape rules ---
+// shape 允許判斷由 tagState.ts 的 isStateShapeAllowed 提供（規則細節跟禁用理由
+// 詳見其 doc comment）。user 還能透過 orEnabled / excludeEnabled 額外手動禁用
+// 一個 shape 允許的態。
+
+const currentTags = computed(() => rows.map(r => r.rawText.trim()).filter(Boolean))
+const buttonShape = computed(() => getButtonShape(currentTags.value))
+
+const orShapeAllowed = computed(() =>
+  isStateShapeAllowed(buttonShape.value, currentTags.value.length, TagState.Or),
+)
+
+const excludeShapeAllowed = computed(() =>
+  isStateShapeAllowed(buttonShape.value, currentTags.value.length, TagState.Exclude),
+)
+
+const shapeLabel = computed<Record<ButtonShape, string>>(() => ({
+  'all-positive': t('tagConfig.shape.allPositive'),
+  'all-negative': t('tagConfig.shape.allNegative'),
+  'all-or': t('tagConfig.shape.allOr'),
+  'mixed': t('tagConfig.shape.mixed'),
+}))
+
+const cycleSkipReason = computed(() => {
+  if (!currentTags.value.length) return ''
+  const skipped: string[] = []
+  if (!orShapeAllowed.value) skipped.push('Or')
+  if (!excludeShapeAllowed.value) skipped.push('Exclude')
+  if (!skipped.length) return ''
+
+  const skippedStr = skipped.join(', ')
+  // 文案分三種——對症下藥比通用 fallback 準：
+  //   - mixed：兩態都禁用 → cycleSkipReasonMixed（cover Or 跟 Exclude）
+  //   - 單獨 Or 禁用（all-negative）：聯集需要 ~-X，e站不支援 → Or-specific
+  //   - 單獨 Exclude 禁用（all-positive N≥2）：補集需要 ~-X，e站不支援 → Exclude-specific
+  // Or 跟 Exclude 死因不同（聯集 vs 補集），用同一文案會詞不達意。
+  if (buttonShape.value === 'mixed') {
+    return t('tagConfig.cycleSkipReasonMixed', { skipped: skippedStr })
+  }
+  if (!orShapeAllowed.value) {
+    return t('tagConfig.cycleSkipReasonOr', {
+      shape: shapeLabel.value[buttonShape.value],
+    })
+  }
+  return t('tagConfig.cycleSkipReasonExclude', {
+    shape: shapeLabel.value[buttonShape.value],
+  })
+})
+
+// --- simulator: 點擊 cycle 經過 shape 允許的所有 state，預覽 output token ---
+
+// Include 永遠是 cycle 起點 + shape 允許的 modifier。後者直接讀
+// getEffectiveModifiers 作 SSOT（不傳 disabledModes 拿純 shape 層級允許 list），
+// 避免之後 cycle 順序的全域設定改動時 simulator 漂移。
+const simSequence = computed<TagState[]>(() => [
+  TagState.Include,
+  ...getEffectiveModifiers(currentTags.value, []),
+])
+
+const simState = ref<TagState>(TagState.Include)
+
+// sequence 因 tags 改變後若不再包含當前 state，自動 reset 到第一個
+watch(simSequence, (seq) => {
+  if (!seq.includes(simState.value)) simState.value = seq[0]
+})
+
+function simulateNext(): void {
+  const seq = simSequence.value
+  const idx = seq.indexOf(simState.value)
+  simState.value = seq[(idx + 1) % seq.length]
+}
+
+const SIM_STATE_NAME: Record<number, string> = {
+  [TagState.Include]: 'Include',
+  [TagState.Or]: 'Or',
+  [TagState.Exclude]: 'Exclude',
+}
+
+const simStateName = computed(() => SIM_STATE_NAME[simState.value])
+
+const simOutput = computed(() => {
+  if (!currentTags.value.length) return ''
+  return addTag('', currentTags.value, simState.value)
+})
 </script>
 
 <template>
@@ -188,19 +274,85 @@ const syntaxHelpUrl = computed(() =>
 
       <hr class="eqt-popup__divider" />
 
-      <!-- right-click modes -->
+      <!-- click modes: 左鍵永遠 Include (不可關)，右鍵 Or → Exclude cycle -->
+      <!-- 順序：sim → modes → reason（reason 緊跟 modes 解釋 chip 為何禁用） -->
       <div class="eqt-popup__field">
-        <label class="eqt-popup__label">{{ t('tagConfig.rightClickMode') }}</label>
-        <div class="eqt-popup__modes">
-          <label class="eqt-popup__mode">
-            <input type="checkbox" v-model="orEnabled" />
-            <span>Or（~）</span>
-          </label>
-          <label class="eqt-popup__mode">
-            <input type="checkbox" v-model="excludeEnabled" />
-            <span>Exclude（-）</span>
-          </label>
+        <div v-if="currentTags.length" class="eqt-cycle-sim">
+          <div class="eqt-cycle-sim__row">
+            <button type="button" class="eqt-cycle-sim__btn" @click="simulateNext">
+              <MousePointerClick :size="13" />
+              <span>{{ t('tagConfig.simulateOutput') }}</span>
+            </button>
+            <span class="eqt-cycle-sim__label">
+              {{ t('tagConfig.simulateCurrent', { state: simStateName }) }}
+            </span>
+          </div>
+          <input
+            type="text"
+            class="eqt-cycle-sim__output"
+            :value="simOutput"
+            readonly
+            spellcheck="false"
+          />
         </div>
+
+        <div class="eqt-cycle-modes">
+          <div class="eqt-cycle-group">
+            <span class="eqt-popup__label eqt-cycle-group__label">{{ t('tagConfig.leftClickMode') }}</span>
+            <span class="eqt-cycle-chip eqt-cycle-chip--include">Include</span>
+          </div>
+          <div class="eqt-cycle-group">
+            <span class="eqt-popup__label eqt-cycle-group__label">{{ t('tagConfig.rightClickMode') }}</span>
+            <button
+              type="button"
+              class="eqt-cycle-chip eqt-cycle-chip--or"
+              :class="{
+                'eqt-cycle-chip--shape-disabled': !orShapeAllowed,
+                'eqt-cycle-chip--user-disabled': orShapeAllowed && !orEnabled,
+              }"
+              :disabled="!orShapeAllowed"
+              :title="orShapeAllowed
+                ? (orEnabled ? t('tagConfig.cycleChipClickToDisable') : t('tagConfig.cycleChipClickToEnable'))
+                : t('tagConfig.cycleChipShapeDisabled')"
+              @click="orShapeAllowed && (orEnabled = !orEnabled)"
+            >
+              <Lock v-if="!orShapeAllowed" :size="11" />
+              <input
+                v-else
+                type="checkbox"
+                :checked="orEnabled"
+                tabindex="-1"
+                class="eqt-cycle-chip__check"
+              />
+              <span>Or</span>
+            </button>
+            <ChevronRight :size="14" class="eqt-cycle-arrow" />
+            <button
+              type="button"
+              class="eqt-cycle-chip eqt-cycle-chip--exclude"
+              :class="{
+                'eqt-cycle-chip--shape-disabled': !excludeShapeAllowed,
+                'eqt-cycle-chip--user-disabled': excludeShapeAllowed && !excludeEnabled,
+              }"
+              :disabled="!excludeShapeAllowed"
+              :title="excludeShapeAllowed
+                ? (excludeEnabled ? t('tagConfig.cycleChipClickToDisable') : t('tagConfig.cycleChipClickToEnable'))
+                : t('tagConfig.cycleChipShapeDisabled')"
+              @click="excludeShapeAllowed && (excludeEnabled = !excludeEnabled)"
+            >
+              <Lock v-if="!excludeShapeAllowed" :size="11" />
+              <input
+                v-else
+                type="checkbox"
+                :checked="excludeEnabled"
+                tabindex="-1"
+                class="eqt-cycle-chip__check"
+              />
+              <span>Exclude</span>
+            </button>
+          </div>
+        </div>
+        <p v-if="cycleSkipReason" class="eqt-cycle-reason">{{ cycleSkipReason }}</p>
       </div>
 
       <div class="eqt-popup__actions">
@@ -386,20 +538,6 @@ const syntaxHelpUrl = computed(() =>
     }
   }
 
-  &__modes {
-    display: flex;
-    gap: 12px;
-  }
-
-  &__mode {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 12px;
-    cursor: pointer;
-    user-select: none;
-  }
-
   &__actions {
     display: flex;
     align-items: center;
@@ -458,6 +596,183 @@ const syntaxHelpUrl = computed(() =>
   border: var(--eqt-border-width) solid var(--eqt-border);
   border-radius: 4px;
   padding: 6px;
+}
+
+// 點擊模式視覺：左鍵 [Include] / 右鍵 [Or] → [Exclude]
+// chip 三狀態：shape 允許+啟用（實色）、shape 允許+user 關掉（半透明）、
+// shape 禁用（鎖頭+灰色 disabled）
+.eqt-cycle-modes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 24px;
+  margin-top: 10px;
+}
+
+.eqt-cycle-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  &__label {
+    margin: 0;
+  }
+}
+
+.eqt-cycle-arrow {
+  color: var(--eqt-text-hint);
+  flex-shrink: 0;
+}
+
+.eqt-cycle-chip {
+  --chip-color: var(--eqt-text);
+
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px solid var(--eqt-border);
+  border-radius: 6px;
+  background: var(--eqt-bg-btn);
+  color: var(--eqt-text);
+  font-size: 13px;
+  font-family: inherit;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: opacity 0.15s, background 0.15s;
+
+  &:disabled {
+    cursor: not-allowed;
+  }
+
+  // 每 chip type 設自己的 --chip-color；background/border/text 用 color-mix 派生
+  // 對齊 SearchTermEditor explain--tag 的「柔和色 + 透明背景」風格，不刺眼
+  &--include {
+    --chip-color: #059669;
+    background: color-mix(in srgb, var(--chip-color) 10%, transparent);
+    border-color: color-mix(in srgb, var(--chip-color) 40%, transparent);
+    color: var(--chip-color);
+    cursor: default;
+
+    .eqt-dark & {
+      --chip-color: #34d399;
+      background: color-mix(in srgb, var(--chip-color) 15%, transparent);
+    }
+  }
+
+  &--or:not(:disabled):not(.eqt-cycle-chip--user-disabled) {
+    --chip-color: #ca8a04;
+    background: color-mix(in srgb, var(--chip-color) 10%, transparent);
+    border-color: color-mix(in srgb, var(--chip-color) 40%, transparent);
+    color: var(--chip-color);
+
+    .eqt-dark & {
+      --chip-color: #facc15;
+      background: color-mix(in srgb, var(--chip-color) 15%, transparent);
+    }
+  }
+
+  &--exclude:not(:disabled):not(.eqt-cycle-chip--user-disabled) {
+    --chip-color: var(--eqt-status-exclude);
+    background: color-mix(in srgb, var(--chip-color) 14%, transparent);
+    border-color: color-mix(in srgb, var(--chip-color) 50%, transparent);
+    color: var(--chip-color);
+  }
+
+  &--or:not(:disabled):hover,
+  &--exclude:not(:disabled):hover {
+    background: color-mix(in srgb, var(--chip-color) 20%, transparent);
+  }
+
+  // shape 規則禁用：鎖頭 + 灰色背景 + 不可 click
+  &--shape-disabled {
+    opacity: 0.55;
+    color: var(--eqt-text-hint);
+    background: var(--eqt-bg-disabled);
+  }
+
+  // shape 允許但 user 手動關掉：半透明顯示「能用但被你關了」
+  &--user-disabled {
+    opacity: 0.5;
+  }
+
+  // chip 內嵌 checkbox，視覺暗示「可開關」；實際 toggle 走 outer button click。
+  // EH 全域有 `input[type="checkbox"] { position: relative; top: 2px; }` 推 checkbox
+  // 下移 2px，必須用 !important 才壓得住（class selector specificity 仍會被屬性
+  // selector + element 計算贏走當層 cascade）。
+  &__check {
+    margin: 0;
+    width: 13px;
+    height: 13px;
+    position: static !important;
+    top: 0 !important;
+    pointer-events: none;
+    accent-color: var(--chip-color);
+  }
+}
+
+.eqt-cycle-reason {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--eqt-text-hint);
+}
+
+// 模擬輸出：點 button cycle 經過 shape 允許的所有 state，預覽 token output
+// 兩行排版：第一行 button + 當前態 label；第二行輸出 token（可能很長）
+.eqt-cycle-sim {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+
+  &__row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  &__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border: 1px solid var(--eqt-border);
+    border-radius: 6px;
+    background: var(--eqt-bg-btn);
+    color: var(--eqt-text);
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+
+    &:hover {
+      background: var(--eqt-bg-btn-hover);
+    }
+  }
+
+  &__label {
+    font-size: 12px;
+    color: var(--eqt-text-secondary);
+  }
+
+  // readonly input：cursor 可移動、文字可選 / 複製，但無法編輯。
+  // 比 <code> 更友好——userscript 場景用戶可能會想複製預覽 token 出去測試。
+  &__output {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: var(--eqt-bg-elevated);
+    border: 1px solid var(--eqt-border);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px;
+    color: var(--eqt-text);
+
+    &:focus {
+      outline: 1px solid var(--eqt-border-focus);
+      outline-offset: -1px;
+    }
+  }
 }
 
 // useSearchTerm 用到的 tag-remove 在 SearchTermEditor 內部 emit('remove') 觸發；
