@@ -483,13 +483,18 @@ const simOutput = computed(() => {
     opacity: 0.5;
   }
 
-  // chip 內嵌 checkbox，視覺暗示「可開關」；實際 toggle 走 outer button click。
-  // EH 全域對 checkbox 加 `position: relative; top: 2px` 的偏移已經由 theme.scss
-  // 的 `#eqt-app input[type="checkbox"]` reset 處理。
-  &__check {
-    margin: 0;
+  // chip 內嵌 checkbox 是視覺指示器（不是 form input），用 native 渲染 +
+  // accent-color 染色比 EH-style mask 更貼合小尺寸 chip 風格。
+  // descendant selector .eqt-cycle-chip .__check (0,2,0) 才能完整 opt-out
+  // theme.scss 的 :where(scope) input[type="checkbox"] (0,1,1) 全域設計。
+  .eqt-cycle-chip__check {
+    appearance: auto;
+    -webkit-appearance: auto;
     width: 13px;
     height: 13px;
+    margin: 0;
+    border: none;
+    background: transparent;
     pointer-events: none;
     accent-color: var(--chip-color);
   }

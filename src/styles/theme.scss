@@ -22,13 +22,57 @@
   box-sizing: border-box;
 }
 
-// EH 全站有 `input[type="checkbox"] { position: relative; top: 2px }`，
-// 會讓我們組件內的 checkbox 視覺下移 2px。在這裡一次中和掉，避免每個用到
-// checkbox 的 component 自己加 `!important` 治標。
-#eqt-app input[type="checkbox"],
-#eqt-bar-anchor input[type="checkbox"] {
-  position: static;
+// 全域 checkbox 視覺重做：appearance:none 拿掉系統原生外觀，自繪 EH 風格的
+// 方塊（bg-btn 底 + border 框）+ Lucide Check mask 當勾勾。
+//
+// 大小 / 勾勾顏色透過 token 暴露，預設值放 :root 而非這條規則內——關鍵：
+// 若在這條規則內設 token default，component 級 (0,1,0) 直接設到同一 element
+// 上的 override 會 *輸*。提到 :root 變成 inherited default 才能被覆蓋。
+//
+// scope ID 包進 :where() 把選擇器整體降到 (0,1,1)，讓 component 級用
+// descendant selector / compound 即可 opt-out（例如 cycle-chip 要回到 native
+// 渲染）。EH 站內 bare `input[type="checkbox"]` 也是 (0,1,1)，靠 source order
+// 贏（userscript style 最後注入）。
+:where(#eqt-app, #eqt-bar-anchor) input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  // 同時蓋掉 EH 全站的 `position: relative; top: 2px` 偏移
+  position: relative;
   top: 0;
+  margin: 0;
+  flex-shrink: 0;
+  width: var(--eqt-checkbox-size);
+  height: var(--eqt-checkbox-size);
+  border: var(--eqt-border-width) solid var(--eqt-border);
+  border-radius: var(--eqt-radius-sm);
+  background: var(--eqt-bg-btn);
+  color: var(--eqt-checkbox-color);
+  cursor: pointer;
+  vertical-align: middle;
+  transition: var(--eqt-transition-base);
+
+  &:hover:not(:disabled) {
+    background: var(--eqt-bg-btn-hover);
+  }
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+
+  // 勾勾用 Lucide Check 的 SVG path 當 mask（path 跟 @lucide/vue 的 Check 一致），
+  // 透過 mask-image + background-color: currentColor 讓勾勾顏色跟著 color 走、
+  // 尺寸用 mask-size 百分比自動跟著 checkbox 縮放。
+  &:checked::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-color: currentColor;
+    mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><path d='M20 6 9 17l-5-5'/></svg>");
+    mask-size: 75% 75%;
+    mask-position: center;
+    mask-repeat: no-repeat;
+  }
 }
 
 #eqt-app button,
@@ -64,6 +108,11 @@
 
   // transition base for color/border/background morphing
   --eqt-transition-base: background 0.15s, border-color 0.15s, color 0.15s;
+
+  // checkbox 預設尺寸 / 勾勾顏色（必須放 :root inherited，不能放全域 input 規則內，
+  // 否則 component 級 override 會被全域 (1,1,1) 在同 element 上壓過去）
+  --eqt-checkbox-size: 20px;
+  --eqt-checkbox-color: var(--eqt-text-secondary);
 }
 
 // Light theme (e-hentai.org) — on :root so Teleported content inherits
