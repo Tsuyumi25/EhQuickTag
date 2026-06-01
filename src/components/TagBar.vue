@@ -811,6 +811,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
   &__separator-label {
     flex-shrink: 0;
     white-space: nowrap;
+    user-select: none;
   }
 
   // editing 時用 contenteditable span 做 in-place 編輯（WYSIWYG）
@@ -970,6 +971,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
     cursor: pointer;
     font-size: 12px;
     line-height: 1.4;
+    user-select: none;
     transition: background 0.15s, border-color 0.15s, color 0.15s;
 
     &:hover {
