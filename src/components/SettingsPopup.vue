@@ -752,7 +752,6 @@ function onEditorExport() {
   overflow-y: auto;
 }
 
-
 // 統一垂直 rhythm：每個 tab 內容區跟右欄 profile sidebar 都是垂直 stack，
 // 用 flex column + gap 給容器層級的均等間距。比 owl selector (`> * + *`) 更
 // 現代——gap 屬性把間距語意歸給容器本身，子元素不負責 margin。
@@ -778,6 +777,13 @@ function onEditorExport() {
     display: flex;
     align-items: center;
     gap: 8px;
+
+    // 整個 row 區域可點 → checkbox toggle。@at-root 跳出 nesting，避免被
+    // 編成 `.eqt-settings__row label.eqt-settings__row` (descendant chain)；
+    // interpolation 把 & 黏進 label 才會得到 compound `label.eqt-settings__row`。
+    @at-root label#{&} {
+      cursor: pointer;
+    }
   }
 
   &__label {
