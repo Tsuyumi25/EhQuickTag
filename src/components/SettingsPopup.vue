@@ -289,8 +289,8 @@ function onEditorExport() {
       <div class="eqt-settings__panel">
         <!-- 設定：搜尋 -->
         <div v-show="editingProfileIdx < 0">
-          <div v-show="activeTab === 'search'">
-            <label class="eqt-settings__row" style="margin-top: 0">
+          <div v-show="activeTab === 'search'" class="eqt-settings__tab-content">
+            <label class="eqt-settings__row">
               <input
                 type="checkbox"
                 :checked="props.useNhWeight"
@@ -318,7 +318,7 @@ function onEditorExport() {
               >{{ t('settings.nsFormatShort') }}</button>
             </div>
 
-            <label class="eqt-settings__row" style="margin-top: 10px">
+            <label class="eqt-settings__row">
               <input
                 type="checkbox"
                 :checked="defaultExactMatch"
@@ -348,7 +348,7 @@ function onEditorExport() {
                 <option value="none">{{ t('settings.actionNone') }}</option>
               </select>
             </div>
-            <label class="eqt-settings__row" style="margin-top: 6px">
+            <label class="eqt-settings__row">
               <input
                 type="checkbox"
                 :checked="newTabActive"
@@ -389,8 +389,8 @@ function onEditorExport() {
           </div>
 
           <!-- 設定：資料 -->
-          <div v-show="activeTab === 'data'">
-            <h4 class="eqt-settings__subtitle" style="margin-top: 0">{{ t('settings.tagDbMirror') }}</h4>
+          <div v-show="activeTab === 'data'" class="eqt-settings__tab-content">
+            <h4 class="eqt-settings__subtitle">{{ t('settings.tagDbMirror') }}</h4>
             <div class="eqt-settings__row">
               <select class="eqt-settings__select" v-model="tagDbMirror">
                 <option v-for="opt in mirrorOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
@@ -407,8 +407,8 @@ function onEditorExport() {
           </div>
 
           <!-- 設定：外觀 -->
-          <div v-show="activeTab === 'appearance'">
-            <h4 class="eqt-settings__subtitle" style="margin-top: 0">{{ t('settings.language') }}</h4>
+          <div v-show="activeTab === 'appearance'" class="eqt-settings__tab-content">
+            <h4 class="eqt-settings__subtitle">{{ t('settings.language') }}</h4>
             <div class="eqt-settings__locale-row">
               <button
                 v-for="opt in localeOptions"
@@ -487,7 +487,7 @@ function onEditorExport() {
           </div>
 
           <!-- 設定：關於 -->
-          <div v-show="activeTab === 'about'" class="eqt-settings__about">
+          <div v-show="activeTab === 'about'" class="eqt-settings__tab-content eqt-settings__about">
             <div class="eqt-about__hero">
               <div class="eqt-about__title">EH Quick Tag</div>
               <div class="eqt-about__version">v{{ appVersion }}</div>
@@ -599,7 +599,7 @@ function onEditorExport() {
 
       <!-- 右欄：標籤組列表 -->
       <aside class="eqt-settings__profiles">
-        <h4 class="eqt-settings__subtitle" style="margin-top: 0">{{ t('settings.profilesTitle') }}</h4>
+        <h4 class="eqt-settings__subtitle">{{ t('settings.profilesTitle') }}</h4>
         <Draggable
           v-bind="dragOptions"
           :model-value="profiles"
@@ -752,13 +752,32 @@ function onEditorExport() {
   overflow-y: auto;
 }
 
+
+// 統一垂直 rhythm：每個 tab 內容區跟右欄 profile sidebar 都是垂直 stack，
+// 用 flex column + gap 給容器層級的均等間距。比 owl selector (`> * + *`) 更
+// 現代——gap 屬性把間距語意歸給容器本身，子元素不負責 margin。
+//
+// about tab 走自己的 spacing system（about__hero/about__section 用 margin-bottom
+// 串接），所以用 :not(.eqt-settings__about) 排除。
+.eqt-settings__tab-content:not(.eqt-settings__about),
+.eqt-settings__profiles {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  // subtitle 是 section heading，上方要更大的 visual break。
+  // margin-top 跟 gap 疊加：6px gap + 8px margin = 14px 視覺間距。
+  // :not(:first-child) 避免「tab 內第一個 element 是 subtitle」時被多推 8px。
+  > .eqt-settings__subtitle:not(:first-child) {
+    margin-top: 8px;
+  }
+}
+
 .eqt-settings {
   &__row {
     display: flex;
     align-items: center;
-    gap: 6px;
-    cursor: pointer;
-    font-size: 13px;
+    gap: 8px;
   }
 
   &__label {
@@ -769,7 +788,6 @@ function onEditorExport() {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-top: 6px;
     font-size: 13px;
   }
 
@@ -781,7 +799,6 @@ function onEditorExport() {
   &__locale-row {
     display: flex;
     gap: 4px;
-    margin-top: 4px;
   }
 
   &__locale-btn {
@@ -804,7 +821,7 @@ function onEditorExport() {
   }
 
   &__hint {
-    margin: 4px 0 0;
+    margin: 0 0 0;
     font-size: 11px;
     color: var(--eqt-text-hint);
     line-height: 1.4;
@@ -812,7 +829,7 @@ function onEditorExport() {
 
 
   &__subtitle {
-    margin: 14px 0 4px;
+    margin: 0 0 4px;
     font-size: 13px;
     font-weight: bold;
     display: flex;
@@ -831,13 +848,6 @@ function onEditorExport() {
       color: var(--eqt-text);
     }
   }
-
-  &__row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
 
   &__input--short {
     width: 5em;
@@ -860,7 +870,7 @@ function onEditorExport() {
 
   &__ns-list {
     list-style: none;
-    margin: 6px 0 0;
+    margin: 0;
     padding: 0;
   }
 
@@ -907,7 +917,7 @@ function onEditorExport() {
 
 
   &__font-row {
-    margin-top: 4px;
+    display: flex;
   }
 
   &__font-input {
@@ -933,7 +943,6 @@ function onEditorExport() {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-top: 4px;
   }
 
   &__weight-slider {
@@ -949,7 +958,6 @@ function onEditorExport() {
   }
 
   &__font-preview {
-    margin-top: 6px;
     padding: 8px;
     border: var(--eqt-border-width) solid var(--eqt-border);
     border-radius: 3px;
