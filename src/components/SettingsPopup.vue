@@ -798,7 +798,7 @@ function onEditorExport() {
     padding: 3px 6px;
     border: var(--eqt-border-width) solid var(--eqt-border);
     border-radius: 3px;
-    background: var(--eqt-bg-elevated);
+    background: var(--eqt-bg);
     color: var(--eqt-text);
     font-size: 12px;
   }
