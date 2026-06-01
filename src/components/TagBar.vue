@@ -961,21 +961,8 @@ function onRightClick(event: MouseEvent, b: TagButton) {
   }
 
   &__ctrl {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
+    @include btn-toned;
     padding: 2px 6px;
-    border: var(--eqt-border-width) solid var(--eqt-border);
-    border-radius: 3px;
-    background: var(--eqt-bg-btn);
-    color: var(--eqt-text-secondary);
-    cursor: pointer;
-    font-size: 12px;
-    line-height: 1.4;
-
-    &:hover {
-      background: var(--eqt-bg-hover);
-    }
 
     &--toggle {
       display: inline-grid;

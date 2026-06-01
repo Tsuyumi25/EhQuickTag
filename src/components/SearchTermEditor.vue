@@ -217,11 +217,10 @@ const qualifierOptions = Array.from(QUALIFIER_SET).map(q => ({ value: `q:${q}`, 
 }
 
 .eqt-row__prefix-cycle {
-  @include btn-outlined;
+  @include btn-toned;
   flex-shrink: 0;
   min-width: 2.2em;
   padding: 0 6px;
-  color: var(--eqt-text-hint);
   font-weight: bold;
 
   &--exclude {
@@ -282,24 +281,19 @@ const qualifierOptions = Array.from(QUALIFIER_SET).map(q => ({ value: `q:${q}`, 
 }
 
 .eqt-row__colon-toggle {
-  padding: 0 6px;
+  @include btn-toned;
+  // 在 __colon-split 容器內，外框由容器提供，自己只留右側 divider
   border: none;
   border-right: var(--eqt-border-width) solid var(--eqt-border);
-  background: transparent;
-  color: var(--eqt-text-hint);
-  cursor: pointer;
+  border-radius: 0;
+  padding: 0 6px;
   flex-shrink: 0;
+  // 兩種 label（long / short）疊在同一格，可見的那個用 visibility 切
   display: inline-grid;
-  align-items: center;
   justify-items: center;
 
   > * {
     grid-area: 1 / 1;
-  }
-
-  &:hover:not(:disabled) {
-    background: var(--eqt-bg-hover);
-    color: var(--eqt-text);
   }
 
   &--disabled {
@@ -325,11 +319,10 @@ const qualifierOptions = Array.from(QUALIFIER_SET).map(q => ({ value: `q:${q}`, 
 }
 
 .eqt-row__suffix-cycle {
-  @include btn-outlined;
+  @include btn-toned;
   flex-shrink: 0;
   min-width: 2.2em;
   padding: 0 6px;
-  color: var(--eqt-text-hint);
   font-weight: bold;
 
   &--exact {

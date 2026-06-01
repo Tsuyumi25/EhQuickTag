@@ -67,6 +67,20 @@
   }
 }
 
+// 有框 + bg-btn + secondary 文字色（比 filled 更低調）；hover 走 bg-hover overlay
+// 而非 bg-btn-hover，視覺更柔——給 TagBar __ctrl、popup __add-btn / __syntax-help、
+// row __colon-toggle / __prefix-cycle / __suffix-cycle 這類「填充但不搶眼」的按鈕。
+@mixin btn-toned {
+  @include btn-base;
+  border: var(--eqt-border-width) solid var(--eqt-border);
+  background: var(--eqt-bg-btn);
+  color: var(--eqt-text-secondary);
+
+  &:hover:not(:disabled) {
+    background: var(--eqt-bg-hover);
+  }
+}
+
 // 純圖示方塊（width=height=--eqt-row-h），無框透明，hover 改文字色
 @mixin btn-icon {
   @include btn-base;

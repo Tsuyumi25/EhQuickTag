@@ -92,28 +92,18 @@
   }
 
   &__syntax-help {
-    @include btn-outlined;
+    @include btn-toned;
     gap: 3px;
     margin-left: 6px;
     padding: 4px 6px;
-    color: var(--eqt-text-hint);
     font-weight: normal;
     text-decoration: none;
-
-    &:hover:not(:disabled) {
-      color: var(--eqt-text-secondary);
-    }
   }
 
   &__add-btn {
-    @include btn-outlined;
+    @include btn-toned;
     margin-left: auto;
     padding: 4px 6px;
-    color: var(--eqt-text-hint);
-
-    &:hover:not(:disabled) {
-      color: var(--eqt-text-secondary);
-    }
   }
 
   &__label {

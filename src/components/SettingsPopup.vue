@@ -685,7 +685,7 @@ function onEditorExport() {
   width: 7rem;
   flex-shrink: 0;
   padding: 1.25rem 0.75rem;
-  border-right: var(--eqt-border-width) solid var(--eqt-divider);
+  border-right: var(--eqt-border-width) solid var(--eqt-border);
   background: var(--eqt-bg);
 
   .eqt-popup__title {
@@ -747,7 +747,7 @@ function onEditorExport() {
   width: 15rem;
   flex-shrink: 0;
   padding: 1.25rem 0.75rem;
-  border-left: var(--eqt-border-width) solid var(--eqt-divider);
+  border-left: var(--eqt-border-width) solid var(--eqt-border);
   overflow-y: auto;
 }
 
@@ -807,7 +807,7 @@ function onEditorExport() {
   }
 
   &__locale-btn {
-    @include btn-outlined;
+    @include btn-toned;
     padding: 3px 10px;
 
     &--active {
@@ -820,9 +820,14 @@ function onEditorExport() {
     padding: 3px 6px;
     border: var(--eqt-border-width) solid var(--eqt-border);
     border-radius: 3px;
+    // light 用 page bg（#fff 太刺），dark 走 elevated (#34353b) 對齊 EH form
     background: var(--eqt-bg);
     color: var(--eqt-text);
     font-size: 12px;
+
+    .eqt-dark & {
+      background: var(--eqt-bg-elevated);
+    }
   }
 
   &__hint {
@@ -862,10 +867,14 @@ function onEditorExport() {
     background: var(--eqt-bg);
     color: var(--eqt-text);
     font-size: 13px;
+
+    .eqt-dark & {
+      background: var(--eqt-bg-elevated);
+    }
   }
 
   &__refresh-btn {
-    @include btn-outlined;
+    @include btn-toned;
     padding: 4px 8px;
 
     &:disabled {
@@ -930,9 +939,13 @@ function onEditorExport() {
     border: var(--eqt-border-width) solid var(--eqt-border);
     border-radius: 3px;
     font-size: 13px;
-    background: var(--eqt-bg-elevated);
+    background: var(--eqt-bg);
     color: var(--eqt-text);
     box-sizing: border-box;
+
+    .eqt-dark & {
+      background: var(--eqt-bg-elevated);
+    }
 
     &:focus {
       outline: none;
@@ -1079,6 +1092,11 @@ function onEditorExport() {
     border-radius: 3px;
     background: var(--eqt-bg);
     color: var(--eqt-text);
+
+    .eqt-dark & {
+      background: var(--eqt-bg-elevated);
+    }
+
     font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
     font-size: 12px;
     line-height: 1.5;
@@ -1203,7 +1221,7 @@ function onEditorExport() {
   &__footer {
     margin-top: 16px;
     padding-top: 12px;
-    border-top: var(--eqt-border-width) solid var(--eqt-divider);
+    border-top: var(--eqt-border-width) solid var(--eqt-border);
     font-size: 11px;
     color: var(--eqt-text-hint);
     text-align: center;
