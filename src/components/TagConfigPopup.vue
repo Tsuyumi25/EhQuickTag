@@ -375,6 +375,8 @@ const simOutput = computed(() => {
 </template>
 
 <style lang="scss">
+@use '../styles/buttons' as *;
+
 .eqt-popup-overlay {
   position: fixed;
   inset: 0;
@@ -446,40 +448,26 @@ const simOutput = computed(() => {
   }
 
   &__syntax-help {
-    display: inline-flex;
-    align-items: center;
+    @include btn-outlined;
     gap: 3px;
     margin-left: 6px;
     padding: 4px 6px;
-    border: var(--eqt-border-width) solid var(--eqt-border);
-    border-radius: 3px;
-    background: transparent;
     color: var(--eqt-text-hint);
-    font-size: 12px;
     font-weight: normal;
-    line-height: 1.4;
     text-decoration: none;
-    cursor: pointer;
 
-    &:hover {
-      background: var(--eqt-bg-hover);
+    &:hover:not(:disabled) {
       color: var(--eqt-text-secondary);
     }
   }
 
   &__add-btn {
+    @include btn-outlined;
     margin-left: auto;
     padding: 4px 6px;
-    border: var(--eqt-border-width) solid var(--eqt-border);
-    border-radius: 3px;
-    background: transparent;
     color: var(--eqt-text-hint);
-    cursor: pointer;
-    font-size: 12px;
-    line-height: 1.4;
 
-    &:hover {
-      background: var(--eqt-bg-hover);
+    &:hover:not(:disabled) {
       color: var(--eqt-text-secondary);
     }
   }
@@ -523,20 +511,12 @@ const simOutput = computed(() => {
   }
 
   &__tag-remove {
+    @include btn-ghost;
     flex-shrink: 0;
     width: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: none;
-    background: transparent;
-    color: var(--eqt-text-hint);
-    cursor: pointer;
     font-size: 16px;
-    border-radius: 3px;
 
-    &:hover {
-      background: var(--eqt-bg-hover);
+    &:hover:not(:disabled) {
       color: var(--eqt-danger);
     }
   }
@@ -560,36 +540,15 @@ const simOutput = computed(() => {
   }
 
   &__btn {
+    @include btn-filled;
     padding: 4px 12px;
-    border: var(--eqt-border-width) solid var(--eqt-border);
-    border-radius: 3px;
-    background: var(--eqt-bg-btn);
-    color: var(--eqt-text);
-    cursor: pointer;
-    font-size: 12px;
-
-    &:hover {
-      background: var(--eqt-bg-btn-hover);
-    }
 
     &--primary {
-      background: var(--eqt-primary);
-      border-color: var(--eqt-primary-hover);
-      color: var(--eqt-on-primary);
-
-      &:hover {
-        background: var(--eqt-primary-hover);
-      }
+      @include btn-primary;
     }
 
     &--delete {
-      background: var(--eqt-danger);
-      border-color: var(--eqt-danger-hover);
-      color: var(--eqt-on-primary);
-
-      &:hover {
-        background: var(--eqt-danger-hover);
-      }
+      @include btn-danger;
     }
   }
 }

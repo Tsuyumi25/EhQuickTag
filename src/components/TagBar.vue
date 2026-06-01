@@ -438,37 +438,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
 </template>
 
 <style lang="scss">
-// 兩顆 button 共用外框 + 中間 divider 的 split 群組樣式。
-// 給編輯態的「+ 行 / + 分隔線」和 ctrl 區的「+ 標籤 / + URL」共用視覺。
-@mixin button-split-group {
-  display: flex;
-  border: var(--eqt-border-width) solid var(--eqt-border);
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-@mixin button-split-item {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 2px 8px;
-  border: none;
-  background: transparent;
-  color: var(--eqt-text-hint);
-  cursor: pointer;
-  font-size: 12px;
-  line-height: 1.4;
-
-  &:hover {
-    background: var(--eqt-bg-hover);
-    color: var(--eqt-text-secondary);
-  }
-
-  & + & {
-    border-left: var(--eqt-border-width) solid var(--eqt-border);
-  }
-}
+@use '../styles/buttons' as *;
 
 .eqt-tag-bar {
   position: relative;
@@ -573,19 +543,9 @@ function onRightClick(event: MouseEvent, b: TagButton) {
   }
 
   &__handle {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: var(--eqt-row-h);
-    height: var(--eqt-row-h);
-    padding: 0;
+    @include btn-icon;
     cursor: grab;
-    color: var(--eqt-text-hint);
     user-select: none;
-
-    &:hover {
-      color: var(--eqt-text-secondary);
-    }
 
     &:active {
       cursor: grabbing;
@@ -606,38 +566,34 @@ function onRightClick(event: MouseEvent, b: TagButton) {
   // 編輯態下方的「+ 行 / + 分隔線」split。flex: 1 撐滿剩餘空間
   &__line-add {
     flex: 1;
-    @include button-split-group;
+    @include btn-split-group;
   }
   &__line-add-btn {
     flex: 1;
-    @include button-split-item;
+    @include btn-split-item;
   }
 
   // 右下 ctrl 區的「+ 標籤 / + URL」split；hug content 不撐。
   // 色彩 override mixin 預設的「外框 + hint 文字」，改成跟旁邊獨立 ctrl
   // 一致的「bg-btn 填充 + secondary 文字」，視覺權重才不會掉一階。
   &__ctrl-split {
-    @include button-split-group;
+    @include btn-split-group;
     background: var(--eqt-bg-btn);
   }
   &__ctrl-split-btn {
-    @include button-split-item;
+    @include btn-split-item;
     color: var(--eqt-text-secondary);
   }
 
+  // btn-icon 的非正方變體：高度照樣是 row-h，但寬度由內容決定（保留 padding）。
+  // hover 走 danger 色（不變底）給「會刪行」的視覺暗示。
   &__line-delete {
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: var(--eqt-row-h);
-    border: none;
-    background: transparent;
-    color: var(--eqt-text-hint);
-    cursor: pointer;
+    @include btn-icon;
+    width: auto;
     padding: 0 4px;
+    flex-shrink: 0;
 
-    &:hover {
+    &:hover:not(:disabled) {
       color: var(--eqt-danger);
     }
   }

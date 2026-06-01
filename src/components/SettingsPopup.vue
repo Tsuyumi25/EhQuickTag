@@ -670,6 +670,8 @@ function onEditorExport() {
 </template>
 
 <style lang="scss">
+@use '../styles/buttons' as *;
+
 .eqt-settings__layout {
   display: flex;
   padding: 0;
@@ -783,17 +785,8 @@ function onEditorExport() {
   }
 
   &__locale-btn {
+    @include btn-outlined;
     padding: 3px 10px;
-    border: var(--eqt-border-width) solid var(--eqt-border);
-    border-radius: 3px;
-    background: transparent;
-    color: var(--eqt-text-secondary);
-    font-size: 12px;
-    cursor: pointer;
-
-    &:hover {
-      background: var(--eqt-bg-hover);
-    }
 
     &--active {
       background: var(--eqt-bg-active);
@@ -828,20 +821,13 @@ function onEditorExport() {
   }
 
   &__reset-btn {
-    display: inline-flex;
-    align-items: center;
+    @include btn-ghost;
     gap: 2px;
     padding: 1px 6px;
-    border: none;
-    border-radius: 3px;
-    background: transparent;
-    color: var(--eqt-text-hint);
-    font-size: 11px;
+    font-size: var(--eqt-fs-sm);
     line-height: 1;
-    cursor: pointer;
 
-    &:hover {
-      background: var(--eqt-bg-hover);
+    &:hover:not(:disabled) {
       color: var(--eqt-text);
     }
   }
@@ -864,24 +850,11 @@ function onEditorExport() {
   }
 
   &__refresh-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
+    @include btn-outlined;
     padding: 4px 8px;
-    border: var(--eqt-border-width) solid var(--eqt-border);
-    border-radius: 3px;
-    background: transparent;
-    color: var(--eqt-text-secondary);
-    font-size: 12px;
-    cursor: pointer;
-
-    &:hover:not(:disabled) {
-      background: var(--eqt-bg-hover);
-    }
 
     &:disabled {
       opacity: 0.5;
-      cursor: default;
     }
   }
 
@@ -1029,24 +1002,21 @@ function onEditorExport() {
   }
 
   &__item-btn {
+    @include btn-ghost;
     flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     width: 24px;
     height: 24px;
-    border: none;
-    border-radius: 3px;
-    background: transparent;
-    color: var(--eqt-text-hint);
-    cursor: pointer;
+    // 還原 popup container 的 13px——btn-base 預設 12px 會讓 icon glyph 縮 1px
+    font-size: var(--eqt-fs-lg);
 
-    &:hover {
+    &:hover:not(:disabled) {
       background: var(--eqt-bg-active);
       color: var(--eqt-text);
     }
 
-    &--purge:hover {
+    // 必須加 :not(:disabled) 才不會輸 btn-ghost / 上面 hover 的 (0,3,0) 特異性，
+    // 否則 purge 紅色被 var(--eqt-text) 蓋掉
+    &--purge:hover:not(:disabled) {
       color: var(--eqt-danger);
     }
   }
@@ -1072,20 +1042,12 @@ function onEditorExport() {
   }
 
   &__tool-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    @include btn-filled;
     width: 28px;
     height: 28px;
-    border: var(--eqt-border-width) solid var(--eqt-border);
-    border-radius: 3px;
-    background: var(--eqt-bg-btn);
-    color: var(--eqt-text);
-    cursor: pointer;
-
-    &:hover {
-      background: var(--eqt-bg-btn-hover);
-    }
+    padding: 0;
+    // 還原 popup container 的 13px
+    font-size: var(--eqt-fs-lg);
   }
 
   &__preview {
@@ -1180,21 +1142,9 @@ function onEditorExport() {
   }
 
   &__action-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
+    @include btn-filled;
     padding: 4px 12px;
-    border: var(--eqt-border-width) solid var(--eqt-border);
-    border-radius: 3px;
-    background: var(--eqt-bg-btn);
-    color: var(--eqt-text);
-    font-size: 12px;
     text-decoration: none;
-    cursor: pointer;
-
-    &:hover {
-      background: var(--eqt-bg-btn-hover);
-    }
   }
 
   &__section {

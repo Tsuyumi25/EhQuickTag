@@ -149,21 +149,13 @@ function updateStyle(patch: Partial<SeparatorStyle>) {
 </template>
 
 <style lang="scss">
+@use '../styles/buttons' as *;
+
 .eqt-line-sep {
   &__trigger {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: var(--eqt-row-h);
+    @include btn-icon;
+    width: auto;
     padding: 0 4px;
-    border: none;
-    background: transparent;
-    color: var(--eqt-text-hint);
-    cursor: pointer;
-
-    &:hover {
-      color: var(--eqt-text-secondary);
-    }
   }
 
   &__popup {

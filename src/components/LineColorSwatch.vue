@@ -64,21 +64,13 @@ function clearColor() {
 </template>
 
 <style lang="scss">
+@use '../styles/buttons' as *;
+
 .eqt-line-color {
   &__trigger {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: var(--eqt-row-h);
+    @include btn-icon;
+    width: auto;
     padding: 0 4px;
-    border: none;
-    background: transparent;
-    color: var(--eqt-text-hint);
-    cursor: pointer;
-
-    &:hover {
-      color: var(--eqt-text-secondary);
-    }
   }
 
   &__popup {
@@ -94,19 +86,11 @@ function clearColor() {
   }
 
   &__clear {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
+    @include btn-filled;
     padding: 4px 8px;
-    border: var(--eqt-border-width) solid var(--eqt-border);
-    border-radius: 3px;
-    background: var(--eqt-bg-btn);
     color: var(--eqt-text-secondary);
-    cursor: pointer;
-    font-size: 12px;
 
-    &:hover {
+    &:hover:not(:disabled) {
       background: var(--eqt-bg-hover);
     }
   }

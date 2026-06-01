@@ -206,6 +206,8 @@ const qualifierOptions = Array.from(QUALIFIER_SET).map(q => ({ value: `q:${q}`, 
 </template>
 
 <style lang="scss">
+@use '../styles/buttons' as *;
+
 .eqt-row__builder {
   display: flex;
   align-items: stretch;
@@ -215,22 +217,12 @@ const qualifierOptions = Array.from(QUALIFIER_SET).map(q => ({ value: `q:${q}`, 
 }
 
 .eqt-row__prefix-cycle {
+  @include btn-outlined;
   flex-shrink: 0;
   min-width: 2.2em;
   padding: 0 6px;
-  border: var(--eqt-border-width) solid var(--eqt-border);
-  border-radius: 3px;
-  background: transparent;
   color: var(--eqt-text-hint);
-  cursor: pointer;
   font-weight: bold;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  &:hover {
-    background: var(--eqt-bg-hover);
-  }
 
   &--exclude {
     background: rgba(140, 51, 51, 0.15);
@@ -333,22 +325,12 @@ const qualifierOptions = Array.from(QUALIFIER_SET).map(q => ({ value: `q:${q}`, 
 }
 
 .eqt-row__suffix-cycle {
+  @include btn-outlined;
   flex-shrink: 0;
   min-width: 2.2em;
   padding: 0 6px;
-  border: var(--eqt-border-width) solid var(--eqt-border);
-  border-radius: 3px;
-  background: transparent;
   color: var(--eqt-text-hint);
-  cursor: pointer;
   font-weight: bold;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  &:hover {
-    background: var(--eqt-bg-hover);
-  }
 
   &--exact {
     background: rgba(220, 38, 38, 0.1);

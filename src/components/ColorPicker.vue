@@ -131,6 +131,8 @@ function onCopyRgb() { if (rgbText.value) rgbClip.copy(rgbText.value) }
 </template>
 
 <style lang="scss">
+@use '../styles/buttons' as *;
+
 .eqt-color-picker {
   display: flex;
   flex-direction: column;
@@ -166,16 +168,10 @@ function onCopyRgb() { if (rgbText.value) rgbClip.copy(rgbText.value) }
   }
 
   &__copy {
+    @include btn-filled;
     flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     padding: 4px 6px;
-    border: var(--eqt-border-width) solid var(--eqt-border);
-    border-radius: 3px;
-    background: var(--eqt-bg-btn);
     color: var(--eqt-text-secondary);
-    cursor: pointer;
 
     &:hover:not(:disabled) {
       background: var(--eqt-bg-hover);

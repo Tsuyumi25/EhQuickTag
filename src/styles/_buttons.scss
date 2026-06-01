@@ -1,0 +1,138 @@
+// 按鈕視覺基底 + 變體 mixin 集中區。
+//
+// 設計目標：消除 24 個 button-like class 重複寫的 `border / border-radius /
+// background / hover` boilerplate，並讓「primary / danger / ghost / icon」這幾種
+// 語意明確的視覺族群有 single source of truth。
+//
+// 使用：在 .vue 的 <style lang="scss"> 第一行寫
+//   @use '../styles/buttons' as *;
+// 然後在 class 內 @include btn-xxx; 補上特有屬性即可。
+
+// ── 共通底（給其他 btn-* mixin @include） ──
+
+@mixin btn-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-radius: var(--eqt-radius-sm);
+  font-family: inherit;
+  font-size: var(--eqt-fs-md);
+  line-height: 1.4;
+  cursor: pointer;
+  transition: var(--eqt-transition-base);
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+}
+
+// ── 視覺族群（按填色 / 框線 / 純圖示分） ──
+
+// 無框 + 透明背景 + hint 文字色，hover 變淡灰
+@mixin btn-ghost {
+  @include btn-base;
+  border: none;
+  background: transparent;
+  color: var(--eqt-text-hint);
+
+  &:hover:not(:disabled) {
+    background: var(--eqt-bg-hover);
+    color: var(--eqt-text-secondary);
+  }
+}
+
+// 有框 + 透明背景 + secondary 文字色
+@mixin btn-outlined {
+  @include btn-base;
+  border: var(--eqt-border-width) solid var(--eqt-border);
+  background: transparent;
+  color: var(--eqt-text-secondary);
+
+  &:hover:not(:disabled) {
+    background: var(--eqt-bg-hover);
+  }
+}
+
+// 有框 + bg-btn + 一般文字色
+@mixin btn-filled {
+  @include btn-base;
+  border: var(--eqt-border-width) solid var(--eqt-border);
+  background: var(--eqt-bg-btn);
+  color: var(--eqt-text);
+
+  &:hover:not(:disabled) {
+    background: var(--eqt-bg-btn-hover);
+  }
+}
+
+// 純圖示方塊（width=height=--eqt-row-h），無框透明，hover 改文字色
+@mixin btn-icon {
+  @include btn-base;
+  width: var(--eqt-row-h);
+  height: var(--eqt-row-h);
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--eqt-text-hint);
+
+  &:hover:not(:disabled) {
+    color: var(--eqt-text-secondary);
+  }
+}
+
+// ── 語意 action button ──
+
+// Primary action（綠色填充 + 白字）
+@mixin btn-primary {
+  @include btn-base;
+  border: var(--eqt-border-width) solid var(--eqt-primary-hover);
+  background: var(--eqt-primary);
+  color: var(--eqt-on-primary);
+
+  &:hover:not(:disabled) {
+    background: var(--eqt-primary-hover);
+  }
+}
+
+// Destructive action（紅色填充 + 白字）
+@mixin btn-danger {
+  @include btn-base;
+  border: var(--eqt-border-width) solid var(--eqt-danger-hover);
+  background: var(--eqt-danger);
+  color: var(--eqt-on-primary);
+
+  &:hover:not(:disabled) {
+    background: var(--eqt-danger-hover);
+  }
+}
+
+// ── split group：兩顆相連的 button 共用外框 + 中間 divider ──
+
+@mixin btn-split-group {
+  display: flex;
+  border: var(--eqt-border-width) solid var(--eqt-border);
+  border-radius: var(--eqt-radius-sm);
+  overflow: hidden;
+}
+
+@mixin btn-split-item {
+  @include btn-base;
+  // 容器走 overflow: hidden 統管外圓角，個別 item 必須拍平，否則 item 的圓角
+  // 會跟容器邊夾出弧形缺口、中間 divider 也歪掉
+  border-radius: 0;
+  padding: 2px 8px;
+  border: none;
+  background: transparent;
+  color: var(--eqt-text-hint);
+
+  &:hover:not(:disabled) {
+    background: var(--eqt-bg-hover);
+    color: var(--eqt-text-secondary);
+  }
+
+  & + & {
+    border-left: var(--eqt-border-width) solid var(--eqt-border);
+  }
+}
