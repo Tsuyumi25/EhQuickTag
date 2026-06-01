@@ -101,6 +101,7 @@ function onSave() {
 <template>
   <div class="eqt-popup-overlay">
     <div ref="popupEl" class="eqt-popup eqt-popup--url">
+      <div class="eqt-popup__body">
       <div class="eqt-popup__field">
         <label class="eqt-popup__label">{{ t('urlConfig.displayName') }}</label>
         <div class="eqt-popup__field-row" :class="currentTagStyleClass">
@@ -160,6 +161,7 @@ function onSave() {
         <button class="eqt-popup__btn eqt-popup__btn--primary" type="button" @click="onSave">
           {{ t('urlConfig.save') }} <kbd class="eqt-popup__kbd">Ctrl+Enter</kbd>
         </button>
+      </div>
       </div>
     </div>
   </div>

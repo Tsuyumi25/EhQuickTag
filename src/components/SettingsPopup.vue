@@ -674,7 +674,6 @@ function onEditorExport() {
 
 .eqt-settings__layout {
   display: flex;
-  padding: 0;
   width: clamp(40rem, 92vw, 82rem);
   min-height: 90vh;
   max-height: 90vh;

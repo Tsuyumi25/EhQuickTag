@@ -25,7 +25,6 @@
   background: var(--eqt-bg);
   border: var(--eqt-border-width) solid var(--eqt-border);
   border-radius: 0.5rem;
-  padding: 1.25rem;
   width: clamp(22rem, 80vw, 60rem);
   min-height: 80vh;
   max-height: 80vh;
@@ -33,6 +32,13 @@
   box-shadow: var(--eqt-shadow);
   font-size: var(--eqt-fs-lg);
   color: var(--eqt-text);
+
+  // .eqt-popup 本身只負責 chrome（border/bg/shadow/尺寸）；padding 一律由
+  // 內部 sub-slot 決定——簡單內容包一層 .eqt-popup__body 就拿到預設 padding；
+  // 多欄佈局（SettingsPopup）的內部 section 自帶 padding，外層不需要再來一層。
+  &__body {
+    padding: 1.25rem;
+  }
 
   // UrlConfigPopup 的 modifier：URL 編輯只一兩個 field，不要硬撐 80vh
   &--url {
