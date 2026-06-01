@@ -118,6 +118,7 @@ export default {
   'tagConfig.cycleSkipReasonOr': '右鍵會跳過 Or：「{shape}」無法加入 Or（聯集），因為 e站搜尋文法不支援將排除條件作為 OR 群組成員。',
   'tagConfig.cycleSkipReasonExclude': '右鍵會跳過 Exclude：「{shape}」的 Exclude（補集）在 e站搜尋文法裡寫不出來。如果需要 exclude，建議拆多個按鈕分別控制。',
   'tagConfig.cycleSkipReasonMixed': '右鍵會跳過 {skipped}：混合條件的 Or（聯集）跟 Exclude（補集）在 e站搜尋文法裡都寫不出來。如果需要 exclude，建議拆多個按鈕分別控制。',
+  'tagConfig.cycleSkipReasonAllOr': '右鍵會跳過 Or：此按鈕本身已是 OR 群組（~ 前綴），再疊加 Or 沒有可呈現的形式。',
   'tagConfig.cycleChipClickToEnable': '點擊重新開啟',
   'tagConfig.cycleChipClickToDisable': '點擊手動停用',
   'tagConfig.cycleChipShapeDisabled': '此形狀在 e站搜尋文法裡寫不出來，自動禁用',

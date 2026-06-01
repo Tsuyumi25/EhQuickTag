@@ -3,13 +3,13 @@ import { TagState, type TagMode } from '@/types'
 import {
   tokenize,
   normalizeNs,
+  tokenIdentity,
   applyState,
-  allForms,
-  detectState,
   getButtonShape,
   getState as _getStateArr,
   removeTag as _removeTagArr,
   addTag as _addTagArr,
+  setTagState as _setTagStateArr,
   getEffectiveModifiers as _getEffectiveModifiersArr,
   getNextRightClickState as _getNextRightClickStateArr,
 } from './tagState'
@@ -59,17 +59,17 @@ describe('tokenize', () => {
 // ============================================================
 
 describe('getButtonShape', () => {
-  it('all-positive: no prefix tags', () => {
-    expect(getButtonShape(['foo$'])).toBe('all-positive')
-    expect(getButtonShape(['foo$', 'bar$'])).toBe('all-positive')
+  it('positive-single / positive-multi by count', () => {
+    expect(getButtonShape(['foo$'])).toBe('positive-single')
+    expect(getButtonShape(['foo$', 'bar$'])).toBe('positive-multi')
   })
 
-  it('all-negative: every tag has - prefix', () => {
-    expect(getButtonShape(['-foo$'])).toBe('all-negative')
-    expect(getButtonShape(['-foo$', '-bar$'])).toBe('all-negative')
+  it('negative-single / negative-multi by count', () => {
+    expect(getButtonShape(['-foo$'])).toBe('negative-single')
+    expect(getButtonShape(['-foo$', '-bar$'])).toBe('negative-multi')
   })
 
-  it('all-or: every tag has ~ prefix', () => {
+  it('all-or: any count of ~ prefix (single/multi 不分)', () => {
     expect(getButtonShape(['~foo$'])).toBe('all-or')
     expect(getButtonShape(['~foo$', '~bar$'])).toBe('all-or')
   })
@@ -81,8 +81,8 @@ describe('getButtonShape', () => {
     expect(getButtonShape(['foo$', '-bar$', '~baz$'])).toBe('mixed')
   })
 
-  it('empty tags treated as all-positive (degenerate)', () => {
-    expect(getButtonShape([])).toBe('all-positive')
+  it('empty tags → empty shape', () => {
+    expect(getButtonShape([])).toBe('empty')
   })
 })
 
@@ -141,91 +141,47 @@ describe('applyState (Or-prefixed part)', () => {
 })
 
 // ============================================================
-// allForms — removeTag cleanup helper
+// tokenIdentity — 身份模型核心：(qualifier, ns, tag)，剝掉前綴後綴
 // ============================================================
 
-describe('allForms', () => {
-  it('positive part → 3 forms', () => {
-    expect(allForms('foo$')).toEqual(['foo$', '~foo$', '-foo$'])
+describe('tokenIdentity', () => {
+  it('忽略前綴 (-, ~)，同身份', () => {
+    const a = tokenIdentity('language:chinese$')
+    expect(tokenIdentity('-language:chinese$')).toBe(a)
+    expect(tokenIdentity('~language:chinese$')).toBe(a)
   })
 
-  it('negative part → 3 forms (-X, X, ~X) — covers single-neg double-negation, multi-neg De Morgan', () => {
-    expect(allForms('-foo$')).toEqual(['-foo$', 'foo$', '~foo$'])
+  it('忽略後綴 ($, *, %)，同身份', () => {
+    const a = tokenIdentity('language:chinese$')
+    expect(tokenIdentity('language:chinese')).toBe(a)
+    expect(tokenIdentity('language:chinese*')).toBe(a)
+    expect(tokenIdentity('language:chinese%')).toBe(a)
   })
 
-  it('Or-prefixed part → 2 forms (~form and -form)', () => {
-    expect(allForms('~foo$')).toEqual(['~foo$', '-foo$'])
-  })
-})
-
-// ============================================================
-// detectState — per-token, assumes single-tag button context
-// ============================================================
-
-describe('detectState (positive part)', () => {
-  const p = 'language:"chinese"$'
-
-  it('Include when token present', () => {
-    expect(detectState(p, new Set([p]))).toBe(TagState.Include)
+  it('namespace alias 解析後同身份', () => {
+    expect(tokenIdentity('l:chinese$')).toBe(tokenIdentity('language:chinese$'))
+    expect(tokenIdentity('f:"big breasts"$')).toBe(tokenIdentity('female:"big breasts"$'))
   })
 
-  it('Or when ~token present', () => {
-    expect(detectState(p, new Set([`~${p}`]))).toBe(TagState.Or)
+  it('quoted 跟 bare 同身份（內容相同的話）', () => {
+    expect(tokenIdentity('language:"chinese"$')).toBe(tokenIdentity('language:chinese$'))
   })
 
-  it('Exclude when -token present', () => {
-    expect(detectState(p, new Set([`-${p}`]))).toBe(TagState.Exclude)
+  it('不同 ns / 不同 tag → 不同身份', () => {
+    expect(tokenIdentity('language:chinese$')).not.toBe(tokenIdentity('language:english$'))
+    expect(tokenIdentity('language:chinese$')).not.toBe(tokenIdentity('other:chinese$'))
   })
 
-  it('null when not present', () => {
-    expect(detectState(p, new Set())).toBeNull()
+  it('qualifier（gid / uploader 等）跟 ns 區分', () => {
+    expect(tokenIdentity('gid:12345')).not.toBe(tokenIdentity('language:12345'))
   })
 
-  it('Exclude takes priority over Include', () => {
-    expect(detectState(p, new Set([p, `-${p}`]))).toBe(TagState.Exclude)
-  })
-})
-
-describe('detectState (negative part)', () => {
-  const p = '-other:"ai generated"$'
-  const base = 'other:"ai generated"$'
-
-  it('Include when -token present', () => {
-    expect(detectState(p, new Set([p]))).toBe(TagState.Include)
+  it('tag 大小寫不敏感（容錯不同來源）', () => {
+    expect(tokenIdentity('language:Chinese$')).toBe(tokenIdentity('language:chinese$'))
   })
 
-  // single-neg button context: positive base = 雙否定 = Exclude state
-  it('Exclude when positive base present (double negation)', () => {
-    expect(detectState(p, new Set([base]))).toBe(TagState.Exclude)
-  })
-
-  it('null when neither -X nor X present', () => {
-    expect(detectState(p, new Set())).toBeNull()
-  })
-
-  it('Include when -token present, even if positive base also present', () => {
-    expect(detectState(p, new Set([p, base]))).toBe(TagState.Exclude)
-  })
-
-  // ~-X 不是合法 e站文法，per-token 偵測不該回 Or
-  it('does not detect Or (no ~-token form)', () => {
-    expect(detectState(p, new Set([`~${p}`]))).toBeNull()
-  })
-})
-
-describe('detectState (Or-prefixed part)', () => {
-  const p = '~language:"chinese"$'
-
-  it('Include when ~token present', () => {
-    expect(detectState(p, new Set([p]))).toBe(TagState.Include)
-  })
-
-  it('Exclude when -base present', () => {
-    expect(detectState(p, new Set(['-language:"chinese"$']))).toBe(TagState.Exclude)
-  })
-
-  it('null when neither present', () => {
-    expect(detectState(p, new Set())).toBeNull()
+  it('parse error 的 token → null（不屬於任何身份）', () => {
+    expect(tokenIdentity('')).toBeNull()
   })
 })
 
@@ -422,7 +378,10 @@ describe('removeTag', () => {
       .toBe('other:foo$')
   })
 
-  it('removes ~base form of negative tag (multi-neg De Morgan form)', () => {
+  // 身份模型：~base 跟 -base / base 共享 (ns, tag) 身份，一律驅逐。
+  // 跟舊的「分形式清」不一樣——這是 update / replace 心智模型的核心：
+  // 點按鈕 = 該按鈕宣告它要當這身份的當家，舊住戶不管什麼態度都退場。
+  it('removes ~base form of negative tag (identity match)', () => {
     expect(removeTag('~other:"ai generated"$ other:foo$', '-other:"ai generated"$'))
       .toBe('other:foo$')
   })
@@ -439,6 +398,27 @@ describe('removeTag', () => {
       '-language:"english"$ -language:"chinese"$ other:foo$',
       '-language:"english"$, -language:"chinese"$',
     )).toBe('other:foo$')
+  })
+
+  // 身份模型下，single-neg [-english$] 跟 multi-or [~english$, ...] 共用
+  // language:english 身份。前者 click 會驅逐後者的 ~english$——這是 update /
+  // replace 模型的預期行為，不是 bug。
+  it('single-neg removeTag evicts shared identity from multi-or neighbor', () => {
+    expect(removeTag('~language:"chinese"$ ~language:"english"$', '-language:"english"$'))
+      .toBe('~language:"chinese"$')
+  })
+
+  it('multi-neg removeTag evicts both identities', () => {
+    expect(removeTag(
+      '~language:"english"$ ~language:"chinese"$',
+      '-language:"english"$, -language:"chinese"$',
+    )).toBe('')
+  })
+
+  // 身份不在 button 管轄範圍 → 完全不動
+  it('leaves unrelated namespace tokens alone', () => {
+    expect(removeTag('language:chinese$ other:"full color$" m:yaoi$', 'language:chinese$'))
+      .toBe('other:"full color$" m:yaoi$')
   })
 })
 
@@ -502,8 +482,9 @@ describe('addTag (multi-or)', () => {
       .toBe('~language:"chinese"$ ~language:"english"$')
   })
 
-  // multi-or Or 維持原樣（已是 OR group 形式）
-  it('Or keeps ~ form unchanged', () => {
+  // Or 在 all-or cycle 已被禁用（isStateShapeAllowed 攔住），這條測 applyState
+  // 層級的 defensive 行為——若有人直接 call addTag 帶 Or，~X 維持不變不會炸
+  it('Or keeps ~ form unchanged (defensive: cycle 不會走到這)', () => {
     expect(addTag('', tag, TagState.Or))
       .toBe('~language:"chinese"$ ~language:"english"$')
   })
@@ -542,14 +523,16 @@ describe('getEffectiveModifiers — by button shape', () => {
       .toEqual([TagState.Exclude])
   })
 
-  it('single OR-group: Or ✓ Exclude ✓', () => {
+  // all-or Or 被禁用：~X 在 Or 態下 applyState 沒有 distinct token 形式
+  // （回傳同個 ~X，跟 Include 撞臉，cycle 會卡死偵測不到）
+  it('single OR-group: Or ✗ Exclude ✓', () => {
     expect(getEffectiveModifiers({ tag: '~foo$' }))
-      .toEqual([TagState.Or, TagState.Exclude])
+      .toEqual([TagState.Exclude])
   })
 
-  it('multi-OR-group: Or ✓ Exclude ✓ (De Morgan)', () => {
+  it('multi-OR-group: Or ✗ Exclude ✓ (De Morgan)', () => {
     expect(getEffectiveModifiers({ tag: '~foo$, ~bar$' }))
-      .toEqual([TagState.Or, TagState.Exclude])
+      .toEqual([TagState.Exclude])
   })
 
   // mixed 各種形狀：嚴格 inverse 必含 ~-X 或 ~~X，e站不支援
@@ -640,6 +623,23 @@ describe('getNextRightClickState', () => {
     })
   })
 
+  // all-or 的 Or 被禁用（沒 distinct token 形式），cycle 只剩 Include ↔ Exclude
+  describe('all-or (Or skipped, Exclude only)', () => {
+    const qt = { tag: '~foo$, ~bar$' }
+
+    it('Off → Exclude', () => {
+      expect(getNextRightClickState(qt, TagState.Off)).toBe(TagState.Exclude)
+    })
+
+    it('Include → Exclude', () => {
+      expect(getNextRightClickState(qt, TagState.Include)).toBe(TagState.Exclude)
+    })
+
+    it('Exclude → Off', () => {
+      expect(getNextRightClickState(qt, TagState.Exclude)).toBe(TagState.Off)
+    })
+  })
+
   describe('mixed (both disabled, no cycle)', () => {
     const qt = { tag: 'foo$, -bar$' }
 
@@ -713,7 +713,9 @@ describe('round-trip: single negative (e.g. exclude AI)', () => {
     expect(getState(tag, new Set(tokenize(text)))).toBe(TagState.Exclude)
   })
 
-  it('removeTag cleans all forms (-X, X, ~X)', () => {
+  // 身份模型：identity 匹配就驅逐，不管 token 形式（-X / X / ~X 全清）。
+  // 這是 update / replace 心智模型——按鈕點下去就把該身份戳收回來。
+  it('removeTag evicts all forms sharing the identity (-X, X, ~X)', () => {
     expect(removeTag('-other:"ai generated"$', tag)).toBe('')
     expect(removeTag('other:"ai generated"$', tag)).toBe('')
     expect(removeTag('~other:"ai generated"$', tag)).toBe('')
@@ -795,30 +797,125 @@ describe('round-trip: mixed (no Or, no Exclude — only Include/Off cycle)', () 
 })
 
 // ============================================================
-// namespace normalization
+// 身份模型 cross-button replace 場景
 // ============================================================
 
-describe('namespace normalization: detectState', () => {
-  it('short ns in search matches long ns button', () => {
-    const tokens = new Set(['l:"chinese"$'].map(normalizeNs))
-    expect(detectState('language:"chinese"$', tokens)).toBe(TagState.Include)
+// 經典場景：all-or 多 tag button + 跟它身份重疊的 single-neg button。
+// 設計約定：兩按鈕無法「並存」（共享 language:chinese 身份），點誰誰當家。
+// 用 setTagState 模擬 click handler（位置守恆 in-place 替換 + 補尾巴）。
+describe('cross-button: all-or 跟 negative-single 互搶身份', () => {
+  const A = ['~language:chinese$', '~language:english$']  // all-or
+  const B = ['-language:chinese$']                          // negative-single
+
+  function tokenSet(text: string): Set<string> {
+    return new Set(tokenize(text))
+  }
+
+  it('step 1: 點 A → A=Include', () => {
+    const text = _setTagStateArr('', A, TagState.Include)
+    expect(text).toBe('~language:chinese$ ~language:english$')
+    expect(_getStateArr(A, tokenSet(text))).toBe(TagState.Include)
+    expect(_getStateArr(B, tokenSet(text))).toBe(TagState.Off)
   })
 
-  it('long ns in search matches short ns button', () => {
-    const tokens = new Set(['language:"chinese"$'].map(normalizeNs))
-    expect(detectState('l:"chinese"$', tokens)).toBe(TagState.Include)
+  it('step 2: 點 B → B 搶下 language:chinese 身份（位置守恆）', () => {
+    const text = _setTagStateArr('~language:chinese$ ~language:english$', B, TagState.Include)
+    // chinese 原地被 -chinese$ 取代，english 留在原位（不會跳到 chinese 前面）
+    expect(text).toBe('-language:chinese$ ~language:english$')
+    expect(_getStateArr(A, tokenSet(text))).toBe(TagState.Off)
+    expect(_getStateArr(B, tokenSet(text))).toBe(TagState.Include)
   })
 
-  it('short ns with ~ prefix detected as Or', () => {
-    const tokens = new Set(['~l:"chinese"$'].map(normalizeNs))
-    expect(detectState('language:"chinese"$', tokens)).toBe(TagState.Or)
-  })
-
-  it('short ns with - prefix detected as Exclude', () => {
-    const tokens = new Set(['-l:"chinese"$'].map(normalizeNs))
-    expect(detectState('language:"chinese"$', tokens)).toBe(TagState.Exclude)
+  it('step 3: 再點 A → A 搶回身份，B 退場（位置守恆）', () => {
+    const text = _setTagStateArr('-language:chinese$ ~language:english$', A, TagState.Include)
+    // chinese 從 -chinese$ 原地換回 ~chinese$，english 維持
+    expect(text).toBe('~language:chinese$ ~language:english$')
+    expect(_getStateArr(A, tokenSet(text))).toBe(TagState.Include)
+    expect(_getStateArr(B, tokenSet(text))).toBe(TagState.Off)
   })
 })
+
+describe('setTagState: 位置守恆', () => {
+  it('in-place 取代既有同身份 token（不跳位）', () => {
+    expect(_setTagStateArr('a$ b$ c$', ['b$'], TagState.Exclude))
+      .toBe('a$ -b$ c$')
+    expect(_setTagStateArr('a$ b$ c$', ['b$'], TagState.Or))
+      .toBe('a$ ~b$ c$')
+  })
+
+  it('沒既存身份就補在尾巴', () => {
+    expect(_setTagStateArr('a$ c$', ['b$'], TagState.Include))
+      .toBe('a$ c$ b$')
+  })
+
+  it('部分 emission 在 search（原地）、部分不在（尾巴）', () => {
+    // 純日語 部分身份已在（-chinese 在），部分不在（其他 -X）
+    const japaneseOnly = [
+      '-language:chinese$', '-language:english$', '-language:japanese$',
+    ]
+    expect(_setTagStateArr('other:foo$ -language:chinese$', japaneseOnly, TagState.Include))
+      .toBe('other:foo$ -language:chinese$ -language:english$ -language:japanese$')
+  })
+
+  it('state=Off → 等同 removeTag（驅逐）', () => {
+    expect(_setTagStateArr('a$ b$ c$', ['b$'], TagState.Off))
+      .toBe('a$ c$')
+  })
+
+  it('重複身份的 search token → 第一個原地換、後續 dedup', () => {
+    expect(_setTagStateArr('~chinese$ other:foo$ -chinese$', ['chinese$'], TagState.Include))
+      .toBe('chinese$ other:foo$')
+  })
+})
+
+// 預設標籤組真實案例：純日語（negative-multi）跟 7 個語言按鈕（positive-single）
+// 互搶 language:X 身份。
+describe('cross-button: 純日語 ↔ 個別語言按鈕', () => {
+  const japaneseOnly = [
+    '-language:chinese$', '-language:english$', '-language:japanese$',
+    '-language:korean$', '-language:speechless$', '-language:"text cleaned$"',
+  ]
+  const english = ['language:english$']
+
+  function tokenSet(text: string): Set<string> {
+    return new Set(tokenize(text))
+  }
+
+  it('純日語 active → 點英文 → 英文搶下 l:english，純日語退場', () => {
+    let text = _setTagStateArr('', japaneseOnly, TagState.Include)
+    expect(_getStateArr(japaneseOnly, tokenSet(text))).toBe(TagState.Include)
+
+    // 英文的 getState：l:english 在 search 是 -english$，**剛好**也是英文按鈕
+    // positive-single 的 Exclude emission → 偵測為 Exclude state（不是 Off）。
+    // 這個「視覺 state」反映 search 對 l:english 的當前態度，不代表是英文按鈕
+    // 自己 emit 的——可能來自純日語。
+    const state = _getStateArr(english, tokenSet(text))
+    expect(state).toBe(TagState.Exclude)
+    // 左鍵語意「state != Include → set Include」：英文搶回 l:english 身份
+    // 位置守恆：-english$ 原地換成 english$，純日語其他 -X 都留原位
+    text = _setTagStateArr(text, english, TagState.Include)
+
+    expect(text).toContain('language:english$')
+    expect(text).not.toContain('-language:english$')
+    // 純日語少了 l:english 戳記 → Off
+    expect(_getStateArr(japaneseOnly, tokenSet(text))).toBe(TagState.Off)
+    expect(_getStateArr(english, tokenSet(text))).toBe(TagState.Include)
+  })
+
+  it('翻譯本（language:translated）跟純日語身份不重疊 → 可真正共存', () => {
+    const translated = ['language:translated$']
+    let text = _setTagStateArr('', japaneseOnly, TagState.Include)
+    text = _setTagStateArr(text, translated, TagState.Include)
+
+    // 兩按鈕都 Include：純日語的 6 個 -language 身份戳齊全，翻譯本的 l:translated 也在
+    expect(_getStateArr(japaneseOnly, tokenSet(text))).toBe(TagState.Include)
+    expect(_getStateArr(translated, tokenSet(text))).toBe(TagState.Include)
+  })
+})
+
+// ============================================================
+// namespace normalization
+// ============================================================
 
 describe('namespace normalization: getState', () => {
   it('button=long, search=short → Include', () => {

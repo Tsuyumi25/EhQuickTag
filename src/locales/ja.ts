@@ -118,6 +118,7 @@ export default {
   'tagConfig.cycleSkipReasonOr': '右クリックは Or をスキップ：「{shape}」は Or（和集合）に加えられません。e-hentai 検索構文は排除条件を OR グループのメンバーとしてサポートしていないためです。',
   'tagConfig.cycleSkipReasonExclude': '右クリックは Exclude をスキップ：「{shape}」の Exclude（補集合）は e-hentai 検索構文では表現できません。exclude が必要な場合は、複数のボタンに分けて個別に制御することを推奨。',
   'tagConfig.cycleSkipReasonMixed': '右クリックは {skipped} をスキップ：混合条件の Or（和集合）と Exclude（補集合）はどちらも e-hentai 検索構文では表現できません。exclude が必要な場合は、複数のボタンに分けて個別に制御することを推奨。',
+  'tagConfig.cycleSkipReasonAllOr': '右クリックは Or をスキップ：このボタンは既に OR グループ（~ プレフィックス）のため、Or を重ねても表現可能な形がありません。',
   'tagConfig.cycleChipClickToEnable': 'クリックして再有効化',
   'tagConfig.cycleChipClickToDisable': 'クリックして手動で無効化',
   'tagConfig.cycleChipShapeDisabled': 'この形状は e-hentai 検索構文では表現できません、自動無効化',

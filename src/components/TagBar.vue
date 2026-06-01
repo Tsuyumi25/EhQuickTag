@@ -7,7 +7,7 @@ import ContentEditable from 'vue-contenteditable'
 import LineColorSwatch from '@/components/LineColorSwatch.vue'
 import SeparatorSettingsPopup from '@/components/SeparatorSettingsPopup.vue'
 import { TagState, type Line, type Button, type TagButton } from '@/types'
-import { tokenize, getState as _getState, removeTag, addTag, getNextRightClickState } from '@/services/tagState'
+import { tokenize, getState as _getState, setTagState, getNextRightClickState } from '@/services/tagState'
 import { lines, dblClickLeft, dblClickRight, useAccentOnInclude, type DblClickAction } from '@/services/store'
 import { baseDragOptions } from '@/utils/drag'
 import { t } from '@/composables/useI18n'
@@ -219,23 +219,21 @@ function getState(b: TagButton): TagState {
 
 function onLeftClick(b: TagButton) {
   const state = getState(b)
-  const cleaned = removeTag(props.searchText, b.tags)
-
-  emit(
-    'update:searchText',
-    state === TagState.Off ? addTag(cleaned, b.tags, TagState.Include) : cleaned,
-  )
+  // 身份模型語意：左鍵 = 「這是我對這身份的主要態度」。
+  //   - Include → Off （toggle off）
+  //   - Off / Or / Exclude → Include （宣告：我要這個身份是 Include view）
+  // Or / Exclude 不被當作 toggle-off 觸發態，避免「另一顆按鈕 emit 了 -X，
+  // 點本顆要兩次才能 include」的反直覺 UX。
+  const next = state === TagState.Include ? TagState.Off : TagState.Include
+  emit('update:searchText', setTagState(props.searchText, b.tags, next))
 }
 
 function onRightClick(event: MouseEvent, b: TagButton) {
   event.preventDefault()
-
   const state = getState(b)
   const next = getNextRightClickState(b.tags, b.disabledModes, state)
   if (next === null) return
-
-  const cleaned = removeTag(props.searchText, b.tags)
-  emit('update:searchText', next === TagState.Off ? cleaned : addTag(cleaned, b.tags, next))
+  emit('update:searchText', setTagState(props.searchText, b.tags, next))
 }
 </script>
 

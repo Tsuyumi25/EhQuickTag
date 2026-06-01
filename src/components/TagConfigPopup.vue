@@ -10,7 +10,7 @@ import { makeRow, type RowState } from '@/composables/useSearchTerm'
 import { TagState, type TagButton, type TagMode } from '@/types'
 import { t, isCJKLocale } from '@/composables/useI18n'
 import { loadTagDb } from '@/services/tagDb'
-import { getButtonShape, isStateShapeAllowed, getEffectiveModifiers, addTag, type ButtonShape } from '@/services/tagState'
+import { getButtonShape, isStateShapeAllowed, getEffectiveModifiers, addTag } from '@/services/tagState'
 
 const props = defineProps<{
   tag: TagButton
@@ -102,12 +102,17 @@ onMounted(async () => {
 
 // --- save ---
 
+const currentDisabledModes = computed<TagMode[]>(() => {
+  const d: TagMode[] = []
+  if (!orEnabled.value) d.push('or')
+  if (!excludeEnabled.value) d.push('exclude')
+  return d
+})
+
 function onSave(): void {
   const parts = rows.map(r => r.rawText.trim()).filter(Boolean)
   if (!parts.length) return
-  const disabled: TagMode[] = []
-  if (!orEnabled.value) disabled.push('or')
-  if (!excludeEnabled.value) disabled.push('exclude')
+  const disabled = currentDisabledModes.value
 
   emit('save', {
     kind: 'tag',
@@ -135,55 +140,52 @@ const syntaxHelpUrl = computed(() =>
 const currentTags = computed(() => rows.map(r => r.rawText.trim()).filter(Boolean))
 const buttonShape = computed(() => getButtonShape(currentTags.value))
 
-const orShapeAllowed = computed(() =>
-  isStateShapeAllowed(buttonShape.value, currentTags.value.length, TagState.Or),
-)
+const orShapeAllowed = computed(() => isStateShapeAllowed(buttonShape.value, TagState.Or))
+const excludeShapeAllowed = computed(() => isStateShapeAllowed(buttonShape.value, TagState.Exclude))
 
-const excludeShapeAllowed = computed(() =>
-  isStateShapeAllowed(buttonShape.value, currentTags.value.length, TagState.Exclude),
-)
-
-const shapeLabel = computed<Record<ButtonShape, string>>(() => ({
-  'all-positive': t('tagConfig.shape.allPositive'),
-  'all-negative': t('tagConfig.shape.allNegative'),
-  'all-or': t('tagConfig.shape.allOr'),
-  'mixed': t('tagConfig.shape.mixed'),
-}))
+// shape label：positive/negative 的 single/multi 對應同一個顯示文案（label 只用
+// 在 cycleSkipReason 裡引用按鈕「形狀」，不需要區分 single/multi）。
+function shapeLabelFor(shape: typeof buttonShape.value): string {
+  if (shape === 'positive-single' || shape === 'positive-multi') return t('tagConfig.shape.allPositive')
+  if (shape === 'negative-single' || shape === 'negative-multi') return t('tagConfig.shape.allNegative')
+  if (shape === 'all-or') return t('tagConfig.shape.allOr')
+  if (shape === 'mixed') return t('tagConfig.shape.mixed')
+  return ''
+}
 
 const cycleSkipReason = computed(() => {
-  if (!currentTags.value.length) return ''
+  const shape = buttonShape.value
+  if (shape === 'empty') return ''
   const skipped: string[] = []
   if (!orShapeAllowed.value) skipped.push('Or')
   if (!excludeShapeAllowed.value) skipped.push('Exclude')
   if (!skipped.length) return ''
 
-  const skippedStr = skipped.join(', ')
-  // 文案分三種——對症下藥比通用 fallback 準：
-  //   - mixed：兩態都禁用 → cycleSkipReasonMixed（cover Or 跟 Exclude）
-  //   - 單獨 Or 禁用（all-negative）：聯集需要 ~-X，e站不支援 → Or-specific
-  //   - 單獨 Exclude 禁用（all-positive N≥2）：補集需要 ~-X，e站不支援 → Exclude-specific
-  // Or 跟 Exclude 死因不同（聯集 vs 補集），用同一文案會詞不達意。
-  if (buttonShape.value === 'mixed') {
-    return t('tagConfig.cycleSkipReasonMixed', { skipped: skippedStr })
+  // 文案按死因分類——對症下藥比通用 fallback 準：
+  //   - mixed：兩態都禁用 → cycleSkipReasonMixed
+  //   - all-or：Or 是 no-op token（cycle 卡死 fix）→ allOr-specific
+  //   - negative-*：聯集需要 ~-X，e站不支援 → Or-specific
+  //   - positive-multi：補集需要 ~-X，e站不支援 → Exclude-specific
+  if (shape === 'mixed') {
+    return t('tagConfig.cycleSkipReasonMixed', { skipped: skipped.join(', ') })
+  }
+  if (shape === 'all-or') {
+    return t('tagConfig.cycleSkipReasonAllOr')
   }
   if (!orShapeAllowed.value) {
-    return t('tagConfig.cycleSkipReasonOr', {
-      shape: shapeLabel.value[buttonShape.value],
-    })
+    return t('tagConfig.cycleSkipReasonOr', { shape: shapeLabelFor(shape) })
   }
-  return t('tagConfig.cycleSkipReasonExclude', {
-    shape: shapeLabel.value[buttonShape.value],
-  })
+  return t('tagConfig.cycleSkipReasonExclude', { shape: shapeLabelFor(shape) })
 })
 
 // --- simulator: 點擊 cycle 經過 shape 允許的所有 state，預覽 output token ---
 
-// Include 永遠是 cycle 起點 + shape 允許的 modifier。後者直接讀
-// getEffectiveModifiers 作 SSOT（不傳 disabledModes 拿純 shape 層級允許 list），
-// 避免之後 cycle 順序的全域設定改動時 simulator 漂移。
+// Include 永遠是 cycle 起點 + 使用者實際 effective 的 modifier。直接讀
+// getEffectiveModifiers + 當前 user disabled 設定，做到所見即所得——使用者把
+// Or chip 關掉後 simulator 也立刻跳過 Or。
 const simSequence = computed<TagState[]>(() => [
   TagState.Include,
-  ...getEffectiveModifiers(currentTags.value, []),
+  ...getEffectiveModifiers(currentTags.value, currentDisabledModes.value),
 ])
 
 const simState = ref<TagState>(TagState.Include)
@@ -276,8 +278,9 @@ const simOutput = computed(() => {
 
       <!-- click modes: 左鍵永遠 Include (不可關)，右鍵 Or → Exclude cycle -->
       <!-- 順序：sim → modes → reason（reason 緊跟 modes 解釋 chip 為何禁用） -->
-      <div class="eqt-popup__field">
-        <div v-if="currentTags.length" class="eqt-cycle-sim">
+      <!-- 空 shape：沒 tag 時整區隱藏（cycle / 模擬都還沒能力評估） -->
+      <div v-if="buttonShape !== 'empty'" class="eqt-popup__field">
+        <div class="eqt-cycle-sim">
           <div class="eqt-cycle-sim__row">
             <button type="button" class="eqt-cycle-sim__btn" @click="simulateNext">
               <MousePointerClick :size="13" />

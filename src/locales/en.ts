@@ -118,6 +118,7 @@ export default {
   'tagConfig.cycleSkipReasonOr': 'Right-click skips Or: an "{shape}" button cannot join an Or (union), because e-hentai search syntax doesn\'t support negative tags as OR-group members.',
   'tagConfig.cycleSkipReasonExclude': 'Right-click skips Exclude: the Exclude (complement) of an "{shape}" button cannot be expressed in e-hentai search syntax. If you need exclude, split into multiple buttons that control each condition independently.',
   'tagConfig.cycleSkipReasonMixed': 'Right-click skips {skipped}: neither the Or (union) nor the Exclude (complement) of a mixed-condition button can be expressed in e-hentai search syntax. If you need exclude, split into multiple buttons that control each condition independently.',
+  'tagConfig.cycleSkipReasonAllOr': 'Right-click skips Or: this button is already an OR group (~ prefix), so layering another Or has no distinct representation.',
   'tagConfig.cycleChipClickToEnable': 'Click to re-enable',
   'tagConfig.cycleChipClickToDisable': 'Click to disable manually',
   'tagConfig.cycleChipShapeDisabled': 'This shape cannot be expressed in e-hentai search syntax, auto-disabled',
