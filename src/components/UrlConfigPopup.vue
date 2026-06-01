@@ -165,33 +165,3 @@ function onSave() {
   </div>
 </template>
 
-<style lang="scss">
-.eqt-popup--url {
-  min-height: auto;
-}
-
-.eqt-popup__url-row {
-  display: flex;
-  gap: 6px;
-
-  .eqt-popup__input {
-    flex: 1;
-    min-width: 0;
-  }
-}
-
-.eqt-popup__url-prefix {
-  padding: 4px 6px;
-  border: var(--eqt-border-width) solid var(--eqt-border);
-  border-radius: 3px;
-  font-size: 13px;
-  background: var(--eqt-bg-elevated);
-  color: var(--eqt-text);
-  flex-shrink: 0;
-
-  &:focus {
-    outline: none;
-    border-color: var(--eqt-border-focus);
-  }
-}
-</style>

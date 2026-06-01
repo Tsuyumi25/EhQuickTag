@@ -1,0 +1,283 @@
+// Popup 共用結構：overlay 黑罩、modal container、container 內常見元件
+// （field、name input、input、label、divider、actions、btn、tag-remove 等）。
+//
+// 集中放這檔有兩個目的：
+// 1. TagConfigPopup / UrlConfigPopup / SettingsPopup / TagAutocomplete 之間
+//    共用 `.eqt-popup__*` 命名空間，但這些 class 過去散落在不同 component
+//    <style> 裡——讀者循命名找不到定義點。集中後一目了然。
+// 2. 由 main.ts 直接 import 為 global stylesheet，所有 popup-related component
+//    不再需要各自 @use mixin。
+
+@use './buttons' as *;
+
+.eqt-popup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--eqt-z-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--eqt-overlay);
+}
+
+.eqt-popup {
+  text-align: left;
+  background: var(--eqt-bg);
+  border: var(--eqt-border-width) solid var(--eqt-border);
+  border-radius: 0.5rem;
+  padding: 1.25rem;
+  width: clamp(22rem, 80vw, 60rem);
+  min-height: 80vh;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: var(--eqt-shadow);
+  font-size: var(--eqt-fs-lg);
+  color: var(--eqt-text);
+
+  // UrlConfigPopup 的 modifier：URL 編輯只一兩個 field，不要硬撐 80vh
+  &--url {
+    min-height: auto;
+  }
+
+  &__field {
+    margin-bottom: 10px;
+    position: relative;
+  }
+
+  &__field-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  &__name-input {
+    display: inline-block;
+    padding: 2px 8px;
+    border: var(--eqt-border-width) solid var(--line-color, var(--eqt-border));
+    border-radius: var(--eqt-radius-sm);
+    background: color-mix(in srgb, var(--line-color, var(--eqt-bg-btn)) 15%, var(--eqt-bg-btn));
+    color: var(--eqt-text-secondary);
+    font-size: var(--eqt-fs-md);
+    line-height: 1.4;
+    outline: none;
+    cursor: text;
+    min-width: 6em;
+    white-space: nowrap;
+
+    // ::after for placeholder so pushable preset's ::before (pedestal) doesn't clash.
+    // :has(> br:only-child) covers contenteditable 全選刪光後的 <br> 幽靈情況。
+    &:empty::after,
+    &:has(> br:only-child)::after {
+      content: attr(data-placeholder);
+      color: var(--eqt-text-hint);
+    }
+
+    &:focus {
+      border-color: var(--eqt-border-focus);
+    }
+  }
+
+  &__label-row {
+    display: flex;
+    align-items: baseline;
+    margin-bottom: 3px;
+    font-weight: bold;
+    font-size: var(--eqt-fs-md);
+  }
+
+  &__syntax-help {
+    @include btn-outlined;
+    gap: 3px;
+    margin-left: 6px;
+    padding: 4px 6px;
+    color: var(--eqt-text-hint);
+    font-weight: normal;
+    text-decoration: none;
+
+    &:hover:not(:disabled) {
+      color: var(--eqt-text-secondary);
+    }
+  }
+
+  &__add-btn {
+    @include btn-outlined;
+    margin-left: auto;
+    padding: 4px 6px;
+    color: var(--eqt-text-hint);
+
+    &:hover:not(:disabled) {
+      color: var(--eqt-text-secondary);
+    }
+  }
+
+  &__label {
+    display: block;
+    margin-bottom: 3px;
+    font-weight: bold;
+    font-size: var(--eqt-fs-md);
+
+    .eqt-popup__label-row > & {
+      margin-bottom: 0;
+    }
+  }
+
+  &__input {
+    width: 100%;
+    padding: 4px 6px;
+    border: var(--eqt-border-width) solid var(--eqt-border);
+    border-radius: var(--eqt-radius-sm);
+    font-size: var(--eqt-fs-lg);
+    background: var(--eqt-bg-elevated);
+    color: var(--eqt-text);
+
+    &:focus {
+      outline: none;
+      border-color: var(--eqt-border-focus);
+    }
+
+    &:disabled {
+      background: var(--eqt-bg-disabled);
+      color: var(--eqt-text-hint);
+    }
+  }
+
+  &__divider {
+    border: none;
+    // 對齊 TagBar separator line 預設樣式（color/thickness 都用 --eqt-border，
+    // 因為 dark 的 --eqt-divider 跟 --eqt-bg 同色幾乎不可見）
+    border-top: 2px solid var(--eqt-border);
+    margin: 12px 0;
+  }
+
+  &__tag-remove {
+    @include btn-ghost;
+    flex-shrink: 0;
+    width: 24px;
+    font-size: 16px;
+
+    &:hover:not(:disabled) {
+      color: var(--eqt-danger);
+    }
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 14px;
+  }
+
+  &__spacer {
+    flex: 1;
+  }
+
+  &__kbd {
+    margin-left: 6px;
+    font-size: var(--eqt-fs-xs);
+    opacity: 0.6;
+    font-family: inherit;
+  }
+
+  &__btn {
+    @include btn-filled;
+    padding: 4px 12px;
+
+    &--primary {
+      @include btn-primary;
+    }
+
+    &--delete {
+      @include btn-danger;
+    }
+  }
+
+  // URL popup 專用：URL 前綴 + URL 輸入框並排
+  &__url-row {
+    display: flex;
+    gap: 6px;
+
+    .eqt-popup__input {
+      flex: 1;
+      min-width: 0;
+    }
+  }
+
+  &__url-prefix {
+    padding: 4px 6px;
+    border: var(--eqt-border-width) solid var(--eqt-border);
+    border-radius: var(--eqt-radius-sm);
+    font-size: var(--eqt-fs-lg);
+    background: var(--eqt-bg-elevated);
+    color: var(--eqt-text);
+    flex-shrink: 0;
+
+    &:focus {
+      outline: none;
+      border-color: var(--eqt-border-focus);
+    }
+  }
+
+  // ── autocomplete suggestion list（從 tag input 下拉出來，position: absolute） ──
+
+  &__no-result {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    padding: 6px 8px;
+    font-size: var(--eqt-fs-md);
+    color: var(--eqt-text-hint);
+    background: var(--eqt-bg-elevated);
+    border: var(--eqt-border-width) solid var(--eqt-border);
+    border-radius: var(--eqt-radius-sm);
+    z-index: 1;
+  }
+
+  &__suggestions {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    margin: 2px 0 0;
+    padding: 0;
+    background: var(--eqt-bg-elevated);
+    border: var(--eqt-border-width) solid var(--eqt-border);
+    border-radius: var(--eqt-radius-sm);
+    max-height: 50vh;
+    overflow-y: auto;
+    z-index: 1;
+  }
+
+  &__suggestion {
+    display: flex;
+    align-items: center;
+    padding: 4px 8px;
+    cursor: pointer;
+    flex-wrap: wrap;
+    gap: 0 8px;
+
+    &:hover,
+    &--active {
+      background: var(--eqt-bg-active);
+    }
+  }
+
+  &__suggestion-ns {
+    font-size: var(--eqt-fs-sm);
+    color: var(--eqt-text-hint);
+    flex-shrink: 0;
+  }
+
+  &__suggestion-name {
+    font-size: var(--eqt-fs-lg);
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__suggestion-tag {
+    font-size: var(--eqt-fs-sm);
+    color: var(--eqt-text-hint);
+    flex-shrink: 0;
+    margin-left: auto;
+  }
+}

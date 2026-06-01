@@ -36,11 +36,18 @@
   @include tag-state-modifiers;
 }
 
+// 三個 preset 都套用到同一組 target：TagBar 主按鈕、Settings 預覽 tag、Popup
+// 名稱輸入框。透過 `:is(...)` 收斂 selector list，避免每個 preset 重抄一遍。
+// :is() 特異性等於 list 內最高，三個都是 (0,1,0)，所以總合 (0,2,0) 跟原本相同。
+//
+// ⚠️ 依賴 main.ts 的 import 順序：popup.scss 必須在 tag-style.scss 之前 import。
+// 兩者對 .eqt-popup__name-input 都產生 (0,2,0) 規則，靠 source order 決定誰勝
+// 出——preset 必須在後才能蓋過 popup.scss 的 base 樣式。
+// 若未來改變 import 順序，preset 視覺會悄悄失效。
+
 // 3D border preset: vertical hard shadow + lift on hover
 .eqt-tag-style-3d {
-  .eqt-tag-bar__btn,
-  .eqt-settings__preview-tag,
-  .eqt-popup__name-input {
+  :is(.eqt-tag-bar__btn, .eqt-settings__preview-tag, .eqt-popup__name-input) {
     border-color: var(--line-color, var(--eqt-border));
     box-shadow: 0 2px 0 0 var(--line-color, var(--eqt-border));
     background: color-mix(in srgb, var(--line-color, var(--eqt-bg-btn)) 15%, var(--eqt-bg-btn));
@@ -85,9 +92,7 @@
 // through the main button. Tradeoff: each button promotes to a compositor
 // layer; acceptable for typical TagBar sizes (~20 buttons).
 .eqt-tag-style-pushable {
-  .eqt-tag-bar__btn,
-  .eqt-settings__preview-tag,
-  .eqt-popup__name-input {
+  :is(.eqt-tag-bar__btn, .eqt-settings__preview-tag, .eqt-popup__name-input) {
     position: relative;
     border-color: var(--line-color, var(--eqt-border));
     background: color-mix(in srgb, var(--line-color, var(--eqt-bg-btn)) 15%, var(--eqt-bg-btn));
@@ -97,9 +102,7 @@
     transition: background 150ms cubic-bezier(0, 0, 0.58, 1), transform 150ms cubic-bezier(0, 0, 0.58, 1);
   }
 
-  .eqt-tag-bar__btn::before,
-  .eqt-settings__preview-tag::before,
-  .eqt-popup__name-input::before {
+  :is(.eqt-tag-bar__btn, .eqt-settings__preview-tag, .eqt-popup__name-input)::before {
     position: absolute;
     content: '';
     width: 100%;
@@ -159,9 +162,7 @@
 
 // Offset shadow preset: diagonal hard shadow + press-down on active
 .eqt-tag-style-offset {
-  .eqt-tag-bar__btn,
-  .eqt-settings__preview-tag,
-  .eqt-popup__name-input {
+  :is(.eqt-tag-bar__btn, .eqt-settings__preview-tag, .eqt-popup__name-input) {
     border-color: var(--line-color, var(--eqt-border));
     background: color-mix(in srgb, var(--line-color, var(--eqt-bg-btn)) 15%, var(--eqt-bg-btn));
     color: var(--eqt-text-secondary);
