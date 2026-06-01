@@ -45,7 +45,7 @@
     box-shadow: 0 2px 0 0 var(--line-color, var(--eqt-border));
     background: color-mix(in srgb, var(--line-color, var(--eqt-bg-btn)) 15%, var(--eqt-bg-btn));
     color: var(--eqt-text-secondary);
-    transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s ease, box-shadow 0.1s ease;
+    transition: var(--eqt-transition-base), transform 0.1s ease, box-shadow 0.1s ease;
   }
 
   .eqt-tag-bar__btn {
@@ -63,7 +63,7 @@
     @include tag-state-modifiers;
 
     &.eqt-tag-bar__btn--editing {
-      transition: background 0.15s, border-color 0.15s, color 0.15s;
+      transition: var(--eqt-transition-base);
 
       &:hover {
         background: var(--eqt-bg-hover);
@@ -73,7 +73,7 @@
     }
 
     &.eqt-tag-bar__btn--drag {
-      box-shadow: 0 2px 0 0 var(--line-color, var(--eqt-border)), 0 2px 8px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 2px 0 0 var(--line-color, var(--eqt-border)), var(--eqt-shadow-drag);
     }
   }
 }
@@ -135,7 +135,7 @@
     @include tag-state-modifiers;
 
     &.eqt-tag-bar__btn--editing {
-      transition: background 0.15s, border-color 0.15s, color 0.15s;
+      transition: var(--eqt-transition-base);
 
       &:hover {
         background: var(--eqt-bg-hover);
@@ -148,7 +148,7 @@
     }
 
     &.eqt-tag-bar__btn--drag {
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      box-shadow: var(--eqt-shadow-drag);
 
       &::before {
         display: none;
@@ -167,7 +167,7 @@
     color: var(--eqt-text-secondary);
     border-radius: 5px;
     box-shadow: 1.5px 1.5px 0 0 var(--line-color, var(--eqt-border));
-    transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.1s ease, box-shadow 0.1s ease;
+    transition: var(--eqt-transition-base), transform 0.1s ease, box-shadow 0.1s ease;
   }
 
   .eqt-tag-bar__btn {
@@ -183,7 +183,7 @@
     @include tag-state-modifiers;
 
     &.eqt-tag-bar__btn--editing {
-      transition: background 0.15s, border-color 0.15s, color 0.15s;
+      transition: var(--eqt-transition-base);
 
       &:hover {
         background: var(--eqt-bg-hover);
@@ -193,7 +193,7 @@
     }
 
     &.eqt-tag-bar__btn--drag {
-      box-shadow: 1.5px 1.5px 0 0 var(--line-color, var(--eqt-border)), 0 2px 8px rgba(0, 0, 0, 0.2);
+      box-shadow: 1.5px 1.5px 0 0 var(--line-color, var(--eqt-border)), var(--eqt-shadow-drag);
     }
   }
 }

@@ -6,7 +6,29 @@
 
 #eqt-app {
   font-family: var(--eqt-font-family, inherit);
+  font-size: var(--eqt-fs-md);
   line-height: 1.4;
+}
+
+// 兩個 mount 點都要 reset：#eqt-app 是 SettingsPopup / TagConfigPopup 等的 root，
+// #eqt-bar-anchor 是 TagBar 的 Teleport 目標。漏掉後者會讓 TagBar 內 element
+// 繼承 EH 全站 content-box / checkbox 偏移。
+#eqt-app *,
+#eqt-app *::before,
+#eqt-app *::after,
+#eqt-bar-anchor *,
+#eqt-bar-anchor *::before,
+#eqt-bar-anchor *::after {
+  box-sizing: border-box;
+}
+
+// EH 全站有 `input[type="checkbox"] { position: relative; top: 2px }`，
+// 會讓我們組件內的 checkbox 視覺下移 2px。在這裡一次中和掉，避免每個用到
+// checkbox 的 component 自己加 `!important` 治標。
+#eqt-app input[type="checkbox"],
+#eqt-bar-anchor input[type="checkbox"] {
+  position: static;
+  top: 0;
 }
 
 #eqt-app button,
@@ -18,9 +40,30 @@
   line-height: inherit;
 }
 
-// Non-themed layout tokens
+// Non-themed design tokens
 :root {
   --eqt-row-h: 24px;
+
+  // typography scale
+  --eqt-fs-xs: 10px;
+  --eqt-fs-sm: 11px;
+  --eqt-fs-md: 12px;
+  --eqt-fs-lg: 13px;
+
+  // radius scale
+  --eqt-radius-sm: 3px;
+  --eqt-radius-md: 4px;
+
+  // shadow
+  --eqt-shadow-popover: 0 2px 8px rgba(0, 0, 0, 0.15);
+  --eqt-shadow-drag: 0 2px 8px rgba(0, 0, 0, 0.2);
+
+  // z-index
+  --eqt-z-overlay: 99999;
+  --eqt-z-popover: 100000;
+
+  // transition base for color/border/background morphing
+  --eqt-transition-base: background 0.15s, border-color 0.15s, color 0.15s;
 }
 
 // Light theme (e-hentai.org) — on :root so Teleported content inherits
@@ -45,6 +88,14 @@
   --eqt-status-include: #7ad094;
   --eqt-status-or: #f5c518;
   --eqt-status-exclude: #8c3333;
+
+  // action 色（primary / danger）：給 popup 主按鈕、刪除確認、線段刪除等
+  --eqt-primary: #4a7c59;
+  --eqt-primary-hover: #3d6b4a;
+  --eqt-on-primary: #fff;
+  --eqt-danger: #8c3333;
+  --eqt-danger-hover: #743030;
+  --eqt-danger-bg-hover: rgba(140, 51, 51, 0.15);
 }
 
 // Dark theme (exhentai.org)
@@ -69,4 +120,12 @@
   --eqt-status-include: #4f9f67;
   --eqt-status-or: #f5c518;
   --eqt-status-exclude: #8c3333;
+
+  --eqt-primary: #5a9a6a;
+  --eqt-primary-hover: #4a7c59;
+  --eqt-on-primary: #fff;
+  // 原本 hardcoded #8c3333 兩個 theme 都用同色，dark variant 不另作差異化
+  --eqt-danger: #8c3333;
+  --eqt-danger-hover: #743030;
+  --eqt-danger-bg-hover: rgba(140, 51, 51, 0.15);
 }

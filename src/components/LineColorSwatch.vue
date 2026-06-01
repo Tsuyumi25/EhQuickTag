@@ -82,12 +82,12 @@ function clearColor() {
   }
 
   &__popup {
-    z-index: 100000;
+    z-index: var(--eqt-z-popover);
     padding: 8px;
     background: var(--eqt-bg);
     border: var(--eqt-border-width) solid var(--eqt-border);
-    border-radius: 4px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    border-radius: var(--eqt-radius-md);
+    box-shadow: var(--eqt-shadow-popover);
     display: flex;
     flex-direction: column;
     gap: 6px;

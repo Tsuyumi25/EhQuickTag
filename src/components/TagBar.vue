@@ -638,7 +638,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
     padding: 0 4px;
 
     &:hover {
-      color: #8c3333;
+      color: var(--eqt-danger);
     }
   }
 
@@ -924,8 +924,8 @@ function onRightClick(event: MouseEvent, b: TagButton) {
     line-height: 1.4;
 
     &:hover:not(:disabled) {
-      background: rgba(140, 51, 51, 0.15);
-      color: #8c3333;
+      background: var(--eqt-danger-bg-hover);
+      color: var(--eqt-danger);
     }
 
     &:disabled {
@@ -972,7 +972,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
     font-size: 12px;
     line-height: 1.4;
     user-select: none;
-    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    transition: var(--eqt-transition-base);
 
     &:hover {
       background: var(--eqt-bg-hover);
@@ -1000,7 +1000,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
 
     &--drag {
       opacity: 0.8;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      box-shadow: var(--eqt-shadow-drag);
     }
   }
 

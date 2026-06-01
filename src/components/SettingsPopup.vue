@@ -1005,9 +1005,9 @@ function onEditorExport() {
   }
 
   &__active-badge {
-    font-size: 10px;
-    color: #fff;
-    background: #4a7c59;
+    font-size: var(--eqt-fs-xs);
+    color: var(--eqt-on-primary);
+    background: var(--eqt-primary);
     padding: 1px 4px;
     border-radius: 2px;
     margin-left: 4px;
@@ -1047,7 +1047,7 @@ function onEditorExport() {
     }
 
     &--purge:hover {
-      color: #8c3333;
+      color: var(--eqt-danger);
     }
   }
 }

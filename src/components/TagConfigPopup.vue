@@ -378,7 +378,7 @@ const simOutput = computed(() => {
 .eqt-popup-overlay {
   position: fixed;
   inset: 0;
-  z-index: 99999;
+  z-index: var(--eqt-z-overlay);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -537,7 +537,7 @@ const simOutput = computed(() => {
 
     &:hover {
       background: var(--eqt-bg-hover);
-      color: #8c3333;
+      color: var(--eqt-danger);
     }
   }
 
@@ -573,22 +573,22 @@ const simOutput = computed(() => {
     }
 
     &--primary {
-      background: #4a7c59;
-      border-color: #3d6b4a;
-      color: #fff;
+      background: var(--eqt-primary);
+      border-color: var(--eqt-primary-hover);
+      color: var(--eqt-on-primary);
 
       &:hover {
-        background: #3d6b4a;
+        background: var(--eqt-primary-hover);
       }
     }
 
     &--delete {
-      background: #8c3333;
-      border-color: #743030;
-      color: #fff;
+      background: var(--eqt-danger);
+      border-color: var(--eqt-danger-hover);
+      color: var(--eqt-on-primary);
 
       &:hover {
-        background: #743030;
+        background: var(--eqt-danger-hover);
       }
     }
   }
@@ -700,15 +700,12 @@ const simOutput = computed(() => {
   }
 
   // chip 內嵌 checkbox，視覺暗示「可開關」；實際 toggle 走 outer button click。
-  // EH 全域有 `input[type="checkbox"] { position: relative; top: 2px; }` 推 checkbox
-  // 下移 2px，必須用 !important 才壓得住（class selector specificity 仍會被屬性
-  // selector + element 計算贏走當層 cascade）。
+  // EH 全域對 checkbox 加 `position: relative; top: 2px` 的偏移已經由 theme.scss
+  // 的 `#eqt-app input[type="checkbox"]` reset 處理。
   &__check {
     margin: 0;
     width: 13px;
     height: 13px;
-    position: static !important;
-    top: 0 !important;
     pointer-events: none;
     accent-color: var(--chip-color);
   }
