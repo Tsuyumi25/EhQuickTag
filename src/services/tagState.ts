@@ -6,6 +6,9 @@ export function tokenize(text: string): string[] {
 }
 
 /** Normalize namespace to long form for comparison. Preserves prefix, suffix, quoting. */
+// page-scoped cache：跟 userscript 同生命週期，分頁 reload / 換頁就清空。
+// E站走傳統 navigation，token 字串池實際有界（E站 tag 集合 × 使用者輸入子集），
+// 沒有 LRU 也不會洩漏。注入到 SPA 或長壽命環境時要重新評估（quick-lru maxSize ~1000）。
 const _nsCache = new Map<string, string>()
 export function normalizeNs(tokenStr: string): string {
   let result = _nsCache.get(tokenStr)
@@ -32,6 +35,7 @@ export function normalizeNs(tokenStr: string): string {
  * parseError 的 token 回 null（不屬於任何身份，removeTag 不會誤刪、
  * getState 也不會誤判）。
  */
+// page-scoped cache，設計理由同 _nsCache。
 const _identityCache = new Map<string, string | null>()
 export function tokenIdentity(tokenStr: string): string | null {
   if (_identityCache.has(tokenStr)) return _identityCache.get(tokenStr)!
