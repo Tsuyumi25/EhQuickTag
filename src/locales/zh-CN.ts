@@ -35,6 +35,8 @@ export default {
   'tagbar.addSeparatorLine': '新增分隔线',
   'tagbar.addTag': '新增标签',
   'tagbar.addUrl': '新增网址',
+  'tagbar.miscRow': '其他',
+  'tagbar.searchPanel': 'EhQuickTag 搜索栏',
   'tagbar.done': '完成',
   'tagbar.edit': '编辑',
   'tagbar.settings': '设置',

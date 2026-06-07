@@ -35,6 +35,8 @@ export default {
   'tagbar.addSeparatorLine': 'Add separator',
   'tagbar.addTag': 'Add tag',
   'tagbar.addUrl': 'Add URL',
+  'tagbar.miscRow': 'Misc',
+  'tagbar.searchPanel': 'EhQuickTag search panel',
   'tagbar.done': 'Done',
   'tagbar.edit': 'Edit',
   'tagbar.settings': 'Settings',

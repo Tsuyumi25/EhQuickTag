@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, ExternalLink, GripVertical, Trash2, Pencil, 
 import ContentEditable from 'vue-contenteditable'
 import LineColorSwatch from '@/components/LineColorSwatch.vue'
 import SeparatorSettingsPopup from '@/components/SeparatorSettingsPopup.vue'
+import SearchPanel from '@/components/SearchPanel.vue'
 import { TagState, type Line, type Button, type TagButton } from '@/types'
 import { tokenize, buildIdentityIndex, getState as _getState, setTagState, getNextRightClickState } from '@/services/tagState'
 import { lines, dblClickLeft, dblClickRight, useAccentOnInclude, type DblClickAction } from '@/services/store'
@@ -41,6 +42,7 @@ const emit = defineEmits<{
   'configure': [lineIdx: number, tagIdx: number]
   'add': []
   'addUrl': []
+  'addToSearch': []
   'settings': []
   'prevProfile': []
   'nextProfile': []
@@ -395,6 +397,14 @@ function onRightClick(event: MouseEvent, b: TagButton) {
           </div>
         </template>
       </Draggable>
+      <div class="eqt-tag-bar__search-area">
+        <span class="eqt-tag-bar__search-area-label">{{ t('tagbar.searchPanel') }}</span>
+        <SearchPanel
+          :model-value="searchText"
+          @update:model-value="emit('update:searchText', $event)"
+          @add-to-search="emit('addToSearch')"
+        />
+      </div>
       <div class="eqt-tag-bar__bottom-row">
         <div v-if="editing" class="eqt-tag-bar__line-add">
           <button
@@ -522,6 +532,39 @@ function onRightClick(event: MouseEvent, b: TagButton) {
     display: flex;
     flex-direction: column;
     gap: 4px;
+  }
+
+  // chip 區的 framed 卡片：「+」按鈕住在框內當新增入口，整個框視覺上就是
+  // 「我這次搜的東西 + 怎麼新增」這件事的容器。
+  // legend 風格的左上角標題，騎在 border 上指示「這是進階搜尋面板」
+  &__search-area {
+    position: relative;
+    // top padding 加大讓內容跟 legend 標題拉開距離（label 中線壓在 border 上，
+    // 半個 label 探進卡片內 ~5.5px，6px padding 太貼）
+    padding: 14px 6px 6px;
+    border: var(--eqt-border-width) solid var(--eqt-border);
+    border-radius: 6px;
+    background: var(--eqt-bg);
+    transition: var(--eqt-transition-base);
+
+    &:focus-within {
+      border-color: var(--eqt-text-secondary);
+    }
+  }
+
+  // legend 風：標題框絕對定位、垂直中線壓在 border 上、底色蓋掉穿過的邊框線
+  &__search-area-label {
+    position: absolute;
+    top: 0;
+    left: 10px;
+    transform: translateY(-50%);
+    padding: 0 6px;
+    background: var(--eqt-bg);
+    color: var(--eqt-text-hint);
+    font-size: 11px;
+    line-height: 1;
+    user-select: none;
+    pointer-events: none;
   }
 
   &__line-wrap {

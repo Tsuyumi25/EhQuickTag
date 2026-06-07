@@ -1,6 +1,6 @@
 import { GM_xmlhttpRequest } from '$'
 import { isASCII, toCN, toJP } from '@/services/cjkDict'
-import { getNhCount } from '@/services/nhPopularity'
+import { getNhWeight } from '@/services/nhPopularity'
 import { hasGMXHR, cacheGet, cacheSet } from '@/services/gmStorage'
 
 export type TagDbMirror = 'jsdelivr' | 'fastly' | 'gcore' | 'github'
@@ -144,6 +144,7 @@ export async function loadTagDb(opts: LoadTagDbOptions = {}): Promise<TagEntry[]
 /** Force re-fetch tag DB from mirror, ignoring cache. */
 export async function refreshTagDb(opts: LoadTagDbOptions = {}): Promise<void> {
   entries = null
+  _nhRankedCache = null
   await cacheSet(CACHE_TS_KEY, '0')
   await loadTagDb(opts)
 }
@@ -155,9 +156,6 @@ const enum MatchTier {
   Prefix = 0,    // tag starts with search term
   WordStart = 1, // a word in the tag starts with search term
 }
-
-// nh "tag" type only covers these EH namespaces
-const NH_NAMESPACES = new Set(['female', 'male', 'mixed', 'other'])
 
 /** Default namespace order (index = tier). */
 export const DEFAULT_NS_ORDER = [
@@ -260,7 +258,7 @@ export function searchTags(query: string, opts: SearchOptions = {}): TagEntry[] 
     ranked.push({
       entry,
       matchTier,
-      nhCount: useNhWeight && NH_NAMESPACES.has(entry.ns) ? (getNhCount(entry.raw) ?? 0) : 0,
+      nhCount: useNhWeight ? (getNhWeight(entry.ns, entry.raw) ?? 0) : 0,
       nsTier,
     })
   }
@@ -273,4 +271,29 @@ export function searchTags(query: string, opts: SearchOptions = {}): TagEntry[] 
   )
 
   return ranked.map(r => r.entry)
+}
+
+/**
+ * 把 e站 tagDb 中所有「在 nh 資料上有對應上傳量」的 entry 撈出，依 nh 人氣降冪排序。
+ *
+ * 用途：AddTagPopup 的「空查詢預設清單」——nh 資料本身只是 `name → count`，沒
+ * namespace 不能直接當 tag 用；本函式做 e站 對齊，回傳的是已附完整 namespace
+ * 的 TagEntry，可以直接組成 token。
+ *
+ * 結果 memoize 在 module 層——entries 跟 nh popularity map 都是 immutable 後就不變，
+ * 每次 popup 重 mount 不用重 scan 50k entries。refreshTagDb 時跟 entries 一起清空。
+ */
+let _nhRankedCache: Array<{ entry: TagEntry; nhCount: number }> | null = null
+export function getNhRankedEntries(): Array<{ entry: TagEntry; nhCount: number }> {
+  if (_nhRankedCache) return _nhRankedCache
+  if (!entries) return []
+  const result: Array<{ entry: TagEntry; nhCount: number }> = []
+  for (const entry of entries) {
+    const count = getNhWeight(entry.ns, entry.raw)
+    if (count === undefined) continue
+    result.push({ entry, nhCount: count })
+  }
+  result.sort((a, b) => b.nhCount - a.nhCount)
+  _nhRankedCache = result
+  return result
 }

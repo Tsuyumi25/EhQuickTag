@@ -128,7 +128,7 @@
 
     &:focus {
       outline: none;
-      border-color: var(--eqt-border-focus);
+      border-color: var(--eqt-text-secondary);
     }
 
     &:disabled {
@@ -226,22 +226,21 @@
     background: var(--eqt-bg-elevated);
     border: var(--eqt-border-width) solid var(--eqt-border);
     border-radius: var(--eqt-radius-sm);
-    z-index: 1;
+    text-align: left;
+    z-index: var(--eqt-z-popover);
   }
 
+  // dropdown 定位殼：套在 SuggestionList 外面，讓清單漂浮在 input 下方。
+  // z-index 用 var(--eqt-z-popover) shield e站 `div style="z-index:2"` 之類擋路元素。
+  // 視覺（背景、邊框、捲動）由 SuggestionList 自己的 .eqt-suggestion-list 負責。
   &__suggestions {
     position: absolute;
     left: 0;
     right: 0;
     top: 100%;
     margin: 2px 0 0;
-    padding: 0;
-    background: var(--eqt-bg-elevated);
-    border: var(--eqt-border-width) solid var(--eqt-border);
-    border-radius: var(--eqt-radius-sm);
     max-height: 50vh;
-    overflow-y: auto;
-    z-index: 1;
+    z-index: var(--eqt-z-popover);
   }
 
   &__suggestion {

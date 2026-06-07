@@ -4,6 +4,11 @@ import TagBar from '@/components/TagBar.vue'
 import TagConfigPopup from '@/components/TagConfigPopup.vue'
 import UrlConfigPopup from '@/components/UrlConfigPopup.vue'
 import SettingsPopup from '@/components/SettingsPopup.vue'
+import AddTagPopup from '@/components/AddTagPopup.vue'
+import { nsToShort } from '@/composables/useSearchTerm'
+import { setTagState } from '@/services/tagState'
+import { TagState } from '@/types'
+import type { TagEntry } from '@/services/tagDb'
 import { GM_openInTab } from '$'
 import type { Button, TagButton, UrlButton } from '@/types'
 import { lines, useNhWeight, nsOrder, disabledNs, fontFamily, fontWeight, profiles, activeProfileIdx, switchProfile, renameProfile, createProfile, deleteProfile, newTabActive, nsFormat, defaultExactMatch, tagDbMirror, tagDbTtlDays, type DblClickAction } from '@/services/store'
@@ -146,6 +151,24 @@ const editingLineColor = computed(() => {
 // --- settings popup ---
 
 const showSettings = ref(false)
+const showAddPopup = ref(false)
+
+function onAddToSearch() {
+  showAddPopup.value = true
+}
+
+function onPickAddTag(entry: TagEntry) {
+  // 跟 SearchTermEditor.applySuggestionPick 同套規則：尊重 nsFormat 跟 defaultExactMatch
+  const ns = nsFormat.value === 'short' ? (nsToShort(entry.ns) ?? entry.ns) : entry.ns
+  const suffix = defaultExactMatch.value ? '$' : ''
+  const tagPart = entry.raw.includes(' ') ? `"${entry.raw}${suffix}"` : `${entry.raw}${suffix}`
+  const token = `${ns}:${tagPart}`
+  // 走 setTagState 是身份戳語意：search 已有同身份 token（不論前綴/後綴）就 in-place
+  // 覆蓋成新 view，沒有就補尾巴。直接字串 concat 會產生同身份重複 → 破壞
+  // identityIndex 的唯一性 invariant，buttons 跟 chips 會跟著當掉。
+  searchText.value = setTagState(searchText.value, [token], TagState.Include)
+  showAddPopup.value = false
+}
 
 function onSearch(action: DblClickAction) {
   if (!searchInput?.form) return
@@ -202,6 +225,7 @@ watch(searchText, (val) => {
       @create-profile="onCreateProfile"
       @delete-profile="onDeleteProfile"
       @settings="showSettings = true"
+      @add-to-search="onAddToSearch"
       @search="onSearch"
     />
   </Teleport>
@@ -238,5 +262,11 @@ watch(searchText, (val) => {
     @update:ns-order="nsOrder = $event"
     @update:disabled-ns="disabledNs = $event"
     @close="showSettings = false"
+  />
+
+  <AddTagPopup
+    v-if="showAddPopup"
+    @pick="onPickAddTag"
+    @close="showAddPopup = false"
   />
 </template>

@@ -35,6 +35,8 @@ export default {
   'tagbar.addSeparatorLine': '区切り線を追加',
   'tagbar.addTag': 'タグを追加',
   'tagbar.addUrl': 'URLを追加',
+  'tagbar.miscRow': 'その他',
+  'tagbar.searchPanel': 'EhQuickTag 検索パネル',
   'tagbar.done': '完了',
   'tagbar.edit': '編集',
   'tagbar.settings': '設定',
