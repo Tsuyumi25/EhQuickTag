@@ -6,6 +6,7 @@ import {
   tokenIdentity,
   applyState,
   getButtonShape,
+  buildIdentityIndex,
   getState as _getStateArr,
   removeTag as _removeTagArr,
   addTag as _addTagArr,
@@ -23,12 +24,16 @@ function splitMultiTag(tag: string): string[] {
 }
 type LegacyQt = { tag: string; disabledModes?: readonly TagMode[] }
 
-const getState = (tag: string, tokens: Set<string>) => _getStateArr(splitMultiTag(tag), tokens)
+const getState = (tag: string, tokens: Set<string>) => _getStateArr(splitMultiTag(tag), buildIdentityIndex(tokens))
 const removeTag = (text: string, tag: string) => _removeTagArr(text, splitMultiTag(tag))
 const addTag = (text: string, tag: string, state: TagState) => _addTagArr(text, splitMultiTag(tag), state)
 const getEffectiveModifiers = (qt: LegacyQt) => _getEffectiveModifiersArr(splitMultiTag(qt.tag), qt.disabledModes)
 const getNextRightClickState = (qt: LegacyQt, state: TagState) =>
   _getNextRightClickStateArr(splitMultiTag(qt.tag), qt.disabledModes, state)
+
+function identityIndex(text: string): Map<string, string | null> {
+  return buildIdentityIndex(tokenize(text))
+}
 
 // ============================================================
 // tokenize
@@ -807,31 +812,27 @@ describe('cross-button: all-or 跟 negative-single 互搶身份', () => {
   const A = ['~language:chinese$', '~language:english$']  // all-or
   const B = ['-language:chinese$']                          // negative-single
 
-  function tokenSet(text: string): Set<string> {
-    return new Set(tokenize(text))
-  }
-
   it('step 1: 點 A → A=Include', () => {
     const text = _setTagStateArr('', A, TagState.Include)
     expect(text).toBe('~language:chinese$ ~language:english$')
-    expect(_getStateArr(A, tokenSet(text))).toBe(TagState.Include)
-    expect(_getStateArr(B, tokenSet(text))).toBe(TagState.Off)
+    expect(_getStateArr(A, identityIndex(text))).toBe(TagState.Include)
+    expect(_getStateArr(B, identityIndex(text))).toBe(TagState.Off)
   })
 
   it('step 2: 點 B → B 搶下 language:chinese 身份（位置守恆）', () => {
     const text = _setTagStateArr('~language:chinese$ ~language:english$', B, TagState.Include)
     // chinese 原地被 -chinese$ 取代，english 留在原位（不會跳到 chinese 前面）
     expect(text).toBe('-language:chinese$ ~language:english$')
-    expect(_getStateArr(A, tokenSet(text))).toBe(TagState.Off)
-    expect(_getStateArr(B, tokenSet(text))).toBe(TagState.Include)
+    expect(_getStateArr(A, identityIndex(text))).toBe(TagState.Off)
+    expect(_getStateArr(B, identityIndex(text))).toBe(TagState.Include)
   })
 
   it('step 3: 再點 A → A 搶回身份，B 退場（位置守恆）', () => {
     const text = _setTagStateArr('-language:chinese$ ~language:english$', A, TagState.Include)
     // chinese 從 -chinese$ 原地換回 ~chinese$，english 維持
     expect(text).toBe('~language:chinese$ ~language:english$')
-    expect(_getStateArr(A, tokenSet(text))).toBe(TagState.Include)
-    expect(_getStateArr(B, tokenSet(text))).toBe(TagState.Off)
+    expect(_getStateArr(A, identityIndex(text))).toBe(TagState.Include)
+    expect(_getStateArr(B, identityIndex(text))).toBe(TagState.Off)
   })
 })
 
@@ -877,19 +878,15 @@ describe('cross-button: 純日語 ↔ 個別語言按鈕', () => {
   ]
   const english = ['language:english$']
 
-  function tokenSet(text: string): Set<string> {
-    return new Set(tokenize(text))
-  }
-
   it('純日語 active → 點英文 → 英文搶下 l:english，純日語退場', () => {
     let text = _setTagStateArr('', japaneseOnly, TagState.Include)
-    expect(_getStateArr(japaneseOnly, tokenSet(text))).toBe(TagState.Include)
+    expect(_getStateArr(japaneseOnly, identityIndex(text))).toBe(TagState.Include)
 
     // 英文的 getState：l:english 在 search 是 -english$，**剛好**也是英文按鈕
     // positive-single 的 Exclude emission → 偵測為 Exclude state（不是 Off）。
     // 這個「視覺 state」反映 search 對 l:english 的當前態度，不代表是英文按鈕
     // 自己 emit 的——可能來自純日語。
-    const state = _getStateArr(english, tokenSet(text))
+    const state = _getStateArr(english, identityIndex(text))
     expect(state).toBe(TagState.Exclude)
     // 左鍵語意「state != Include → set Include」：英文搶回 l:english 身份
     // 位置守恆：-english$ 原地換成 english$，純日語其他 -X 都留原位
@@ -898,8 +895,8 @@ describe('cross-button: 純日語 ↔ 個別語言按鈕', () => {
     expect(text).toContain('language:english$')
     expect(text).not.toContain('-language:english$')
     // 純日語少了 l:english 戳記 → Off
-    expect(_getStateArr(japaneseOnly, tokenSet(text))).toBe(TagState.Off)
-    expect(_getStateArr(english, tokenSet(text))).toBe(TagState.Include)
+    expect(_getStateArr(japaneseOnly, identityIndex(text))).toBe(TagState.Off)
+    expect(_getStateArr(english, identityIndex(text))).toBe(TagState.Include)
   })
 
   it('翻譯本（language:translated）跟純日語身份不重疊 → 可真正共存', () => {
@@ -908,8 +905,8 @@ describe('cross-button: 純日語 ↔ 個別語言按鈕', () => {
     text = _setTagStateArr(text, translated, TagState.Include)
 
     // 兩按鈕都 Include：純日語的 6 個 -language 身份戳齊全，翻譯本的 l:translated 也在
-    expect(_getStateArr(japaneseOnly, tokenSet(text))).toBe(TagState.Include)
-    expect(_getStateArr(translated, tokenSet(text))).toBe(TagState.Include)
+    expect(_getStateArr(japaneseOnly, identityIndex(text))).toBe(TagState.Include)
+    expect(_getStateArr(translated, identityIndex(text))).toBe(TagState.Include)
   })
 })
 

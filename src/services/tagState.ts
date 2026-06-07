@@ -146,8 +146,10 @@ function computeEmission(tags: string[], shape: ButtonShape, state: TagState): s
 /**
  * 把 search 的 tokens 依身份索引。重複身份視為 ambiguous（map value = null），
  * 任何 emission 對它都 match 失敗 → 那個身份「壞了」，按鈕只能回 Off。
+ *
+ * 純函數。呼叫端應在 input 不變的範圍內 memo 結果並共用，避免熱路徑重建。
  */
-function buildIdentityIndex(tokens: Set<string>): Map<string, string | null> {
+export function buildIdentityIndex(tokens: Iterable<string>): Map<string, string | null> {
   const map = new Map<string, string | null>()
   for (const t of tokens) {
     const id = tokenIdentity(t)
@@ -174,12 +176,10 @@ function buildIdentityIndex(tokens: Set<string>): Map<string, string | null> {
  * isStateShapeAllowed 規則下不會重疊（每 state 用不同前綴），但若搜尋
  * 欄被外力弄成詭異狀態，較強的 state 優先勝出比較直覺。
  */
-export function getState(tags: string[], tokens: Set<string>): TagState {
+export function getState(tags: string[], identityIndex: Map<string, string | null>): TagState {
   if (!tags.length) return TagState.Off
   const shape = getButtonShape(tags)
   if (shape === 'empty') return TagState.Off
-
-  const tokenByIdentity = buildIdentityIndex(tokens)
 
   const candidates: TagState[] = [TagState.Exclude, TagState.Or, TagState.Include]
   for (const state of candidates) {
@@ -188,7 +188,7 @@ export function getState(tags: string[], tokens: Set<string>): TagState {
     const allMatch = expected.every(e => {
       const id = tokenIdentity(e)
       if (!id) return false
-      return tokenByIdentity.get(id) === e
+      return identityIndex.get(id) === e
     })
     if (allMatch) return state
   }

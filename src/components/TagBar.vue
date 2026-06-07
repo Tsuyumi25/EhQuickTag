@@ -7,7 +7,7 @@ import ContentEditable from 'vue-contenteditable'
 import LineColorSwatch from '@/components/LineColorSwatch.vue'
 import SeparatorSettingsPopup from '@/components/SeparatorSettingsPopup.vue'
 import { TagState, type Line, type Button, type TagButton } from '@/types'
-import { tokenize, getState as _getState, setTagState, getNextRightClickState } from '@/services/tagState'
+import { tokenize, buildIdentityIndex, getState as _getState, setTagState, getNextRightClickState } from '@/services/tagState'
 import { lines, dblClickLeft, dblClickRight, useAccentOnInclude, type DblClickAction } from '@/services/store'
 import { baseDragOptions } from '@/utils/drag'
 import { t } from '@/composables/useI18n'
@@ -209,10 +209,12 @@ const tagDragOptions = {
 
 // --- search text parsing ---
 
-const tokenSet = computed(() => new Set(tokenize(props.searchText)))
+// 整個按鈕牆共用一張身份索引表，只在 searchText 變時重算。
+// 拆 computed（而非塞進 getState 內）避免 N 顆按鈕各自重建一次。
+const identityIndex = computed(() => buildIdentityIndex(tokenize(props.searchText)))
 
 function getState(b: TagButton): TagState {
-  return _getState(b.tags, tokenSet.value)
+  return _getState(b.tags, identityIndex.value)
 }
 
 // --- normal mode handlers ---
