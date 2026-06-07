@@ -534,7 +534,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
     gap: 4px;
   }
 
-  // chip 區的 framed 卡片：「+」按鈕住在框內當新增入口，整個框視覺上就是
+  // button 區的 framed 卡片：「+」按鈕住在框內當新增入口，整個框視覺上就是
   // 「我這次搜的東西 + 怎麼新增」這件事的容器。
   // legend 風格的左上角標題，騎在 border 上指示「這是進階搜尋面板」
   &__search-area {
@@ -545,11 +545,6 @@ function onRightClick(event: MouseEvent, b: TagButton) {
     border: var(--eqt-border-width) solid var(--eqt-border);
     border-radius: 6px;
     background: var(--eqt-bg);
-    transition: var(--eqt-transition-base);
-
-    &:focus-within {
-      border-color: var(--eqt-text-secondary);
-    }
   }
 
   // legend 風：標題框絕對定位、垂直中線壓在 border 上、底色蓋掉穿過的邊框線

@@ -145,8 +145,26 @@ export async function loadTagDb(opts: LoadTagDbOptions = {}): Promise<TagEntry[]
 export async function refreshTagDb(opts: LoadTagDbOptions = {}): Promise<void> {
   entries = null
   _nhRankedCache = null
+  _entryIndex = null
   await cacheSet(CACHE_TS_KEY, '0')
   await loadTagDb(opts)
+}
+
+/**
+ * 用 (namespace, tag raw) 查回 TagEntry。給 SearchPanel 在 CJK locale 下把
+ * button 文字從英文 raw 換成 entry.name（本地化翻譯）。
+ *
+ * Index lazy build：首次呼叫時掃 entries 建 Map<ns:rawLow, entry>，後續 O(1)。
+ * refreshTagDb 跟 entries 一起清。
+ */
+let _entryIndex: Map<string, TagEntry> | null = null
+export function findEntryByNsTag(ns: string, tag: string): TagEntry | undefined {
+  if (!entries) return undefined
+  if (!_entryIndex) {
+    _entryIndex = new Map()
+    for (const e of entries) _entryIndex.set(`${e.ns}:${e.rawLow}`, e)
+  }
+  return _entryIndex.get(`${ns}:${tag.toLowerCase()}`)
 }
 
 // --- multi-key ranking ---
