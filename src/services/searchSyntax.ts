@@ -62,7 +62,15 @@ function resolveColonPrefix(candidate: string): { qualifier: Qualifier | null; n
   return { qualifier: null, namespace: null, namespaceRaw: null }
 }
 
+// module-level memo：parseTerm 在 SearchPanel groups / stateOf 對同 positive
+// 重複呼叫（2N per recompute），結果是 immutable 純函數結果，安全 cache。
+// 跟 tagState 內 _nsCache / _identityCache 同 pattern
+const _parseCache = new Map<string, SearchTerm>()
+
 export function parseTerm(raw: string): SearchTerm {
+  const cached = _parseCache.get(raw)
+  if (cached) return cached
+
   const token: SearchTerm = {
     prefix: null, qualifier: null, namespace: null, namespaceRaw: null,
     tag: '', quoted: false, suffix: null, raw,
@@ -159,6 +167,7 @@ export function parseTerm(raw: string): SearchTerm {
     token.parseError = 'Empty tag'
   }
 
+  _parseCache.set(raw, token)
   return token
 }
 
