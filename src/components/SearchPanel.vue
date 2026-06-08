@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, ref, watch, onMounted, onScopeDispose } from 'vue'
+import { computed, ref, watch, onMounted, onScopeDispose, nextTick } from 'vue'
+import { useResizeObserver } from '@vueuse/core'
 import { parseTerm, serializeTerm, type Prefix } from '@/services/searchSyntax'
 import { tokenize, tokenIdentity, setTagState, removeTag, buildIdentityIndex, getNextRightClickState } from '@/services/tagState'
 import { nsOrder, lines } from '@/services/store'
@@ -188,6 +189,24 @@ function syncFromSearch(text: string): void {
 syncFromSearch(props.modelValue)
 
 onMounted(async () => {
+  refreshContainerWidth()
+
+  // First render 時 visible term 已經出現（containerWidth=0 走 fallback 全塞一行），
+  // 從中讀 term metrics ground truth。讀完 bump 觸發 groupRows 用精準寬度重算
+  refreshTermMetrics()
+  measureVersion.value++
+
+  // 字型載入完 invalidate width cache：載入前讀到的 metrics font 可能還是
+  // fallback font，等 real font ready 再讀一次 + 清 cache
+  if (document.fonts?.ready) {
+    void document.fonts.ready.then(() => {
+      refreshTermMetrics()
+      widthCache.clear()
+      measureVersion.value++
+      void nextTick(refreshContainerWidth)
+    })
+  }
+
   // 兩個獨立的 IO 平行跑（loadHistory 讀 GM、loadTagDb 可能拉網路），冷啟動
   // dbReady 翻為 true 從 sum(兩者) 收斂到 max(兩者)
   await Promise.all([loadHistory(), loadTagDb()])
@@ -205,6 +224,10 @@ interface TermInfo {
   state: TagState
   displayShort: string  // namespace row 用：無 namespace prefix、$ 拿掉、CJK 翻譯
   displayFull: string   // misc row 用：保留 qualifier / namespace
+  // 量測對齊用：兩語言版本的「實際渲染文字」。
+  // namespace row 取 short 對應 CJK / Latin；misc row 兩者相同（serializeTerm 不翻譯）
+  measureZh: string
+  measureEn: string
 }
 
 interface TermGroup {
@@ -269,13 +292,22 @@ const groups = computed<TermGroup[]>(() => {
     const prefix = STATE_PREFIX[state]
     const prefixStr = prefix ?? ''
 
-    const cjkEntry = showCJK.value && parsed.namespace
+    // 兩語言文字無條件算出來。CJK 沒翻譯時 zhText 退回 Latin（兩語言相等）
+    const cjkEntry = parsed.namespace
       ? findEntryByNsTag(parsed.namespace, parsed.tag)
       : undefined
-    const displayShort = cjkEntry ? prefixStr + cjkEntry.name : prefixStr + parsed.tag
+    const zhText = cjkEntry ? prefixStr + cjkEntry.name : prefixStr + parsed.tag
+    const enText = prefixStr + parsed.tag
+    const displayShort = showCJK.value ? zhText : enText
     const displayFull = serializeTerm({ ...parsed, prefix, suffix: null })
 
-    const term: TermInfo = { positive, state, displayShort, displayFull }
+    // misc row 用 displayFull，serializeTerm 不做 CJK 翻譯 ⇒ 兩語言相等
+    const isMisc = groupKey === MISC_KEY
+    const term: TermInfo = {
+      positive, state, displayShort, displayFull,
+      measureZh: isMisc ? displayFull : zhText,
+      measureEn: isMisc ? displayFull : enText,
+    }
     if (!buckets.has(groupKey)) buckets.set(groupKey, [])
     buckets.get(groupKey)!.push(term)
   }
@@ -308,6 +340,135 @@ const groups = computed<TermGroup[]>(() => {
   }
   return result
 })
+
+// === 中英 wrap 對齊：量測 + JS chunk ===
+//
+// 設計：每個 term 量「兩語言版本」的 offsetWidth cache 起來，分組時用
+// max(w_zh, w_en) 累加模擬 flex-wrap，JS 切出 row 分組，visible layer 按該
+// 分組 render（每 row flex-nowrap）。同 term 在中英切換時必定落在同一相對位置。
+//
+// Cache key 只用 text：canvas measureText 不受 state class 影響，padding/border
+// 從 termMetrics 加上去（state class 變體目前不改 width-affecting 屬性）
+const containerRef = ref<HTMLElement | null>(null)
+const containerWidth = ref(0)
+const measureVersion = ref(0)  // 字型載入完 invalidate cache 用
+
+// 量測策略：Canvas measureText。字型字串由我們從 visible term 一次性 compose
+// 出來，不依賴 DOM 繼承——徹底繞掉 sandbox 元素的 CSS 變數 / font 繼承坑
+// （sandbox 路線在 body 拿不到 SearchPanel 內 CSS var、在 container 內又會
+// 量得偏小 3px 導致 row 邊界 overflow，canvas 直接從 ground truth 算 0 誤差）
+const canvasCtx: CanvasRenderingContext2D | null = (() => {
+  if (typeof document === 'undefined') return null
+  return document.createElement('canvas').getContext('2d')
+})()
+
+interface TermMetrics { font: string; padding: number; border: number }
+const termMetrics = ref<TermMetrics | null>(null)
+
+const widthCache = new Map<string, number>()
+const CELLS_GAP = 4  // 跟 .eqt-search-panel__cells-row 的 gap 同步
+
+// 從一個 visible term 讀 ground truth：font 字串（含 size/family）、horizontal
+// padding、horizontal border。state class 變體不改 padding/border-width，這些
+// 值對所有 term 通用（main + ghost）。讀不到時 metrics 留 null、量測返回 0、
+// groupRows fallback 到「全塞一行」直到 metrics ready
+function refreshTermMetrics(): void {
+  if (!containerRef.value) return
+  const term = containerRef.value.querySelector('.eqt-search-panel__button') as HTMLElement | null
+  if (!term) return
+  const cs = getComputedStyle(term)
+  termMetrics.value = {
+    font: cs.font,
+    padding: parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight),
+    border: parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth),
+  }
+}
+
+function measureTermWidth(text: string): number {
+  const m = termMetrics.value
+  if (!canvasCtx || !m) return 0
+  canvasCtx.font = m.font
+  const textW = canvasCtx.measureText(text).width
+  // Math.ceil：subpixel 寬度 round up 避免累加誤差讓最後一個 term 推出容器
+  return Math.ceil(textW + m.padding + m.border)
+}
+
+function getTermWidth(text: string): number {
+  const cached = widthCache.get(text)
+  if (cached !== undefined && cached > 0) return cached
+  const w = measureTermWidth(text)
+  if (w > 0) widthCache.set(text, w)
+  return w
+}
+
+function chunkByMaxWidth<T>(
+  items: T[],
+  getMaxWidth: (item: T) => number,
+  width: number,
+  gap: number,
+): T[][] {
+  if (items.length === 0) return []
+  // 容器寬度未知時不分組（單行 fallback，CSS 會處理 overflow 為 1 幀過渡態）
+  if (width <= 0) return [items]
+  const rows: T[][] = [[]]
+  let rowWidth = 0
+  for (const item of items) {
+    const w = getMaxWidth(item)
+    const next = rowWidth === 0 ? w : rowWidth + gap + w
+    if (next > width && rowWidth > 0) {
+      rows.push([item])
+      rowWidth = w
+    } else {
+      rows[rows.length - 1].push(item)
+      rowWidth = next
+    }
+  }
+  return rows
+}
+
+// 量測 reactive trigger 集中在這個 helper：所有 chunkByMaxWidth callback
+// 走這條路，metrics / fonts.ready 重設後自動讓上游 computed 重算。
+// 新 callsite 漏掉 `void measureVersion.value` 不會默默 stale
+function bilingualMaxWidth(zh: string, en: string): number {
+  void measureVersion.value
+  return Math.max(getTermWidth(zh), getTermWidth(en))
+}
+
+interface TermGroupRows {
+  key: string | null
+  label: string
+  rows: TermInfo[][]
+}
+
+const groupRows = computed<TermGroupRows[]>(() => {
+  return groups.value.map(g => ({
+    key: g.key,
+    label: g.label,
+    rows: chunkByMaxWidth(
+      g.terms,
+      c => bilingualMaxWidth(c.measureZh, c.measureEn),
+      containerWidth.value,
+      CELLS_GAP,
+    ),
+  }))
+})
+
+function refreshContainerWidth(): void {
+  if (!containerRef.value) return
+  const firstCells = containerRef.value.querySelector('.eqt-search-panel__cells') as HTMLElement | null
+  if (firstCells) containerWidth.value = firstCells.clientWidth
+}
+
+useResizeObserver(containerRef, refreshContainerWidth)
+
+// term 從無到有時 onMounted 跑的 refreshTermMetrics 找不到 term 元素，termMetrics
+// 留 null 鎖死。watch groups 在 term 列表變動後重抓——flush:'post' 確保 DOM
+// commit 後跑、有 term 元素可讀。讀到就 bump 觸發 groupRows 重算
+watch(groups, () => {
+  if (termMetrics.value) return
+  refreshTermMetrics()
+  if (termMetrics.value) measureVersion.value++
+}, { flush: 'post' })
 
 // === 按鈕語意：跟 TagBar button 同套 ===
 //
@@ -392,51 +553,103 @@ function clearHistory(): void {
   assertInvariants()
 }
 
-function formatHistoryEntry(positive: string): string {
+// 解析 history positive → 兩語言版本（display 跟著 showCJK 切換）。
+// 無條件算兩種文字：display 給 v-render，zh/en 給 chunkByMaxWidth 量測對齊
+function historyEntryTexts(positive: string): { display: string; zh: string; en: string } {
   const parsed = parseTerm(positive)
-  if (parsed.parseError) return positive
-  if (!parsed.namespace) return serializeTerm({ ...parsed, suffix: null })
-  if (showCJK.value) {
-    const cjkEntry = findEntryByNsTag(parsed.namespace, parsed.tag)
-    if (cjkEntry) return `${t(`ns.${parsed.namespace}`)}:${cjkEntry.name}`
+  if (parsed.parseError) return { display: positive, zh: positive, en: positive }
+  if (!parsed.namespace) {
+    const text = serializeTerm({ ...parsed, suffix: null })
+    return { display: text, zh: text, en: text }
   }
-  return serializeTerm({ ...parsed, suffix: null })
+  const cjkEntry = findEntryByNsTag(parsed.namespace, parsed.tag)
+  const enText = serializeTerm({ ...parsed, suffix: null })
+  const zhText = cjkEntry
+    ? `${t(`ns.${parsed.namespace}`)}:${cjkEntry.name}`
+    : enText
+  return {
+    display: showCJK.value ? zhText : enText,
+    zh: zhText,
+    en: enText,
+  }
 }
+
+interface HistoryTerm { positive: string; display: string; zh: string; en: string }
 
 // computed memoize history display——visibleHistory / showCJK 不變就直接拿快取，
 // 不在 v-for 內逐項重跑 parseTerm + findEntryByNsTag。
 // 跟 da4ae79（identityIndex 從 N 顆按鈕收成 1 張共用 Map）同形式
 //
-// dbReady 依賴：tagDb 未載入時 findEntryByNsTag 回 undefined → formatHistoryEntry
+// dbReady 依賴：tagDb 未載入時 findEntryByNsTag 回 undefined → historyEntryTexts
 // fallback 到英文。dbReady 翻 true 後要重算才能切到 CJK 翻譯，不然要使用者點
 // 兩次 toggle 才會變中文（第一次切走、第二次切回時 tagDb 已載入）
-const historyDisplays = computed(() => {
+const historyDisplays = computed<HistoryTerm[]>(() => {
   void dbReady.value
   return visibleHistory.value.map(positive => ({
     positive,
-    display: formatHistoryEntry(positive),
+    ...historyEntryTexts(positive),
   }))
 })
+
+// History row：clearHistory 按鈕當作同類「特殊 term」一起 chunk，確保整個
+// history block（含 clear 按鈕）在中英切換時 wrap 一致對齊。
+// kind 區分 click handler、zh/en 給 chunkByMaxWidth 量測對齊
+type HistoryItem =
+  | { kind: 'history'; positive: string; display: string; zh: string; en: string }
+  | { kind: 'clear'; display: string; zh: string; en: string }
+
+const historyRows = computed<HistoryItem[][]>(() => {
+  const terms = historyDisplays.value
+  if (terms.length === 0) return []
+  const items: HistoryItem[] = terms.map(c => ({
+    kind: 'history' as const,
+    positive: c.positive,
+    display: c.display,
+    zh: c.zh,
+    en: c.en,
+  }))
+  // clear 按鈕的「另一語言 label」無法從 i18n 跨 locale 拿，zh = en = 當前 label。
+  // 切換語言時 clear 寬度會跟著變、可能微幅影響 wrap，能接受
+  const clearLabel = t('tagbar.clearHistory')
+  items.push({ kind: 'clear', display: clearLabel, zh: clearLabel, en: clearLabel })
+  return chunkByMaxWidth(
+    items,
+    item => bilingualMaxWidth(item.zh, item.en),
+    containerWidth.value,
+    CELLS_GAP,
+  )
+})
+
+function onHistoryItemClick(item: HistoryItem): void {
+  if (item.kind === 'history') onRestoreHistory(item.positive)
+  else clearHistory()
+}
 </script>
 
 <template>
-  <div class="eqt-search-panel">
+  <div ref="containerRef" class="eqt-search-panel">
     <div
-      v-for="group in groups"
+      v-for="group in groupRows"
       :key="group.key ?? '__misc__'"
       class="eqt-search-panel__row"
     >
       <div class="eqt-search-panel__label">{{ group.label }}:</div>
       <div class="eqt-search-panel__cells">
-        <button
-          v-for="term in group.terms"
-          :key="term.positive"
-          class="eqt-search-panel__button"
-          :class="STATE_CLASS[term.state]"
-          type="button"
-          @click="onTermClick(term)"
-          @contextmenu="onTermContextMenu($event, term)"
-        >{{ group.key === MISC_KEY ? term.displayFull : term.displayShort }}</button>
+        <div
+          v-for="(row, rowIdx) in group.rows"
+          :key="rowIdx"
+          class="eqt-search-panel__cells-row"
+        >
+          <button
+            v-for="term in row"
+            :key="term.positive"
+            class="eqt-search-panel__button"
+            :class="STATE_CLASS[term.state]"
+            type="button"
+            @click="onTermClick(term)"
+            @contextmenu="onTermContextMenu($event, term)"
+          >{{ group.key === MISC_KEY ? term.displayFull : term.displayShort }}</button>
+        </div>
       </div>
     </div>
 
@@ -446,18 +659,19 @@ const historyDisplays = computed(() => {
     >
       <div class="eqt-search-panel__label">{{ t('tagbar.history') }}:</div>
       <div class="eqt-search-panel__cells">
-        <button
-          v-for="(entry, idx) in historyDisplays"
-          :key="`hist-${idx}-${entry.positive}`"
-          class="eqt-search-panel__button eqt-search-panel__button--ghost"
-          type="button"
-          @click="onRestoreHistory(entry.positive)"
-        >{{ entry.display }}</button>
-        <button
-          class="eqt-search-panel__button eqt-search-panel__button--ghost"
-          type="button"
-          @click="clearHistory"
-        >{{ t('tagbar.clearHistory') }}</button>
+        <div
+          v-for="(row, rowIdx) in historyRows"
+          :key="rowIdx"
+          class="eqt-search-panel__cells-row"
+        >
+          <button
+            v-for="(item, idx) in row"
+            :key="`h-${rowIdx}-${idx}`"
+            class="eqt-search-panel__button eqt-search-panel__button--ghost"
+            type="button"
+            @click="onHistoryItemClick(item)"
+          >{{ item.display }}</button>
+        </div>
       </div>
     </div>
 
@@ -502,11 +716,21 @@ const historyDisplays = computed(() => {
 
 .eqt-search-panel__cells {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  flex-direction: column;
   gap: 4px;
   min-height: var(--eqt-row-h);
 }
+
+// JS chunk 切出的「視覺一行」：flex nowrap 強制 term 不自動換行；
+// 中英切換時換行點由 chunkByMaxWidth 決定，跟容器 flex-wrap 算法解耦
+.eqt-search-panel__cells-row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 4px;
+}
+
 
 // term 視覺：跟 TagBar __btn 同色系（Off 灰、Include 綠、Or 黃、Exclude 紅）。
 // 左右鍵切態，沒有 × 移除按鈕——term 本身就是 button，Off 變灰留在原位
