@@ -24,6 +24,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:modelValue': [value: string]
   addToSearch: []
+  search: []
 }>()
 
 // TermGroup.key 是 string | null（null = 「無 namespace」/ misc 列）。typed null
@@ -567,6 +568,34 @@ function onTermContextMenu(e: MouseEvent, term: TermInfo): void {
 }
 
 function onAddClick(): void { emit('addToSearch') }
+function onSearchClick(): void { emit('search') }
+
+// 清空搜尋框：跟 dismissTerms 同一條路徑（mutate active entry 為 off + push
+// history + emit），差別只在 emit 內容——dismissTerms 走 removeTag 保留非
+// token 內容、這裡直接 emit '' 連無法 parse 的垃圾文字一併清掉。
+//
+// 不能只 emit ''：syncFromSearch 看 T=∅ 會走 I1 (A=T) 把所有 active entry
+// 從推導路徑丟掉，term 直接消失不進 history。先 in-place 把 entry.active 標
+// false ⇒ syncFromSearch 走「!entry.active 保留」分支殘留成灰 chip。
+// 順序保證：Vue prop 更新是 microtask、整個 sync stack 跑完才觸發 watch
+function onClearSearchClick(): void {
+  let mutated = false
+  for (const entry of sessionTerms.value) {
+    if (!entry.active) continue
+    const id = tokenIdentity(entry.positive)
+    if (!id) continue
+    entry.active = false
+    const dupIdx = history.value.findIndex(p => tokenIdentity(p) === id)
+    if (dupIdx >= 0) history.value.splice(dupIdx, 1)
+    history.value.unshift(entry.positive)
+    mutated = true
+  }
+  if (mutated) {
+    trimHistory()
+    schedulePersist()
+  }
+  emit('update:modelValue', '')
+}
 
 // sessionTerms 的 identity 集合——抽 computed 後 history 變動不會 rebuild 這個 set
 // （只在 sessionTerms 變動時重算），visibleHistory 純走 cached lookup
@@ -649,39 +678,14 @@ const historyDisplays = computed<HistoryTerm[]>(() => {
   }))
 })
 
-// History row：clearHistory 按鈕當作同類「特殊 term」一起 chunk，確保整個
-// history block（含 clear 按鈕）在中英切換時 wrap 一致對齊。
-// kind 區分 click handler、zh/en 給 chunkByMaxWidth 量測對齊
-type HistoryItem =
-  | { kind: 'history'; positive: string; display: string; zh: string; en: string }
-  | { kind: 'clear'; display: string; zh: string; en: string }
-
-const historyRows = computed<HistoryItem[][]>(() => {
-  const terms = historyDisplays.value
-  if (terms.length === 0) return []
-  const items: HistoryItem[] = terms.map(c => ({
-    kind: 'history' as const,
-    positive: c.positive,
-    display: c.display,
-    zh: c.zh,
-    en: c.en,
-  }))
-  // clear 按鈕的「另一語言 label」無法從 i18n 跨 locale 拿，zh = en = 當前 label。
-  // 切換語言時 clear 寬度會跟著變、可能微幅影響 wrap，能接受
-  const clearLabel = t('tagbar.clearHistory')
-  items.push({ kind: 'clear', display: clearLabel, zh: clearLabel, en: clearLabel })
+const historyRows = computed<HistoryTerm[][]>(() => {
   return chunkByMaxWidth(
-    items,
-    item => bilingualMaxWidth(item.zh, item.en),
+    historyDisplays.value,
+    c => bilingualMaxWidth(c.zh, c.en),
     containerWidth.value,
     CELLS_GAP,
   )
 })
-
-function onHistoryItemClick(item: HistoryItem): void {
-  if (item.kind === 'history') onRestoreHistory(item.positive)
-  else clearHistory()
-}
 </script>
 
 <template>
@@ -723,29 +727,48 @@ function onHistoryItemClick(item: HistoryItem): void {
           class="eqt-search-panel__cells-row"
         >
           <button
-            v-for="(item, idx) in row"
-            :key="`h-${rowIdx}-${idx}`"
+            v-for="item in row"
+            :key="item.positive"
             class="eqt-search-panel__button eqt-search-panel__button--ghost"
             type="button"
-            @click="onHistoryItemClick(item)"
+            @click="onRestoreHistory(item.positive)"
           >{{ item.display }}</button>
         </div>
       </div>
     </div>
 
     <div class="eqt-search-panel__controls-row">
-      <button
-        class="eqt-search-panel__lang-toggle"
-        type="button"
-        :title="t('tagbar.toggleLang')"
-        @click="toggleLang"
-      ><span :class="{ 'eqt-search-panel__lang-hidden': !showCJK }">中</span><span :class="{ 'eqt-search-panel__lang-hidden': showCJK }">EN</span></button>
-      <button
-        class="eqt-search-panel__add"
-        type="button"
-        title="新增"
-        @click="onAddClick"
-      >+</button>
+      <div class="eqt-search-panel__controls-group">
+        <button
+          class="eqt-search-panel__lang-toggle"
+          type="button"
+          :title="t('tagbar.toggleLang')"
+          @click="toggleLang"
+        ><span :class="{ 'eqt-search-panel__lang-hidden': !showCJK }">中文</span><span :class="{ 'eqt-search-panel__lang-hidden': showCJK }">EN</span></button>
+        <button
+          class="eqt-search-panel__text-btn"
+          type="button"
+          @click="clearHistory"
+        >{{ t('tagbar.clearHistory') }}</button>
+      </div>
+      <div class="eqt-search-panel__controls-group">
+        <button
+          class="eqt-search-panel__text-btn"
+          type="button"
+          @click="onClearSearchClick"
+        >{{ t('tagbar.clearSearch') }}</button>
+        <button
+          class="eqt-search-panel__text-btn"
+          type="button"
+          @click="onSearchClick"
+        >{{ t('tagbar.search') }}</button>
+        <button
+          class="eqt-search-panel__add"
+          type="button"
+          :title="t('tagbar.addTag')"
+          @click="onAddClick"
+        >+</button>
+      </div>
     </div>
   </div>
 </template>
@@ -856,27 +879,33 @@ function onHistoryItemClick(item: HistoryItem): void {
   }
 }
 
-// 工具列：左 lang toggle、右 + 新增入口
+// 工具列：左群組（lang toggle + clear history）／右群組（clear search + search + 新增）
 .eqt-search-panel__controls-row {
   grid-column: 1 / -1;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
+}
+
+.eqt-search-panel__controls-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .eqt-search-panel__lang-toggle {
   display: inline-grid;
   align-items: center;
   justify-items: center;
-  width: 36px;
   height: 36px;
-  padding: 0;
+  padding: 0 10px;
   border: var(--eqt-border-width) solid var(--eqt-border);
   border-radius: 4px;
   background: transparent;
   color: var(--eqt-text-hint);
   cursor: pointer;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1;
   transition: var(--eqt-transition-base);
 
@@ -908,6 +937,30 @@ function onHistoryItemClick(item: HistoryItem): void {
   cursor: pointer;
   font-size: 22px;
   line-height: 1;
+  transition: var(--eqt-transition-base);
+
+  &:hover {
+    color: var(--eqt-text-secondary);
+    background: var(--eqt-bg-hover);
+  }
+}
+
+// 文字按鈕：跟 __add / __lang-toggle 同高，寬度跟著文字 + 水平 padding。
+// 跟 __lang-toggle 統一 font-size 12px，視覺上是同一組控制項
+.eqt-search-panel__text-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  padding: 0 10px;
+  border: var(--eqt-border-width) solid var(--eqt-border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--eqt-text-hint);
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  white-space: nowrap;
   transition: var(--eqt-transition-base);
 
   &:hover {

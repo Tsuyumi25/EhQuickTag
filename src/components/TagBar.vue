@@ -418,6 +418,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
           :model-value="searchText"
           @update:model-value="emit('update:searchText', $event)"
           @add-to-search="emit('addToSearch')"
+          @search="emit('search', 'search')"
         />
       </div>
       <div class="eqt-tag-bar__bottom-row">
