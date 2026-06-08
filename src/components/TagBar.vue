@@ -6,7 +6,7 @@ import { ChevronLeft, ChevronRight, ExternalLink, GripVertical, Trash2, Pencil, 
 import ContentEditable from 'vue-contenteditable'
 import LineColorSwatch from '@/components/LineColorSwatch.vue'
 import SeparatorSettingsPopup from '@/components/SeparatorSettingsPopup.vue'
-import SearchPanel from '@/components/SearchPanel.vue'
+import SearchPanel, { type SearchPanelExposed } from '@/components/SearchPanel.vue'
 import { TagState, type Line, type Button, type TagButton } from '@/types'
 import { tokenize, buildIdentityIndex, getState as _getState, setTagState, getNextRightClickState } from '@/services/tagState'
 import { lines, dblClickLeft, dblClickRight, useAccentOnInclude, type DblClickAction } from '@/services/store'
@@ -221,6 +221,20 @@ function getState(b: TagButton): TagState {
 
 // --- normal mode handlers ---
 
+// SearchPanel ref：toggle Off 時走 SearchPanel.dismissTerms（殘留 off 灰按鈕
+// + push history），跟 SearchPanel 內部 button 被點 Off 的行為一致。
+// SearchPanel 若關閉/未 mount，fallback 走原本 emit setTagState 路徑（功能正常
+// 但不殘留 off 灰按鈕——因為沒地方顯示）
+const searchPanelRef = ref<SearchPanelExposed | null>(null)
+
+function dispatchTransition(tags: string[], next: TagState): void {
+  if (next === TagState.Off && searchPanelRef.value) {
+    searchPanelRef.value.dismissTerms(tags)
+  } else {
+    emit('update:searchText', setTagState(props.searchText, tags, next))
+  }
+}
+
 function onLeftClick(b: TagButton) {
   const state = getState(b)
   // 身份模型語意：左鍵 = 「這是我對這身份的主要態度」。
@@ -229,7 +243,7 @@ function onLeftClick(b: TagButton) {
   // Or / Exclude 不被當作 toggle-off 觸發態，避免「另一顆按鈕 emit 了 -X，
   // 點本顆要兩次才能 include」的反直覺 UX。
   const next = state === TagState.Include ? TagState.Off : TagState.Include
-  emit('update:searchText', setTagState(props.searchText, b.tags, next))
+  dispatchTransition(b.tags, next)
 }
 
 function onRightClick(event: MouseEvent, b: TagButton) {
@@ -237,7 +251,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
   const state = getState(b)
   const next = getNextRightClickState(b.tags, b.disabledModes, state)
   if (next === null) return
-  emit('update:searchText', setTagState(props.searchText, b.tags, next))
+  dispatchTransition(b.tags, next)
 }
 </script>
 
@@ -400,6 +414,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
       <div class="eqt-tag-bar__search-area">
         <span class="eqt-tag-bar__search-area-label">{{ t('tagbar.searchPanel') }}</span>
         <SearchPanel
+          ref="searchPanelRef"
           :model-value="searchText"
           @update:model-value="emit('update:searchText', $event)"
           @add-to-search="emit('addToSearch')"

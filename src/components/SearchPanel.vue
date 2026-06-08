@@ -1,3 +1,11 @@
+<script lang="ts">
+// Module-level export：給 TagBar 之類 template ref 的 caller import 用。
+// 跟 defineExpose 內的 shape 必須一致——後者用 satisfies 守住一致性
+export interface SearchPanelExposed {
+  dismissTerms(positives: string[]): void
+}
+</script>
+
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, onScopeDispose, nextTick } from 'vue'
 import { useResizeObserver } from '@vueuse/core'
@@ -55,9 +63,9 @@ const dbReady = ref(false)
 //   I4 (by-construction): A ∩ O = ∅        entry.active 互斥 ⇒ 結構上不可能違反
 //
 // 衍生（UI 顯示層）：
-//   visibleOff     = O \ buttonIds         O 中已在 button 牆的不重複顯示
+//   visibleOff     = O                     本 session Off 過的全部顯示，方便一鍵 reactivate
 //   visibleHistory = H \ O \ buttonIds     重整 O 消失 ⇒ 浮回為 H \ buttonIds
-//   button 牆內容可動態變更（settings），故 O/H 資料層保全部、UI 層動態 filter
+//   button 牆內容可動態變更（settings），故 H 資料層保全部、UI 層動態 filter
 //
 // Enforcer 對照：
 //   syncFromSearch  →  I1 + I2（rebuild active 跟 T 對齊、reclaim H 中回到 A 的 id）
@@ -265,7 +273,7 @@ function stateOf(positive: string): TagState {
   return TagState.Include
 }
 
-// button 牆已涵蓋的 identity 集合——visibleOff 跟 visibleHistory 都用它扣除重複
+// button 牆已涵蓋的 identity 集合——visibleHistory 用它扣除重複
 const buttonIdentities = computed(() => {
   const set = new Set<string>()
   for (const line of lines) {
@@ -312,14 +320,13 @@ const groups = computed<TermGroup[]>(() => {
     buckets.get(groupKey)!.push(term)
   }
 
-  // 按 sessionTerms 順序 iterate——entry.active 決定 state 來源，位置由 array 自然維護
-  // off entry 已在 button 牆的不重複顯示（visibleOff = O \ buttonIds）
+  // 按 sessionTerms 順序 iterate——entry.active 決定 state 來源，位置由 array 自然維護。
+  // Off entry 全部顯示（即使 button 牆已有同 identity）——本 session 內手動 Off
+  // 過的 term 應該維持灰 chip 讓使用者一鍵 reactivate，不該被 button 牆「吃掉」
   for (const entry of sessionTerms.value) {
     if (entry.active) {
       pushTerm(entry.positive, stateOf(entry.positive))
     } else {
-      const id = tokenIdentity(entry.positive)
-      if (id && buttonIdentities.value.has(id)) continue
       pushTerm(entry.positive, TagState.Off)
     }
   }
@@ -475,25 +482,76 @@ watch(groups, () => {
 // term → Off：history 的唯一 push 點。Vue watch 是 deferred microtask，整個
 // sync stack 跑完才觸發 syncFromSearch ⇒ 同步區內 mutation / emit 的先後順序
 // 不影響 syncFromSearch 觀察結果（不需要 ordering guards）
+// dismissTerms 同時是 TagBar button click toggle Off 時的 explicit dismiss
+// 入口（透過 defineExpose），讓 TagBar 也走「殘留 off + push history」路徑而非
+// syncFromSearch 推導路徑（後者會把 active 不在 T 的 entry 直接丟）。
+// Batch 過 positives：一次 mutate + 一次 emit removeTag(所有 positives)
+function dismissTerms(positives: string[]): void {
+  let mutated = false
+  for (const positive of positives) {
+    const id = tokenIdentity(positive)
+    if (!id) continue
+    const entry = sessionTerms.value.find(c => tokenIdentity(c.positive) === id)
+    if (!entry) continue  // 無對應 sessionTerm → no-op，不 push ghost history
+    entry.active = false
+    // history 跟 sessionTerms 都以 canonical positive form 存（strip prefix，
+    // 保 suffix，保 namespace 原形）。entry.positive 已是 syncFromSearch normalize
+    // 過的 canonical，直接借用——caller 傳入的 raw form（含 prefix / alias / suffix）
+    // 不該洩漏進 history。dedup 跨 form 用 tokenIdentity 比對
+    const dupIdx = history.value.findIndex(p => tokenIdentity(p) === id)
+    if (dupIdx >= 0) history.value.splice(dupIdx, 1)
+    history.value.unshift(entry.positive)
+    mutated = true
+  }
+  if (mutated) {
+    trimHistory()
+    schedulePersist()
+  }
+  // 不在這守 assertInvariants：emit 後 props.modelValue 還沒同步更新
+  // （Vue prop 更新是 microtask），當下 T 是舊值、A 是新值 ⇒ I1 假陽性。
+  // emit → watch → syncFromSearch 結尾的 assertInvariants 會處理整個 cycle
+  emit('update:modelValue', removeTag(props.modelValue, positives))
+}
+
+// HISTORY_CAP 守門帶 I3 保護：sessionTerms 內 Off entry 對應的 H 條目永遠保留。
+// 純 `history.length = HISTORY_CAP` 會把舊條目擠掉，若擠掉的是 Off entry 對應
+// 的 H 條目，I3 (O ⊆ H) 破裂——使用者會看到「孤兒灰按鈕」（sessionTerms 內仍有
+// Off entry 但 H 沒對應條目，clearHistory 也救不回來）。
+//
+// 邊界情況：Off entry 數量 > HISTORY_CAP 時，protected 全保留會超過 cap。
+// 此時 invariant 優先於 cap（cap 只是 UI hint，invariant 是核心契約）。
+function trimHistory(): void {
+  if (history.value.length <= HISTORY_CAP) return
+  const offIds = new Set(
+    sessionTerms.value.filter(c => !c.active).map(c => tokenIdentity(c.positive)).filter(Boolean) as string[]
+  )
+  if (offIds.size === 0) {
+    history.value.length = HISTORY_CAP
+    return
+  }
+  const result: string[] = []
+  let unprotectedSlots = Math.max(0, HISTORY_CAP - offIds.size)
+  for (const p of history.value) {
+    const id = tokenIdentity(p)
+    if (id && offIds.has(id)) {
+      result.push(p)  // protected, 一律保留
+    } else if (unprotectedSlots > 0) {
+      result.push(p)
+      unprotectedSlots--
+    }
+  }
+  history.value = result
+}
+
 function applyTermState(positive: string, next: TagState): void {
   if (next === TagState.Off) {
-    const id = tokenIdentity(positive)
-    if (id) {
-      const entry = sessionTerms.value.find(c => tokenIdentity(c.positive) === id)
-      if (entry) entry.active = false
-      // history dedup 用 identity 比較：同 identity 的不同 positive 形式
-      // (`l:chinese` vs `language:chinese`) 必須視為同條 history entry
-      const dupIdx = history.value.findIndex(p => tokenIdentity(p) === id)
-      if (dupIdx >= 0) history.value.splice(dupIdx, 1)
-      history.value.unshift(positive)
-      if (history.value.length > HISTORY_CAP) history.value.length = HISTORY_CAP
-      schedulePersist()
-    }
-    emit('update:modelValue', removeTag(props.modelValue, [positive]))
+    dismissTerms([positive])
   } else {
     emit('update:modelValue', setTagState(props.modelValue, [positive], next))
   }
 }
+
+defineExpose({ dismissTerms } satisfies SearchPanelExposed)
 
 function onTermClick(term: TermInfo): void {
   // 跟 TagBar.onLeftClick 同邏輯：Include → Off，其他態 → Include
