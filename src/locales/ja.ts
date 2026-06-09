@@ -53,7 +53,6 @@ export default {
   'settings.tabData': 'データ',
   'settings.tabAbout': 'About',
   'settings.searchBarVisibility': 'コンポーネント表示',
-  'settings.showNativeSearch': 'E-Hentai ネイティブ検索ボックスを表示',
   'settings.showSearchPanel': 'EhQuickTag 検索パネルを表示',
   'settings.enableHistory': '検索履歴を記録',
   'settings.searchPanelLang': 'パネル表示言語',

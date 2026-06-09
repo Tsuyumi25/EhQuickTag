@@ -73,10 +73,10 @@ const INITIAL_SETTINGS = {
   // 預設跟著 browser locale 走，使用者用 controls-row 的「中文/EN」toggle 覆蓋。
   // 持久化：跨頁／重開瀏覽器後維持上次選擇，不再回退到 browser locale
   searchPanelShowCJK: isCJKLocale(),
-  // 兩個顯示控制：對應 SettingsPopup 'searchBar' tab 的 checkbox。
-  // 故意不做「整個 TagBar 隱藏」的 toggle——關掉就 lock out 自己（設定打不開）
-  showNativeSearch: true,   // EH 原生 #f_search 輸入框
-  showSearchPanel: true,    // SearchPanel 進階面板（legend-style 卡片）
+  // SearchPanel 進階面板（legend-style 卡片）顯示開關，對應 SettingsPopup
+  // 'searchBar' tab 的 checkbox。故意不做「整個 TagBar 隱藏」的 toggle——
+  // 關掉就 lock out 自己（設定打不開）
+  showSearchPanel: true,
   // SearchPanel chip 顯示語言模式：
   //   'auto'         → 跟著 UI locale 走（CJK → toggle、其他 → english-only）
   //   'toggle'       → 顯示中/EN 切換按鈕，使用者用 searchPanelShowCJK 控制當下選項
@@ -119,7 +119,6 @@ export const tagDbTtlDays      = refs.tagDbTtlDays
 export const tagStylePreset    = refs.tagStylePreset
 export const useAccentOnInclude = refs.useAccentOnInclude
 export const searchPanelShowCJK = refs.searchPanelShowCJK
-export const showNativeSearch   = refs.showNativeSearch
 export const showSearchPanel    = refs.showSearchPanel
 export const searchPanelLangMode = refs.searchPanelLangMode
 export const convertToTraditional = refs.convertToTraditional

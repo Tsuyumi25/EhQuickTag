@@ -11,7 +11,7 @@ import { TagState } from '@/types'
 import type { TagEntry } from '@/services/tagDb'
 import { GM_openInTab } from '$'
 import type { Button, TagButton, UrlButton } from '@/types'
-import { lines, useNhWeight, nsOrder, disabledNs, fontFamily, fontWeight, profiles, activeProfileIdx, switchProfile, renameProfile, createProfile, deleteProfile, newTabActive, nsFormat, defaultExactMatch, tagDbMirror, tagDbTtlDays, showNativeSearch, type DblClickAction } from '@/services/store'
+import { lines, useNhWeight, nsOrder, disabledNs, fontFamily, fontWeight, profiles, activeProfileIdx, switchProfile, renameProfile, createProfile, deleteProfile, newTabActive, nsFormat, defaultExactMatch, tagDbMirror, tagDbTtlDays, type DblClickAction } from '@/services/store'
 import { loadTagDb } from '@/services/tagDb'
 
 const effectiveNsOrder = computed(() => {
@@ -68,11 +68,6 @@ function onDeleteProfile() {
 const searchText = ref('')
 const anchorReady = ref(false)
 let searchInput: HTMLInputElement | null = null
-// EH 原生 Search / Clear 按鈕。EH 自己是 <input type="submit/button">；EH 漢化
-// 腳本（EHS / EH Syringe）會把 input 換成 <button ehs-input> 但保留 type——所以
-// 統一用 type 作 selector、不挑 tag name 也不靠英文 value 字串
-let searchSubmitEl: HTMLElement | null = null
-let searchClearEl: HTMLElement | null = null
 
 // --- tag / url config popup ---
 
@@ -216,15 +211,7 @@ onMounted(() => {
   const parent = searchInput.parentElement!
   parent.appendChild(anchor)
   anchorEl = anchor
-  // EH 原生 Search / Clear 按鈕：用 type 鎖定（form 內 #f_search 的 sibling div
-  // 只有一個 type="submit" + 一個 type="button"），跨原生 / EHS 漢化情境穩定。
-  // 抓不到 → console.warn 留 debug 線索（未來 EH 改排版時打開 console 可看到）
-  searchSubmitEl = parent.querySelector<HTMLElement>(':scope > [type="submit"]')
-  searchClearEl = parent.querySelector<HTMLElement>(':scope > [type="button"]')
-  if (!searchSubmitEl) console.warn('[eqt] EH search submit button not found — layout may have changed')
-  if (!searchClearEl) console.warn('[eqt] EH search clear button not found — layout may have changed')
   applyFontVars()  // 初次 apply：watch 不 immediate，由這裡套上當前 fontFamily/Weight
-  applyNativeSearchVisibility()  // 同上，套上當前 showNativeSearch
   anchorReady.value = true
 })
 
@@ -233,18 +220,6 @@ watch(searchText, (val) => {
     searchInput.value = val
   }
 })
-
-// 原生搜尋區顯示開關：切 #f_search + 兩顆 EH 原生按鈕（Search / Clear）的
-// display。submit 走 form action 不受影響——使用者就算把整個原生區藏起來、
-// TagBar 雙擊送出搜尋仍然會 work。
-// 初次 apply 由 onMounted 內 anchor 設好後手動呼叫（onMounted 之前三個 ref 還是 null）
-function applyNativeSearchVisibility(): void {
-  const display = showNativeSearch.value ? '' : 'none'
-  if (searchInput) searchInput.style.display = display
-  if (searchSubmitEl) searchSubmitEl.style.display = display
-  if (searchClearEl) searchClearEl.style.display = display
-}
-watch(showNativeSearch, applyNativeSearchVisibility)
 </script>
 
 <template>

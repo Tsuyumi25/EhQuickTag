@@ -13,7 +13,7 @@ import {
   fontFamily, fontWeight, getDefaultLines, lines,
   dblClickLeft, dblClickRight, newTabActive, nsFormat, defaultExactMatch,
   tagDbMirror, tagDbTtlDays, tagStylePreset, useAccentOnInclude, type DblClickAction,
-  showNativeSearch, showSearchPanel, searchPanelLangMode, convertToTraditional, enableHistory,
+  showSearchPanel, searchPanelLangMode, convertToTraditional, enableHistory,
   SEARCH_PANEL_LANG_MODES, CONVERT_TO_TRADITIONAL_MODES,
 } from '@/services/store'
 import { TAG_STYLE_PRESETS, currentTagStyleClass } from '@/composables/useTagStyle'
@@ -278,15 +278,6 @@ function onEditorPurge() {
         <div v-show="editingProfileIdx < 0">
           <div v-show="activeTab === 'searchBar'" class="eqt-settings__tab-content">
             <h4 class="eqt-settings__subtitle">{{ t('settings.searchBarVisibility') }}</h4>
-            <label class="eqt-settings__row">
-              <input
-                type="checkbox"
-                :checked="showNativeSearch"
-                @change="showNativeSearch = ($event.target as HTMLInputElement).checked"
-              />
-              <span class="eqt-settings__label">{{ t('settings.showNativeSearch') }}</span>
-            </label>
-
             <label class="eqt-settings__row">
               <input
                 type="checkbox"

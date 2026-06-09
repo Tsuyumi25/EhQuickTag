@@ -53,7 +53,6 @@ export default {
   'settings.tabData': 'Data',
   'settings.tabAbout': 'About',
   'settings.searchBarVisibility': 'Component Visibility',
-  'settings.showNativeSearch': "Show E-Hentai's native search box",
   'settings.showSearchPanel': 'Show EhQuickTag search panel',
   'settings.enableHistory': 'Record search history',
   'settings.searchPanelLang': 'Panel display language',

@@ -53,7 +53,6 @@ export default {
   'settings.tabData': '資料',
   'settings.tabAbout': '關於',
   'settings.searchBarVisibility': '元件顯示',
-  'settings.showNativeSearch': '顯示 E站 原生搜尋框',
   'settings.showSearchPanel': '顯示 EhQuickTag 搜尋面板',
   'settings.enableHistory': '記錄搜尋歷史',
   'settings.searchPanelLang': '面板顯示語言',
