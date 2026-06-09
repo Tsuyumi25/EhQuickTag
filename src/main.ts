@@ -4,6 +4,7 @@ import { loadStore, startAutoSave } from '@/services/store'
 import '@/styles/theme.scss'
 import '@/styles/popup.scss'
 import '@/styles/tag-style.scss'
+import '@/styles/native-search-row.scss'
 
 ;(async () => {
   await loadStore()

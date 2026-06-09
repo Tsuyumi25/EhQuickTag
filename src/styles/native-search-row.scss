@@ -1,0 +1,23 @@
+// 包住 EH 原生 #f_search + Search + Clear 三件套的 wrapper，跟
+// .eqt-tag-bar__lines 共用置中縮窄公式（--eqt-controls-w 由 ehFormHost 寫到
+// EH form 父 <div>）。!important 全套蓋 EH inline / EHS 漢化插件 hostile CSS
+.eqt-native-search-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: calc(100% - 2 * var(--eqt-controls-w, 0px));
+  margin: 0 auto;
+
+  > #f_search {
+    flex: 1;
+    min-width: 0;
+    width: auto !important;  // 蓋 EH inline style="width: 560px"
+    margin: 0 !important;     // 蓋 EH 原生 margin: 3px 1px 0
+  }
+
+  // EH 原生 input / EHS 漢化後 button、type 屬性都保留，type-based selector 通吃
+  > [type="submit"],
+  > [type="button"] {
+    margin: 0 !important;
+  }
+}

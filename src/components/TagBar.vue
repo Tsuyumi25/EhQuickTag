@@ -58,9 +58,7 @@ const emit = defineEmits<{
 const editing = ref(false)
 
 const controlsEl = ref<HTMLElement | null>(null)
-const controlsWidth = ref<number | null>(null)
 useResizeObserver(controlsEl, ([entry]) => {
-  controlsWidth.value = entry.contentRect.width
   emit('controlsWidth', entry.contentRect.width)
 })
 function captureControlsEl(el: unknown, li: number) {
@@ -273,7 +271,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
 </script>
 
 <template>
-  <div class="eqt-tag-bar" :class="[currentTagStyleClass, { 'eqt-tag-bar--accent-on-include': useAccentOnInclude }]" :style="controlsWidth !== null ? { '--eqt-controls-w': controlsWidth + 'px' } : undefined" @dblclick="onBarDblClick" @contextmenu="onBarContextMenu">
+  <div class="eqt-tag-bar" :class="[currentTagStyleClass, { 'eqt-tag-bar--accent-on-include': useAccentOnInclude }]" @dblclick="onBarDblClick" @contextmenu="onBarContextMenu">
     <!-- info hover 觸發的覆蓋層，樣式定義在 .eqt-tag-bar__overlay -->
     <div class="eqt-tag-bar__overlay"></div>
     <div class="eqt-tag-bar__lines">
@@ -595,7 +593,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
     display: flex;
     flex-direction: column;
     gap: 4px;
-    width: calc(100% - 2 * var(--eqt-controls-w, 10%));
+    width: calc(100% - 2 * var(--eqt-controls-w, 0px));
     margin: 0 auto;
   }
 

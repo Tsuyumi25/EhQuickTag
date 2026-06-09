@@ -13,6 +13,7 @@ import { GM_openInTab } from '$'
 import type { Button, TagButton, UrlButton } from '@/types'
 import { lines, useNhWeight, nsOrder, disabledNs, fontFamily, fontWeight, profiles, activeProfileIdx, switchProfile, renameProfile, createProfile, deleteProfile, newTabActive, nsFormat, defaultExactMatch, tagDbMirror, tagDbTtlDays, type DblClickAction } from '@/services/store'
 import { loadTagDb } from '@/services/tagDb'
+import { useEhFormHost, type EhFormHost } from '@/composables/useEhFormHost'
 
 const effectiveNsOrder = computed(() => {
   const disabled = new Set(disabledNs.value)
@@ -23,14 +24,13 @@ const effectiveNsOrder = computed(() => {
 // 子樹（TagBar 整顆）能看到，#eqt-app（所有 popup 的 root）不會受影響。
 // preview 區（appearance tab 跟 JSON editor 內）走 inline style 直接讀 ref，
 // 也不依賴這個 var。
-let anchorEl: HTMLElement | null = null
-
 function applyFontVars(): void {
-  if (!anchorEl) return
-  if (fontFamily.value) anchorEl.style.setProperty('--eqt-font-family', fontFamily.value)
-  else anchorEl.style.removeProperty('--eqt-font-family')
-  if (fontWeight.value) anchorEl.style.setProperty('--eqt-font-weight', fontWeight.value)
-  else anchorEl.style.removeProperty('--eqt-font-weight')
+  const el = ehFormHost?.anchor
+  if (!el) return
+  if (fontFamily.value) el.style.setProperty('--eqt-font-family', fontFamily.value)
+  else el.style.removeProperty('--eqt-font-family')
+  if (fontWeight.value) el.style.setProperty('--eqt-font-weight', fontWeight.value)
+  else el.style.removeProperty('--eqt-font-weight')
 }
 
 watch([fontFamily, fontWeight], applyFontVars)
@@ -68,9 +68,7 @@ function onDeleteProfile() {
 const searchText = ref('')
 const anchorReady = ref(false)
 let searchInput: HTMLInputElement | null = null
-// EH form 內、input/Search/Clear 的共同父層 <div>，TagBar emit 控制條寬度時
-// 拿來掛 --eqt-controls-w（給原生 row wrapper 跟 __lines 共用）
-let searchFormParent: HTMLElement | null = null
+let ehFormHost: EhFormHost | null = null
 
 // --- tag / url config popup ---
 
@@ -196,68 +194,23 @@ function onSearch(action: DblClickAction) {
 
 onMounted(() => {
   loadTagDb({ mirror: tagDbMirror.value, ttlDays: tagDbTtlDays.value })
-  searchInput = document.querySelector<HTMLInputElement>('#f_search')
-  if (!searchInput) return
+  ehFormHost = useEhFormHost()
+  if (!ehFormHost) return
 
+  searchInput = ehFormHost.input
   searchText.value = searchInput.value
-
   searchInput.addEventListener('input', () => {
     searchText.value = searchInput!.value
   })
 
-  const anchor = document.createElement('div')
-  anchor.id = 'eqt-bar-anchor'
-  // 擋外部翻譯插件（如 EH 翻譯腳本）污染我們已經 i18n 過的按鈕文字。
-  // main.ts 的 #eqt-app 已經有同樣 attribute、但 TagBar 走 Teleport 到
-  // 這個 anchor、anchor 掛在 EH form 下面、繼承不到那條保護。各自獨立補上
-  anchor.setAttribute('translate', 'no')
-  const parent = searchInput.parentElement!
-  searchFormParent = parent
-
-  // 原生三件套（input + Search + Clear）包進 wrapper，用跟 .eqt-tag-bar__lines
-  // 同一條公式（width: calc(100% - 2*controls-w); margin: 0 auto）置中縮窄，
-  // 視覺上跟下方 TagBar 內容區左右切齊。
-  // 把 EH 自己的元素 reparent 到 wrapper：onclick / form association 不受影響
-  // （form 看 closest('form') ancestor、move 完還在同個 form 內），#f_search
-  // 的 inline width:560px 用 flex:1 + width:auto 覆蓋。
-  // type-based selector 沿用 fix(search-controls) 那輪：EH 原生 input、EHS 漢化
-  // 後變 button 都保留 type 屬性
-  const nativeRow = document.createElement('div')
-  nativeRow.className = 'eqt-native-search-row'
-  nativeRow.style.display = 'flex'
-  nativeRow.style.alignItems = 'center'
-  nativeRow.style.gap = '4px'
-  nativeRow.style.width = 'calc(100% - 2 * var(--eqt-controls-w, 0px))'
-  nativeRow.style.marginLeft = 'auto'
-  nativeRow.style.marginRight = 'auto'
-
-  const submitEl = parent.querySelector<HTMLElement>(':scope > [type="submit"]')
-  const clearEl = parent.querySelector<HTMLElement>(':scope > [type="button"]')
-  parent.insertBefore(nativeRow, searchInput)
-  nativeRow.appendChild(searchInput)
-  if (submitEl) nativeRow.appendChild(submitEl)
-  if (clearEl) nativeRow.appendChild(clearEl)
-  searchInput.style.flex = '1'
-  searchInput.style.minWidth = '0'
-  searchInput.style.width = 'auto'
-  // EH 原生 #f_search margin: 3px 1px 0 / button margin 來自 EHS 漢化插件
-  // 全套清零，間距改用 wrapper 的 gap 控制（input 跟按鈕之間 / 按鈕之間都
-  // 是 4px）。不歸零的話 EH margin 會疊在 gap 上、右側兩顆按鈕往右推
-  searchInput.style.margin = '0'
-  if (submitEl) submitEl.style.margin = '0'
-  if (clearEl) clearEl.style.margin = '0'
-
-  parent.appendChild(anchor)
-  anchorEl = anchor
   applyFontVars()  // 初次 apply：watch 不 immediate，由這裡套上當前 fontFamily/Weight
   anchorReady.value = true
 })
 
-// TagBar 量到 line-controls 寬度後 mirror 上 parent <div> 當 CSS var——nativeRow
-// wrapper 跟 .eqt-tag-bar__lines 共用同個來源，視覺上左右切齊
+// 純轉接層：template @controls-width 沒辦法直接綁 ehFormHost?.setControlsWidth
+// （Vue template 不接受 optional chain 當 handler），所以包一層 fn 收 null guard
 function onControlsWidth(width: number): void {
-  if (!searchFormParent) return
-  searchFormParent.style.setProperty('--eqt-controls-w', width + 'px')
+  ehFormHost?.setControlsWidth(width)
 }
 
 watch(searchText, (val) => {
