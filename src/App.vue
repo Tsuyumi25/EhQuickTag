@@ -19,13 +19,21 @@ const effectiveNsOrder = computed(() => {
   return nsOrder.value.filter(ns => !disabled.has(ns))
 })
 
-watch([fontFamily, fontWeight], () => {
-  const root = document.documentElement
-  if (fontFamily.value) root.style.setProperty('--eqt-font-family', fontFamily.value)
-  else root.style.removeProperty('--eqt-font-family')
-  if (fontWeight.value) root.style.setProperty('--eqt-font-weight', fontWeight.value)
-  else root.style.removeProperty('--eqt-font-weight')
-}, { immediate: true })
+// 自訂字體 var 設在 anchor 元素而非 documentElement 上——這樣只有 #eqt-bar-anchor
+// 子樹（TagBar 整顆）能看到，#eqt-app（所有 popup 的 root）不會受影響。
+// preview 區（appearance tab 跟 JSON editor 內）走 inline style 直接讀 ref，
+// 也不依賴這個 var。
+let anchorEl: HTMLElement | null = null
+
+function applyFontVars(): void {
+  if (!anchorEl) return
+  if (fontFamily.value) anchorEl.style.setProperty('--eqt-font-family', fontFamily.value)
+  else anchorEl.style.removeProperty('--eqt-font-family')
+  if (fontWeight.value) anchorEl.style.setProperty('--eqt-font-weight', fontWeight.value)
+  else anchorEl.style.removeProperty('--eqt-font-weight')
+}
+
+watch([fontFamily, fontWeight], applyFontVars)
 
 const prevProfileName = computed(() => {
   const idx = activeProfileIdx.value - 1
@@ -201,6 +209,8 @@ onMounted(() => {
   // 這個 anchor、anchor 掛在 EH form 下面、繼承不到那條保護。各自獨立補上
   anchor.setAttribute('translate', 'no')
   searchInput.parentElement!.appendChild(anchor)
+  anchorEl = anchor
+  applyFontVars()  // 初次 apply：watch 不 immediate，由這裡套上當前 fontFamily/Weight
   anchorReady.value = true
 })
 

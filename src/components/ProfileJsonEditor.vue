@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import { useClipboard, useTimeoutFn } from '@vueuse/core'
 import { Copy, Download, Check } from '@lucide/vue'
 import type { Line } from '@/types'
-import { isValidLine } from '@/services/store'
+import { isValidLine, fontFamily, fontWeight } from '@/services/store'
 import { t } from '@/composables/useI18n'
 import { currentTagStyleClass } from '@/composables/useTagStyle'
 
@@ -81,7 +81,12 @@ function onEditorExport() {
       </div>
     </div>
 
-    <div v-if="editorPreview" class="eqt-settings__font-preview eqt-json-editor__preview" :class="currentTagStyleClass">
+    <div
+      v-if="editorPreview"
+      class="eqt-settings__font-preview eqt-json-editor__preview"
+      :class="currentTagStyleClass"
+      :style="{ fontFamily: fontFamily || 'inherit', fontWeight: fontWeight || 'inherit' }"
+    >
       <template v-for="(line, li) in editorPreview" :key="li">
         <div v-if="line.kind === 'buttons' && line.buttons.length" class="eqt-settings__preview-line">
           <span
@@ -154,8 +159,6 @@ function onEditorExport() {
     margin-bottom: 8px;
     flex-shrink: 0;
     background: var(--eqt-bg);
-    font-family: var(--eqt-font-family, inherit);
-    font-weight: var(--eqt-font-weight, inherit);
   }
 
   &__textarea {
