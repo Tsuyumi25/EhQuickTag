@@ -561,17 +561,21 @@ function onEditorPurge() {
 .eqt-settings__sidebar {
   display: flex;
   flex-direction: column;
-  width: 7rem;
+  // 9rem 寬：英文版「Appearance」(~75px @ 13px font) 在 7rem 內會貼右緣甚至溢出。
+  // 9rem 給長 tab label 留 ~30px 緩衝、跟其他 locale (中日文 2 字) 視覺也不會
+  // 太空——這個寬度跨四語都耐看。
+  width: 9rem;
   flex-shrink: 0;
-  padding: 1.25rem 0.75rem;
+  padding: 1.25rem 0.625rem;
+  gap: 2px;
   border-right: var(--eqt-border-width) solid var(--eqt-border);
   background: var(--eqt-bg);
 
   .eqt-popup__title {
-    margin: 0 0 10px;
-    font-size: 14px;
+    margin: 0 0 12px;
+    font-size: 15px;
     font-weight: bold;
-    padding: 0 4px;
+    padding: 0 6px;
   }
 }
 
@@ -582,14 +586,19 @@ function onEditorPurge() {
 .eqt-settings__tab {
   display: block;
   width: 100%;
-  padding: 6px 8px;
+  padding: 7px 10px;
   border: none;
-  border-radius: 3px;
+  border-radius: var(--eqt-radius-sm);
   background: transparent;
   color: var(--eqt-text);
   font-size: 13px;
   text-align: left;
   cursor: pointer;
+  // 防禦性：未來 locale label 再長也不爆出邊框（理論上 9rem 已 cover 所有
+  // 既有 locale，但保留 ellipsis 當底）
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 
   &:hover {
     background: var(--eqt-bg-hover);
