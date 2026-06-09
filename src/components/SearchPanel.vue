@@ -572,6 +572,10 @@ function applyTermState(positive: string, next: TagState): void {
 defineExpose({ dismissTerms } satisfies SearchPanelExposed)
 
 function onTermClick(term: TermInfo): void {
+  // editing 時 chip 只負責被拖拽，不再切態——避免「拖之前不小心點到變 Off」
+  // 的 UX 雷區。click handler 還掛著是要讓 sortablejs 的 mousedown/mouseup
+  // 鏈走完，cursor 也維持 grab（暗示拖拽是唯一可用互動）
+  if (props.editing) return
   // 跟 TagBar.onLeftClick 同邏輯：Include → Off，其他態 → Include
   const next = term.state === TagState.Include ? TagState.Off : TagState.Include
   applyTermState(term.positive, next)
@@ -579,9 +583,32 @@ function onTermClick(term: TermInfo): void {
 
 function onTermContextMenu(e: MouseEvent, term: TermInfo): void {
   e.preventDefault()
+  if (props.editing) return
   const next = getNextRightClickState([term.positive], undefined, term.state)
   if (next === null) return
   applyTermState(term.positive, next)
+}
+
+// history chip click = 把 term 加回搜尋，editing 時同樣鎖住，只剩拖拽路徑
+function onHistoryClick(positive: string): void {
+  if (props.editing) return
+  onRestoreHistory(positive)
+}
+
+// history Draggable @change：拖拽完成 (drop 成功) 時 sortablejs 已經把 source
+// DOM 搬走、emit removed 事件帶 source item (HistoryTerm)。同步把 entry 從
+// history.value 剔掉並 persist，讓資料層跟視覺對齊。drop 取消（拖到空白處放
+// 開）sortablejs 自動 revert source、不會發 removed，這條路徑天然不會誤刪
+function onHistoryChange(evt: { removed?: { element: HistoryTerm } }): void {
+  if (!evt.removed) return
+  const positive = evt.removed.element.positive
+  const id = tokenIdentity(positive)
+  if (!id) return
+  const idx = history.value.findIndex(p => tokenIdentity(p) === id)
+  if (idx >= 0) {
+    history.value.splice(idx, 1)
+    schedulePersist()
+  }
 }
 
 function onAddClick(): void { emit('addToSearch') }
@@ -607,6 +634,26 @@ function onSearchClick(): void { emit('search') }
 const cloneDragOptions = {
   ...baseDragOptions,
   group: { name: EQT_TAGS_GROUP, pull: 'clone' as const, put: false },
+  sort: false,
+  ghostClass: 'eqt-search-panel__button--ghost-drag',
+  chosenClass: 'eqt-search-panel__button--chosen',
+  dragClass: 'eqt-search-panel__button--drag',
+}
+
+// History chip 走 move 語意（跟 TagBar 內部按鈕重排同一條路徑）——sortablejs
+// 把 source DOM 整顆搬走、原位真的不見，跟 namespace chip 的 clone 視覺自然
+// 區分。drop 成功時 @change 接 removed 事件、同步把 entry 從 history.value 剔掉、
+// schedulePersist。drop 取消（拖到空白處放開）sortablejs 自動 revert source、
+// 也不會發 removed，history.value 不動
+//
+// 視覺三 class 沿用同一套——跟 TagBar 內部 drag 對齊「正常拖拽」觀感。
+// 不要對 ghostClass 用 display: none：sortablejs forceFallback 模式下浮動
+// ghostEl 是 dragEl.cloneNode 出來的，在 cloneNode 之前 ghostClass 已套到
+// dragEl，display:none 讓 dragEl rect=0×0 → ghostEl 跟著拿到 width:0 → 連
+// 跟著游標的浮動 ghost 都看不見
+const moveDragOptions = {
+  ...baseDragOptions,
+  group: { name: EQT_TAGS_GROUP, pull: true, put: false },
   sort: false,
   ghostClass: 'eqt-search-panel__button--ghost-drag',
   chosenClass: 'eqt-search-panel__button--chosen',
@@ -800,7 +847,7 @@ const historyRows = computed<HistoryTerm[][]>(() => {
         <Draggable
           v-for="(row, rowIdx) in historyRows"
           :key="rowIdx"
-          v-bind="cloneDragOptions"
+          v-bind="moveDragOptions"
           tag="div"
           class="eqt-search-panel__cells-row"
           :model-value="row"
@@ -809,12 +856,13 @@ const historyRows = computed<HistoryTerm[][]>(() => {
           :disabled="!editing"
           @start="emit('drag-start')"
           @end="emit('drag-end')"
+          @change="onHistoryChange"
         >
           <template #item="{ element: item }">
             <button
               class="eqt-search-panel__button eqt-search-panel__button--ghost"
               type="button"
-              @click="onRestoreHistory((item as HistoryTerm).positive)"
+              @click="onHistoryClick((item as HistoryTerm).positive)"
             >{{ (item as HistoryTerm).display }}</button>
           </template>
         </Draggable>
