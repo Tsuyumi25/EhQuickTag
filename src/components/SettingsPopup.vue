@@ -14,6 +14,7 @@ import {
   dblClickLeft, dblClickRight, newTabActive, nsFormat, defaultExactMatch,
   tagDbMirror, tagDbTtlDays, tagStylePreset, useAccentOnInclude, type DblClickAction,
   showNativeSearch, showSearchPanel, searchPanelLangMode, convertToTraditional, enableHistory,
+  SEARCH_PANEL_LANG_MODES, CONVERT_TO_TRADITIONAL_MODES,
 } from '@/services/store'
 import { TAG_STYLE_PRESETS, currentTagStyleClass } from '@/composables/useTagStyle'
 import ProfileListItem from '@/components/ProfileListItem.vue'
@@ -307,45 +308,25 @@ function onEditorPurge() {
             <h4 class="eqt-settings__subtitle">{{ t('settings.searchPanelLang') }}</h4>
             <div class="eqt-settings__locale-row">
               <button
+                v-for="m in SEARCH_PANEL_LANG_MODES"
+                :key="m.id"
                 type="button"
                 class="eqt-settings__locale-btn"
-                :class="{ 'eqt-settings__locale-btn--active': searchPanelLangMode === 'auto' }"
-                @click="searchPanelLangMode = 'auto'"
-              >{{ t('settings.searchPanelLangAuto') }}</button>
-              <button
-                type="button"
-                class="eqt-settings__locale-btn"
-                :class="{ 'eqt-settings__locale-btn--active': searchPanelLangMode === 'toggle' }"
-                @click="searchPanelLangMode = 'toggle'"
-              >{{ t('settings.searchPanelLangToggle') }}</button>
-              <button
-                type="button"
-                class="eqt-settings__locale-btn"
-                :class="{ 'eqt-settings__locale-btn--active': searchPanelLangMode === 'english-only' }"
-                @click="searchPanelLangMode = 'english-only'"
-              >{{ t('settings.searchPanelLangEnglishOnly') }}</button>
+                :class="{ 'eqt-settings__locale-btn--active': searchPanelLangMode === m.id }"
+                @click="searchPanelLangMode = m.id"
+              >{{ t(m.labelKey) }}</button>
             </div>
 
             <h4 class="eqt-settings__subtitle">{{ t('settings.convertToTraditional') }}</h4>
             <div class="eqt-settings__locale-row">
               <button
+                v-for="m in CONVERT_TO_TRADITIONAL_MODES"
+                :key="m.id"
                 type="button"
                 class="eqt-settings__locale-btn"
-                :class="{ 'eqt-settings__locale-btn--active': convertToTraditional === 'auto' }"
-                @click="convertToTraditional = 'auto'"
-              >{{ t('settings.convertToTraditionalAuto') }}</button>
-              <button
-                type="button"
-                class="eqt-settings__locale-btn"
-                :class="{ 'eqt-settings__locale-btn--active': convertToTraditional === 'on' }"
-                @click="convertToTraditional = 'on'"
-              >{{ t('settings.convertToTraditionalOn') }}</button>
-              <button
-                type="button"
-                class="eqt-settings__locale-btn"
-                :class="{ 'eqt-settings__locale-btn--active': convertToTraditional === 'off' }"
-                @click="convertToTraditional = 'off'"
-              >{{ t('settings.convertToTraditionalOff') }}</button>
+                :class="{ 'eqt-settings__locale-btn--active': convertToTraditional === m.id }"
+                @click="convertToTraditional = m.id"
+              >{{ t(m.labelKey) }}</button>
             </div>
           </div>
 

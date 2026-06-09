@@ -27,6 +27,29 @@ export interface Profile {
 
 export type DblClickAction = 'search' | 'searchNewTab' | 'clearSearch' | 'none'
 
+// --- enum-shape settings：id + i18n labelKey 物件陣列（跟 TAG_STYLE_PRESETS 同 pattern）---
+// 一處定義同時餵 loadAllSettings 的 enum validator + SettingsPopup 的 v-for tristate UI，
+// 加第 4 個 mode 只需要 append 一個物件、validation + UI 同步生效。
+//
+// 形式跟 inline pipe union（如 DblClickAction）的選擇：
+//   - inline union → 純型別 / 沒 runtime iterate 需求
+//   - 物件陣列 + 派生 type → runtime 需要 iterate id 集合 (validation, v-for)
+//                            且每個 id 綁定固定 metadata (i18n key 等)
+
+export const SEARCH_PANEL_LANG_MODES = [
+  { id: 'auto',         labelKey: 'settings.searchPanelLangAuto' },
+  { id: 'toggle',       labelKey: 'settings.searchPanelLangToggle' },
+  { id: 'english-only', labelKey: 'settings.searchPanelLangEnglishOnly' },
+] as const
+export type SearchPanelLangMode = typeof SEARCH_PANEL_LANG_MODES[number]['id']
+
+export const CONVERT_TO_TRADITIONAL_MODES = [
+  { id: 'auto', labelKey: 'settings.convertToTraditionalAuto' },
+  { id: 'on',   labelKey: 'settings.convertToTraditionalOn' },
+  { id: 'off',  labelKey: 'settings.convertToTraditionalOff' },
+] as const
+export type ConvertToTraditional = typeof CONVERT_TO_TRADITIONAL_MODES[number]['id']
+
 // --- settings: single source of truth ---
 // 新增 setting 只要：① INITIAL_SETTINGS 加一欄 + ② 加一行 named export。
 // load / save / watch 自動掃描 refs。locale 走獨立處理（從 useI18n import）。
@@ -59,7 +82,7 @@ const INITIAL_SETTINGS = {
   //   'toggle'       → 顯示中/EN 切換按鈕，使用者用 searchPanelShowCJK 控制當下選項
   //   'english-only' → 隱藏切換按鈕，chip 一律顯示英文 token literal
   // 預設 'auto'：使用者切 UI 語言時自動跟著變、不需要再去這邊手動調
-  searchPanelLangMode: 'auto' as 'auto' | 'toggle' | 'english-only',
+  searchPanelLangMode: 'auto' as SearchPanelLangMode,
   // CJK 標籤名稱是否經 OpenCC 簡轉繁。EhTagTranslation DB 原文是簡體中文，繁體
   // 使用者讀起來有點怪——開啟後過 cjkDict.toTW 字面繁化（一對多取第一個、
   // 沒考慮地區慣用詞，譬如「软件」→「軟件」而非「軟體」）
@@ -67,7 +90,7 @@ const INITIAL_SETTINGS = {
   //   'on'   → 一律繁化
   //   'off'  → 一律 DB 原文（簡體）
   // 預設 'auto'，跟 searchPanelLangMode 同 pattern——locale 變動會自動跟上
-  convertToTraditional: 'auto' as 'auto' | 'on' | 'off',
+  convertToTraditional: 'auto' as ConvertToTraditional,
   // SearchPanel 是否記錄 history（dismissTerms / clearSearch 推到 history 列表
   // 並持久化到 GM storage）。隱私考量可關。關掉後 history row 隱藏、不再 push，
   // 既有 storage 內容保留——再開啟時繼續長
@@ -102,11 +125,22 @@ export const searchPanelLangMode = refs.searchPanelLangMode
 export const convertToTraditional = refs.convertToTraditional
 export const enableHistory      = refs.enableHistory
 
+// enum-shape setting 的合法 id 集合。壞值 silently fallback 到 INITIAL_SETTINGS 預設——
+// 沒這層守門 GM storage 被竄改塞個壞字串會直接灌進 ref，UI 永久卡在「無 active button、
+// 沒錯誤訊息」的灰態（三顆 tristate 按鈕沒一個 === 壞值 → 全部沒 highlight）。
+// 加新 enum-shape setting 時順手在這註冊一條，validation 自動接管。
+const SETTING_VALIDATORS: Partial<{ [K in SettingKey]: (v: unknown) => boolean }> = {
+  searchPanelLangMode:  v => SEARCH_PANEL_LANG_MODES.some(m => m.id === v),
+  convertToTraditional: v => CONVERT_TO_TRADITIONAL_MODES.some(m => m.id === v),
+}
+
 function loadAllSettings(persisted: Partial<Settings>): void {
   for (const key of Object.keys(INITIAL_SETTINGS) as SettingKey[]) {
-    if (key in persisted) {
-      (refs[key].value as Settings[typeof key]) = persisted[key]!
-    }
+    if (!(key in persisted)) continue
+    const value = persisted[key]
+    const validator = SETTING_VALIDATORS[key]
+    if (validator && !validator(value)) continue
+    (refs[key].value as Settings[typeof key]) = value!
   }
 }
 
