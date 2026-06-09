@@ -3,6 +3,7 @@ import { ref, watch, onMounted } from 'vue'
 import { loadTagDb, getNhRankedEntries, type TagEntry } from '@/services/tagDb'
 import { useNhWeight, nsOrder } from '@/services/store'
 import { useTagSuggestions } from '@/composables/useTagSuggestions'
+import { usePopupBehavior } from '@/composables/usePopupBehavior'
 import { t } from '@/composables/useI18n'
 import SuggestionList from '@/components/SuggestionList.vue'
 
@@ -15,8 +16,13 @@ const TOP_N = 500
 
 const query = ref('')
 const inputEl = ref<HTMLInputElement | null>(null)
+const popupEl = ref<HTMLElement | null>(null)
 const selectedIdx = ref(0)
 const topNh = ref<TagEntry[]>([])
+
+// 跟其他 popup 同套：onClickOutside + Escape + useScrollLock 一條龍，
+// 避免 AddTagPopup 開啟時滾輪穿透到背景 EH 列表
+usePopupBehavior({ popupEl, onClose: () => emit('close') })
 
 const { dbReady, suggestions } = useTagSuggestions({
   query: () => query.value,
@@ -34,11 +40,9 @@ onMounted(async () => {
   inputEl.value?.focus()
 })
 
+// Escape 走 usePopupBehavior 統一處理；這裡只 handle 清單導覽 + Enter pick
 function onKeydown(e: KeyboardEvent): void {
-  if (e.key === 'Escape') {
-    e.preventDefault()
-    emit('close')
-  } else if (e.key === 'ArrowDown') {
+  if (e.key === 'ArrowDown') {
     e.preventDefault()
     if (selectedIdx.value < suggestions.value.length - 1) selectedIdx.value++
   } else if (e.key === 'ArrowUp') {
@@ -50,15 +54,11 @@ function onKeydown(e: KeyboardEvent): void {
     if (entry) emit('pick', entry)
   }
 }
-
-function onOverlayClick(e: MouseEvent): void {
-  if (e.target === e.currentTarget) emit('close')
-}
 </script>
 
 <template>
-  <div class="eqt-popup-overlay" @click="onOverlayClick">
-    <div class="eqt-popup eqt-add-popup" @keydown="onKeydown">
+  <div class="eqt-popup-overlay">
+    <div ref="popupEl" class="eqt-popup eqt-add-popup" @keydown="onKeydown">
       <input
         ref="inputEl"
         v-model="query"
