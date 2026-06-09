@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, toRaw } from 'vue'
-import { useClipboard, useTimeoutFn } from '@vueuse/core'
 import { usePopupBehavior } from '@/composables/usePopupBehavior'
-import { Trash2, Copy, Download, Check, RotateCcw, CircleAlert, ExternalLink, Code } from '@lucide/vue'
+import { RotateCcw } from '@lucide/vue'
 import Draggable from 'vuedraggable'
 import { baseDragOptions } from '@/utils/drag'
 import type { Line } from '@/types'
@@ -14,9 +13,11 @@ import {
   fontFamily, fontWeight, getDefaultLines, lines,
   dblClickLeft, dblClickRight, newTabActive, nsFormat, defaultExactMatch,
   tagDbMirror, tagDbTtlDays, tagStylePreset, useAccentOnInclude, type DblClickAction,
-  isValidLine,
 } from '@/services/store'
 import { TAG_STYLE_PRESETS, currentTagStyleClass } from '@/composables/useTagStyle'
+import ProfileListItem from '@/components/ProfileListItem.vue'
+import ProfileJsonEditor from '@/components/ProfileJsonEditor.vue'
+import SettingsAboutTab from '@/components/SettingsAboutTab.vue'
 
 const props = defineProps<{
   useNhWeight: boolean
@@ -64,8 +65,6 @@ const localeOptions: { value: Locale; label: string }[] = [
 ]
 
 const previewLines = computed(() => getDefaultLines())
-
-const appVersion = __APP_VERSION__
 
 function tagCount(lines: Line[]): number {
   return lines.reduce((sum, l) => sum + (l.kind === 'buttons' ? l.buttons.length : 0), 0)
@@ -147,24 +146,17 @@ function onProfileStart() { profileDragging = true }
 function onProfileEnd() { setTimeout(() => { profileDragging = false }, 0) }
 
 // --- json editor (inline) ---
+// editor 內部 state（textarea / preview / copy / save / export）住在 ProfileJsonEditor。
+// 這裡只保留「左右兩欄連動」需要的 idx + 模式旗標 + 初始 text snapshot
 
 const editingProfileIdx = ref(-1)
 const editingDeleted = ref(false)
 // corrupted 模式：editor 顯示 raw JSON readonly，footer 只有「匯出 / 永久刪除」
 const editingCorrupted = ref(false)
-const editorText = ref('')
-const editorError = ref('')
-const editorCopied = ref(false)
-const { copy: clipboardCopy } = useClipboard({ legacy: true })
-const { start: startCopiedTimer } = useTimeoutFn(() => { editorCopied.value = false }, 1500, { immediate: false })
 
-const editorPreview = computed<Line[] | null>(() => {
-  try {
-    const parsed: unknown = JSON.parse(editorText.value)
-    if (!Array.isArray(parsed) || !parsed.every(isValidLine)) return null
-    return parsed
-  } catch { return null }
-})
+const editingMode = computed<'normal' | 'deleted' | 'corrupted'>(() =>
+  editingCorrupted.value ? 'corrupted' : editingDeleted.value ? 'deleted' : 'normal',
+)
 
 const editingName = computed(() => {
   const idx = editingProfileIdx.value
@@ -174,6 +166,23 @@ const editingName = computed(() => {
     return c ? new Date(c.savedAt).toLocaleString() : ''
   }
   return editingDeleted.value ? deletedProfiles[idx]?.name : profiles[idx]?.name
+})
+
+const editingInitialText = computed(() => {
+  const idx = editingProfileIdx.value
+  if (idx < 0) return ''
+  if (editingCorrupted.value) {
+    return corruptedProfiles[idx]?.raw ?? ''
+  }
+  const data = editingDeleted.value
+    ? deletedProfiles[idx]?.lines
+    : idx === activeProfileIdx.value ? lines : profiles[idx]?.lines
+  return data ? JSON.stringify(data, null, 2) : ''
+})
+
+const editingCorruptedReason = computed(() => {
+  if (!editingCorrupted.value) return undefined
+  return corruptedProfiles[editingProfileIdx.value]?.reason
 })
 
 function adjustEditorIdxOnRemove(removedIdx: number, fromDeleted: boolean) {
@@ -219,11 +228,6 @@ function openEditor(idx: number, deleted = false) {
   editingProfileIdx.value = idx
   editingDeleted.value = deleted
   editingCorrupted.value = false
-  editorError.value = ''
-  const data = deleted
-    ? deletedProfiles[idx].lines
-    : idx === activeProfileIdx.value ? lines : profiles[idx].lines
-  editorText.value = JSON.stringify(data, null, 2)
 }
 
 function openCorrupted(idx: number) {
@@ -231,39 +235,19 @@ function openCorrupted(idx: number) {
   editingProfileIdx.value = idx
   editingDeleted.value = false
   editingCorrupted.value = true
-  editorError.value = ''
-  editorText.value = corruptedProfiles[idx]?.raw ?? ''
 }
 
-function onEditorSave() {
-  if (editingDeleted.value) return
-  try {
-    const parsed: unknown = JSON.parse(editorText.value)
-    if (!Array.isArray(parsed) || !parsed.every(isValidLine)) {
-      editorError.value = t('settings.editorInvalidShape')
-      return
-    }
-    editorError.value = ''
-    updateProfileLines(editingProfileIdx.value, parsed)
-  } catch (err) {
-    editorError.value = (err as Error).message
-  }
+function onEditorSave(parsed: Line[]) {
+  updateProfileLines(editingProfileIdx.value, parsed)
 }
 
-async function onEditorCopy() {
-  await clipboardCopy(editorText.value)
-  editorCopied.value = true
-  startCopiedTimer()
+function onEditorRestore() {
+  onRestore(editingProfileIdx.value)
 }
 
-function onEditorExport() {
-  const blob = new Blob([editorText.value], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `EhQuickTag-${editingName.value}-${new Date().toISOString().slice(0, 10)}.json`
-  a.click()
-  URL.revokeObjectURL(url)
+function onEditorPurge() {
+  if (editingCorrupted.value) onPurgeCorrupted(editingProfileIdx.value)
+  else onPurge(editingProfileIdx.value)
 }
 </script>
 
@@ -487,114 +471,21 @@ function onEditorExport() {
           </div>
 
           <!-- 設定：關於 -->
-          <div v-show="activeTab === 'about'" class="eqt-settings__tab-content eqt-settings__about">
-            <div class="eqt-about__hero">
-              <div class="eqt-about__title">EH Quick Tag</div>
-              <div class="eqt-about__version">v{{ appVersion }}</div>
-              <div class="eqt-about__desc">{{ t('about.desc') }}</div>
-              <div class="eqt-about__actions">
-                <a class="eqt-about__action-btn" href="https://github.com/Tsuyumi25/EhQuickTag" target="_blank" rel="noopener"><Code :size="14" /> GitHub</a>
-                <a class="eqt-about__action-btn" href="https://github.com/Tsuyumi25/EhQuickTag/issues" target="_blank" rel="noopener"><CircleAlert :size="14" /> {{ t('about.reportIssue') }}</a>
-              </div>
-            </div>
-
-            <div class="eqt-about__section">
-              <div class="eqt-about__section-title">{{ t('about.inspiration') }}</div>
-              <div class="eqt-about__items">
-                <a class="eqt-about__item" href="https://sleazyfork.org/scripts/454282" target="_blank" rel="noopener">
-                  <ExternalLink :size="12" /> Add button on exhentai searchbox
-                </a>
-                <a class="eqt-about__item" href="https://sleazyfork.org/scripts/454209" target="_blank" rel="noopener">
-                  <ExternalLink :size="12" /> ExAdvancedSearchMemo
-                </a>
-                <a class="eqt-about__item" href="https://sleazyfork.org/scripts/516145" target="_blank" rel="noopener">
-                  <ExternalLink :size="12" /> Lolicon E-Hentai/ExHentai Enhancer
-                </a>
-              </div>
-            </div>
-
-            <div class="eqt-about__section">
-              <div class="eqt-about__section-title">{{ t('about.techRef') }}</div>
-              <div class="eqt-about__items">
-                <a class="eqt-about__item" href="https://github.com/sk2589822/Exhentai-Enhancer" target="_blank" rel="noopener">
-                  <Code :size="12" /> Exhentai-Enhancer
-                </a>
-              </div>
-            </div>
-
-            <div class="eqt-about__section">
-              <div class="eqt-about__section-title">{{ t('about.credits') }}</div>
-              <div class="eqt-about__items">
-                <a class="eqt-about__item" href="https://github.com/EhTagTranslation/Database" target="_blank" rel="noopener">
-                  <Code :size="12" /> EhTagTranslation
-                  <span class="eqt-about__item-detail">{{ t('about.ehttDetail') }}</span>
-                </a>
-                <a class="eqt-about__item" href="https://github.com/EhTagTranslation/EhSyringe" target="_blank" rel="noopener">
-                  <Code :size="12" /> EhSyringe
-                  <span class="eqt-about__item-detail">{{ t('about.ehsyringeDetail') }}</span>
-                </a>
-                <a class="eqt-about__item" href="https://github.com/BYVoid/OpenCC" target="_blank" rel="noopener">
-                  <Code :size="12" /> OpenCC
-                  <span class="eqt-about__item-detail">{{ t('about.openccDetail') }}</span>
-                </a>
-              </div>
-            </div>
-
-            <div class="eqt-about__footer">MIT License</div>
-          </div>
+          <SettingsAboutTab v-show="activeTab === 'about'" />
         </div>
 
-        <!-- JSON 編輯器 (inline) -->
-        <div v-show="editingProfileIdx >= 0" class="eqt-json-editor">
-          <div class="eqt-json-editor__header">
-            <h4 class="eqt-json-editor__title">{{ editingName }}</h4>
-            <div class="eqt-json-editor__toolbar">
-              <button class="eqt-json-editor__tool-btn" type="button" :title="editorCopied ? t('settings.editorCopied') : t('settings.editorCopy')" @click="onEditorCopy">
-                <Check v-if="editorCopied" :size="14" />
-                <Copy v-else :size="14" />
-              </button>
-              <button class="eqt-json-editor__tool-btn" type="button" :title="t('settings.editorExport')" @click="onEditorExport">
-                <Download :size="14" />
-              </button>
-            </div>
-          </div>
-
-          <div v-if="editorPreview" class="eqt-settings__font-preview eqt-json-editor__preview" :class="currentTagStyleClass">
-            <template v-for="(line, li) in editorPreview" :key="li">
-              <div v-if="line.kind === 'buttons' && line.buttons.length" class="eqt-settings__preview-line">
-                <span
-                  v-for="(b, ti) in line.buttons"
-                  :key="ti"
-                  class="eqt-settings__preview-tag"
-                  :class="{ 'eqt-settings__preview-tag--url': b.kind === 'url' }"
-                >{{ b.label || (b.kind === 'tag' ? b.tags.join(', ') : b.url) || t('settings.emptyTag') }}</span>
-              </div>
-            </template>
-          </div>
-
-          <textarea
-            v-model="editorText"
-            class="eqt-json-editor__textarea"
-            spellcheck="false"
-            autocomplete="off"
-            :readonly="editingDeleted || editingCorrupted"
-          />
-
-          <p v-if="editorError" class="eqt-json-editor__error">{{ t('settings.editorJsonError', { message: editorError }) }}</p>
-
-          <div v-if="editingCorrupted" class="eqt-popup__actions">
-            <p v-if="corruptedProfiles[editingProfileIdx]" class="eqt-json-editor__corrupted-reason">{{ t('settings.corruptedReason', { reason: corruptedProfiles[editingProfileIdx].reason }) }}</p>
-            <button class="eqt-popup__btn eqt-popup__btn--delete" type="button" @click="onPurgeCorrupted(editingProfileIdx)">{{ t('settings.purgeProfile') }}</button>
-          </div>
-          <div v-else-if="editingDeleted" class="eqt-popup__actions" style="justify-content: center">
-            <button class="eqt-popup__btn eqt-popup__btn--primary" type="button" @click="onRestore(editingProfileIdx)">{{ t('settings.restoreProfile') }}</button>
-            <button class="eqt-popup__btn eqt-popup__btn--delete" type="button" @click="onPurge(editingProfileIdx)">{{ t('settings.purgeProfile') }}</button>
-          </div>
-          <div v-else class="eqt-popup__actions">
-            <div class="eqt-popup__spacer" />
-            <button class="eqt-popup__btn eqt-popup__btn--primary" type="button" @click="onEditorSave">{{ t('settings.save') }}</button>
-          </div>
-        </div>
+        <!-- JSON 編輯器 (inline)：用 idx + mode 當 key 確保切換 profile 時 remount，editor 內部 state 自然 reset -->
+        <ProfileJsonEditor
+          v-if="editingProfileIdx >= 0"
+          :key="`${editingProfileIdx}-${editingMode}`"
+          :mode="editingMode"
+          :name="editingName"
+          :initial-text="editingInitialText"
+          :corrupted-reason="editingCorruptedReason"
+          @save="onEditorSave"
+          @restore="onEditorRestore"
+          @purge="onEditorPurge"
+        />
       </div>
 
       <!-- 右欄：標籤組列表 -->
@@ -613,55 +504,43 @@ function onEditorExport() {
           @end="onProfileEnd"
         >
           <template #item="{ element: p, index: i }">
-            <li
-              class="eqt-settings__ns-item eqt-settings__ns-item--clickable"
-              :class="{ 'eqt-settings__ns-item--chosen': editingProfileIdx === i && !editingDeleted && !editingCorrupted }"
+            <ProfileListItem
+              :name="p.name"
+              :count="tagCounts[i]"
+              :is-active="i === activeProfileIdx"
+              :chosen="editingProfileIdx === i && !editingDeleted && !editingCorrupted"
+              :purgeable="profiles.length > 1"
+              :purge-title="t('settings.moveToTrash')"
               @click="openEditor(i)"
-            >
-              <span class="eqt-settings__item-name">
-                {{ p.name }}
-                <span v-if="i === activeProfileIdx" class="eqt-settings__active-badge">{{ t('settings.activeBadge') }}</span>
-              </span>
-              <span class="eqt-settings__item-count">{{ tagCounts[i] }}</span>
-              <button
-                v-if="profiles.length > 1"
-                class="eqt-settings__item-btn eqt-settings__item-btn--purge"
-                type="button"
-                :title="t('settings.moveToTrash')"
-                @click.stop="onDelete(i)"
-              ><Trash2 :size="12" /></button>
-            </li>
+              @purge="onDelete(i)"
+            />
           </template>
         </Draggable>
 
         <template v-if="deletedProfiles.length">
           <h4 class="eqt-settings__subtitle">{{ t('settings.trash') }}</h4>
           <ul class="eqt-settings__ns-list">
-            <li
+            <ProfileListItem
               v-for="(p, i) in deletedProfiles"
               :key="i"
-              class="eqt-settings__ns-item eqt-settings__ns-item--clickable"
-              :class="{ 'eqt-settings__ns-item--chosen': editingProfileIdx === i && editingDeleted }"
+              :name="p.name"
+              :count="deletedTagCounts[i]"
+              :chosen="editingProfileIdx === i && editingDeleted"
               @click="openEditor(i, true)"
-            >
-              <span class="eqt-settings__item-name">{{ p.name }}</span>
-              <span class="eqt-settings__item-count">{{ deletedTagCounts[i] }}</span>
-            </li>
+            />
           </ul>
         </template>
 
         <template v-if="corruptedProfiles.length">
           <h4 class="eqt-settings__subtitle">{{ t('settings.corrupted') }}</h4>
           <ul class="eqt-settings__ns-list">
-            <li
+            <ProfileListItem
               v-for="(c, i) in corruptedProfiles"
               :key="i"
-              class="eqt-settings__ns-item eqt-settings__ns-item--clickable"
-              :class="{ 'eqt-settings__ns-item--chosen': editingProfileIdx === i && editingCorrupted }"
+              :name="new Date(c.savedAt).toLocaleString()"
+              :chosen="editingProfileIdx === i && editingCorrupted"
               @click="openCorrupted(i)"
-            >
-              <span class="eqt-settings__item-name">{{ new Date(c.savedAt).toLocaleString() }}</span>
-            </li>
+            />
           </ul>
         </template>
       </aside>
@@ -1048,183 +927,4 @@ function onEditorExport() {
   }
 }
 
-.eqt-json-editor {
-  &__header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 8px;
-  }
-
-  &__title {
-    margin: 0;
-    font-size: 13px;
-    font-weight: bold;
-  }
-
-  &__toolbar {
-    display: flex;
-    gap: 4px;
-  }
-
-  &__tool-btn {
-    @include btn-filled;
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    // 還原 popup container 的 13px
-    font-size: var(--eqt-fs-lg);
-  }
-
-  &__preview {
-    margin-bottom: 8px;
-    flex-shrink: 0;
-    background: var(--eqt-bg);
-    font-family: var(--eqt-font-family, inherit);
-    font-weight: var(--eqt-font-weight, inherit);
-  }
-
-  &__textarea {
-    flex: 1;
-    min-height: 0;
-    padding: 8px;
-    border: var(--eqt-border-width) solid var(--eqt-border);
-    border-radius: 3px;
-    background: var(--eqt-bg);
-    color: var(--eqt-text);
-
-    .eqt-dark & {
-      background: var(--eqt-bg-elevated);
-    }
-
-    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-    font-size: 12px;
-    line-height: 1.5;
-    tab-size: 2;
-    resize: none;
-    white-space: pre;
-    overflow: auto;
-    box-sizing: border-box;
-
-    &:focus {
-      outline: none;
-      border-color: var(--eqt-border-focus);
-    }
-  }
-
-  &__error {
-    margin: 6px 0 0;
-    padding: 4px 8px;
-    font-size: 12px;
-    color: #c33;
-    background: rgba(204, 51, 51, 0.08);
-    border-radius: 3px;
-  }
-
-  // 損壞 profile 的失敗原因——擠在 corrupted footer 的「永久刪除」左邊。
-  // flex:1 + min-width:0 讓 reason 吃滿剩餘空間、過長自然換行（white-space
-  // 走預設 normal）；general sibling combinator 給後面的 button 加
-  // flex-shrink:0 確保按鈕文字永遠完整、不被 reason 推爆。
-  &__corrupted-reason {
-    flex: 1;
-    min-width: 0;
-    margin: 0;
-    color: #c33;
-    font-size: 12px;
-
-    ~ .eqt-popup__btn {
-      flex-shrink: 0;
-    }
-  }
-}
-
-.eqt-about {
-  &__hero {
-    text-align: center;
-    padding: 20px 16px;
-    margin-bottom: 16px;
-    border-radius: 6px;
-    background: var(--eqt-bg-hover);
-  }
-
-  &__title {
-    font-size: 18px;
-    font-weight: bold;
-    color: var(--eqt-text);
-  }
-
-  &__version {
-    margin-top: 2px;
-    font-size: 11px;
-    color: var(--eqt-text-hint);
-  }
-
-  &__desc {
-    margin-top: 4px;
-    font-size: 12px;
-    color: var(--eqt-text-hint);
-  }
-
-  &__actions {
-    display: flex;
-    justify-content: center;
-    gap: 8px;
-    margin-top: 12px;
-  }
-
-  &__action-btn {
-    @include btn-filled;
-    padding: 4px 12px;
-    text-decoration: none;
-  }
-
-  &__section {
-    margin-bottom: 12px;
-  }
-
-  &__section-title {
-    font-size: 11px;
-    font-weight: bold;
-    color: var(--eqt-text-hint);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 6px;
-  }
-
-  &__items {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  &__item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 5px 8px;
-    border-radius: 3px;
-    font-size: 12px;
-    color: var(--eqt-text);
-    text-decoration: none;
-
-    &:hover {
-      background: var(--eqt-bg-hover);
-    }
-  }
-
-  &__item-detail {
-    color: var(--eqt-text-hint);
-    font-size: 11px;
-    margin-left: auto;
-  }
-
-  &__footer {
-    margin-top: 16px;
-    padding-top: 12px;
-    border-top: var(--eqt-border-width) solid var(--eqt-border);
-    font-size: 11px;
-    color: var(--eqt-text-hint);
-    text-align: center;
-  }
-}
 </style>
