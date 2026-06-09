@@ -270,6 +270,8 @@ function onRightClick(event: MouseEvent, b: TagButton) {
 
 <template>
   <div class="eqt-tag-bar" :class="[currentTagStyleClass, { 'eqt-tag-bar--accent-on-include': useAccentOnInclude }]" :style="controlsWidth !== null ? { '--eqt-controls-w': controlsWidth + 'px' } : undefined" @dblclick="onBarDblClick" @contextmenu="onBarContextMenu">
+    <!-- info hover 觸發的覆蓋層，樣式定義在 .eqt-tag-bar__overlay -->
+    <div class="eqt-tag-bar__overlay"></div>
     <div class="eqt-tag-bar__lines">
       <div class="eqt-tag-bar__profile-row">
         <span class="eqt-tag-bar__info"><Info :size="16" /><span class="eqt-tag-bar__info-text">{{ t('tagbar.infoTooltip', { left: t(ACTION_KEYS[dblClickLeft]), right: t(ACTION_KEYS[dblClickRight]) }) }}</span></span>
@@ -495,12 +497,11 @@ function onRightClick(event: MouseEvent, b: TagButton) {
     --include-base: var(--eqt-status-include);
   }
 
-  &::before {
-    content: '';
+  &__overlay {
     position: absolute;
     inset: 0;
-    background-color: var(--eqt-bg);
-    background-image: linear-gradient(var(--eqt-bg-hover), var(--eqt-bg-hover));
+    background: var(--eqt-bg-hover);
+    border-radius: var(--eqt-radius-md);
     clip-path: circle(0 at 14px 14px);
     opacity: 0;
     pointer-events: none;
@@ -508,11 +509,13 @@ function onRightClick(event: MouseEvent, b: TagButton) {
     transition: clip-path 0.4s ease-out, opacity 0.4s ease-out;
   }
 
-  &:has(.eqt-tag-bar__info:hover)::before {
+  &:has(.eqt-tag-bar__info:hover) &__overlay {
     clip-path: circle(150% at 14px 14px);
-    opacity: 0.9;
+    opacity: 1;
   }
 
+  // info icon 本身不做 hover 反饋——hover 反饋讓整片覆蓋層去演，icon 自身保持
+  // 靜態（避免雙重視覺信號搶戲）
   &__info {
     position: absolute;
     right: 100%;
@@ -524,28 +527,60 @@ function onRightClick(event: MouseEvent, b: TagButton) {
     width: var(--eqt-row-h);
     height: var(--eqt-row-h);
     padding: 0;
-    border-radius: 3px;
-    color: var(--eqt-text-secondary);
+    color: var(--eqt-text-hint);
     font-size: 11px;
     user-select: none;
     z-index: 2;
   }
 
+  // Tooltip：popover 風格——加陰影 + 較圓的 radius + 較舒展的 padding。
+  // 垂直 top:50% + translateY(-50%) 對齊 info icon 中軸；不再貼 top:0。
+  // ::before/::after 兩層三角形戳出指向 info icon
   &__info-text {
     display: none;
     position: absolute;
     left: 100%;
-    top: 0;
-    margin-left: 6px;
-    padding: 2px 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-left: 10px;
+    padding: 6px 10px;
     background: var(--eqt-bg);
     border: var(--eqt-border-width) solid var(--eqt-border);
-    border-radius: 3px;
+    border-radius: var(--eqt-radius-md);
+    box-shadow: var(--eqt-shadow-popover);
     color: var(--eqt-text-secondary);
-    font-size: 11px;
-    white-space: nowrap;
+    font-size: var(--eqt-fs-sm);
+    text-align: left;
+    // pre 識別 i18n 字串內的 \n 作換行、但不 wrap——tooltip 寬度跟著最長那行
+    // 內容自動 hug，比 pre-line（會 wrap）穩定
+    white-space: pre;
+    line-height: 1.5;
     pointer-events: none;
-    z-index: 1;
+    z-index: 3;
+
+    // 小三角從 tooltip 左側戳出來、指向 info icon。用兩層 ::before / ::after
+    // 疊出「邊框 + 填色」：外層稍大、用 --eqt-border 色當 outline；內層內縮
+    // 1px、用 --eqt-bg 色蓋掉中間，視覺上 = 帶邊的箭頭。
+    &::before,
+    &::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      right: 100%;
+      width: 0;
+      height: 0;
+      border-style: solid;
+    }
+    &::before {
+      transform: translateY(-50%);
+      border-width: 6px 7px 6px 0;
+      border-color: transparent var(--eqt-border) transparent transparent;
+    }
+    &::after {
+      transform: translateY(-50%) translateX(var(--eqt-border-width));
+      border-width: 5px 6px 5px 0;
+      border-color: transparent var(--eqt-bg) transparent transparent;
+    }
 
     .eqt-tag-bar__info:hover & {
       display: block;

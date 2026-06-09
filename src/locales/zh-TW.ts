@@ -7,7 +7,7 @@ export default {
   'tagbar.searchNewTab': '新分頁搜尋',
   'tagbar.clearSearch': '清空搜尋框',
   'tagbar.none': '無',
-  'tagbar.infoTooltip': '左鍵雙擊：{left}｜右鍵雙擊：{right}',
+  'tagbar.infoTooltip': '左鍵雙擊：{left}\n右鍵雙擊：{right}\n設定裡可調整動作',
   'tagbar.newProfile': '點擊命名新標籤組',
   'tagbar.handleTitle': '拖曳排序行',
   'tagbar.deleteLine': '刪除此行',

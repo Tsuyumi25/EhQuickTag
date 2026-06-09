@@ -7,7 +7,7 @@ export default {
   'tagbar.searchNewTab': '新しいタブで検索',
   'tagbar.clearSearch': '検索をクリア',
   'tagbar.none': 'なし',
-  'tagbar.infoTooltip': '左ダブルクリック：{left}｜右ダブルクリック：{right}',
+  'tagbar.infoTooltip': '左ダブルクリック：{left}\n右ダブルクリック：{right}\n動作は設定で変更可能',
   'tagbar.newProfile': 'クリックして新しいプロファイルに名前を付ける',
   'tagbar.handleTitle': 'ドラッグして行を並べ替え',
   'tagbar.deleteLine': 'この行を削除',

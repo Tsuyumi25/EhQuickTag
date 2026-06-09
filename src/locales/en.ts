@@ -7,7 +7,7 @@ export default {
   'tagbar.searchNewTab': 'Search in new tab',
   'tagbar.clearSearch': 'Clear search',
   'tagbar.none': 'None',
-  'tagbar.infoTooltip': 'Left double-click: {left} | Right double-click: {right}',
+  'tagbar.infoTooltip': 'Left double-click: {left}\nRight double-click: {right}\nActions configurable in settings',
   'tagbar.newProfile': 'Click to name new profile',
   'tagbar.handleTitle': 'Drag to reorder rows',
   'tagbar.deleteLine': 'Delete this row',

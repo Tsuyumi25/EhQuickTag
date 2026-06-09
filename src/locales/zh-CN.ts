@@ -7,7 +7,7 @@ export default {
   'tagbar.searchNewTab': '新标签页搜索',
   'tagbar.clearSearch': '清空搜索框',
   'tagbar.none': '无',
-  'tagbar.infoTooltip': '左键双击：{left}｜右键双击：{right}',
+  'tagbar.infoTooltip': '左键双击：{left}\n右键双击：{right}\n设置里可调整动作',
   'tagbar.newProfile': '点击命名新标签组',
   'tagbar.handleTitle': '拖拽排序行',
   'tagbar.deleteLine': '删除此行',
