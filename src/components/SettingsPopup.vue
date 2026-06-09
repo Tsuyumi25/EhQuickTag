@@ -553,9 +553,9 @@ function onEditorPurge() {
 
 .eqt-settings__layout {
   display: flex;
-  width: clamp(40rem, 92vw, 82rem);
-  min-height: 90vh;
-  max-height: 90vh;
+  width: clamp(44rem, 94vw, 88rem);
+  min-height: 94vh;
+  max-height: 94vh;
 }
 
 .eqt-settings__sidebar {
