@@ -574,6 +574,9 @@ function onRightClick(event: MouseEvent, b: TagButton) {
     // top padding 加大讓內容跟 legend 標題拉開距離（label 中線壓在 border 上，
     // 半個 label 探進卡片內 ~5.5px，6px padding 太貼）
     padding: 14px 6px 6px;
+    // 跟上方 TagBar 主體拉開——legend label 騎在 border 上需要 vertical
+    // breathing room、否則上面的按鈕牆會把 label 壓得太近
+    margin-top: 6px;
     border: var(--eqt-border-width) solid var(--eqt-border);
     border-radius: 6px;
     background: var(--eqt-bg);
