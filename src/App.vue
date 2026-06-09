@@ -11,7 +11,7 @@ import { TagState } from '@/types'
 import type { TagEntry } from '@/services/tagDb'
 import { GM_openInTab } from '$'
 import type { Button, TagButton, UrlButton } from '@/types'
-import { lines, useNhWeight, nsOrder, disabledNs, fontFamily, fontWeight, profiles, activeProfileIdx, switchProfile, renameProfile, createProfile, deleteProfile, newTabActive, nsFormat, defaultExactMatch, tagDbMirror, tagDbTtlDays, type DblClickAction } from '@/services/store'
+import { lines, useNhWeight, nsOrder, disabledNs, fontFamily, fontWeight, profiles, activeProfileIdx, switchProfile, renameProfile, createProfile, deleteProfile, newTabActive, nsFormat, defaultExactMatch, tagDbMirror, tagDbTtlDays, showNativeSearch, type DblClickAction } from '@/services/store'
 import { loadTagDb } from '@/services/tagDb'
 
 const effectiveNsOrder = computed(() => {
@@ -68,6 +68,11 @@ function onDeleteProfile() {
 const searchText = ref('')
 const anchorReady = ref(false)
 let searchInput: HTMLInputElement | null = null
+// EH 原生 Search / Clear 按鈕。EH 自己是 <input type="submit/button">；如果頁面
+// 上其他 userscript 把 input 換成 <button ehs-input>（為了避開外掛翻譯），這條
+// query 仍然能抓到——統一用 type / value 作 selector，不挑 tag name
+let searchSubmitEl: HTMLElement | null = null
+let searchClearEl: HTMLElement | null = null
 
 // --- tag / url config popup ---
 
@@ -208,9 +213,14 @@ onMounted(() => {
   // main.ts 的 #eqt-app 已經有同樣 attribute、但 TagBar 走 Teleport 到
   // 這個 anchor、anchor 掛在 EH form 下面、繼承不到那條保護。各自獨立補上
   anchor.setAttribute('translate', 'no')
-  searchInput.parentElement!.appendChild(anchor)
+  const parent = searchInput.parentElement!
+  parent.appendChild(anchor)
   anchorEl = anchor
+  // EH 原生 Search / Clear 按鈕：用 type / value 鎖定、不挑 input vs button tag
+  searchSubmitEl = parent.querySelector<HTMLElement>(':scope > [type="submit"]')
+  searchClearEl = parent.querySelector<HTMLElement>(':scope > [value="Clear"]')
   applyFontVars()  // 初次 apply：watch 不 immediate，由這裡套上當前 fontFamily/Weight
+  applyNativeSearchVisibility()  // 同上，套上當前 showNativeSearch
   anchorReady.value = true
 })
 
@@ -219,6 +229,18 @@ watch(searchText, (val) => {
     searchInput.value = val
   }
 })
+
+// 原生搜尋區顯示開關：切 #f_search + 兩顆 EH 原生按鈕（Search / Clear）的
+// display。submit 走 form action 不受影響——使用者就算把整個原生區藏起來、
+// TagBar 雙擊送出搜尋仍然會 work。
+// 初次 apply 由 onMounted 內 anchor 設好後手動呼叫（onMounted 之前三個 ref 還是 null）
+function applyNativeSearchVisibility(): void {
+  const display = showNativeSearch.value ? '' : 'none'
+  if (searchInput) searchInput.style.display = display
+  if (searchSubmitEl) searchSubmitEl.style.display = display
+  if (searchClearEl) searchClearEl.style.display = display
+}
+watch(showNativeSearch, applyNativeSearchVisibility)
 </script>
 
 <template>

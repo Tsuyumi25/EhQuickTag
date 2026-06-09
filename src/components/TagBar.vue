@@ -9,7 +9,7 @@ import SeparatorSettingsPopup from '@/components/SeparatorSettingsPopup.vue'
 import SearchPanel, { type SearchPanelExposed } from '@/components/SearchPanel.vue'
 import { TagState, type Line, type Button, type TagButton } from '@/types'
 import { tokenize, buildIdentityIndex, getState as _getState, setTagState, getNextRightClickState } from '@/services/tagState'
-import { lines, dblClickLeft, dblClickRight, useAccentOnInclude, type DblClickAction } from '@/services/store'
+import { lines, dblClickLeft, dblClickRight, useAccentOnInclude, showSearchPanel, type DblClickAction } from '@/services/store'
 import { baseDragOptions, EQT_TAGS_GROUP } from '@/utils/drag'
 import { t } from '@/composables/useI18n'
 import { currentTagStyleClass } from '@/composables/useTagStyle'
@@ -426,7 +426,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
           </div>
         </template>
       </Draggable>
-      <div class="eqt-tag-bar__search-area">
+      <div v-if="showSearchPanel" class="eqt-tag-bar__search-area">
         <span class="eqt-tag-bar__search-area-label">{{ t('tagbar.searchPanel') }}</span>
         <SearchPanel
           ref="searchPanelRef"

@@ -13,6 +13,7 @@ import {
   fontFamily, fontWeight, getDefaultLines, lines,
   dblClickLeft, dblClickRight, newTabActive, nsFormat, defaultExactMatch,
   tagDbMirror, tagDbTtlDays, tagStylePreset, useAccentOnInclude, type DblClickAction,
+  showNativeSearch, showSearchPanel,
 } from '@/services/store'
 import { TAG_STYLE_PRESETS, currentTagStyleClass } from '@/composables/useTagStyle'
 import ProfileListItem from '@/components/ProfileListItem.vue'
@@ -40,10 +41,11 @@ const dragOptions = {
 
 // --- tabs ---
 
-const tabKeys = ['appearance', 'search', 'data', 'about'] as const
+const tabKeys = ['appearance', 'searchBar', 'search', 'data', 'about'] as const
 type TabKey = typeof tabKeys[number]
 
 const tabLabelKeys: Record<TabKey, string> = {
+  searchBar: 'settings.tabSearchBar',
   search: 'settings.tabSearch',
   appearance: 'settings.tabAppearance',
   data: 'settings.tabData',
@@ -271,8 +273,29 @@ function onEditorPurge() {
       </nav>
 
       <div class="eqt-settings__panel">
-        <!-- 設定：搜尋 -->
+        <!-- 設定：搜尋欄顯示 -->
         <div v-show="editingProfileIdx < 0">
+          <div v-show="activeTab === 'searchBar'" class="eqt-settings__tab-content">
+            <h4 class="eqt-settings__subtitle">{{ t('settings.searchBarVisibility') }}</h4>
+            <label class="eqt-settings__row">
+              <input
+                type="checkbox"
+                :checked="showNativeSearch"
+                @change="showNativeSearch = ($event.target as HTMLInputElement).checked"
+              />
+              <span class="eqt-settings__label">{{ t('settings.showNativeSearch') }}</span>
+            </label>
+
+            <label class="eqt-settings__row">
+              <input
+                type="checkbox"
+                :checked="showSearchPanel"
+                @change="showSearchPanel = ($event.target as HTMLInputElement).checked"
+              />
+              <span class="eqt-settings__label">{{ t('settings.showSearchPanel') }}</span>
+            </label>
+          </div>
+
           <div v-show="activeTab === 'search'" class="eqt-settings__tab-content">
             <label class="eqt-settings__row">
               <input
