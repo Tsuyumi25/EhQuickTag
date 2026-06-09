@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import type { TagEntry } from '@/services/tagDb'
-import { isCJKLocale, t } from '@/composables/useI18n'
+import { isCJKLocale, isTWLocale, t } from '@/composables/useI18n'
+import { toTW } from '@/services/cjkDict'
+import { convertToTraditional } from '@/services/store'
 
 const props = defineProps<{
   suggestions: TagEntry[]
@@ -82,6 +84,16 @@ watch(() => props.selectedIdx, () => {
 })
 
 const isCJK = computed(isCJKLocale)
+
+// CJK locale + convertToTraditional 'on'（或 'auto' 在 zh-TW）→ 簡 entry.name 過 toTW
+const effectiveConvertTW = computed(() => {
+  if (convertToTraditional.value === 'auto') return isTWLocale()
+  return convertToTraditional.value === 'on'
+})
+
+function cjkName(name: string): string {
+  return effectiveConvertTW.value ? toTW(name) : name
+}
 </script>
 
 <template>
@@ -100,7 +112,7 @@ const isCJK = computed(isCJKLocale)
         @mouseenter="onItemMouseenter(si)"
       >
         <span class="eqt-popup__suggestion-ns">{{ t('ns.' + entry.ns) }}：</span>
-        <span class="eqt-popup__suggestion-name">{{ isCJK ? entry.name : entry.raw }}</span>
+        <span class="eqt-popup__suggestion-name">{{ isCJK ? cjkName(entry.name) : entry.raw }}</span>
         <span class="eqt-popup__suggestion-tag">{{ entry.fullTag }}</span>
       </div>
     </div>

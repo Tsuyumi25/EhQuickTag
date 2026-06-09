@@ -60,6 +60,14 @@ const INITIAL_SETTINGS = {
   //   'english-only' → 隱藏切換按鈕，chip 一律顯示英文 token literal
   // 預設 'auto'：使用者切 UI 語言時自動跟著變、不需要再去這邊手動調
   searchPanelLangMode: 'auto' as 'auto' | 'toggle' | 'english-only',
+  // CJK 標籤名稱是否經 OpenCC 簡轉繁。EhTagTranslation DB 原文是簡體中文，繁體
+  // 使用者讀起來有點怪——開啟後過 cjkDict.toTW 字面繁化（一對多取第一個、
+  // 沒考慮地區慣用詞，譬如「软件」→「軟件」而非「軟體」）
+  //   'auto' → zh-TW locale = on、其他 = off
+  //   'on'   → 一律繁化
+  //   'off'  → 一律 DB 原文（簡體）
+  // 預設 'auto'，跟 searchPanelLangMode 同 pattern——locale 變動會自動跟上
+  convertToTraditional: 'auto' as 'auto' | 'on' | 'off',
 }
 
 type Settings = typeof INITIAL_SETTINGS
@@ -87,6 +95,7 @@ export const searchPanelShowCJK = refs.searchPanelShowCJK
 export const showNativeSearch   = refs.showNativeSearch
 export const showSearchPanel    = refs.showSearchPanel
 export const searchPanelLangMode = refs.searchPanelLangMode
+export const convertToTraditional = refs.convertToTraditional
 
 function loadAllSettings(persisted: Partial<Settings>): void {
   for (const key of Object.keys(INITIAL_SETTINGS) as SettingKey[]) {

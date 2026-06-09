@@ -48,3 +48,7 @@ export function t(key: string, params?: Record<string, string | number>): string
 export function isCJKLocale(): boolean {
   return locale.value === 'zh-TW' || locale.value === 'zh-CN'
 }
+
+export function isTWLocale(): boolean {
+  return locale.value === 'zh-TW'
+}

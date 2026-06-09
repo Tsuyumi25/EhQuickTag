@@ -13,7 +13,7 @@ import {
   fontFamily, fontWeight, getDefaultLines, lines,
   dblClickLeft, dblClickRight, newTabActive, nsFormat, defaultExactMatch,
   tagDbMirror, tagDbTtlDays, tagStylePreset, useAccentOnInclude, type DblClickAction,
-  showNativeSearch, showSearchPanel, searchPanelLangMode,
+  showNativeSearch, showSearchPanel, searchPanelLangMode, convertToTraditional,
 } from '@/services/store'
 import { TAG_STYLE_PRESETS, currentTagStyleClass } from '@/composables/useTagStyle'
 import ProfileListItem from '@/components/ProfileListItem.vue'
@@ -315,6 +315,28 @@ function onEditorPurge() {
                 :class="{ 'eqt-settings__locale-btn--active': searchPanelLangMode === 'english-only' }"
                 @click="searchPanelLangMode = 'english-only'"
               >{{ t('settings.searchPanelLangEnglishOnly') }}</button>
+            </div>
+
+            <h4 class="eqt-settings__subtitle">{{ t('settings.convertToTraditional') }}</h4>
+            <div class="eqt-settings__locale-row">
+              <button
+                type="button"
+                class="eqt-settings__locale-btn"
+                :class="{ 'eqt-settings__locale-btn--active': convertToTraditional === 'auto' }"
+                @click="convertToTraditional = 'auto'"
+              >{{ t('settings.convertToTraditionalAuto') }}</button>
+              <button
+                type="button"
+                class="eqt-settings__locale-btn"
+                :class="{ 'eqt-settings__locale-btn--active': convertToTraditional === 'on' }"
+                @click="convertToTraditional = 'on'"
+              >{{ t('settings.convertToTraditionalOn') }}</button>
+              <button
+                type="button"
+                class="eqt-settings__locale-btn"
+                :class="{ 'eqt-settings__locale-btn--active': convertToTraditional === 'off' }"
+                @click="convertToTraditional = 'off'"
+              >{{ t('settings.convertToTraditionalOff') }}</button>
             </div>
           </div>
 
