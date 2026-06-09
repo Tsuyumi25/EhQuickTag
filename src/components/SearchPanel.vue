@@ -238,10 +238,12 @@ const identityIndex = computed(() => buildIdentityIndex(tokenize(props.modelValu
 interface TermInfo {
   positive: string
   state: TagState
-  displayShort: string  // namespace row 用：無 namespace prefix、$ 拿掉、CJK 翻譯
-  displayFull: string   // misc row 用：保留 qualifier / namespace
+  displayShort: string  // namespace row 用：CJK = 翻譯名稱（無 ns）、English = 原生 token literal
+  displayFull: string   // misc row 用：原生 token literal（state prefix + tag + suffix）
+  literal: string       // raw search-syntax token（state prefix + ns + tag + suffix），給 drag-clone 用
+  cloneLabel: string    // chip 當前顯示文字（namespace row = displayShort、misc row = displayFull）
   // 量測對齊用：兩語言版本的「實際渲染文字」。
-  // namespace row 取 short 對應 CJK / Latin；misc row 兩者相同（serializeTerm 不翻譯）
+  // namespace row 取 short 對應 CJK / Latin；misc row 兩者相同（literal 不翻譯）
   measureZh: string
   measureEn: string
 }
@@ -308,21 +310,29 @@ const groups = computed<TermGroup[]>(() => {
     const prefix = STATE_PREFIX[state]
     const prefixStr = prefix ?? ''
 
-    // 兩語言文字無條件算出來。CJK 沒翻譯時 zhText 退回 Latin（兩語言相等）
+    // literal = 原生 search token 字面：state prefix + ns + tag + suffix。
+    // 不再剝 suffix——使用者搜 'tag$' 拖出來要徹底復現「精確匹配」這個事實，
+    // 不是默默 normalize 成 loose match
+    const literal = serializeTerm({ ...parsed, prefix })
+
+    // 兩語言文字無條件算出來。
+    // CJK 模式 = state prefix + 翻譯名稱（無 ns 前綴、無 suffix）。
+    // English 模式 = literal（原生 token 字面，包含 ns + suffix）——徹底復現原生搜尋欄
     const cjkEntry = parsed.namespace
       ? findEntryByNsTag(parsed.namespace, parsed.tag)
       : undefined
     const zhText = cjkEntry ? prefixStr + cjkEntry.name : prefixStr + parsed.tag
-    const enText = prefixStr + parsed.tag
+    const enText = literal
     const displayShort = showCJK.value ? zhText : enText
-    const displayFull = serializeTerm({ ...parsed, prefix, suffix: null })
+    const displayFull = literal
 
-    // misc row 用 displayFull，serializeTerm 不做 CJK 翻譯 ⇒ 兩語言相等
+    // misc row 用 displayFull = literal，兩語言相等
     const isMisc = groupKey === MISC_KEY
+    const cloneLabel = isMisc ? displayFull : displayShort
     const term: TermInfo = {
-      positive, state, displayShort, displayFull,
-      measureZh: isMisc ? displayFull : zhText,
-      measureEn: isMisc ? displayFull : enText,
+      positive, state, displayShort, displayFull, literal, cloneLabel,
+      measureZh: isMisc ? literal : zhText,
+      measureEn: isMisc ? literal : enText,
     }
     if (!buckets.has(groupKey)) buckets.set(groupKey, [])
     buckets.get(groupKey)!.push(term)
@@ -583,16 +593,10 @@ function onSearchClick(): void { emit('search') }
 //   - TagBar editing 時 chip 才可拖（disabled prop 自 TagBar 下傳）
 //   - 拖出 = clone，原 chip 不動（sortablejs pull: 'clone'）
 //   - TagBar → SearchPanel 拒收（put: false），SearchPanel 純當 source
-//   - 拖出物 = TagButton {tags: [bare positive], label: ns 剝、prefix 剝}
-//     - state prefix (~/-) 不帶過去：TagBar button 只存 positive、state 從
-//       searchText 推導，帶 prefix 進 tags 會破 setTagState 的 contract
-//     - syntax suffix ($/*) 也剝掉：term.positive 是 syncFromSearch 用
-//       serializeTerm({..., prefix: null}) 出來、suffix 留著，如果不剝 user
-//       搜 'tag$' 拖出來的 button 會永久鎖定精確匹配繞過 defaultExactMatch
-//     - label 用 parseTerm + findEntryByNsTag 算 bare 顯示名稱：showCJK 有
-//       對應 CJK 翻譯就用、否則用 parsed.tag。不直接借 TermInfo.displayShort
-//       因為它對 Or/Exclude 狀態的 chip 會夾 ~/- 狀態前綴（pushTerm 算的）；
-//       button label 不該帶狀態前綴
+//   - 拖出物 = TagButton {tags: [chip 對應的 raw search token literal], label: 當前 chip 顯示文字}
+//     - 「徹底復現原生搜索欄」契約：原生搜索欄寫什麼 token，拖出來的 button
+//       tags 就存什麼。state prefix (~/-) + syntax suffix ($/*) + ns 一律保留
+//     - label = chip 當下視覺文字（CJK / English 跟著 showCJK 拍快照）
 //
 // sort: false：source 端 chunked row 順序由我們的 JS chunk 算，不讓
 // sortablejs 重排內部位置（會破 cells-row layout）
@@ -615,20 +619,10 @@ const cloneDragOptions = {
 const termItemKey = (t: TermInfo): string => t.positive
 const historyItemKey = (t: HistoryTerm): string => t.positive
 
-// 兩種 chip source 共用 clone fn（namespace row 跟 history row 都餵 {positive}
-// 就夠）。把 TermInfo/HistoryTerm 都收成 { positive }，不依賴各自額外欄位
-function cloneToButton({ positive }: { positive: string }): TagButton {
-  const parsed = parseTerm(positive)
-  if (parsed.parseError) {
-    // parse 不出來退回原樣（極罕見，但要保 set semantics）
-    return { kind: 'tag', tags: [positive], label: positive }
-  }
-  const baseTag = serializeTerm({ ...parsed, prefix: null, suffix: null })
-  const cjkEntry = parsed.namespace
-    ? findEntryByNsTag(parsed.namespace, parsed.tag)
-    : undefined
-  const label = showCJK.value && cjkEntry ? cjkEntry.name : parsed.tag
-  return { kind: 'tag', tags: [baseTag], label }
+// 兩種 chip source 共用 clone fn——source 已經把 literal + cloneLabel 算好
+// （pushTerm / historyEntryTexts 階段），這裡只負責包成 TagButton
+function cloneToButton({ literal, cloneLabel }: { literal: string; cloneLabel: string }): TagButton {
+  return { kind: 'tag', tags: [literal], label: cloneLabel }
 }
 
 // 清空搜尋框：跟 dismissTerms 同一條路徑（mutate active entry 為 off + push
@@ -703,26 +697,34 @@ function clearHistory(): void {
 
 // 解析 history positive → 兩語言版本（display 跟著 showCJK 切換）。
 // 無條件算兩種文字：display 給 v-render，zh/en 給 chunkByMaxWidth 量測對齊
-function historyEntryTexts(positive: string): { display: string; zh: string; en: string } {
+//
+// English 模式 = literal（保 suffix）徹底復現原生搜索欄字面。
+// CJK 模式 = `ns_label:cjk_name`（無 suffix）給 CJK 使用者讀的友善形式。
+// literal 額外存著給 drag-clone 用
+function historyEntryTexts(positive: string): { display: string; zh: string; en: string; literal: string } {
   const parsed = parseTerm(positive)
-  if (parsed.parseError) return { display: positive, zh: positive, en: positive }
+  if (parsed.parseError) return { display: positive, zh: positive, en: positive, literal: positive }
+  // history positive 是 canonical 形（dismissTerms 推進來時 prefix 已剝）。
+  // Off state 沒 prefix，literal 直接 = positive
+  const literal = positive
   if (!parsed.namespace) {
-    const text = serializeTerm({ ...parsed, suffix: null })
-    return { display: text, zh: text, en: text }
+    return { display: literal, zh: literal, en: literal, literal }
   }
   const cjkEntry = findEntryByNsTag(parsed.namespace, parsed.tag)
-  const enText = serializeTerm({ ...parsed, suffix: null })
+  const enText = literal
   const zhText = cjkEntry
     ? `${t(`ns.${parsed.namespace}`)}:${cjkEntry.name}`
     : enText
+  const display = showCJK.value ? zhText : enText
   return {
-    display: showCJK.value ? zhText : enText,
+    display,
     zh: zhText,
     en: enText,
+    literal,
   }
 }
 
-interface HistoryTerm { positive: string; display: string; zh: string; en: string }
+interface HistoryTerm { positive: string; display: string; zh: string; en: string; literal: string; cloneLabel: string }
 
 // computed memoize history display——visibleHistory / showCJK 不變就直接拿快取，
 // 不在 v-for 內逐項重跑 parseTerm + findEntryByNsTag。
@@ -733,10 +735,11 @@ interface HistoryTerm { positive: string; display: string; zh: string; en: strin
 // 兩次 toggle 才會變中文（第一次切走、第二次切回時 tagDb 已載入）
 const historyDisplays = computed<HistoryTerm[]>(() => {
   void dbReady.value
-  return visibleHistory.value.map(positive => ({
-    positive,
-    ...historyEntryTexts(positive),
-  }))
+  return visibleHistory.value.map(positive => {
+    const texts = historyEntryTexts(positive)
+    // history chip 沒有 misc / namespace 之分，cloneLabel 跟 display 同源
+    return { positive, ...texts, cloneLabel: texts.display }
+  })
 })
 
 const historyRows = computed<HistoryTerm[][]>(() => {
