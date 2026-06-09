@@ -481,6 +481,12 @@ const historyRows = computed<HistoryTerm[][]>(() => {
           @click="clearHistory"
         >{{ t('tagbar.clearHistory') }}</button>
       </div>
+      <button
+        class="eqt-search-panel__add"
+        type="button"
+        :title="t('tagbar.findTag')"
+        @click="onAddClick"
+      ><span class="eqt-search-panel__add-icon">+</span><span class="eqt-search-panel__add-label">{{ t('tagbar.findTag') }}</span></button>
       <div class="eqt-search-panel__controls-group">
         <button
           class="eqt-search-panel__text-btn"
@@ -492,12 +498,6 @@ const historyRows = computed<HistoryTerm[][]>(() => {
           type="button"
           @click="onSearchClick"
         >{{ t('tagbar.search') }}</button>
-        <button
-          class="eqt-search-panel__add"
-          type="button"
-          :title="t('tagbar.addTag')"
-          @click="onAddClick"
-        >+</button>
       </div>
     </div>
   </div>
@@ -675,26 +675,38 @@ const historyRows = computed<HistoryTerm[][]>(() => {
   visibility: hidden;
 }
 
+// 中間的「尋找標籤」按鈕：兩側 control group 之間撐滿剩餘寬度——這是打開
+// AddTagPopup 的主要入口，視覺上做大方便瞄準。
+// 「+」icon 用 22px 當視覺主角；label 12px 跟旁邊 text-btn 字級對齊
 .eqt-search-panel__add {
   display: inline-flex;
+  flex: 1;
   align-items: center;
   justify-content: center;
-  width: 36px;
+  gap: 6px;
   height: 36px;
-  padding: 0;
+  padding: 0 10px;
   border: var(--eqt-border-width) solid var(--eqt-border);
   border-radius: 4px;
   background: transparent;
   color: var(--eqt-text-hint);
   cursor: pointer;
-  font-size: 22px;
   line-height: 1;
+  white-space: nowrap;
   transition: var(--eqt-transition-base);
 
   &:hover {
     color: var(--eqt-text-secondary);
     background: var(--eqt-bg-hover);
   }
+}
+
+.eqt-search-panel__add-icon {
+  font-size: 22px;
+}
+
+.eqt-search-panel__add-label {
+  font-size: 12px;
 }
 
 // 文字按鈕：跟 __add / __lang-toggle 同高，寬度跟著文字 + 水平 padding。
