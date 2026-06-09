@@ -742,6 +742,12 @@ function onRightClick(event: MouseEvent, b: TagButton) {
 
     &:has(.eqt-tag-bar__separator-label) {
       gap: 8px;
+      // align-center default：lineLength<100% 時 ::before/::after 各 cap 在 lineLength/2，
+      // 兩條線吃不滿剩餘空間。沒設 justify-content 走 flex-start 預設 → assembly
+      // 整個被推到左邊。justify-content: center 把 assembly 推回容器中軸。
+      // lineLength=100% 時兩線 flex:1 吃滿剩餘空間、本來就沒 free space，justify
+      // 對它無影響——所以這條 default 不會破 100% 既有觀感。
+      justify-content: center;
 
       // default center: 兩線各 max lineLength/2
       &::before,
@@ -750,10 +756,12 @@ function onRightClick(event: MouseEvent, b: TagButton) {
       }
 
       &.eqt-tag-bar__line--separator-align-left {
+        justify-content: flex-start;
         &::before { flex: 0; border-top: 0; }
         &::after { max-width: var(--separator-line-length); }
       }
       &.eqt-tag-bar__line--separator-align-right {
+        justify-content: flex-end;
         &::after { flex: 0; border-top: 0; }
         &::before { max-width: var(--separator-line-length); }
       }
