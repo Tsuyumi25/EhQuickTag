@@ -13,7 +13,7 @@ import {
   fontFamily, fontWeight, getDefaultLines, lines,
   dblClickLeft, dblClickRight, newTabActive, nsFormat, defaultExactMatch,
   tagDbMirror, tagDbTtlDays, tagStylePreset, useAccentOnInclude, type DblClickAction,
-  showNativeSearch, showSearchPanel, searchPanelLangMode, convertToTraditional,
+  showNativeSearch, showSearchPanel, searchPanelLangMode, convertToTraditional, enableHistory,
 } from '@/services/store'
 import { TAG_STYLE_PRESETS, currentTagStyleClass } from '@/composables/useTagStyle'
 import ProfileListItem from '@/components/ProfileListItem.vue'
@@ -293,6 +293,15 @@ function onEditorPurge() {
                 @change="showSearchPanel = ($event.target as HTMLInputElement).checked"
               />
               <span class="eqt-settings__label">{{ t('settings.showSearchPanel') }}</span>
+            </label>
+
+            <label class="eqt-settings__row">
+              <input
+                type="checkbox"
+                :checked="enableHistory"
+                @change="enableHistory = ($event.target as HTMLInputElement).checked"
+              />
+              <span class="eqt-settings__label">{{ t('settings.enableHistory') }}</span>
             </label>
 
             <h4 class="eqt-settings__subtitle">{{ t('settings.searchPanelLang') }}</h4>

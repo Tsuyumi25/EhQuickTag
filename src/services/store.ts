@@ -68,6 +68,10 @@ const INITIAL_SETTINGS = {
   //   'off'  → 一律 DB 原文（簡體）
   // 預設 'auto'，跟 searchPanelLangMode 同 pattern——locale 變動會自動跟上
   convertToTraditional: 'auto' as 'auto' | 'on' | 'off',
+  // SearchPanel 是否記錄 history（dismissTerms / clearSearch 推到 history 列表
+  // 並持久化到 GM storage）。隱私考量可關。關掉後 history row 隱藏、不再 push，
+  // 既有 storage 內容保留——再開啟時繼續長
+  enableHistory: true,
 }
 
 type Settings = typeof INITIAL_SETTINGS
@@ -96,6 +100,7 @@ export const showNativeSearch   = refs.showNativeSearch
 export const showSearchPanel    = refs.showSearchPanel
 export const searchPanelLangMode = refs.searchPanelLangMode
 export const convertToTraditional = refs.convertToTraditional
+export const enableHistory      = refs.enableHistory
 
 function loadAllSettings(persisted: Partial<Settings>): void {
   for (const key of Object.keys(INITIAL_SETTINGS) as SettingKey[]) {

@@ -11,7 +11,7 @@ import { computed, ref, onMounted } from 'vue'
 import Draggable from 'vuedraggable'
 import { parseTerm, serializeTerm, type Prefix } from '@/services/searchSyntax'
 import { tokenize, tokenIdentity, getNextRightClickState, setTagState, buildIdentityIndex } from '@/services/tagState'
-import { nsOrder, lines, searchPanelShowCJK as showCJK, searchPanelLangMode, convertToTraditional } from '@/services/store'
+import { nsOrder, lines, searchPanelShowCJK as showCJK, searchPanelLangMode, convertToTraditional, enableHistory } from '@/services/store'
 import { loadTagDb, findEntryByNsTag } from '@/services/tagDb'
 import { t, isCJKLocale, isTWLocale } from '@/composables/useI18n'
 import { toTW } from '@/services/cjkDict'
@@ -458,7 +458,7 @@ const historyRows = computed<HistoryTerm[][]>(() => {
     </div>
 
     <div
-      v-if="historyDisplays.length"
+      v-if="enableHistory && historyDisplays.length"
       class="eqt-search-panel__row"
     >
       <div class="eqt-search-panel__label">{{ t('tagbar.history') }}:</div>
@@ -498,6 +498,7 @@ const historyRows = computed<HistoryTerm[][]>(() => {
           @click="toggleLang"
         ><span :class="{ 'eqt-search-panel__lang-hidden': !showCJK }">中文</span><span :class="{ 'eqt-search-panel__lang-hidden': showCJK }">EN</span></button>
         <button
+          v-if="enableHistory"
           class="eqt-search-panel__text-btn"
           type="button"
           @click="clearHistory"

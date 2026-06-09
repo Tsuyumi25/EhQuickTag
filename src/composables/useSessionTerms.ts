@@ -2,6 +2,7 @@ import { ref, computed, watch, onMounted, onScopeDispose } from 'vue'
 import { parseTerm, serializeTerm } from '@/services/searchSyntax'
 import { tokenize, tokenIdentity, removeTag, setTagState } from '@/services/tagState'
 import { cacheGet, cacheSet } from '@/services/gmStorage'
+import { enableHistory } from '@/services/store'
 import { TagState } from '@/types'
 
 // === SearchPanel 的核心狀態機：sessionTerms + history + invariants ===
@@ -74,7 +75,8 @@ export function useSessionTerms(opts: {
   })
 
   // Dev-mode invariant checker。生產環境被 bundler 整段 dead-code-elim 掉、零成本。
-  // I4 (A ∩ O = ∅) 由 entry.active 互斥 by-construction 保證，這裡只 check primitive 三條
+  // I4 (A ∩ O = ∅) 由 entry.active 互斥 by-construction 保證，這裡只 check primitive 三條。
+  // enableHistory 關掉時跳過 I3——使用者明確 opt-out、Off chip 無 H 對應是預期狀態
   function assertInvariants(): void {
     if (!import.meta.env.DEV) return
     const T = new Set(tokenize(opts.modelValue()).map(tokenIdentity).filter(Boolean) as string[])
@@ -90,6 +92,7 @@ export function useSessionTerms(opts: {
     if (i2Overlap.length) {
       console.error('[useSessionTerms] I2 broken: A ∩ H ≠ ∅', { overlap: i2Overlap })
     }
+    if (!enableHistory.value) return
     const i3Missing: string[] = []
     for (const c of sessionTerms.value) {
       if (c.active) continue
@@ -191,18 +194,23 @@ export function useSessionTerms(opts: {
   // 保 namespace 原形）。entry.positive 已是 syncFromSearch normalize 過的 canonical，
   // 直接借用——caller 傳入的 raw form（含 prefix / alias / suffix）不該洩漏進 history。
   // dedup 跨 form 用 tokenIdentity 比對。
+  //
+  // enableHistory 關掉時跳過 push——entry 仍 mark active=false（Off chip 殘留），
+  // 但不進 history 列表也不 persist。breaks I3 (O ⊆ H) 是預期的——使用者明確
+  // opted out history、ghost chip 無 H 對應是 by design。
   function markEntriesOff(entries: TermEntry[]): void {
-    let mutated = false
+    let mutatedHistory = false
     for (const entry of entries) {
       const id = tokenIdentity(entry.positive)
       if (!id) continue
       entry.active = false
+      if (!enableHistory.value) continue
       const dupIdx = history.value.findIndex(p => tokenIdentity(p) === id)
       if (dupIdx >= 0) history.value.splice(dupIdx, 1)
       history.value.unshift(entry.positive)
-      mutated = true
+      mutatedHistory = true
     }
-    if (mutated) {
+    if (mutatedHistory) {
       trimHistory()
       schedulePersist()
     }

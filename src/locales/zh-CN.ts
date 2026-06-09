@@ -55,6 +55,7 @@ export default {
   'settings.searchBarVisibility': '组件显示',
   'settings.showNativeSearch': '显示 E站 原生搜索框',
   'settings.showSearchPanel': '显示 EhQuickTag 搜索面板',
+  'settings.enableHistory': '记录搜索历史',
   'settings.searchPanelLang': '面板显示语言',
   'settings.searchPanelLangAuto': '自动',
   'settings.searchPanelLangToggle': '中／英可切换',
