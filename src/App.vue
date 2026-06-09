@@ -68,6 +68,9 @@ function onDeleteProfile() {
 const searchText = ref('')
 const anchorReady = ref(false)
 let searchInput: HTMLInputElement | null = null
+// EH form 內、input/Search/Clear 的共同父層 <div>，TagBar emit 控制條寬度時
+// 拿來掛 --eqt-controls-w（給原生 row wrapper 跟 __lines 共用）
+let searchFormParent: HTMLElement | null = null
 
 // --- tag / url config popup ---
 
@@ -209,11 +212,53 @@ onMounted(() => {
   // 這個 anchor、anchor 掛在 EH form 下面、繼承不到那條保護。各自獨立補上
   anchor.setAttribute('translate', 'no')
   const parent = searchInput.parentElement!
+  searchFormParent = parent
+
+  // 原生三件套（input + Search + Clear）包進 wrapper，用跟 .eqt-tag-bar__lines
+  // 同一條公式（width: calc(100% - 2*controls-w); margin: 0 auto）置中縮窄，
+  // 視覺上跟下方 TagBar 內容區左右切齊。
+  // 把 EH 自己的元素 reparent 到 wrapper：onclick / form association 不受影響
+  // （form 看 closest('form') ancestor、move 完還在同個 form 內），#f_search
+  // 的 inline width:560px 用 flex:1 + width:auto 覆蓋。
+  // type-based selector 沿用 fix(search-controls) 那輪：EH 原生 input、EHS 漢化
+  // 後變 button 都保留 type 屬性
+  const nativeRow = document.createElement('div')
+  nativeRow.className = 'eqt-native-search-row'
+  nativeRow.style.display = 'flex'
+  nativeRow.style.alignItems = 'center'
+  nativeRow.style.gap = '4px'
+  nativeRow.style.width = 'calc(100% - 2 * var(--eqt-controls-w, 0px))'
+  nativeRow.style.marginLeft = 'auto'
+  nativeRow.style.marginRight = 'auto'
+
+  const submitEl = parent.querySelector<HTMLElement>(':scope > [type="submit"]')
+  const clearEl = parent.querySelector<HTMLElement>(':scope > [type="button"]')
+  parent.insertBefore(nativeRow, searchInput)
+  nativeRow.appendChild(searchInput)
+  if (submitEl) nativeRow.appendChild(submitEl)
+  if (clearEl) nativeRow.appendChild(clearEl)
+  searchInput.style.flex = '1'
+  searchInput.style.minWidth = '0'
+  searchInput.style.width = 'auto'
+  // EH 原生 #f_search margin: 3px 1px 0 / button margin 來自 EHS 漢化插件
+  // 全套清零，間距改用 wrapper 的 gap 控制（input 跟按鈕之間 / 按鈕之間都
+  // 是 4px）。不歸零的話 EH margin 會疊在 gap 上、右側兩顆按鈕往右推
+  searchInput.style.margin = '0'
+  if (submitEl) submitEl.style.margin = '0'
+  if (clearEl) clearEl.style.margin = '0'
+
   parent.appendChild(anchor)
   anchorEl = anchor
   applyFontVars()  // 初次 apply：watch 不 immediate，由這裡套上當前 fontFamily/Weight
   anchorReady.value = true
 })
+
+// TagBar 量到 line-controls 寬度後 mirror 上 parent <div> 當 CSS var——nativeRow
+// wrapper 跟 .eqt-tag-bar__lines 共用同個來源，視覺上左右切齊
+function onControlsWidth(width: number): void {
+  if (!searchFormParent) return
+  searchFormParent.style.setProperty('--eqt-controls-w', width + 'px')
+}
 
 watch(searchText, (val) => {
   if (searchInput && searchInput.value !== val) {
@@ -242,6 +287,7 @@ watch(searchText, (val) => {
       @settings="showSettings = true"
       @add-to-search="onAddToSearch"
       @search="onSearch"
+      @controls-width="onControlsWidth"
     />
   </Teleport>
 

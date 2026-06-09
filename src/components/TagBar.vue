@@ -50,6 +50,9 @@ const emit = defineEmits<{
   'createProfile': [name: string]
   'deleteProfile': []
   'search': [action: DblClickAction]
+  // 量到的 line-controls 寬度——App.vue 拿來在 EH form 父層設 --eqt-controls-w，
+  // 讓原生 search row 的 wrapper 跟 __lines 用同一條置中縮窄公式
+  'controlsWidth': [width: number]
 }>()
 
 const editing = ref(false)
@@ -58,6 +61,7 @@ const controlsEl = ref<HTMLElement | null>(null)
 const controlsWidth = ref<number | null>(null)
 useResizeObserver(controlsEl, ([entry]) => {
   controlsWidth.value = entry.contentRect.width
+  emit('controlsWidth', entry.contentRect.width)
 })
 function captureControlsEl(el: unknown, li: number) {
   if (li === 0) controlsEl.value = (el as HTMLElement) ?? null
