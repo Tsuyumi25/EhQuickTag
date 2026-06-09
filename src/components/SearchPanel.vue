@@ -9,22 +9,29 @@ export interface SearchPanelExposed {
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, onScopeDispose, nextTick } from 'vue'
 import { useResizeObserver } from '@vueuse/core'
+import Draggable from 'vuedraggable'
 import { parseTerm, serializeTerm, type Prefix } from '@/services/searchSyntax'
 import { tokenize, tokenIdentity, setTagState, removeTag, buildIdentityIndex, getNextRightClickState } from '@/services/tagState'
 import { nsOrder, lines } from '@/services/store'
 import { loadTagDb, findEntryByNsTag } from '@/services/tagDb'
 import { cacheGet, cacheSet } from '@/services/gmStorage'
 import { t, isCJKLocale } from '@/composables/useI18n'
-import { TagState } from '@/types'
+import { baseDragOptions, EQT_TAGS_GROUP } from '@/utils/drag'
+import { TagState, type TagButton } from '@/types'
 
 const props = defineProps<{
   modelValue: string
+  editing?: boolean
 }>()
 
 const emit = defineEmits<{
   'update:modelValue': [value: string]
   addToSearch: []
   search: []
+  // chip drag-out 期間發給 TagBar，跟 TagBar 自己拖按鈕的 tagDragging 接同一個
+  // 守衛，擋 drop 後 synthesized click 命中 TagBar 既有按鈕觸發 onConfigure
+  'drag-start': []
+  'drag-end': []
 }>()
 
 // TermGroup.key 是 string | null（null = 「無 namespace」/ misc 列）。typed null
@@ -570,6 +577,60 @@ function onTermContextMenu(e: MouseEvent, term: TermInfo): void {
 function onAddClick(): void { emit('addToSearch') }
 function onSearchClick(): void { emit('search') }
 
+// === Drag-out to TagBar：chip clone 成 TagButton ===
+//
+// 規則（cc80078 那串 commit 後對齊的 UX 契約）：
+//   - TagBar editing 時 chip 才可拖（disabled prop 自 TagBar 下傳）
+//   - 拖出 = clone，原 chip 不動（sortablejs pull: 'clone'）
+//   - TagBar → SearchPanel 拒收（put: false），SearchPanel 純當 source
+//   - 拖出物 = TagButton {tags: [bare positive], label: ns 剝、prefix 剝}
+//     - state prefix (~/-) 不帶過去：TagBar button 只存 positive、state 從
+//       searchText 推導，帶 prefix 進 tags 會破 setTagState 的 contract
+//     - syntax suffix ($/*) 也剝掉：term.positive 是 syncFromSearch 用
+//       serializeTerm({..., prefix: null}) 出來、suffix 留著，如果不剝 user
+//       搜 'tag$' 拖出來的 button 會永久鎖定精確匹配繞過 defaultExactMatch
+//     - label 用 parseTerm + findEntryByNsTag 算 bare 顯示名稱：showCJK 有
+//       對應 CJK 翻譯就用、否則用 parsed.tag。不直接借 TermInfo.displayShort
+//       因為它對 Or/Exclude 狀態的 chip 會夾 ~/- 狀態前綴（pushTerm 算的）；
+//       button label 不該帶狀態前綴
+//
+// sort: false：source 端 chunked row 順序由我們的 JS chunk 算，不讓
+// sortablejs 重排內部位置（會破 cells-row layout）
+//
+// ghostClass / chosenClass / dragClass：sortablejs 預設套 sortable-ghost
+// 等三個 class，codebase 沒對應 style ⇒ 拖拽時原位 chip 完全沒視覺反饋。
+// 用 SearchPanel 自家 namespace 的 modifier 跟 TagBar __btn--ghost 同視覺契約
+const cloneDragOptions = {
+  ...baseDragOptions,
+  group: { name: EQT_TAGS_GROUP, pull: 'clone' as const, put: false },
+  sort: false,
+  ghostClass: 'eqt-search-panel__button--ghost-drag',
+  chosenClass: 'eqt-search-panel__button--chosen',
+  dragClass: 'eqt-search-panel__button--drag',
+}
+
+// 跟 :item-key 綁的 callback：hoist 成 module-scope 常數，避免 inline arrow
+// 每次 template render 生新 function identity ⇒ vuedraggable 的 getKey computed
+// 看 itemKey 變 ⇒ 每 render 重跑 computeNodes
+const termItemKey = (t: TermInfo): string => t.positive
+const historyItemKey = (t: HistoryTerm): string => t.positive
+
+// 兩種 chip source 共用 clone fn（namespace row 跟 history row 都餵 {positive}
+// 就夠）。把 TermInfo/HistoryTerm 都收成 { positive }，不依賴各自額外欄位
+function cloneToButton({ positive }: { positive: string }): TagButton {
+  const parsed = parseTerm(positive)
+  if (parsed.parseError) {
+    // parse 不出來退回原樣（極罕見，但要保 set semantics）
+    return { kind: 'tag', tags: [positive], label: positive }
+  }
+  const baseTag = serializeTerm({ ...parsed, prefix: null, suffix: null })
+  const cjkEntry = parsed.namespace
+    ? findEntryByNsTag(parsed.namespace, parsed.tag)
+    : undefined
+  const label = showCJK.value && cjkEntry ? cjkEntry.name : parsed.tag
+  return { kind: 'tag', tags: [baseTag], label }
+}
+
 // 清空搜尋框：跟 dismissTerms 同一條路徑（mutate active entry 為 off + push
 // history + emit），差別只在 emit 內容——dismissTerms 走 removeTag 保留非
 // token 內容、這裡直接 emit '' 連無法 parse 的垃圾文字一併清掉。
@@ -689,7 +750,11 @@ const historyRows = computed<HistoryTerm[][]>(() => {
 </script>
 
 <template>
-  <div ref="containerRef" class="eqt-search-panel">
+  <div
+    ref="containerRef"
+    class="eqt-search-panel"
+    :class="{ 'eqt-search-panel--editing': editing }"
+  >
     <div
       v-for="group in groupRows"
       :key="group.key ?? '__misc__'"
@@ -697,21 +762,29 @@ const historyRows = computed<HistoryTerm[][]>(() => {
     >
       <div class="eqt-search-panel__label">{{ group.label }}:</div>
       <div class="eqt-search-panel__cells">
-        <div
+        <Draggable
           v-for="(row, rowIdx) in group.rows"
           :key="rowIdx"
+          v-bind="cloneDragOptions"
+          tag="div"
           class="eqt-search-panel__cells-row"
+          :model-value="row"
+          :item-key="termItemKey"
+          :clone="cloneToButton"
+          :disabled="!editing"
+          @start="emit('drag-start')"
+          @end="emit('drag-end')"
         >
-          <button
-            v-for="term in row"
-            :key="term.positive"
-            class="eqt-search-panel__button"
-            :class="STATE_CLASS[term.state]"
-            type="button"
-            @click="onTermClick(term)"
-            @contextmenu="onTermContextMenu($event, term)"
-          >{{ group.key === MISC_KEY ? term.displayFull : term.displayShort }}</button>
-        </div>
+          <template #item="{ element: term }">
+            <button
+              class="eqt-search-panel__button"
+              :class="STATE_CLASS[(term as TermInfo).state]"
+              type="button"
+              @click="onTermClick(term as TermInfo)"
+              @contextmenu="onTermContextMenu($event, term as TermInfo)"
+            >{{ group.key === MISC_KEY ? (term as TermInfo).displayFull : (term as TermInfo).displayShort }}</button>
+          </template>
+        </Draggable>
       </div>
     </div>
 
@@ -721,19 +794,27 @@ const historyRows = computed<HistoryTerm[][]>(() => {
     >
       <div class="eqt-search-panel__label">{{ t('tagbar.history') }}:</div>
       <div class="eqt-search-panel__cells">
-        <div
+        <Draggable
           v-for="(row, rowIdx) in historyRows"
           :key="rowIdx"
+          v-bind="cloneDragOptions"
+          tag="div"
           class="eqt-search-panel__cells-row"
+          :model-value="row"
+          :item-key="historyItemKey"
+          :clone="cloneToButton"
+          :disabled="!editing"
+          @start="emit('drag-start')"
+          @end="emit('drag-end')"
         >
-          <button
-            v-for="item in row"
-            :key="item.positive"
-            class="eqt-search-panel__button eqt-search-panel__button--ghost"
-            type="button"
-            @click="onRestoreHistory(item.positive)"
-          >{{ item.display }}</button>
-        </div>
+          <template #item="{ element: item }">
+            <button
+              class="eqt-search-panel__button eqt-search-panel__button--ghost"
+              type="button"
+              @click="onRestoreHistory((item as HistoryTerm).positive)"
+            >{{ (item as HistoryTerm).display }}</button>
+          </template>
+        </Draggable>
       </div>
     </div>
 
@@ -877,6 +958,28 @@ const historyRows = computed<HistoryTerm[][]>(() => {
       color: var(--eqt-text-secondary);
     }
   }
+
+  // Drag-time 視覺反饋——sortablejs 套這三個 class 期間原 chip / 漂浮 clone
+  // 各自的狀態。跟 TagBar __btn--ghost / --chosen / --drag 同套視覺契約
+  // （--ghost-drag 命名避開上面歷史 chip 用的 --ghost）
+  &--ghost-drag {
+    opacity: 0.4;
+  }
+
+  &--chosen {
+    cursor: grabbing;
+  }
+
+  &--drag {
+    opacity: 0.8;
+  }
+}
+
+// TagBar editing 時 chip 變 grab cursor 暗示可拖入。click handler 還在，
+// 只是滑鼠提示換成拖拽。grabbing 由 sortablejs 的 --chosen class 觸發
+// （= 真正進入 drag 後），不用 :active（mousedown 階段就會誤觸發）
+.eqt-search-panel--editing .eqt-search-panel__button {
+  cursor: grab;
 }
 
 // 工具列：左群組（lang toggle + clear history）／右群組（clear search + search + 新增）

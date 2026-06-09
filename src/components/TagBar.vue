@@ -10,7 +10,7 @@ import SearchPanel, { type SearchPanelExposed } from '@/components/SearchPanel.v
 import { TagState, type Line, type Button, type TagButton } from '@/types'
 import { tokenize, buildIdentityIndex, getState as _getState, setTagState, getNextRightClickState } from '@/services/tagState'
 import { lines, dblClickLeft, dblClickRight, useAccentOnInclude, type DblClickAction } from '@/services/store'
-import { baseDragOptions } from '@/utils/drag'
+import { baseDragOptions, EQT_TAGS_GROUP } from '@/utils/drag'
 import { t } from '@/composables/useI18n'
 import { currentTagStyleClass } from '@/composables/useTagStyle'
 
@@ -188,8 +188,21 @@ function onConfigure(li: number, ti: number) {
   emit('configure', li, ti)
 }
 
-function buttonKey(b: Button) {
-  return b.kind === 'tag' ? b.tags.join(',') : b.url
+// Vue v-for / vuedraggable :item-key 需要的是 instance identity，不是 content。
+// content-based key (tags.join 或 url) 在出現重複內容時撞 key——尤其是 SearchPanel
+// chip clone 同 positive 進已有按鈕的 line 會踩到。改用 WeakMap 對 Button object
+// 發號碼牌：同 object 永遠同號、不同 object 就算內容一樣也不同號。
+// page reload 後 WeakMap 重建沒差，Vue 只需要「同次 mount 期間穩定」即可。
+// button 從 lines.buttons 拔掉後 WeakMap 自動 GC、不會洩漏
+const buttonIds = new WeakMap<Button, number>()
+let buttonIdCounter = 0
+function buttonKey(b: Button): number {
+  let id = buttonIds.get(b)
+  if (id === undefined) {
+    id = ++buttonIdCounter
+    buttonIds.set(b, id)
+  }
+  return id
 }
 
 function onUpdateLine(li: number, newLine: Line) {
@@ -203,7 +216,7 @@ const lineDragOptions = {
 
 const tagDragOptions = {
   ...baseDragOptions,
-  group: 'eqt-tags',
+  group: EQT_TAGS_GROUP,
   ghostClass: 'eqt-tag-bar__btn--ghost',
   chosenClass: 'eqt-tag-bar__btn--chosen',
   dragClass: 'eqt-tag-bar__btn--drag',
@@ -416,9 +429,12 @@ function onRightClick(event: MouseEvent, b: TagButton) {
         <SearchPanel
           ref="searchPanelRef"
           :model-value="searchText"
+          :editing="editing"
           @update:model-value="emit('update:searchText', $event)"
           @add-to-search="emit('addToSearch')"
           @search="emit('search', 'search')"
+          @drag-start="onTagStart"
+          @drag-end="onTagEnd"
         />
       </div>
       <div class="eqt-tag-bar__bottom-row">
