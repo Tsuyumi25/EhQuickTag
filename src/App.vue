@@ -196,6 +196,10 @@ onMounted(() => {
 
   const anchor = document.createElement('div')
   anchor.id = 'eqt-bar-anchor'
+  // 擋外部翻譯插件（如 EH 翻譯腳本）污染我們已經 i18n 過的按鈕文字。
+  // main.ts 的 #eqt-app 已經有同樣 attribute、但 TagBar 走 Teleport 到
+  // 這個 anchor、anchor 掛在 EH form 下面、繼承不到那條保護。各自獨立補上
+  anchor.setAttribute('translate', 'no')
   searchInput.parentElement!.appendChild(anchor)
   anchorReady.value = true
 })
