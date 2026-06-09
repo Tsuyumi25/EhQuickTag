@@ -490,7 +490,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
 
 .eqt-tag-bar {
   position: relative;
-  padding: 6px 0;
+  margin: 6px 0;
 
   // 強制 include 走 status 綠色：把 --include-base 設成 status-include，
   // tag-style.scss mixin 的 var(--include-base, var(--line-color, ...)) 就會
@@ -910,6 +910,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
     display: flex;
     gap: 4px;
     margin-left: auto;
+    margin-bottom: 6px;
   }
 
   &__profile-row {
@@ -917,6 +918,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
     display: flex;
     align-items: stretch;
     gap: 4px;
+    margin-top: 6px;
   }
 
 
