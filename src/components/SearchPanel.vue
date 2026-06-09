@@ -11,13 +11,13 @@ import { computed, ref, onMounted } from 'vue'
 import Draggable from 'vuedraggable'
 import { parseTerm, serializeTerm, type Prefix } from '@/services/searchSyntax'
 import { tokenize, tokenIdentity, getNextRightClickState, setTagState, buildIdentityIndex } from '@/services/tagState'
-import { nsOrder, lines, searchPanelShowCJK as showCJK, searchPanelLangMode, convertToTraditional, enableHistory } from '@/services/store'
+import { nsOrder, lines, searchPanelShowCJK as showCJK, enableHistory } from '@/services/store'
 import { loadTagDb, findEntryByNsTag } from '@/services/tagDb'
-import { t, isCJKLocale, isTWLocale } from '@/composables/useI18n'
-import { toTW } from '@/services/cjkDict'
+import { t } from '@/composables/useI18n'
 import { baseDragOptions, EQT_TAGS_GROUP } from '@/utils/drag'
 import { useSessionTerms } from '@/composables/useSessionTerms'
 import { useBilingualWrap } from '@/composables/useBilingualWrap'
+import { useDisplayConfig } from '@/composables/useDisplayConfig'
 import { TagState, type TagButton } from '@/types'
 
 const props = defineProps<{
@@ -45,32 +45,9 @@ const MISC_KEY = null
 // 維持上次選擇。store 端命名比較具體、檔案內 alias 成 showCJK 用習慣的短名
 function toggleLang(): void { showCJK.value = !showCJK.value }
 
-// langMode 'auto' 跟著 UI locale 走：CJK → 像 'toggle'、其他 → 像 'english-only'。
-// resolvedMode 是 reactive 對 locale 變化反應，使用者切 UI 語言時不需要再去
-// settings 重新調 langMode
-const resolvedMode = computed<'toggle' | 'english-only'>(() => {
-  if (searchPanelLangMode.value === 'auto') return isCJKLocale() ? 'toggle' : 'english-only'
-  return searchPanelLangMode.value
-})
-
-// effectiveShowCJK：english-only 強制 false（無視 showCJK 偏好），toggle 跟著
-// showCJK ref 走。display 邏輯一律讀這個 computed
-const effectiveShowCJK = computed(() => resolvedMode.value === 'toggle' && showCJK.value)
-
-// convertToTraditional 'auto' 跟著 UI locale 走（zh-TW = on、其他 = off）。
-// effectiveConvertTW 是 'on' 的 resolved boolean、display 邏輯讀這個。
-// 'on' 才需要 toTW—— EhTagTranslation DB 原文已是簡體
-const effectiveConvertTW = computed(() => {
-  if (convertToTraditional.value === 'auto') return isTWLocale()
-  return convertToTraditional.value === 'on'
-})
-
-// 過濾顯示用的 CJK 名稱：effectiveConvertTW on 時跑 toTW 簡轉繁，否則直接回傳。
-// EhTagTranslation DB 內所有 ns 的 name 都已經是簡體中文（藝術家／社團名稱原文
-// 訊息已遺失），不需要 namespace 例外清單
-function cjkDisplay(name: string): string {
-  return effectiveConvertTW.value ? toTW(name) : name
-}
+// resolvedMode / effectiveShowCJK / effectiveConvertTW / cjkDisplay 跟
+// SuggestionList 共用一份解析邏輯（useDisplayConfig）。改邏輯一處到位
+const { resolvedMode, effectiveShowCJK, cjkDisplay } = useDisplayConfig()
 
 // tagDb 載入完通知 groups computed 重算（term 從 raw 翻成 entry.name）
 const dbReady = ref(false)
