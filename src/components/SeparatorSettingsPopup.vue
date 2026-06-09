@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import { ref, inject, computed, watch } from 'vue'
-import { onClickOutside } from '@vueuse/core'
-import { useFloating, autoUpdate, flip, shift, offset } from '@floating-ui/vue'
+import { ref, computed } from 'vue'
 import { Settings } from '@lucide/vue'
+import AnchoredPopover from '@/components/AnchoredPopover.vue'
 import type { SeparatorLine, SeparatorStyle } from '@/types'
-import { POPUP_IGNORE_KEY, type PopupIgnoreRegister } from '@/composables/usePopupBehavior'
 import { t } from '@/composables/useI18n'
 
 const props = defineProps<{
@@ -14,22 +12,6 @@ const emit = defineEmits<{ 'update:line': [value: SeparatorLine] }>()
 
 const open = ref(false)
 const triggerEl = ref<HTMLElement | null>(null)
-const popupEl = ref<HTMLElement | null>(null)
-
-const { floatingStyles } = useFloating(triggerEl, popupEl, {
-  placement: 'bottom-start',
-  middleware: [offset(4), flip(), shift({ padding: 8 })],
-  whileElementsMounted: autoUpdate,
-})
-
-onClickOutside(popupEl, () => { open.value = false }, { ignore: [triggerEl] })
-
-const registerIgnore = inject<PopupIgnoreRegister | undefined>(POPUP_IGNORE_KEY, undefined)
-let unregister: (() => void) | null = null
-watch(popupEl, (el) => {
-  if (unregister) { unregister(); unregister = null }
-  if (el && registerIgnore) unregister = registerIgnore(el)
-})
 
 // 顯示用：沒設過的欄位 fallback 到「視覺預設值」（跟 CSS 預設保持一致）
 // 這些 fallback 只給 UI 顯示用，不寫進資料。
@@ -59,8 +41,8 @@ function updateStyle(patch: Partial<SeparatorStyle>) {
   >
     <Settings :size="12" />
   </button>
-  <Teleport to="body">
-    <div v-if="open" ref="popupEl" class="eqt-line-sep__popup" :style="floatingStyles">
+  <AnchoredPopover v-model:open="open" :anchor="triggerEl">
+    <div class="eqt-line-sep__popup">
       <div class="eqt-line-sep__row eqt-line-sep__row--col">
         <span>{{ t('tagbar.separatorLinePosition') }}</span>
         <div class="eqt-line-sep__styles">
@@ -145,7 +127,7 @@ function updateStyle(patch: Partial<SeparatorStyle>) {
         />
       </div>
     </div>
-  </Teleport>
+  </AnchoredPopover>
 </template>
 
 <style lang="scss">
@@ -159,7 +141,6 @@ function updateStyle(patch: Partial<SeparatorStyle>) {
   }
 
   &__popup {
-    z-index: var(--eqt-z-popover);
     min-width: 200px;
     padding: 8px;
     background: var(--eqt-bg);
