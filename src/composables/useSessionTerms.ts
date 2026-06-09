@@ -48,11 +48,30 @@ export function useSessionTerms(opts: {
 
   async function loadHistory(): Promise<void> {
     const raw = await cacheGet(HISTORY_KEY)
-    if (!raw) return
-    try {
-      const parsed = JSON.parse(raw)
-      if (Array.isArray(parsed)) history.value = parsed.filter(x => typeof x === 'string')
-    } catch { /* corrupted blob → 從空 */ }
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw)
+        if (Array.isArray(parsed)) history.value = parsed.filter(x => typeof x === 'string')
+      } catch { /* corrupted blob → 從空 */ }
+    }
+    // 載入完才 reclaim 守 I2：setup top-level 同步呼叫 syncFromSearch 時 history
+    // 還是空的、reclaim 是 no-op。loadHistory 是 onMounted 觸發的 async path，
+    // 載入完成後 watch 不會 fire（modelValue 沒變），需在這裡主動補一次 reclaim、
+    // 不然「URL 還原 modelValue + GM storage 含同 id」這條路徑會留下 A ∩ H ≠ ∅。
+    const activeIds = new Set(
+      sessionTerms.value.filter(c => c.active).map(c => tokenIdentity(c.positive)).filter(Boolean) as string[]
+    )
+    if (activeIds.size) {
+      const filtered = history.value.filter(p => {
+        const id = tokenIdentity(p)
+        return !id || !activeIds.has(id)
+      })
+      if (filtered.length !== history.value.length) {
+        history.value = filtered
+        schedulePersist()
+      }
+    }
+    assertInvariants()
   }
 
   // debounce 寫入 GM：連續觸發只送最後一筆，且 payload 在 flush 那刻才 stringify
