@@ -13,7 +13,7 @@ import {
   fontFamily, fontWeight, getDefaultLines, lines,
   dblClickLeft, dblClickRight, newTabActive, nsFormat, defaultExactMatch,
   tagDbMirror, tagDbTtlDays, tagStylePreset, useAccentOnInclude, type DblClickAction,
-  showNativeSearch, showSearchPanel,
+  showNativeSearch, showSearchPanel, searchPanelLangMode,
 } from '@/services/store'
 import { TAG_STYLE_PRESETS, currentTagStyleClass } from '@/composables/useTagStyle'
 import ProfileListItem from '@/components/ProfileListItem.vue'
@@ -294,6 +294,28 @@ function onEditorPurge() {
               />
               <span class="eqt-settings__label">{{ t('settings.showSearchPanel') }}</span>
             </label>
+
+            <h4 class="eqt-settings__subtitle">{{ t('settings.searchPanelLang') }}</h4>
+            <div class="eqt-settings__locale-row">
+              <button
+                type="button"
+                class="eqt-settings__locale-btn"
+                :class="{ 'eqt-settings__locale-btn--active': searchPanelLangMode === 'auto' }"
+                @click="searchPanelLangMode = 'auto'"
+              >{{ t('settings.searchPanelLangAuto') }}</button>
+              <button
+                type="button"
+                class="eqt-settings__locale-btn"
+                :class="{ 'eqt-settings__locale-btn--active': searchPanelLangMode === 'toggle' }"
+                @click="searchPanelLangMode = 'toggle'"
+              >{{ t('settings.searchPanelLangToggle') }}</button>
+              <button
+                type="button"
+                class="eqt-settings__locale-btn"
+                :class="{ 'eqt-settings__locale-btn--active': searchPanelLangMode === 'english-only' }"
+                @click="searchPanelLangMode = 'english-only'"
+              >{{ t('settings.searchPanelLangEnglishOnly') }}</button>
+            </div>
           </div>
 
           <div v-show="activeTab === 'search'" class="eqt-settings__tab-content">

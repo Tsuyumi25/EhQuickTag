@@ -54,6 +54,12 @@ const INITIAL_SETTINGS = {
   // 故意不做「整個 TagBar 隱藏」的 toggle——關掉就 lock out 自己（設定打不開）
   showNativeSearch: true,   // EH 原生 #f_search 輸入框
   showSearchPanel: true,    // SearchPanel 進階面板（legend-style 卡片）
+  // SearchPanel chip 顯示語言模式：
+  //   'auto'         → 跟著 UI locale 走（CJK → toggle、其他 → english-only）
+  //   'toggle'       → 顯示中/EN 切換按鈕，使用者用 searchPanelShowCJK 控制當下選項
+  //   'english-only' → 隱藏切換按鈕，chip 一律顯示英文 token literal
+  // 預設 'auto'：使用者切 UI 語言時自動跟著變、不需要再去這邊手動調
+  searchPanelLangMode: 'auto' as 'auto' | 'toggle' | 'english-only',
 }
 
 type Settings = typeof INITIAL_SETTINGS
@@ -80,6 +86,7 @@ export const useAccentOnInclude = refs.useAccentOnInclude
 export const searchPanelShowCJK = refs.searchPanelShowCJK
 export const showNativeSearch   = refs.showNativeSearch
 export const showSearchPanel    = refs.showSearchPanel
+export const searchPanelLangMode = refs.searchPanelLangMode
 
 function loadAllSettings(persisted: Partial<Settings>): void {
   for (const key of Object.keys(INITIAL_SETTINGS) as SettingKey[]) {

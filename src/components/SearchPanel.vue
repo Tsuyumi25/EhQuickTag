@@ -11,9 +11,9 @@ import { computed, ref, onMounted } from 'vue'
 import Draggable from 'vuedraggable'
 import { parseTerm, serializeTerm, type Prefix } from '@/services/searchSyntax'
 import { tokenize, tokenIdentity, getNextRightClickState, setTagState, buildIdentityIndex } from '@/services/tagState'
-import { nsOrder, lines, searchPanelShowCJK as showCJK } from '@/services/store'
+import { nsOrder, lines, searchPanelShowCJK as showCJK, searchPanelLangMode } from '@/services/store'
 import { loadTagDb, findEntryByNsTag } from '@/services/tagDb'
-import { t } from '@/composables/useI18n'
+import { t, isCJKLocale } from '@/composables/useI18n'
 import { baseDragOptions, EQT_TAGS_GROUP } from '@/utils/drag'
 import { useSessionTerms } from '@/composables/useSessionTerms'
 import { useBilingualWrap } from '@/composables/useBilingualWrap'
@@ -43,6 +43,18 @@ const MISC_KEY = null
 // 持久化到 GM storage（store 的 searchPanelShowCJK），跨頁 / 重開瀏覽器後
 // 維持上次選擇。store 端命名比較具體、檔案內 alias 成 showCJK 用習慣的短名
 function toggleLang(): void { showCJK.value = !showCJK.value }
+
+// langMode 'auto' 跟著 UI locale 走：CJK → 像 'toggle'、其他 → 像 'english-only'。
+// resolvedMode 是 reactive 對 locale 變化反應，使用者切 UI 語言時不需要再去
+// settings 重新調 langMode
+const resolvedMode = computed<'toggle' | 'english-only'>(() => {
+  if (searchPanelLangMode.value === 'auto') return isCJKLocale() ? 'toggle' : 'english-only'
+  return searchPanelLangMode.value
+})
+
+// effectiveShowCJK：english-only 強制 false（無視 showCJK 偏好），toggle 跟著
+// showCJK ref 走。display 邏輯一律讀這個 computed
+const effectiveShowCJK = computed(() => resolvedMode.value === 'toggle' && showCJK.value)
 
 // tagDb 載入完通知 groups computed 重算（term 從 raw 翻成 entry.name）
 const dbReady = ref(false)
@@ -156,7 +168,7 @@ const groups = computed<TermGroup[]>(() => {
       : undefined
     const zhText = cjkEntry ? prefixStr + cjkEntry.name : prefixStr + parsed.tag
     const enText = literal
-    const displayShort = showCJK.value ? zhText : enText
+    const displayShort = effectiveShowCJK.value ? zhText : enText
     const displayFull = literal
 
     // misc row 用 displayFull = literal，兩語言相等
@@ -358,7 +370,7 @@ function historyEntryTexts(positive: string): { display: string; zh: string; en:
   const zhText = cjkEntry
     ? `${t(`ns.${parsed.namespace}`)}:${cjkEntry.name}`
     : enText
-  const display = showCJK.value ? zhText : enText
+  const display = effectiveShowCJK.value ? zhText : enText
   return {
     display,
     zh: zhText,
@@ -463,6 +475,7 @@ const historyRows = computed<HistoryTerm[][]>(() => {
     <div class="eqt-search-panel__controls-row">
       <div class="eqt-search-panel__controls-group">
         <button
+          v-if="resolvedMode === 'toggle'"
           class="eqt-search-panel__lang-toggle"
           type="button"
           :title="t('tagbar.toggleLang')"
