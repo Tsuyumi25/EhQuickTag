@@ -2,7 +2,7 @@ import { reactive, ref, watch, nextTick, type Ref } from 'vue'
 import { cacheGet, cacheSet } from '@/services/gmStorage'
 import type { Line, Button, ButtonLine, SeparatorLine, TagButton, UrlButton, TagMode } from '@/types'
 import { DEFAULT_NS_ORDER, type TagDbMirror } from '@/services/tagDb'
-import { locale, setLocale, detectLocale, t, type Locale } from '@/composables/useI18n'
+import { locale, setLocale, detectLocale, isCJKLocale, t, type Locale } from '@/composables/useI18n'
 import { PRESETS_BY_ID, type TagStylePresetId } from '@/composables/useTagStyle'
 
 const KEYS = {
@@ -46,6 +46,10 @@ const INITIAL_SETTINGS = {
   tagStylePreset: 'flat' as TagStylePresetId,
   // on: include 狀態用 status 綠色（忽略自定義 line-color）；off: 沿用 line-color（預設沿用既有行為）
   useAccentOnInclude: false,
+  // SearchPanel chip 顯示語言（true = CJK 翻譯名稱、false = 原生英文 token literal）。
+  // 預設跟著 browser locale 走，使用者用 controls-row 的「中文/EN」toggle 覆蓋。
+  // 持久化：跨頁／重開瀏覽器後維持上次選擇，不再回退到 browser locale
+  searchPanelShowCJK: isCJKLocale(),
 }
 
 type Settings = typeof INITIAL_SETTINGS
@@ -69,6 +73,7 @@ export const tagDbMirror       = refs.tagDbMirror
 export const tagDbTtlDays      = refs.tagDbTtlDays
 export const tagStylePreset    = refs.tagStylePreset
 export const useAccentOnInclude = refs.useAccentOnInclude
+export const searchPanelShowCJK = refs.searchPanelShowCJK
 
 function loadAllSettings(persisted: Partial<Settings>): void {
   for (const key of Object.keys(INITIAL_SETTINGS) as SettingKey[]) {

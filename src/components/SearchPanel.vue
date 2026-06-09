@@ -12,10 +12,10 @@ import { useResizeObserver } from '@vueuse/core'
 import Draggable from 'vuedraggable'
 import { parseTerm, serializeTerm, type Prefix } from '@/services/searchSyntax'
 import { tokenize, tokenIdentity, setTagState, removeTag, buildIdentityIndex, getNextRightClickState } from '@/services/tagState'
-import { nsOrder, lines } from '@/services/store'
+import { nsOrder, lines, searchPanelShowCJK as showCJK } from '@/services/store'
 import { loadTagDb, findEntryByNsTag } from '@/services/tagDb'
 import { cacheGet, cacheSet } from '@/services/gmStorage'
-import { t, isCJKLocale } from '@/composables/useI18n'
+import { t } from '@/composables/useI18n'
 import { baseDragOptions, EQT_TAGS_GROUP } from '@/utils/drag'
 import { TagState, type TagButton } from '@/types'
 
@@ -42,8 +42,9 @@ const HISTORY_KEY = 'eqt-search-history'
 const HISTORY_CAP = 50
 const PERSIST_DEBOUNCE_MS = 100
 
-// term 顯示語言：預設跟 locale 走，可在 controls-row 用 toggle 按鈕 override（page-scoped）
-const showCJK = ref(isCJKLocale())
+// term 顯示語言：預設跟 locale 走、可在 controls-row 用 toggle 按鈕 override。
+// 持久化到 GM storage（store 的 searchPanelShowCJK），跨頁 / 重開瀏覽器後
+// 維持上次選擇。store 端命名比較具體、檔案內 alias 成 showCJK 用習慣的短名
 function toggleLang(): void { showCJK.value = !showCJK.value }
 
 // tagDb 載入完通知 groups computed 重算（term 從 raw 翻成 entry.name）
