@@ -3,3 +3,6 @@ dist
 *.local
 .claude/
 TODO.md
+test-results/
+playwright-report/
+
