@@ -1,34 +1,74 @@
 # EhQuickTag
 
-[繁體中文](README.zh-TW.md)
+[繁體中文](README.zh-TW.md) | [Sleazy Fork](https://sleazyfork.org/zh-TW/scripts/578820-eh-quick-tag)
 
-A customizable quick tag bar for E-Hentai / ExHentai search.
-
-Adds a tag bar above the search box. Click to combine search conditions, with tag database search, multiple profiles, and drag-and-drop reordering.
+> ⚠️ Early development. Data formats (profiles, settings, etc.) may change in future versions and require reconfiguration.
 
 ![screenshot](docs/screenshot.png)
 
+A customizable quick tag bar for E-Hentai / ExHentai search.
+
+Adds a quick tag bar above the search box for one-click condition assembly. A companion search panel renders the current search terms as clickable buttons that can be dragged back into the tag bar, and keeps cross-page search history.
+
 ## Features
 
-- **Quick tag bar**: Click to toggle three states (include / OR / exclude), synced with the search box in real time
-- **Tag database search**: Integrates [EhTagTranslation](https://github.com/EhTagTranslation/Database) — search tags in Chinese (Traditional/Simplified), Japanese, or English, with nhentai popularity weighting
-- **Multiple profiles**: Create multiple tag configurations, quick switch, with recycle bin and JSON editor
-- **URL buttons**: Custom shortcuts to frequently used search pages
-- **Drag-and-drop**: Reorder tags across rows, reorder rows, reorder profiles
-- **Background double-click search**: Left/right double-click on tag bar background to trigger search, actions are configurable
-- **Custom font**: Choose font-family and weight
-- **Persistent data**: Stored in GM storage, supports Tampermonkey backup/sync
-- **Supports both** e-hentai.org and exhentai.org
-- **i18n**: Traditional Chinese, Simplified Chinese, English, Japanese
+### Quick tag bar
+
+- **Three-state toggle**: Each button cycles through Include / OR / Exclude, synced with the native search box in real time; left and right click can each be configured independently
+- **Line layout**:
+  - Two row types — tag rows and separator rows — freely interleaved
+  - Rows can be reordered and colored; tags can be dragged across rows
+  - Separator rows support label, line style (solid / dashed / none), line position (top / middle / bottom), line length & thickness, text size, and text alignment
+- **URL buttons**: Pin frequently used search pages, with auto-fetch of page titles
+- **Background double-click**: Left/right double-click on the tag bar background triggers search or clears the search box; actions are configurable
+
+### Search panel
+
+- **Visualize the current search**: Breaks the contents of the search box into buttons, with one-click Include / OR / Exclude switching
+- **Drag back into the tag bar**: Drop a frequently used term into the tag bar to make it a permanent button
+- **Cross-page search history**: Searched terms are remembered across pages and recallable in one click; can be disabled for privacy
+- **Toolbar**: Search, clear search box, clear history, and "+ Find tag" (pick from the tag database and add to the current search)
+- **Display language**: Auto / Chinese-English toggle / English-only; the "toggle" mode adds a 中／EN switch button
+
+### Tag database search
+
+- Integrates [EhTagTranslation](https://github.com/EhTagTranslation/Database) — search in Traditional/Simplified Chinese, Japanese, or English
+- **nhentai popularity weighting**: Optional; when enabled, frequently uploaded tags are prioritized in suggestions
+- **OpenCC Simplified-to-Traditional**: Choose Auto / Traditional / Simplified (DB original) for Chinese tag labels
+- **Namespace order & visibility**: Customize namespace ranking; hide categories you don't care about
+- **Database mirror & cache**: Choose a CDN mirror, adjust cache TTL, or refresh manually
+
+### Tag button configuration
+
+![tag settings](docs/tag_settings.png)
+
+- **Full syntax editor**: namespace (long/short form), qualifier, exact match (`$`), wildcard (`*`), and more
+- **Display name**: Separate from the underlying tag syntax — show whatever label you want on the button
+- **Click cycle editor**: Visually edit the state cycle for each mouse button; shapes that can't be expressed in EH search syntax are flagged
+
+### Appearance
+
+![color picker](docs/color_feature.png)
+
+- **Four button style presets**: Default, bottom shadow, offset shadow, pushable
+- **Two-layer coloring**: Color rows, color buttons individually, and optionally force the include state to always render green
+- **Custom font**: Pick a font-family and weight that only applies inside the tag bar
+
+### Profiles
+
+- Multiple independent profiles, one-click switch, reorderable and renameable
+- **Trash**: Deleted profiles can be restored or permanently purged
+- **JSON editor**: Import / export profile data directly; unparseable data is collected under "corrupted data"
+- **Persistent storage**: Backed by GM storage, compatible with Tampermonkey backup/sync
+
+### Sites & languages
+
+- Supports both **e-hentai.org** and **exhentai.org**
+- UI languages: **Traditional Chinese, Simplified Chinese, English, Japanese**
 
 ## Install
 
-Requires [Tampermonkey](https://www.tampermonkey.net/) or a compatible userscript manager.
-
-- [Sleazy Fork](https://sleazyfork.org/zh-TW/scripts/578820-eh-quick-tag)
-- [GitHub Releases](https://github.com/Tsuyumi25/EhQuickTag/releases)
-
-> ⚠️ Under active development. Data formats (profiles, settings, etc.) may change in future versions, which could require reconfiguration.
+Requires [Tampermonkey](https://www.tampermonkey.net/) or a compatible userscript manager. Install from [Sleazy Fork](https://sleazyfork.org/zh-TW/scripts/578820-eh-quick-tag) or [GitHub Releases](https://github.com/Tsuyumi25/EhQuickTag/releases).
 
 ## Development
 
@@ -36,7 +76,7 @@ Requires [Tampermonkey](https://www.tampermonkey.net/) or a compatible userscrip
 git clone https://github.com/Tsuyumi25/EhQuickTag.git
 cd EhQuickTag
 pnpm install
-pnpm dev       # Start dev server, browser will auto-install the dev userscript
+pnpm dev       # Start dev server; the browser will auto-install the dev userscript
 pnpm build     # Output dist/eh-quick-tag.user.js
 ```
 
