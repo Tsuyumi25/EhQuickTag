@@ -1,0 +1,21 @@
+{
+  "repo": "test-fixture",
+  "head": { "sha": "test", "message": "test" },
+  "data": [
+    {
+      "namespace": "language",
+      "data": {
+        "chinese": { "name": "中文", "intro": "", "links": "" },
+        "english": { "name": "英語", "intro": "", "links": "" },
+        "japanese": { "name": "日語", "intro": "", "links": "" }
+      }
+    },
+    {
+      "namespace": "female",
+      "data": {
+        "yuri": { "name": "百合", "intro": "", "links": "" },
+        "sole female": { "name": "單一女性", "intro": "", "links": "" }
+      }
+    }
+  ]
+}

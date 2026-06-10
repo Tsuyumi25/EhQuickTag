@@ -92,11 +92,13 @@ interface TermGroup {
   terms: TermInfo[]
 }
 
-const STATE_CLASS: Record<TagState, string | null> = {
+// Off 給 explicit class（即使沒對應 style）：給 e2e / 外部觀察者一個正面條件
+// 可 assert，避免 negate 推論在新 state 加入時靜默漏掉
+const STATE_CLASS: Record<TagState, string> = {
   [TagState.Include]: 'eqt-search-panel__button--include',
   [TagState.Or]:      'eqt-search-panel__button--or',
   [TagState.Exclude]: 'eqt-search-panel__button--exclude',
-  [TagState.Off]:     null,
+  [TagState.Off]:     'eqt-search-panel__button--off',
 }
 
 // State → prefix 的對應表。跟 STATE_CLASS 對稱；直接給 serializeTerm 用，
@@ -478,6 +480,7 @@ const historyRows = computed<HistoryTerm[][]>(() => {
           v-if="enableHistory"
           class="eqt-search-panel__text-btn"
           type="button"
+          data-testid="clear-history"
           @click="clearHistory"
         >{{ t('tagbar.clearHistory') }}</button>
       </div>
@@ -491,11 +494,13 @@ const historyRows = computed<HistoryTerm[][]>(() => {
         <button
           class="eqt-search-panel__text-btn"
           type="button"
+          data-testid="clear-search"
           @click="clearSearch"
         >{{ t('tagbar.clearSearch') }}</button>
         <button
           class="eqt-search-panel__text-btn"
           type="button"
+          data-testid="search-submit"
           @click="onSearchClick"
         >{{ t('tagbar.search') }}</button>
       </div>

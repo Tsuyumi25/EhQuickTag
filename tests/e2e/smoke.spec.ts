@@ -29,7 +29,8 @@ test('原生 search row 跟 TagBar __lines 左右切齊', async ({ page }) => {
 
   // .eqt-tag-bar__lines 跟 .eqt-native-search-row 是 ehFormHost 注入後的兩列。
   // 兩個 boundingBox.x 一致 = 視覺左切齊；x + width 一致 = 右切齊。
-  // 差 1px 容忍 sub-pixel 量測誤差
+  // 容忍 2px：headless Chromium 在非 1x DPI（CI runner 常見）下 sub-pixel 累積
+  // 可能逼近 1px 邊界、改 2px 避免 false negative
   const native = page.locator('.eqt-native-search-row')
   const lines = page.locator('.eqt-tag-bar__lines')
   await expect(native).toBeVisible()
@@ -39,6 +40,6 @@ test('原生 search row 跟 TagBar __lines 左右切齊', async ({ page }) => {
   const linesBox = await lines.boundingBox()
   expect(nativeBox).not.toBeNull()
   expect(linesBox).not.toBeNull()
-  expect(Math.abs(nativeBox!.x - linesBox!.x)).toBeLessThanOrEqual(1)
-  expect(Math.abs((nativeBox!.x + nativeBox!.width) - (linesBox!.x + linesBox!.width))).toBeLessThanOrEqual(1)
+  expect(Math.abs(nativeBox!.x - linesBox!.x)).toBeLessThanOrEqual(2)
+  expect(Math.abs((nativeBox!.x + nativeBox!.width) - (linesBox!.x + linesBox!.width))).toBeLessThanOrEqual(2)
 })

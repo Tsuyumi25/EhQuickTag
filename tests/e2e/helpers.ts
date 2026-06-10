@@ -6,15 +6,18 @@ import { resolve, dirname } from 'path'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const FIXTURE_HTML = readFileSync(resolve(__dirname, '../fixtures/eh-list.html'), 'utf-8')
 const FIXTURE_CSS = readFileSync(resolve(__dirname, '../fixtures/eh-g.css'), 'utf-8')
-const USERSCRIPT = readFileSync(resolve(__dirname, '../../dist/eh-quick-tag.user.js'), 'utf-8')
+const FIXTURE_TAGDB = readFileSync(resolve(__dirname, '../fixtures/eh-tag-db.json'), 'utf-8')
+const USERSCRIPT_PATH = resolve(__dirname, '../../dist/eh-quick-tag.user.js')
 
-// 單一 catch-all 路由：白名單只放行 fixture（HTML + g.css），其餘全部 abort。
+// 單一 catch-all 路由：白名單放行 fixture（HTML + g.css + tagDb），其餘全 abort。
 // 比起多條 page.route 疊起來（順序 + 副作用都不明顯），用 if/else 集中判斷意圖
 // 直接寫在 source 上、不會漏掉某種副檔名（webp / avif / 外部廣告 JS）
 //
-// CSS 用 regex 接 /z/\d+/g.css 路徑：EH 把版本號從 0381 升到 0382 也通吃，fixture
-// 不需要對齊真實版本（只是 placeholder 給 userscript 用）
+// CSS 用 regex 接 /z/\d+/g.css：EH 把版本號從 0381 升到 0382 也通吃；
+// tagDb 接 jsdelivr / fastly / gcore / github raw 任一鏡像——loadTagDb 走完真實
+// fetch → buildIndex → cacheSet 路徑（不再靠 preseed cache 繞過）
 const CSS_URL_RE = /^https:\/\/e-hentai\.org\/z\/\d+\/g\.css$/
+const TAGDB_URL_RE = /^https:\/\/(cdn|fastly|gcore)\.jsdelivr\.net\/.*\/db\.html\.json$|^https:\/\/raw\.githubusercontent\.com\/.*\/db\.html\.json$/
 
 export async function mockEh(page: Page): Promise<void> {
   await page.route('**/*', (route) => {
@@ -23,16 +26,16 @@ export async function mockEh(page: Page): Promise<void> {
       route.fulfill({ contentType: 'text/html', body: FIXTURE_HTML })
     } else if (CSS_URL_RE.test(url)) {
       route.fulfill({ contentType: 'text/css', body: FIXTURE_CSS })
+    } else if (TAGDB_URL_RE.test(url)) {
+      route.fulfill({ contentType: 'application/json', body: FIXTURE_TAGDB })
     } else {
       route.abort()
     }
   })
 }
 
-// Tampermonkey runtime API shim：把 userscript 預期的 GM_* / GM.* 接到 localStorage
-// 跟 window.open。真實 Tampermonkey 還有 cross-origin XHR、sandbox 隔離等保證，但
-// e2e 跑 same-origin、不需要那些。GM_xmlhttpRequest 走 fetch 在 same-origin 下夠用。
-// storage key 加 'eqt-test:' prefix 隔離測試殘留，testIsolation 預設 page 之間不共享
+// Tampermonkey runtime API shim。GM_xmlhttpRequest 把錯誤詳細包進回呼（含 err
+// object）而不是吞掉——tagDb onerror 才能傳出真實 root cause 到 CI log
 function gmShimCode(): string {
   return `
     window.GM_addStyle = (css) => {
@@ -44,7 +47,7 @@ function gmShimCode(): string {
     window.GM_xmlhttpRequest = ({ url, onload, onerror }) => {
       fetch(url)
         .then((r) => r.text().then((text) => onload?.({ responseText: text, status: r.status })))
-        .catch((e) => onerror?.(e))
+        .catch((e) => onerror?.({ error: String(e), readyState: 4, status: 0 }))
     }
     window.GM = {
       getValue: async (key, def) => {
@@ -63,30 +66,24 @@ function gmShimCode(): string {
           .map((k) => k.slice('eqt-test:'.length))
       },
     }
-
-    // 預塞 tagDb 空 cache + fresh timestamp：loadTagDb 看 TTL 內就用 cache、
-    // 不發 jsdelivr fetch（會被 mockEh 的 catch-all abort 擋）。空 [] 不影響
-    // SearchPanel chip 顯示（chip 走 raw token literal），讓 TagConfigPopup /
-    // AddTagPopup 的 dbReady 立刻 true、tag input 不再 disabled
-    if (!localStorage.getItem('eqt-test:eqt_tag_db')) {
-      localStorage.setItem('eqt-test:eqt_tag_db', JSON.stringify('[]'))
-      localStorage.setItem('eqt-test:eqt_tag_db_ts', JSON.stringify(String(Date.now())))
-    }
   `
 }
 
 // 一鍵把整套（GM shim + EH mock + userscript）灌進 page。addInitScript 必須在 goto
 // 之前掛——shim 才會出現在 userscript 之前。順序：shim → route → goto → 注入 script
+//
+// userscript 走 path 不走 content：750KB string 透過 CDP serialize 進 Chromium
+// 每個 test 都要做，用 path 讓 Playwright 直接由檔案 serve、Chrome 可 cache script resource
 export async function injectUserscript(page: Page): Promise<void> {
   await page.addInitScript(gmShimCode())
   await mockEh(page)
   await page.goto('https://e-hentai.org/')
-  await page.addScriptTag({ content: USERSCRIPT })
+  await page.addScriptTag({ path: USERSCRIPT_PATH })
 }
 
-// reload 後的重新注入：addInitScript / route 已經掛在 context、跨 navigation 持續，
+// reload 後的重新注入：addInitScript / route 已掛在 context、跨 navigation 持續，
 // 只需要再灌一次 userscript bundle。reload 測試（如 history 持久化）用這個避免重複
 // 設定 route 觸發 'route already registered' warning
 export async function reinjectUserscript(page: Page): Promise<void> {
-  await page.addScriptTag({ content: USERSCRIPT })
+  await page.addScriptTag({ path: USERSCRIPT_PATH })
 }

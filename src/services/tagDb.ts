@@ -100,7 +100,10 @@ async function fetchDb(mirror: TagDbMirror = 'jsdelivr'): Promise<string> {
           if (res.status === 200) resolve(res.responseText)
           else reject(new Error(`HTTP ${res.status}`))
         },
-        onerror: () => reject(new Error('Network error')),
+        // 保留原 error：GM_xmlhttpRequest 的 onerror 回傳 GMXHR error response
+        // （含 status / statusText / details）。包成籠統 'Network error' 會吃掉
+        // CI debug 線索（CDN 5xx vs CORS vs timeout 全變一句話）
+        onerror: (err) => reject(new Error(`Network error: ${JSON.stringify(err)}`)),
       })
     })
   }

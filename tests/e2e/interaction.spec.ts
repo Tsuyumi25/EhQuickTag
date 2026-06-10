@@ -8,14 +8,14 @@ test('左鍵 tag button 切 Include / Off 並同步 #f_search', async ({ page })
   // 預設 profile 第一行第一顆按鈕「中文」對應 l:chinese$
   const btn = page.locator('.eqt-tag-bar__btn').filter({ hasText: /^中文$/ }).first()
   await expect(btn).toBeVisible()
-  await expect(btn).not.toHaveClass(/eqt-tag-bar__btn--include/)
+  await expect(btn).toHaveClass(/eqt-tag-bar__btn--off/)
 
   await btn.click()
   await expect(btn).toHaveClass(/eqt-tag-bar__btn--include/)
   await expect(page.locator('#f_search')).toHaveValue(/l:chinese\$/)
 
   await btn.click()
-  await expect(btn).not.toHaveClass(/eqt-tag-bar__btn--include/)
+  await expect(btn).toHaveClass(/eqt-tag-bar__btn--off/)
   await expect(page.locator('#f_search')).toHaveValue('')
 })
 
@@ -36,29 +36,40 @@ test('右鍵 tag button cycle 三態跟 token prefix 對齊', async ({ page }) =
   await expect(page.locator('#f_search')).toHaveValue(/-l:chinese\$/)
 
   await btn.click({ button: 'right' })
-  await expect(btn).not.toHaveClass(/eqt-tag-bar__btn--(include|or|exclude)/)
+  await expect(btn).toHaveClass(/eqt-tag-bar__btn--off/)
   await expect(page.locator('#f_search')).toHaveValue('')
 })
 
-// === Tier 1 / ③：clearSearch 順序競爭 — Off chip 留殘、history 推入 ===
-test('clearSearch 後 SearchPanel chip 殘留為 Off、history 接住 term', async ({ page }) => {
+// === Tier 1 / ③：clearSearch 順序競爭 — Off chip 留殘、history 確實 push（即使 UI 隱藏）===
+test('clearSearch 後 SearchPanel chip 殘留為 Off、history 寫入 storage', async ({ page }) => {
   await injectUserscript(page)
 
+  // language:chinese 同 identity 進 default profile 的「中文」button 牆 —— 用這個
+  // term 才能驗到「button 牆內 term 仍會 push 進 history」這條原本沒人守的 invariant。
+  // UI 上 history row 被 visibleHistory 過濾（sessionTerms 同 identity）、看不到，
+  // 改用 storage assert 直接驗 markEntriesOff 內 history.value.unshift 真的跑了
   await page.locator('#f_search').fill('language:chinese')
   const chip = page.locator('.eqt-search-panel__button').filter({ hasText: /中文|chinese/ }).first()
   await expect(chip).toBeVisible()
   await expect(chip).toHaveClass(/eqt-search-panel__button--include/)
 
-  // SearchPanel 的「清空搜尋框」按鈕（不是「清除歷史」也不是「搜尋」）
-  await page.locator('.eqt-search-panel__text-btn', { hasText: '清空搜尋框' }).click()
+  await page.getByTestId('clear-search').click()
 
   await expect(page.locator('#f_search')).toHaveValue('')
   // 順序若顛倒、syncFromSearch 會把 active entry 全丟、chip 直接消失。
-  // chip 還在 + 狀態變 Off 才證明 markEntriesOff 先跑、emit 後 syncFromSearch 走
-  // 「!active 保留」分支。注意：history 此刻被 hide（同 identity 還在 sessionTerms、
-  // visibleHistory 過濾掉），不在這層斷言；history 持久化在下一個 test 覆蓋
+  // chip 還在 + state 變 Off 才證明 markEntriesOff 先跑、emit 後 syncFromSearch 走
+  // 「!active 保留」分支
   await expect(chip).toBeVisible()
-  await expect(chip).not.toHaveClass(/eqt-search-panel__button--(include|or|exclude)/)
+  await expect(chip).toHaveClass(/eqt-search-panel__button--off/)
+
+  // history 必須真的有 term（debounce flush 後 storage 看得到）；
+  // 即使 visibleHistory UI 過掉，invariant「button 牆內 term 進 history」仍要守
+  await page.waitForFunction(() => {
+    const raw = localStorage.getItem('eqt-test:eqt-search-history')
+    if (!raw) return false
+    const parsed = JSON.parse(raw)
+    return typeof parsed === 'string' && parsed.includes('language:chinese')
+  })
 })
 
 // === Tier 1 / ④：編輯模式 + 新增 tag button → TagBar 多出一顆 ===
@@ -75,8 +86,10 @@ test('編輯 → + 標籤 → 填寫 → 儲存 → TagBar 多一顆按鈕', asy
   await page.locator('.eqt-tag-bar__ctrl-split-btn').first().click()
   await expect(page.locator('.eqt-popup-overlay')).toBeVisible()
 
-  // 填 tag input（會自動 serializeTerm 寫進 rawText）
-  await page.locator('.eqt-row__tag-input').first().fill('yuri')
+  // 等 tag input 不再 disabled（loadTagDb 走完 mockEh fulfill 路徑 + buildIndex 後 dbReady=true）
+  const tagInput = page.locator('.eqt-row__tag-input').first()
+  await expect(tagInput).toBeEnabled()
+  await tagInput.fill('yuri')
 
   // primary 按鈕 = 儲存
   await page.locator('.eqt-popup__btn--primary').click()
@@ -89,15 +102,11 @@ test('編輯 → + 標籤 → 填寫 → 儲存 → TagBar 多一顆按鈕', asy
 test('history 跨 reload 還留在 SearchPanel', async ({ page }) => {
   await injectUserscript(page)
 
-  // 用 artist:e2etest——不在 default profile button 牆裡，reload 後 visibleHistory
-  // 才不會被 buttonIdentities 過濾掉。default profile 用了 language / male
-  // namespace 的 term，避開那些
+  // artist:e2etest 不在 default profile button 牆，reload 後 visibleHistory 不會被
+  // buttonIdentities 過濾掉（test ③ 已 cover button 牆內路徑 via storage assert）
   await page.locator('#f_search').fill('artist:e2etest')
   await page.locator('.eqt-search-panel__button').filter({ hasText: 'e2etest' }).first().waitFor()
-  await page.locator('.eqt-search-panel__text-btn', { hasText: '清空搜尋框' }).click()
-  // reload 前：term 在 history 但 visibleHistory 被 sessionTerms 同 identity 過掉、
-  // 看不到 history row。reload 後 sessionTerms 重建為空、history 從 storage 載回、
-  // visibleHistory 才會 surface
+  await page.getByTestId('clear-search').click()
   await expect(page.locator('#f_search')).toHaveValue('')
 
   // schedulePersist 是 100ms debounce、reload 會拋掉 JS context → onScopeDispose
@@ -160,7 +169,7 @@ test('chip 切 Off 後在原位殘留、不跑到末尾', async ({ page }) => {
 
   // 點 alpha 切 Off
   await alphaChip.click()
-  await expect(alphaChip).not.toHaveClass(/eqt-search-panel__button--(include|or|exclude)/)
+  await expect(alphaChip).toHaveClass(/eqt-search-panel__button--off/)
   await expect(page.locator('#f_search')).toHaveValue(/artist:beta/)
   await expect(page.locator('#f_search')).not.toHaveValue(/artist:alpha/)
 

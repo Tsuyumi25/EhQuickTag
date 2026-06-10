@@ -21,11 +21,14 @@ const ACTION_KEYS: Record<DblClickAction, string> = {
   none: 'tagbar.none',
 }
 
-const STATE_CLASS: Record<TagState, string | null> = {
+// Off 給 explicit class（即使沒對應 style）：給 e2e / 外部觀察者一個正面條件
+// 可 assert，避免「不是 include / or / exclude 就是 Off」的 negate 推論在新 state
+// 加入時靜默漏掉
+const STATE_CLASS: Record<TagState, string> = {
   [TagState.Include]: 'eqt-tag-bar__btn--include',
   [TagState.Or]:      'eqt-tag-bar__btn--or',
   [TagState.Exclude]: 'eqt-tag-bar__btn--exclude',
-  [TagState.Off]:     null,
+  [TagState.Off]:     'eqt-tag-bar__btn--off',
 }
 
 const props = defineProps<{
