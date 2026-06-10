@@ -676,6 +676,8 @@ function onRightClick(event: MouseEvent, b: TagButton) {
     display: flex;
     align-items: center;
     gap: 4px;
+    margin-top: 6px;
+    margin-bottom: 6px;
   }
 
   // 編輯態下方的「+ 行 / + 分隔線」split。flex: 1 撐滿剩餘空間
@@ -913,7 +915,6 @@ function onRightClick(event: MouseEvent, b: TagButton) {
     display: flex;
     gap: 4px;
     margin-left: auto;
-    margin-bottom: 6px;
   }
 
   &__profile-row {
