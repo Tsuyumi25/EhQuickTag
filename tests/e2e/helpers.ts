@@ -70,14 +70,25 @@ function gmShimCode(): string {
 }
 
 // 一鍵把整套（GM shim + EH mock + userscript）灌進 page。addInitScript 必須在 goto
-// 之前掛——shim 才會出現在 userscript 之前。順序：shim → route → goto → 注入 script
+// 之前掛——shim 才會出現在 userscript 之前。順序：shim → route → goto → (optional 預設
+// #f_search.value) → 注入 script
+//
+// initialSearch 模擬「直接訪問帶 f_search 的搜尋結果頁」——EH server-side render 後
+// #f_search.value 就是 query 內容。fixture 路徑不變（pathname 仍是 /），改的是 input
+// value，userscript 注入後 App.vue onMounted 讀到的 searchInput.value 就是目標 term
 //
 // userscript 走 path 不走 content：750KB string 透過 CDP serialize 進 Chromium
 // 每個 test 都要做，用 path 讓 Playwright 直接由檔案 serve、Chrome 可 cache script resource
-export async function injectUserscript(page: Page): Promise<void> {
+export async function injectUserscript(page: Page, initialSearch?: string): Promise<void> {
   await page.addInitScript(gmShimCode())
   await mockEh(page)
   await page.goto('https://e-hentai.org/')
+  if (initialSearch !== undefined) {
+    await page.evaluate((q) => {
+      const inp = document.querySelector<HTMLInputElement>('#f_search')
+      if (inp) inp.value = q
+    }, initialSearch)
+  }
   await page.addScriptTag({ path: USERSCRIPT_PATH })
 }
 

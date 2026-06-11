@@ -94,11 +94,15 @@ function onBarContextMenu(e: MouseEvent) {
   }
 }
 
-function execDblClickAction(action: DblClickAction) {
+async function execDblClickAction(action: DblClickAction) {
   if (action === 'none') return
   if (action === 'clearSearch') {
     emit('update:searchText', '')
   } else {
+    // 跟 SearchPanel.onSearchClick 同邏輯：先 recordSubmit + flush 再 emit。
+    // await flush 確保 navigate 前 GM_setValue resolve（finding #3）。
+    // SearchPanel 未 mount 時 history 功能本來就不存在，optional chain no-op
+    await searchPanelRef.value?.recordSubmitAndFlush()
     emit('search', action)
   }
 }

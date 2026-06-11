@@ -20,18 +20,27 @@ import { TagState } from '@/types'
 //   H = ids(history)
 //   T = ids(tokenize(modelValue))
 //
+// H 的 push 觸發點：
+//   - markEntriesOff：A → O 那刻 push（dismissTerms / clearSearch；不論 submitted 與否）
+//   - recordSubmit：當前 A 全部 push H（loadHistory 完成那刻為 mount initial、
+//     SearchPanel.onSearchClick / TagBar dblclick 'search' 為 submit）
+//   - syncFromSearch 不 push H——typing 中間態、原生框 morph、backspace 不污染 history
+//
 // 不變量：
 //   I1 (primitive):       A = T            syncFromSearch 獨家 enforce
-//   I2 (primitive):       A ∩ H = ∅        syncFromSearch reclaim H 中重回 A 的 id
-//   I3 (primitive):       O ⊆ H            markEntriesOff 同 push、clearHistory 保留 O
+//   I3 (primitive):       O ⊆ H            markEntriesOff push、clearHistory 保留 O 對應
 //   I4 (by-construction): A ∩ O = ∅        entry.active 互斥 ⇒ 結構上不可能違反
 //
+//   （沒有 A ∩ H = ∅——A 在 mount initial / submit 後會進 H，visibleHistory 在 SearchPanel
+//   那層投影 H \ ids(sessionTerms) 排除 TagBar 已顯示的，使用者不會看到重複）
+//
 // Enforcer 對照：
-//   syncFromSearch  →  I1 + I2（rebuild active 跟 T 對齊、reclaim H 中回到 A 的 id）
-//   markEntriesOff  →  mutate entry.active = false + push H（守 I3）
+//   syncFromSearch  →  I1（rebuild active 跟 T 對齊）
+//   markEntriesOff  →  mutate entry.active = false + pushToHistory（守 I3）
+//   recordSubmit    →  pushToHistory(A)；mount 路徑限 initial-submitted id 子集擋 race
 //   clearHistory    →  H ← H ∩ ids(O)（守 I3）
 //
-// Dev-mode 守門：assertInvariants() 在 syncFromSearch / clearHistory 末尾各跑一次
+// Dev-mode 守門：assertInvariants() 在 syncFromSearch / loadHistory / clearHistory 末尾各跑一次
 
 export interface TermEntry { positive: string; active: boolean }
 
@@ -54,23 +63,14 @@ export function useSessionTerms(opts: {
         if (Array.isArray(parsed)) history.value = parsed.filter(x => typeof x === 'string')
       } catch { /* corrupted blob → 從空 */ }
     }
-    // 載入完才 reclaim 守 I2：setup top-level 同步呼叫 syncFromSearch 時 history
-    // 還是空的、reclaim 是 no-op。loadHistory 是 onMounted 觸發的 async path，
-    // 載入完成後 watch 不會 fire（modelValue 沒變），需在這裡主動補一次 reclaim、
-    // 不然「URL 還原 modelValue + GM storage 含同 id」這條路徑會留下 A ∩ H ≠ ∅。
-    const activeIds = new Set(
-      sessionTerms.value.filter(c => c.active).map(c => tokenIdentity(c.positive)).filter(Boolean) as string[]
-    )
-    if (activeIds.size) {
-      const filtered = history.value.filter(p => {
-        const id = tokenIdentity(p)
-        return !id || !activeIds.has(id)
-      })
-      if (filtered.length !== history.value.length) {
-        history.value = filtered
-        schedulePersist()
-      }
-    }
+    // 「直接從 URL 進到帶 search 的頁面」這條路徑：onMounted 才拿到舊 history，
+    // 載入完才把 mount initial 的 A 視為「已提交」推進 H 頂端。先 cacheGet 後 push
+    // 才不會被 cache load 蓋掉剛 push 的條目。
+    //
+    // 帶 initialSubmittedIds：async gap 期間 watch 可能 fire 把 sessionTerms 同步成
+    // typing 中間態，這條限制只 push「mount 那一刻已存在於 modelValue」的 id 子集，
+    // 把 mount-initial 與後續 typing 中間態結構上隔開（finding #1）。
+    recordSubmit(initialSubmittedIds)
     assertInvariants()
   }
 
@@ -94,7 +94,7 @@ export function useSessionTerms(opts: {
   })
 
   // Dev-mode invariant checker。生產環境被 bundler 整段 dead-code-elim 掉、零成本。
-  // I4 (A ∩ O = ∅) 由 entry.active 互斥 by-construction 保證，這裡只 check primitive 三條。
+  // I4 (A ∩ O = ∅) 由 entry.active 互斥 by-construction 保證，這裡只 check primitive 兩條。
   // enableHistory 關掉時跳過 I3——使用者明確 opt-out、Off chip 無 H 對應是預期狀態
   function assertInvariants(): void {
     if (!import.meta.env.DEV) return
@@ -106,10 +106,6 @@ export function useSessionTerms(opts: {
 
     if (A.size !== T.size || [...A].some(x => !T.has(x))) {
       console.error('[useSessionTerms] I1 broken: A !== T', { A: [...A], T: [...T] })
-    }
-    const i2Overlap = [...A].filter(x => H.has(x))
-    if (i2Overlap.length) {
-      console.error('[useSessionTerms] I2 broken: A ∩ H ≠ ∅', { overlap: i2Overlap })
     }
     if (!enableHistory.value) return
     const i3Missing: string[] = []
@@ -130,9 +126,8 @@ export function useSessionTerms(opts: {
   //   - 既有 off entry 不在 T 中 → 保留（這正是 Off 意義）
   //   - T 中沒對應 entry 的新 id → append 到尾巴（active）
   //
-  // History push 不在這裡——原生框造成的 token 消失（typing 過渡態、backspace、
-  // select-delete、paste 覆寫）一律不該污染 history，否則打字每個 keystroke 都會
-  // push 中間態變垃圾。History 唯一觸發點是 markEntriesOff（dismissTerms / clearSearch）。
+  // H 的 push / reclaim 都不在這裡——typing 中間態進出不污染歷史，A 進 H 由
+  // recordSubmit 另外觸發（mount initial / submit）、O 進 H 由 markEntriesOff 觸發
   function syncFromSearch(text: string): void {
     const newPositiveById = new Map<string, string>()
     for (const tok of tokenize(text)) {
@@ -161,18 +156,6 @@ export function useSessionTerms(opts: {
       next.push({ positive: newPositiveById.get(id)!, active: true })
     }
     sessionTerms.value = next
-
-    // History reclaim：identity 回到 A 就從 H 移除（守 I2）。single pass：
-    // O(K+H) 取代每 reclaimed id 跑一次 filter 的 O(K×H)
-    const reclaimedIds = new Set(newPositiveById.keys())
-    const filteredHistory = history.value.filter(p => {
-      const id = tokenIdentity(p)
-      return !id || !reclaimedIds.has(id)
-    })
-    if (filteredHistory.length !== history.value.length) {
-      history.value = filteredHistory
-      schedulePersist()
-    }
     assertInvariants()
   }
 
@@ -180,6 +163,10 @@ export function useSessionTerms(opts: {
   // 純 `history.length = HISTORY_CAP` 會把舊條目擠掉，若擠掉的是 Off entry 對應
   // 的 H 條目，I3 (O ⊆ H) 破裂——使用者會看到「孤兒灰按鈕」（sessionTerms 內仍有
   // Off entry 但 H 沒對應條目，clearHistory 也救不回來）。
+  //
+  // A 對應條目「不」受保護：A 在 sessionTerms 已可見、被擠掉只影響「使用者編輯
+  // 掉 A token 後 visibleHistory 是否立刻浮上來」這個小體感，不破壞核心契約；
+  // 反之若擴大 protected 到 A，長 paste 觸發 cap 上限後永久無法收（finding #4）。
   //
   // 邊界情況：Off entry 數量 > HISTORY_CAP 時，protected 全保留會超過 cap。
   // 此時 invariant 優先於 cap（cap 只是 UI hint，invariant 是核心契約）。
@@ -206,33 +193,39 @@ export function useSessionTerms(opts: {
     history.value = result
   }
 
-  // dismissTerms / clearSearch 共用 body：把指定 entries mutate 成 off + push history。
-  // 不檢查 entry.active 是否已 false——保留原 dismissTerms 「dup positive 各處理一次」
-  // 的語意（caller 自己決定要不要先 filter active）。
-  // history 跟 sessionTerms 都以 canonical positive form 存（strip prefix，保 suffix，
-  // 保 namespace 原形）。entry.positive 已是 syncFromSearch normalize 過的 canonical，
-  // 直接借用——caller 傳入的 raw form（含 prefix / alias / suffix）不該洩漏進 history。
-  // dedup 跨 form 用 tokenIdentity 比對。
+  // markEntriesOff / recordSubmit 共用底層：dedup by identity → unshift → trim → persist。
+  // entry.positive 已是 syncFromSearch normalize 過的 canonical form（strip prefix，保
+  // suffix，保 namespace 原形）；history 跟 sessionTerms 都存 canonical。caller 傳入
+  // raw form（含 prefix / alias / suffix）不會洩漏進 history。dedup 跨 form 用
+  // tokenIdentity 比對。
   //
-  // enableHistory 關掉時跳過 push——entry 仍 mark active=false（Off chip 殘留），
-  // 但不進 history 列表也不 persist。breaks I3 (O ⊆ H) 是預期的——使用者明確
-  // opted out history、ghost chip 無 H 對應是 by design。
-  function markEntriesOff(entries: TermEntry[]): void {
-    let mutatedHistory = false
+  // enableHistory 關掉時整段 no-op（不 push、不 persist）；caller 端的 mutate
+  // （entry.active=false）已先跑過、不靠這條保證 chip 視覺殘留。
+  function pushManyToHistory(entries: ReadonlyArray<TermEntry>): void {
+    if (!enableHistory.value) return
+    let mutated = false
     for (const entry of entries) {
       const id = tokenIdentity(entry.positive)
       if (!id) continue
-      entry.active = false
-      if (!enableHistory.value) continue
       const dupIdx = history.value.findIndex(p => tokenIdentity(p) === id)
       if (dupIdx >= 0) history.value.splice(dupIdx, 1)
       history.value.unshift(entry.positive)
-      mutatedHistory = true
+      mutated = true
     }
-    if (mutatedHistory) {
+    if (mutated) {
       trimHistory()
       schedulePersist()
     }
+  }
+
+  // dismissTerms / clearSearch 共用 body：把指定 entries mutate 成 off + push history。
+  // 不檢查 entry.active 是否已 false——保留原 dismissTerms 「dup positive 各處理一次」
+  // 的語意（caller 自己決定要不要先 filter active）。
+  function markEntriesOff(entries: TermEntry[]): void {
+    for (const entry of entries) {
+      entry.active = false
+    }
+    pushManyToHistory(entries)
     // 不在這守 assertInvariants：emit 後 props.modelValue 還沒同步更新
     // （Vue prop 更新是 microtask），當下 T 是舊值、A 是新值 ⇒ I1 假陽性。
     // emit → watch → syncFromSearch 結尾的 assertInvariants 會處理整個 cycle
@@ -265,10 +258,43 @@ export function useSessionTerms(opts: {
     opts.emitUpdate('')
   }
 
-  // 只清 H \ O（visible history row 顯示的部分），保留 O 對應的條目。
-  // 不變量 O ⊆ H 在 clearHistory 後仍成立——「清歷史」語意 = 清掉沒被 O 標記的
-  // 歷史條目，被使用者明確點 Off 的灰 term 對應的 history 條目留著（重整後 O
-  // 自然消失、那些條目就會浮上 visible history）。
+  // 把當前 A 推進 H 頂端（dedup by identity）。觸發點：
+  //   - loadHistory 載完那刻：mount initial modelValue 已有 active term ⇒ 「直接從
+  //     URL 進到帶 search 的頁面」這條路徑視同 submit。loadHistory 路徑傳入
+  //     initialSubmittedIds 把可推 id 鎖在「mount 那一刻已存在」的子集——隔絕
+  //     async gap 期間 typing 出來的中間態（finding #1）。
+  //   - SearchPanel.onSearchClick / TagBar dblclick 'search'：實際 submit 動作。
+  //     此路徑不帶 restrictTo，當下 A 全部推進。
+  //
+  // 純 mutate history、不動 sessionTerms。enableHistory 關掉時 no-op（pushManyToHistory 守）。
+  function recordSubmit(restrictTo?: ReadonlySet<string>): void {
+    const eligible = sessionTerms.value.filter(c => {
+      if (!c.active) return false
+      if (!restrictTo) return true
+      const id = tokenIdentity(c.positive)
+      return !!id && restrictTo.has(id)
+    })
+    pushManyToHistory(eligible)
+  }
+
+  // submit 路徑專用：navigate 走前 sync 把 pending persist flush 進 GM storage。
+  // 若不 await，emit('search') → form.submit() 同步 navigate → onScopeDispose 雖然
+  // 也會 fire-and-forget cacheSet，但 cacheSet 是 async，unload 比它 resolve 快時
+  // 寫入丟失（finding #3）。先 recordSubmit 排好 schedulePersist 的 timer，再
+  // flushPersist 把 timer 清掉 + await cacheSet，確保 navigate 前 GM_setValue resolve。
+  async function recordSubmitAndFlush(): Promise<void> {
+    recordSubmit()
+    if (persistTimer) {
+      clearTimeout(persistTimer)
+      persistTimer = 0
+      await cacheSet(HISTORY_KEY, JSON.stringify(history.value))
+    }
+  }
+
+  // 只清 H \ O（visible history row 顯示的部分），保留 O 對應條目守 I3。
+  // A 對應條目「不」保留：清歷史是使用者主動清空動作，留下 A 的條目會在使用者
+  // 接著 backspace 掉那個 A token 時意外浮成 ghost chip（finding #2），體感像
+  // 「我剛清掉怎麼又出來」。A 在 sessionTerms 已可見、不需要 H 鏡像。
   function clearHistory(): void {
     const offIds = new Set(
       sessionTerms.value.filter(c => !c.active).map(c => tokenIdentity(c.positive)).filter(Boolean) as string[]
@@ -315,6 +341,16 @@ export function useSessionTerms(opts: {
 
   // 同步初始化要放 setup top-level：watch 只在「未來」變動觸發；不依賴任何
   // async 結果，先把 sessionTerms 裝對才安全
+  //
+  // initialSubmittedIds 是「mount 那一刻就已存在於 modelValue 的 token id」snapshot。
+  // 純粹給 loadHistory 走 mount-initial 路徑時用：onMounted → await cacheGet 的 async gap
+  // 期間 watch 可能 fire 把 sessionTerms 同步成 typing 中間態（a:f / a:fo），若
+  // recordSubmit 讀「當下」 sessionTerms 就會把中間態推進 H、破壞「typing 不污染」trade-off。
+  // 用 initial snapshot 限制 recordSubmit 只 push「曾在 initial modelValue 出現」的 id，
+  // mount-initial 與 typing 中間態結構上隔開。
+  const initialSubmittedIds = new Set(
+    tokenize(opts.modelValue()).map(tokenIdentity).filter(Boolean) as string[]
+  )
   syncFromSearch(opts.modelValue())
 
   onMounted(loadHistory)
@@ -327,6 +363,7 @@ export function useSessionTerms(opts: {
     dismissTerms,
     clearSearch,
     clearHistory,
+    recordSubmitAndFlush,
     onRestoreHistory,
     onHistoryChange,
   }

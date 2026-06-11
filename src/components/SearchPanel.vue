@@ -3,6 +3,7 @@
 // 跟 defineExpose 內的 shape 必須一致——後者用 satisfies 守住一致性
 export interface SearchPanelExposed {
   dismissTerms(positives: string[]): void
+  recordSubmitAndFlush(): Promise<void>
 }
 </script>
 
@@ -57,7 +58,7 @@ const dbReady = ref(false)
 const {
   sessionTerms, history,
   sessionIdentitySet,
-  dismissTerms, clearSearch, clearHistory,
+  dismissTerms, clearSearch, clearHistory, recordSubmitAndFlush,
   onRestoreHistory, onHistoryChange,
 } = useSessionTerms({
   modelValue: () => props.modelValue,
@@ -246,7 +247,7 @@ function applyTermState(positive: string, next: TagState): void {
   }
 }
 
-defineExpose({ dismissTerms } satisfies SearchPanelExposed)
+defineExpose({ dismissTerms, recordSubmitAndFlush } satisfies SearchPanelExposed)
 
 function onTermClick(term: TermInfo): void {
   // editing 時 chip 只負責被拖拽，不再切態——避免「拖之前不小心點到變 Off」
@@ -273,7 +274,15 @@ function onHistoryClick(positive: string): void {
 }
 
 function onAddClick(): void { emit('addToSearch') }
-function onSearchClick(): void { emit('search') }
+// 送出前先把當前 A 推進 H + sync flush GM storage：
+//   - navigate 走後新頁面 mount 也會在 loadHistory 補一次，但若不 await flush，
+//     form.submit() 同步 navigate 跟 cacheSet async write 會競賽（finding #3）
+//   - searchNewTab 路徑當前 tab 不 navigate，flush 也只是把 100ms debounce 提前
+//     觸發，無副作用
+async function onSearchClick(): Promise<void> {
+  await recordSubmitAndFlush()
+  emit('search')
+}
 
 // === Drag-out to TagBar：chip clone 成 TagButton ===
 //
