@@ -544,6 +544,12 @@ const historyRows = computed<HistoryTerm[][]>(() => {
   flex-direction: column;
   gap: 4px;
   min-height: var(--eqt-row-h);
+  // grid 1fr 預設 minmax(auto, 1fr)，auto = min-content。row 是 flex-wrap: nowrap
+  // 容器、min-content = 該 row 所有 item 寬度總和。沒這條的話 chunk 還沒跑或算
+  // 偏小時，1fr 欄會被某一 row 的 min-content 撐到大於可用寬度，整列從 panel
+  // 右邊視覺溢出。同時也是 useBilingualWrap 量 containerWidth 的取樣對象，
+  // 撐爆會讓 chunk 用錯誤寬度連環誤判
+  min-width: 0;
 }
 
 // JS chunk 切出的「視覺一行」：flex nowrap 強制 term 不自動換行；
