@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue'
-import { loadTagDb, getNhRankedEntries, type TagEntry } from '@/services/tagDb'
+import { loadTagDb, getFallbackEntries, type TagEntry } from '@/services/tagDb'
 import { useNhWeight } from '@/services/store'
 import { useTagSuggestions } from '@/composables/useTagSuggestions'
 import { usePopupBehavior } from '@/composables/usePopupBehavior'
@@ -12,13 +12,11 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const TOP_N = 500
-
 const query = ref('')
 const inputEl = ref<HTMLInputElement | null>(null)
 const popupEl = ref<HTMLElement | null>(null)
 const selectedIdx = ref(0)
-const topNh = ref<TagEntry[]>([])
+const fallbackEntries = ref<TagEntry[]>([])
 
 // 跟其他 popup 同套：onClickOutside + Escape + useScrollLock 一條龍，
 // 避免 AddTagPopup 開啟時滾輪穿透到背景 EH 列表
@@ -27,7 +25,7 @@ usePopupBehavior({ popupEl, onClose: () => emit('close') })
 const { dbReady, suggestions } = useTagSuggestions({
   query: () => query.value,
   useNhWeight: () => useNhWeight.value,
-  emptyFallback: () => topNh.value,
+  emptyFallback: () => fallbackEntries.value,
 })
 
 // suggestions 換新清單時拉回頂端，避免過濾完按 Enter 拿到 undefined / 高亮看不見
@@ -35,7 +33,7 @@ watch(suggestions, () => { selectedIdx.value = 0 })
 
 onMounted(async () => {
   await loadTagDb()
-  topNh.value = getNhRankedEntries().slice(0, TOP_N).map(r => r.entry)
+  fallbackEntries.value = getFallbackEntries()
   inputEl.value?.focus()
 })
 

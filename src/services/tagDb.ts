@@ -147,7 +147,7 @@ export async function loadTagDb(opts: LoadTagDbOptions = {}): Promise<TagEntry[]
 /** Force re-fetch tag DB from mirror, ignoring cache. */
 export async function refreshTagDb(opts: LoadTagDbOptions = {}): Promise<void> {
   entries = null
-  _nhRankedCache = null
+  _fallbackCache.clear()
   _entryIndex = null
   await cacheSet(CACHE_TS_KEY, '0')
   await loadTagDb(opts)
@@ -218,6 +218,18 @@ interface RankedEntry {
   nsTier: number
 }
 
+/**
+ * 共用 tie-breaker：searchTags（matchTier 等同後）跟 fallback 清單（沒 query）
+ * 都用同一條 nh-first → ns tier → length 的鏈，避免兩處 sort 邏輯 drift。
+ * 任一支改了 nh 權重的相對重要性，另一支自動同步。
+ */
+type NhRankable = { entry: TagEntry; nhCount: number; nsTier: number }
+function compareNhFallback(a: NhRankable, b: NhRankable): number {
+  return (b.nhCount - a.nhCount)
+    || (a.nsTier - b.nsTier)
+    || (a.entry.raw.length - b.entry.raw.length)
+}
+
 export interface SearchOptions {
   useNhWeight?: boolean
 }
@@ -284,36 +296,38 @@ export function searchTags(query: string, opts: SearchOptions = {}): TagEntry[] 
   }
 
   ranked.sort((a, b) =>
-    (a.matchTier - b.matchTier)
-    || (b.nhCount - a.nhCount)
-    || (a.nsTier - b.nsTier)
-    || (a.entry.raw.length - b.entry.raw.length),
+    (a.matchTier - b.matchTier) || compareNhFallback(a, b),
   )
 
   return ranked.map(r => r.entry)
 }
 
 /**
- * 把 e站 tagDb 中所有「在 nh 資料上有對應上傳量」的 entry 撈出，依 nh 人氣降冪排序。
+ * 給 AddTagPopup 當「空查詢預設清單」的 ranked entries。
  *
- * 用途：AddTagPopup 的「空查詢預設清單」——nh 資料本身只是 `name → count`，沒
- * namespace 不能直接當 tag 用；本函式做 e站 對齊，回傳的是已附完整 namespace
- * 的 TagEntry，可以直接組成 token。
+ * 不像舊版只撈有 nh 對應的 entry——本函式回傳**所有** entries，用 nh 上傳量
+ * 當 tie-breaker 把熱門的拉到前面、其他附在後。這樣 popup 清單不會變空白，
+ * 但 female/male 仍然會按 nh 熱榜排序。
  *
- * 結果 memoize 在 module 層——entries 跟 nh popularity map 都是 immutable 後就不變，
- * 每次 popup 重 mount 不用重 scan 50k entries。refreshTagDb 時跟 entries 一起清空。
+ * 排序鏈跟 searchTags 共用 `compareNhFallback`，nh 權重的相對重要性一處決定。
  */
-let _nhRankedCache: Array<{ entry: TagEntry; nhCount: number }> | null = null
-export function getNhRankedEntries(): Array<{ entry: TagEntry; nhCount: number }> {
-  if (_nhRankedCache) return _nhRankedCache
+const _fallbackCache = new Map<string, TagEntry[]>()
+export function getFallbackEntries(): TagEntry[] {
+  const cached = _fallbackCache.get('*')
+  if (cached) return cached
   if (!entries) return []
-  const result: Array<{ entry: TagEntry; nhCount: number }> = []
+
+  const nsTierMap = new Map<string, number>()
+  for (let i = 0; i < DEFAULT_NS_ORDER.length; i++) nsTierMap.set(DEFAULT_NS_ORDER[i], i)
+
+  const ranked: NhRankable[] = []
   for (const entry of entries) {
-    const count = getNhWeight(entry.ns, entry.raw)
-    if (count === undefined) continue
-    result.push({ entry, nhCount: count })
+    const nsTier = nsTierMap.get(entry.ns)
+    if (nsTier === undefined) continue
+    ranked.push({ entry, nhCount: getNhWeight(entry.ns, entry.raw) ?? 0, nsTier })
   }
-  result.sort((a, b) => b.nhCount - a.nhCount)
-  _nhRankedCache = result
+  ranked.sort(compareNhFallback)
+  const result = ranked.map(r => r.entry)
+  _fallbackCache.set('*', result)
   return result
 }
