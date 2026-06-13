@@ -25,7 +25,7 @@ export interface Profile {
   isDefault?: boolean
 }
 
-export type DblClickAction = 'search' | 'searchNewTab' | 'clearSearch' | 'none'
+export type DblClickAction = 'search' | 'searchNewTab' | 'clearSearch' | 'toggleEdit' | 'none'
 
 // --- enum-shape settings：id + i18n labelKey 物件陣列（跟 TAG_STYLE_PRESETS 同 pattern）---
 // 一處定義同時餵 loadAllSettings 的 enum validator + SettingsPopup 的 v-for tristate UI，

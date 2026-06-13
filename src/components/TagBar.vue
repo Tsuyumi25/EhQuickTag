@@ -18,6 +18,7 @@ const ACTION_KEYS: Record<DblClickAction, string> = {
   search: 'tagbar.search',
   searchNewTab: 'tagbar.searchNewTab',
   clearSearch: 'tagbar.clearSearch',
+  toggleEdit: 'tagbar.toggleEdit',
   none: 'tagbar.none',
 }
 
@@ -75,19 +76,25 @@ function isInteractive(e: MouseEvent) {
 }
 
 function onBarDblClick(e: MouseEvent) {
-  if (editing.value || isInteractive(e)) return
+  if (isInteractive(e)) return
+  const action = dblClickLeft.value
+  // editing 時只允許 toggleEdit 走（拿來退出編輯）；其他 action 仍然不能在編輯時觸發，
+  // 避免「拖標籤途中誤觸搜尋」
+  if (editing.value && action !== 'toggleEdit') return
   e.preventDefault()
   e.stopPropagation()
   window.getSelection()?.removeAllRanges()
-  execDblClickAction(dblClickLeft.value)
+  execDblClickAction(action)
 }
 
 function onBarContextMenu(e: MouseEvent) {
-  if (editing.value || isInteractive(e)) return
+  if (isInteractive(e)) return
+  const action = dblClickRight.value
+  if (editing.value && action !== 'toggleEdit') return
   e.preventDefault()
   const now = Date.now()
   if (now - lastRightClickTime < 500) {
-    execDblClickAction(dblClickRight.value)
+    execDblClickAction(action)
     lastRightClickTime = 0
   } else {
     lastRightClickTime = now
@@ -96,6 +103,10 @@ function onBarContextMenu(e: MouseEvent) {
 
 async function execDblClickAction(action: DblClickAction) {
   if (action === 'none') return
+  if (action === 'toggleEdit') {
+    editing.value = !editing.value
+    return
+  }
   if (action === 'clearSearch') {
     emit('update:searchText', '')
   } else {
