@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue'
 import { loadTagDb, getNhRankedEntries, type TagEntry } from '@/services/tagDb'
-import { useNhWeight, nsOrder } from '@/services/store'
+import { useNhWeight } from '@/services/store'
 import { useTagSuggestions } from '@/composables/useTagSuggestions'
 import { usePopupBehavior } from '@/composables/usePopupBehavior'
 import { t } from '@/composables/useI18n'
@@ -27,7 +27,6 @@ usePopupBehavior({ popupEl, onClose: () => emit('close') })
 const { dbReady, suggestions } = useTagSuggestions({
   query: () => query.value,
   useNhWeight: () => useNhWeight.value,
-  nsOrder: () => nsOrder.value,
   emptyFallback: () => topNh.value,
 })
 

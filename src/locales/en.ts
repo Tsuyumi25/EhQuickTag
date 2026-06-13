@@ -74,8 +74,6 @@ export default {
   'settings.actionClear': 'Clear search',
   'settings.actionNone': 'None',
   'settings.newTabActivate': 'Switch to new tab when searching',
-  'settings.nsOrder': 'Namespace search order',
-  'settings.nsOrderHint': 'Adjust the sorting weight of namespaces in search suggestions. Drag to reorder, uncheck to hide.\nNote: This only affects ordering between namespaces. Match quality and nhentai popularity still take priority.',
   'settings.reset': 'Reset',
   'settings.resetTitle': 'Reset to default',
   'settings.nsFormat': 'Namespace format',

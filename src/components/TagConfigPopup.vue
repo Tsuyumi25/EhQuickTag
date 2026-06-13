@@ -17,7 +17,6 @@ const props = defineProps<{
   lineColor?: string
   isAdd?: boolean
   useNhWeight?: boolean
-  nsOrder?: string[]
   nsFormat?: 'long' | 'short'
   defaultExactMatch?: boolean
 }>()
@@ -267,7 +266,6 @@ const simOutput = computed(() => {
             :ns-format="nsFormat"
             :db-ready="dbReady"
             :use-nh-weight="useNhWeight ?? false"
-            :ns-order="nsOrder ?? []"
             :active="activeRow === i"
             @update:active="(val: boolean) => onChildActive(i, val)"
             @remove="removeRow(i)"

@@ -6,7 +6,7 @@ import Draggable from 'vuedraggable'
 import { baseDragOptions } from '@/utils/drag'
 import type { Line } from '@/types'
 import { t, locale, setLocale, type Locale } from '@/composables/useI18n'
-import { DEFAULT_NS_ORDER, refreshTagDb, TAG_DB_MIRRORS, type TagDbMirror } from '@/services/tagDb'
+import { refreshTagDb, TAG_DB_MIRRORS, type TagDbMirror } from '@/services/tagDb'
 import {
   profiles, activeProfileIdx, deletedProfiles, corruptedProfiles, type Profile,
   deleteProfile, restoreProfile, purgeProfile, purgeCorrupted, reorderProfiles, updateProfileLines,
@@ -23,14 +23,10 @@ import SettingsAboutTab from '@/components/SettingsAboutTab.vue'
 
 const props = defineProps<{
   useNhWeight: boolean
-  nsOrder: string[]
-  disabledNs: readonly string[]
 }>()
 
 const emit = defineEmits<{
   'update:useNhWeight': [value: boolean]
-  'update:nsOrder': [value: string[]]
-  'update:disabledNs': [value: string[]]
   'close': []
 }>()
 
@@ -78,22 +74,6 @@ const tagCounts = computed(() => profiles.map((p, i) =>
 ))
 const deletedTagCounts = computed(() => deletedProfiles.map(p => tagCount(p.lines)))
 
-// --- nsOrder change handler ---
-
-function onNsOrderChange(evt: any) {
-  if (evt.moved) {
-    const newOrder = [...props.nsOrder]
-    const [item] = newOrder.splice(evt.moved.oldIndex, 1)
-    newOrder.splice(evt.moved.newIndex, 0, item)
-    emit('update:nsOrder', newOrder)
-  }
-}
-
-function resetNsOrder() {
-  emit('update:nsOrder', [...DEFAULT_NS_ORDER])
-  emit('update:disabledNs', [])
-}
-
 const popupEl = ref<HTMLElement | null>(null)
 usePopupBehavior({ popupEl, onClose: () => emit('close') })
 
@@ -102,16 +82,6 @@ const refreshing = ref(false)
 async function onRefreshTagDb() {
   refreshing.value = true
   try { await refreshTagDb({ mirror: tagDbMirror.value }) } finally { refreshing.value = false }
-}
-
-// --- toggle ---
-
-function toggleNs(ns: string) {
-  const next = [...props.disabledNs]
-  const idx = next.indexOf(ns)
-  if (idx >= 0) next.splice(idx, 1)
-  else next.push(ns)
-  emit('update:disabledNs', next)
 }
 
 // --- profile uid ---
@@ -388,36 +358,6 @@ function onEditorPurge() {
               />
               <span class="eqt-settings__label">{{ t('settings.newTabActivate') }}</span>
             </label>
-
-            <h4 class="eqt-settings__subtitle">
-              {{ t('settings.nsOrder') }}
-              <button class="eqt-settings__reset-btn" type="button" :title="t('settings.resetTitle')" @click="resetNsOrder"><RotateCcw :size="12" /> {{ t('settings.reset') }}</button>
-            </h4>
-            <p class="eqt-settings__hint" style="white-space: pre-line">
-              {{ t('settings.nsOrderHint') }}
-            </p>
-            <Draggable
-              v-bind="dragOptions"
-              :model-value="nsOrder"
-              :item-key="(ns: string) => ns"
-              filter="input"
-              :prevent-on-filter="false"
-              tag="ul"
-              class="eqt-settings__ns-list"
-              @change="onNsOrderChange"
-            >
-              <template #item="{ element: ns }">
-                <li class="eqt-settings__ns-item eqt-settings__ns-item--draggable">
-                  <input
-                    type="checkbox"
-                    :checked="!disabledNs.includes(ns)"
-                    @change="toggleNs(ns)"
-                  />
-                  <span class="eqt-settings__ns-label">{{ t('ns.' + ns) }}</span>
-                  <span class="eqt-settings__ns-key">{{ ns }}</span>
-                </li>
-              </template>
-            </Draggable>
           </div>
 
           <!-- 設定：資料 -->

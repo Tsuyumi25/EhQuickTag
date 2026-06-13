@@ -11,7 +11,6 @@ const props = defineProps<{
   query: string
   qualifier: Qualifier | null
   useNhWeight: boolean
-  nsOrder: string[]
   // input element ref（由 parent 傳入）—— autocomplete 自己掛 keydown listener
   // 處理上下鍵 + Enter，因為鍵盤事件源頭一定是 focused input
   inputEl: HTMLInputElement | null
@@ -25,7 +24,6 @@ const { dbReady, suggestions } = useTagSuggestions({
   query: () => props.query,
   qualifier: () => props.qualifier,
   useNhWeight: () => props.useNhWeight,
-  nsOrder: () => props.nsOrder,
 })
 
 const selectedIdx = ref(-1)

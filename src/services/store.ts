@@ -1,7 +1,7 @@
 import { reactive, ref, watch, nextTick, type Ref } from 'vue'
 import { cacheGet, cacheSet } from '@/services/gmStorage'
 import type { Line, Button, ButtonLine, SeparatorLine, TagButton, UrlButton, TagMode } from '@/types'
-import { DEFAULT_NS_ORDER, type TagDbMirror } from '@/services/tagDb'
+import { type TagDbMirror } from '@/services/tagDb'
 import { locale, setLocale, detectLocale, isCJKLocale, t, type Locale } from '@/composables/useI18n'
 import { PRESETS_BY_ID, type TagStylePresetId } from '@/composables/useTagStyle'
 
@@ -55,8 +55,6 @@ export type ConvertToTraditional = typeof CONVERT_TO_TRADITIONAL_MODES[number]['
 // load / save / watch 自動掃描 refs。locale 走獨立處理（從 useI18n import）。
 const INITIAL_SETTINGS = {
   useNhWeight: true,
-  nsOrder: [...DEFAULT_NS_ORDER] as string[],
-  disabledNs: [] as string[],
   fontFamily: '',
   fontWeight: '',
   dblClickLeft: 'search' as DblClickAction,
@@ -105,8 +103,6 @@ const refs = Object.fromEntries(
 ) as { [K in SettingKey]: Ref<Settings[K]> }
 
 export const useNhWeight       = refs.useNhWeight
-export const nsOrder           = refs.nsOrder
-export const disabledNs        = refs.disabledNs
 export const fontFamily        = refs.fontFamily
 export const fontWeight        = refs.fontWeight
 export const dblClickLeft      = refs.dblClickLeft

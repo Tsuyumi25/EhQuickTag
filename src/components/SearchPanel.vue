@@ -12,8 +12,8 @@ import { computed, ref, onMounted } from 'vue'
 import Draggable from 'vuedraggable'
 import { parseTerm, serializeTerm, type Prefix } from '@/services/searchSyntax'
 import { tokenize, tokenIdentity, getNextRightClickState, setTagState, buildIdentityIndex } from '@/services/tagState'
-import { nsOrder, lines, searchPanelShowCJK as showCJK, enableHistory } from '@/services/store'
-import { loadTagDb, findEntryByNsTag } from '@/services/tagDb'
+import { lines, searchPanelShowCJK as showCJK, enableHistory } from '@/services/store'
+import { loadTagDb, findEntryByNsTag, DEFAULT_NS_ORDER } from '@/services/tagDb'
 import { t } from '@/composables/useI18n'
 import { baseDragOptions, EQT_TAGS_GROUP } from '@/utils/drag'
 import { useSessionTerms } from '@/composables/useSessionTerms'
@@ -191,7 +191,7 @@ const groups = computed<TermGroup[]>(() => {
   }
 
   const result: TermGroup[] = []
-  for (const ns of nsOrder.value) {
+  for (const ns of DEFAULT_NS_ORDER) {
     if (buckets.has(ns)) {
       result.push({ key: ns, label: t(`ns.${ns}`), terms: buckets.get(ns)! })
       buckets.delete(ns)

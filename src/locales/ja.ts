@@ -74,8 +74,6 @@ export default {
   'settings.actionClear': '検索をクリア',
   'settings.actionNone': 'なし',
   'settings.newTabActivate': '新しいタブで検索時にそのタブへ切り替える',
-  'settings.nsOrder': 'Namespace 検索順序',
-  'settings.nsOrderHint': '検索候補における namespace の並び順を調整します。ドラッグで順序を変更、チェックを外すと非表示にできます。\n注意：この順序は namespace 間の並びにのみ影響します。マッチ品質と nhentai 人気は引き続き優先されます。',
   'settings.reset': 'リセット',
   'settings.resetTitle': 'デフォルトにリセット',
   'settings.nsFormat': 'Namespace 形式',

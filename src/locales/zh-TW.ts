@@ -74,8 +74,6 @@ export default {
   'settings.actionClear': '清空搜尋框',
   'settings.actionNone': '無',
   'settings.newTabActivate': '新分頁搜尋時切換到該分頁',
-  'settings.nsOrder': 'Namespace 搜尋順序',
-  'settings.nsOrderHint': '調整搜尋建議中 namespace 的內部排序權重。拖曳調整順序，取消勾選可隱藏該類別。\n注意：此順序僅影響 namespace 之間的排列，匹配品質和 nhentai 人氣仍然優先。',
   'settings.reset': '重置',
   'settings.resetTitle': '重置為預設',
   'settings.nsFormat': 'Namespace 格式',

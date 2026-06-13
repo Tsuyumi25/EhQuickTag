@@ -74,8 +74,6 @@ export default {
   'settings.actionClear': '清空搜索框',
   'settings.actionNone': '无',
   'settings.newTabActivate': '新标签页搜索时切换到该标签页',
-  'settings.nsOrder': 'Namespace 搜索顺序',
-  'settings.nsOrderHint': '调整搜索建议中 namespace 的内部排序权重。拖拽调整顺序，取消勾选可隐藏该类别。\n注意：此顺序仅影响 namespace 之间的排列，匹配质量和 nhentai 人气仍然优先。',
   'settings.reset': '重置',
   'settings.resetTitle': '重置为默认',
   'settings.nsFormat': 'Namespace 格式',

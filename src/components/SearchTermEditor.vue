@@ -12,7 +12,6 @@ const props = defineProps<{
   nsFormat?: 'long' | 'short'
   dbReady: boolean
   useNhWeight: boolean
-  nsOrder: string[]
   active: boolean
 }>()
 
@@ -164,7 +163,6 @@ const qualifierOptions = Array.from(QUALIFIER_SET).map(q => ({ value: `q:${q}`, 
         :query="rowState.token.tag.trim()"
         :qualifier="rowState.token.qualifier"
         :use-nh-weight="useNhWeight"
-        :ns-order="nsOrder"
         :input-el="tagInputEl"
         @pick="onPickSuggestion"
       />

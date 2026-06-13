@@ -11,14 +11,9 @@ import { TagState } from '@/types'
 import type { TagEntry } from '@/services/tagDb'
 import { GM_openInTab } from '$'
 import type { Button, TagButton, UrlButton } from '@/types'
-import { lines, useNhWeight, nsOrder, disabledNs, fontFamily, fontWeight, profiles, activeProfileIdx, switchProfile, renameProfile, createProfile, deleteProfile, newTabActive, nsFormat, defaultExactMatch, tagDbMirror, tagDbTtlDays, type DblClickAction } from '@/services/store'
+import { lines, useNhWeight, fontFamily, fontWeight, profiles, activeProfileIdx, switchProfile, renameProfile, createProfile, deleteProfile, newTabActive, nsFormat, defaultExactMatch, tagDbMirror, tagDbTtlDays, type DblClickAction } from '@/services/store'
 import { loadTagDb } from '@/services/tagDb'
 import { useEhFormHost, type EhFormHost } from '@/composables/useEhFormHost'
-
-const effectiveNsOrder = computed(() => {
-  const disabled = new Set(disabledNs.value)
-  return nsOrder.value.filter(ns => !disabled.has(ns))
-})
 
 // 自訂字體 var 設在 anchor 元素而非 documentElement 上——這樣只有 #eqt-bar-anchor
 // 子樹（TagBar 整顆）能看到，#eqt-app（所有 popup 的 root）不會受影響。
@@ -250,7 +245,6 @@ watch(searchText, (val) => {
     :line-color="editingLineColor"
     :is-add="pendingAdd"
     :use-nh-weight="useNhWeight"
-    :ns-order="effectiveNsOrder"
     :ns-format="nsFormat"
     :default-exact-match="defaultExactMatch"
     @save="onSave"
@@ -271,10 +265,6 @@ watch(searchText, (val) => {
   <SettingsPopup
     v-if="showSettings"
     v-model:use-nh-weight="useNhWeight"
-    :ns-order="nsOrder"
-    :disabled-ns="disabledNs"
-    @update:ns-order="nsOrder = $event"
-    @update:disabled-ns="disabledNs = $event"
     @close="showSettings = false"
   />
 

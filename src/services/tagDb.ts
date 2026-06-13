@@ -220,18 +220,17 @@ interface RankedEntry {
 
 export interface SearchOptions {
   useNhWeight?: boolean
-  nsOrder?: string[]
 }
 
 export function searchTags(query: string, opts: SearchOptions = {}): TagEntry[] {
   if (!entries || !query.trim()) return []
 
-  const { useNhWeight = false, nsOrder = DEFAULT_NS_ORDER } = opts
+  const { useNhWeight = false } = opts
 
-  // build ns → tier lookup; namespaces not in nsOrder are hidden
+  // ns → tier 用 DEFAULT_NS_ORDER 當固定事實來源
   const nsTierMap = new Map<string, number>()
-  for (let i = 0; i < nsOrder.length; i++) {
-    nsTierMap.set(nsOrder[i], i)
+  for (let i = 0; i < DEFAULT_NS_ORDER.length; i++) {
+    nsTierMap.set(DEFAULT_NS_ORDER[i], i)
   }
 
   let q = query.toLowerCase().normalize().trim()
@@ -264,7 +263,7 @@ export function searchTags(query: string, opts: SearchOptions = {}): TagEntry[] 
   const ranked: RankedEntry[] = []
 
   for (const entry of pool) {
-    // skip namespaces not in nsOrder (disabled by user)
+    // 不在 DEFAULT_NS_ORDER 的 ns 被排除（理論上不會發生，DB 解析時 ns 都有覆蓋）
     const nsTier = nsTierMap.get(entry.ns)
     if (nsTier === undefined) continue
 
