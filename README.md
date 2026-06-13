@@ -27,7 +27,7 @@ Adds a quick tag bar above the search box for one-click condition assembly. A co
 - **Visualize the current search**: Breaks the contents of the search box into buttons, with one-click Include / OR / Exclude switching
 - **Drag back into the tag bar**: Drop a frequently used term into the tag bar to make it a permanent button
 - **Cross-page search history**: Searched terms are remembered across pages and recallable in one click; can be disabled for privacy
-- **Toolbar**: Search, clear search box, clear history, and "+ Find tag" (pick from the tag database and add to the current search)
+- **Toolbar**: Search, clear search box, clear history, and "+ Browse tags" (pick from the tag database and add to the current search)
 - **Display language**: Auto / Chinese-English toggle / English-only; the "toggle" mode adds a 中／EN switch button
 
 ### Tag database search

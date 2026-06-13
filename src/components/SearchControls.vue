@@ -68,9 +68,9 @@ async function onSearchClick(): Promise<void> {
       v-if="showAddToSearch"
       class="eqt-search-controls__add"
       type="button"
-      :title="t('tagbar.findTag')"
+      :title="t('tagbar.browseTag')"
       @click="$emit('addToSearch')"
-    ><span class="eqt-search-controls__add-icon">+</span><span class="eqt-search-controls__add-label">{{ t('tagbar.findTag') }}</span></button>
+    ><span class="eqt-search-controls__add-icon">+</span><span class="eqt-search-controls__add-label">{{ t('tagbar.browseTag') }}</span></button>
     <div class="eqt-search-controls__group">
       <button
         v-if="showClearSearch"
@@ -135,7 +135,7 @@ async function onSearchClick(): Promise<void> {
   visibility: hidden;
 }
 
-// 「尋找標籤」按鈕：兩側 control group 之間撐滿剩餘寬度——SearchPanel 場景下
+// 「瀏覽標籤」按鈕：兩側 control group 之間撐滿剩餘寬度——SearchPanel 場景下
 // 這是打開 SearchPopup 的主要入口，視覺上做大方便瞄準。
 // 「+」icon 用 22px 當視覺主角；label 12px 跟旁邊 text-btn 字級對齊
 .eqt-search-controls__add {
