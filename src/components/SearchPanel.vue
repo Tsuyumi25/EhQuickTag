@@ -1,27 +1,13 @@
-<script lang="ts">
-// Module-level export：給 TagBar 之類 template ref 的 caller import 用。
-// 跟 defineExpose 內的 shape 必須一致——後者用 satisfies 守住一致性
-import type { Ref } from 'vue'
-import type { TermEntry } from '@/composables/useSessionTerms'
-
-export interface SearchPanelExposed {
-  dismissTerms(positives: string[]): void
-  recordSubmitAndFlush(): Promise<void>
-  // 給 AddTagPopup 取「當前 session 內的 active+off term」用；history 不外露
-  sessionTerms: Ref<TermEntry[]>
-}
-</script>
-
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, inject } from 'vue'
 import Draggable from 'vuedraggable'
 import { parseTerm } from '@/services/searchSyntax'
 import { tokenize, tokenIdentity } from '@/services/tagState'
 import { lines, searchPanelShowCJK as showCJK, enableHistory } from '@/services/store'
-import { loadTagDb, findEntryByNsTag } from '@/services/tagDb'
+import { findEntryByNsTag, tagDbVersion } from '@/services/tagDb'
 import { t } from '@/composables/useI18n'
 import { baseDragOptions, EQT_TAGS_GROUP } from '@/utils/drag'
-import { useSessionTerms } from '@/composables/useSessionTerms'
+import { SearchSessionKey } from '@/composables/useSessionTerms'
 import { useBilingualWrap } from '@/composables/useBilingualWrap'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
 import SearchTermRows from '@/components/SearchTermRows.vue'
@@ -51,25 +37,22 @@ function toggleLang(): void { showCJK.value = !showCJK.value }
 // 邏輯（useDisplayConfig）。改邏輯一處到位
 const { resolvedMode, effectiveShowCJK, cjkDisplay } = useDisplayConfig()
 
-// tagDb 載入完通知 historyDisplays computed 重算（history 從 raw 翻成 entry.name）
-const dbReady = ref(false)
-
-// === sessionTerms / history 狀態機（A/O/H/T 不變式 + persistence）===
-// 細節跟 invariants 證明在 composables/useSessionTerms.ts
+// === sessionTerms / history 狀態機從 App.vue inject ===
+//
+// 細節跟 invariants 證明在 composables/useSessionTerms.ts。
+// SearchPanel 不再自己持有 session——App.vue 在 setup 階段呼一次 useSessionTerms
+// 後 provide，這層只負責 render + 接 emit
+const session = inject(SearchSessionKey)
+if (!session) throw new Error('SearchPanel: SearchSessionKey not provided')
 const {
   sessionTerms, history,
   sessionIdentitySet,
   dismissTerms, clearSearch, clearHistory, recordSubmitAndFlush,
   onRestoreHistory, onHistoryChange,
-} = useSessionTerms({
-  modelValue: () => props.modelValue,
-  emitUpdate: (v) => emit('update:modelValue', v),
-})
+} = session
 
-onMounted(async () => {
-  await loadTagDb()
-  dbReady.value = true
-})
+// loadTagDb 不在這呼叫——App.vue 已經 setup 階段觸發。historyDisplays computed
+// 用 tagDb.tagDbVersion 當 reactive signal，DB ready 時自動 recompute
 
 // button 牆已涵蓋的 identity 集合——visibleHistory 用它扣除重複
 const buttonIdentities = computed(() => {
@@ -86,10 +69,6 @@ const buttonIdentities = computed(() => {
   }
   return set
 })
-
-// sessionTerms 對外暴露：AddTagPopup 透過 App.vue 的 SearchPanel ref 拿，給
-// SearchTermRows 顯示「當前搜尋的 active+off chip」。dismissTerms 也在這層共用
-defineExpose({ dismissTerms, recordSubmitAndFlush, sessionTerms } satisfies SearchPanelExposed)
 
 // === History row 量測：獨立一份 useBilingualWrap，container 是 history row 自己 ===
 // SearchTermRows 內 namespace rows 各自有量測，跟 history row 互不干擾
@@ -146,7 +125,7 @@ interface HistoryTerm { positive: string; display: string; zh: string; en: strin
 // fallback 到英文。dbReady 翻 true 後要重算才能切到 CJK 翻譯，不然要使用者點
 // 兩次 toggle 才會變中文（第一次切走、第二次切回時 tagDb 已載入）
 const historyDisplays = computed<HistoryTerm[]>(() => {
-  void dbReady.value
+  void tagDbVersion.value
   return visibleHistory.value.map(positive => {
     const texts = historyEntryTexts(positive)
     // history chip 沒有 misc / namespace 之分，cloneLabel 跟 display 同源
@@ -220,6 +199,7 @@ async function onSearchClick(): Promise<void> {
     :class="{ 'eqt-search-panel--editing': editing }"
   >
     <SearchTermRows
+      flat
       :model-value="modelValue"
       :session-terms="sessionTerms"
       :editing="editing"
@@ -232,7 +212,7 @@ async function onSearchClick(): Promise<void> {
     <div
       v-if="enableHistory && historyDisplays.length"
       ref="historyContainerRef"
-      class="eqt-search-panel__history-row"
+      class="eqt-search-panel__row"
     >
       <div class="eqt-search-panel__label">{{ t('tagbar.history') }}:</div>
       <div class="eqt-search-panel__cells">
@@ -303,27 +283,21 @@ async function onSearchClick(): Promise<void> {
 </template>
 
 <style lang="scss">
-// SearchPanel root 改 flex column：SearchTermRows / history row / controls-row
-// 垂直排。每塊自帶 layout（SearchTermRows 是 grid、history row 是 grid、
-// controls-row 是 flex）。namespace label 跟 history label 跨 grid 不嚴格對齊，
-// 視覺差距通常小（label 翻譯字寬接近），接受
+// Panel root 是 outer grid auto 1fr：SearchTermRows（flat 模式）攤平內部 namespace
+// row、history row（display: contents）、controls-row（跨欄）全部共用同一 grid
+// column，label 跨 row 自動對齊
 .eqt-search-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-// History row 自帶 grid，layout 跟 SearchTermRows 內 row 相同：label 自然寬度、
-// cells 撐滿剩餘
-.eqt-search-panel__history-row {
   display: grid;
   grid-template-columns: auto 1fr;
   column-gap: 8px;
+  row-gap: 4px;
   align-items: start;
 }
 
-// 工具列：左群組（lang toggle + clear history）／右群組（clear search + search + 新增）
+// 工具列：左群組（lang toggle + clear history）／右群組（clear search + search + 新增）。
+// grid-column: 1 / -1 跨完整寬度——這是 outer grid 共用 column 換來的成本
 .eqt-search-panel__controls-row {
+  grid-column: 1 / -1;
   display: flex;
   align-items: center;
   justify-content: space-between;

@@ -1,5 +1,5 @@
 import { ref, onMounted, type Ref, type WatchSource } from 'vue'
-import { useResizeObserver } from '@vueuse/core'
+import { useResizeObserver, useEventListener } from '@vueuse/core'
 import { useTextMeasure } from '@/composables/useTextMeasure'
 
 // === 中英 wrap 對齊：JS chunk 模擬 flex-wrap ===
@@ -74,7 +74,12 @@ export function useBilingualWrap(opts: UseBilingualWrapOptions) {
     if (firstRow) containerWidth.value = firstRow.clientWidth
   }
 
+  // containerRef 可能是 display: contents 元素（SearchTermRows flat 模式）——
+  // ResizeObserver 對沒 layout box 的元素不 fire，所以額外掛 window resize 當
+  // fallback。對普通 box container（AddTagPopup 內的獨立 grid）也無害、頂多兩條
+  // 路徑都觸發 refresh，refreshContainerWidth 是 idempotent
   useResizeObserver(opts.containerRef, refreshContainerWidth)
+  useEventListener(window, 'resize', refreshContainerWidth)
   onMounted(refreshContainerWidth)
 
   return {

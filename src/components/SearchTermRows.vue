@@ -13,7 +13,7 @@ import { computed, ref } from 'vue'
 import Draggable from 'vuedraggable'
 import { parseTerm, serializeTerm, type Prefix } from '@/services/searchSyntax'
 import { tokenize, tokenIdentity, getNextRightClickState, setTagState, buildIdentityIndex } from '@/services/tagState'
-import { findEntryByNsTag, DEFAULT_NS_ORDER } from '@/services/tagDb'
+import { findEntryByNsTag, DEFAULT_NS_ORDER, tagDbVersion } from '@/services/tagDb'
 import { t } from '@/composables/useI18n'
 import { baseDragOptions, EQT_TAGS_GROUP } from '@/utils/drag'
 import { useBilingualWrap } from '@/composables/useBilingualWrap'
@@ -25,6 +25,13 @@ const props = defineProps<{
   modelValue: string
   sessionTerms: TermEntry[]
   editing?: boolean
+  // caller 已算好 identityIndex 時傳進來（避免同個 modelValue 在 caller 跟這層
+  // 各 build 一份）。AddTagPopup 用此路徑；SearchPanel 沒算就讓我自己 build
+  identityIndex?: Map<string, string | null>
+  // flat=true 時 root 用 display: contents，row label / cells 攤平到 caller 的
+  // outer grid——SearchPanel 用此模式讓 namespace label 跟 history label 跨 row
+  // 對齊。AddTagPopup 不傳（自帶 grid，獨立的工作區視窗）
+  flat?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -40,7 +47,7 @@ const MISC_KEY = null
 
 const { effectiveShowCJK, cjkDisplay } = useDisplayConfig()
 
-const identityIndex = computed(() => buildIdentityIndex(tokenize(props.modelValue)))
+const identityIndex = computed(() => props.identityIndex ?? buildIdentityIndex(tokenize(props.modelValue)))
 
 interface TermInfo {
   positive: string
@@ -87,6 +94,11 @@ function stateOf(positive: string): TagState {
 }
 
 const groups = computed<TermGroup[]>(() => {
+  // tagDbVersion 是 async loadTagDb 完成的 reactive signal——沒這條的話，URL 帶
+  // ?f_search 進頁面時 findEntryByNsTag 第一輪回 undefined，DB 載完後 computed
+  // 因為沒有依賴變動不會重算，CJK 名定格在英文 raw
+  void tagDbVersion.value
+
   const buckets = new Map<string | null, TermInfo[]>()
 
   function pushTerm(positive: string, state: TagState): void {
@@ -212,7 +224,7 @@ function cloneToButton({ literal, cloneLabel }: { literal: string; cloneLabel: s
   <div
     ref="containerRef"
     class="eqt-search-panel-rows"
-    :class="{ 'eqt-search-panel-rows--editing': editing }"
+    :class="{ 'eqt-search-panel-rows--editing': editing, 'eqt-search-panel-rows--flat': flat }"
   >
     <div
       v-for="group in groupRows"
@@ -250,9 +262,9 @@ function cloneToButton({ literal, cloneLabel }: { literal: string; cloneLabel: s
 </template>
 
 <style lang="scss">
-// .eqt-search-panel-rows 是 SearchTermRows 自家 grid，namespace label / cells 在
-// 同一 grid 對齊。SearchPanel 內 history row 是 sibling、有自己的 grid，跨 grid
-// label 不嚴格對齊（namespace label 跟 history label 寬度差距通常小）
+// .eqt-search-panel-rows 預設自帶 grid（AddTagPopup 場景：獨立工作區視窗）。
+// flat 模式（SearchPanel 場景）改 display: contents，把 row 攤到 caller 的
+// outer grid，namespace label 跟 history label 跨 row 共用 column 自動對齊
 //
 // 視覺契約 class（__row / __label / __cells / __button）保留 eqt-search-panel__*
 // 前綴：跟 SearchPanel 內 history row 共用一套 CSS、修動時兩處都看到效果
@@ -262,6 +274,10 @@ function cloneToButton({ literal, cloneLabel }: { literal: string; cloneLabel: s
   column-gap: 8px;
   row-gap: 4px;
   align-items: start;
+}
+
+.eqt-search-panel-rows--flat {
+  display: contents;
 }
 
 .eqt-search-panel__row {

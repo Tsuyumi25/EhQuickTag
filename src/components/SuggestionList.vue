@@ -23,19 +23,18 @@ const emit = defineEmits<{
   ctxmenu: [entry: TagEntry]
 }>()
 
-// state → class 對照表，跟 SearchTermRows 同套色系
-const STATE_CLASS: Record<TagState, string> = {
+// state → class 對照表：Off 不列（Off 視同無 state、不上色），所以用 Partial
+// 而非 Record——比舊版「Off 條目掛在 map 上但 stateClassOf 短路掉」乾淨
+const STATE_CLASS: Partial<Record<TagState, string>> = {
   [TagState.Include]: 'eqt-popup__suggestion--include',
   [TagState.Or]:      'eqt-popup__suggestion--or',
   [TagState.Exclude]: 'eqt-popup__suggestion--exclude',
-  [TagState.Off]:     'eqt-popup__suggestion--off',
 }
 
 function stateClassOf(entry: TagEntry): string | undefined {
   if (!props.entryStates) return undefined
   const s = props.entryStates.get(entry.fullTag)
-  if (s === undefined || s === TagState.Off) return undefined
-  return STATE_CLASS[s]
+  return s !== undefined ? STATE_CLASS[s] : undefined
 }
 
 // mousedown 路徑：只接 left button。右鍵 mousedown 在某些平台也會 fire，這裡

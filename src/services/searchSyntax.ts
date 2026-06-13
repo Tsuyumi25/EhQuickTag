@@ -212,6 +212,36 @@ export function serializeTerm(token: SearchTerm, opts?: SerializeOptions): strin
   return result
 }
 
+// ---- entry-to-token helper ----
+
+export interface SerializeEntryOptions {
+  /** namespace 顯示形式（'long'=`female:`、'short'=`f:`）。預設 'long' */
+  nsFormat?: 'long' | 'short'
+  /** 是否補 `$` 後綴（精確匹配）。預設 false */
+  exactMatch?: boolean
+}
+
+/**
+ * 把 TagEntry-like 物件序列化成合法 search token——AddTagPopup toggle 路徑跟
+ * useSearchTerm.applySuggestionPick 的 nsFormat / exactMatch / quoting 規則統一
+ * 集中在這。raw 含空格時 serializeTerm needsQuotes 分支會自動包引號
+ */
+export function serializeEntry(
+  entry: { ns: string; raw: string },
+  opts: SerializeEntryOptions = {},
+): string {
+  return serializeTerm({
+    raw: '',
+    prefix: null,
+    qualifier: null,
+    namespace: entry.ns,
+    namespaceRaw: null,
+    tag: entry.raw,
+    quoted: false,
+    suffix: opts.exactMatch ? '$' : null,
+  }, { nsFormat: opts.nsFormat ?? 'long' })
+}
+
 // ---- query-level functions ----
 
 /** Tokenization regex shared with tagState.ts — handles quoted strings with spaces */

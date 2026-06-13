@@ -1,3 +1,4 @@
+import { ref } from 'vue'
 import { GM_xmlhttpRequest } from '$'
 import { isASCII, toCN, toJP } from '@/services/cjkDict'
 import { getNhWeight } from '@/services/nhPopularity'
@@ -46,6 +47,17 @@ export interface TagEntry extends StoredEntry {
 }
 
 let entries: TagEntry[] | null = null
+
+/**
+ * Reactive version counter——loadTagDb / refreshTagDb 完成時 bump。
+ *
+ * 用途：findEntryByNsTag 純函數沒 reactive signal，當 tagDb async 載入完，
+ * 依賴它輸出的 computed 不會自動 invalidate（典型症狀：URL 帶 ?f_search 進
+ * 頁面時 chip 顯示英文 raw，等了一秒 DB 載完 chip 還是英文，要 user 動別的
+ * 東西才會翻成 CJK）。caller 在 computed 內 `void tagDbVersion.value`
+ * 建立依賴，DB ready 時自然重算
+ */
+export const tagDbVersion = ref(0)
 
 // --- HTML / text processing ---
 
@@ -146,6 +158,7 @@ export async function loadTagDb(opts: LoadTagDbOptions = {}): Promise<TagEntry[]
       // 搜尋會自然退化為「沒 intro 命中」直到下次 refreshTagDb 把新欄位填上。
       const raw = JSON.parse(cached) as Array<Partial<StoredEntry> & Pick<StoredEntry, 'fullTag' | 'ns' | 'raw' | 'name'>>
       entries = raw.map(s => addSearchFields({ ...s, introSearch: s.introSearch ?? '' }))
+      tagDbVersion.value++
       return entries
     }
   }
@@ -159,6 +172,7 @@ export async function loadTagDb(opts: LoadTagDbOptions = {}): Promise<TagEntry[]
   )
   await cacheSet(CACHE_KEY, JSON.stringify(stored))
   await cacheSet(CACHE_TS_KEY, String(Date.now()))
+  tagDbVersion.value++
 
   return entries
 }

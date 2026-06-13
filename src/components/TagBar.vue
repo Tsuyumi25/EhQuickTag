@@ -1,18 +1,25 @@
 <script setup lang="ts">
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed, inject, nextTick } from 'vue'
 import { useResizeObserver } from '@vueuse/core'
 import Draggable from 'vuedraggable'
 import { ChevronLeft, ChevronRight, ExternalLink, GripVertical, Trash2, Pencil, Check, Settings, Plus, Info } from '@lucide/vue'
 import ContentEditable from 'vue-contenteditable'
 import LineColorSwatch from '@/components/LineColorSwatch.vue'
 import SeparatorSettingsPopup from '@/components/SeparatorSettingsPopup.vue'
-import SearchPanel, { type SearchPanelExposed } from '@/components/SearchPanel.vue'
+import SearchPanel from '@/components/SearchPanel.vue'
 import { TagState, type Line, type Button, type TagButton } from '@/types'
 import { tokenize, buildIdentityIndex, getState as _getState, setTagState, getNextRightClickState } from '@/services/tagState'
 import { lines, dblClickLeft, dblClickRight, useAccentOnInclude, showSearchPanel, type DblClickAction } from '@/services/store'
 import { baseDragOptions, EQT_TAGS_GROUP } from '@/utils/drag'
+import { SearchSessionKey } from '@/composables/useSessionTerms'
 import { t } from '@/composables/useI18n'
 import { currentTagStyleClass } from '@/composables/useTagStyle'
+
+// SearchPanel 把 useSessionTerms 提升到 App.vue 後，TagBar 透過 inject 直接拿
+// dismissTerms / recordSubmitAndFlush——不再需要 searchPanelRef chain + fallback
+const session = inject(SearchSessionKey)
+if (!session) throw new Error('TagBar: SearchSessionKey not provided')
+const { dismissTerms, recordSubmitAndFlush } = session
 
 const ACTION_KEYS: Record<DblClickAction, string> = {
   search: 'tagbar.search',
@@ -111,9 +118,8 @@ async function execDblClickAction(action: DblClickAction) {
     emit('update:searchText', '')
   } else {
     // 跟 SearchPanel.onSearchClick 同邏輯：先 recordSubmit + flush 再 emit。
-    // await flush 確保 navigate 前 GM_setValue resolve（finding #3）。
-    // SearchPanel 未 mount 時 history 功能本來就不存在，optional chain no-op
-    await searchPanelRef.value?.recordSubmitAndFlush()
+    // await flush 確保 navigate 前 GM_setValue resolve（finding #3）
+    await recordSubmitAndFlush()
     emit('search', action)
   }
 }
@@ -254,15 +260,12 @@ function getState(b: TagButton): TagState {
 
 // --- normal mode handlers ---
 
-// SearchPanel ref：toggle Off 時走 SearchPanel.dismissTerms（殘留 off 灰按鈕
-// + push history），跟 SearchPanel 內部 button 被點 Off 的行為一致。
-// SearchPanel 若關閉/未 mount，fallback 走原本 emit setTagState 路徑（功能正常
-// 但不殘留 off 灰按鈕——因為沒地方顯示）
-const searchPanelRef = ref<SearchPanelExposed | null>(null)
-
+// toggle Off 走 dismissTerms（殘留 off 灰按鈕 + push history），跟 SearchPanel
+// 內部 button 被點 Off 的行為一致。useSessionTerms 提到 App.vue 後 dismissTerms
+// 永遠可用，不需要 showSearchPanel 守衛（即使 panel 視覺收起，session 邏輯仍在）
 function dispatchTransition(tags: string[], next: TagState): void {
-  if (next === TagState.Off && searchPanelRef.value) {
-    searchPanelRef.value.dismissTerms(tags)
+  if (next === TagState.Off) {
+    dismissTerms(tags)
   } else {
     emit('update:searchText', setTagState(props.searchText, tags, next))
   }
@@ -286,11 +289,6 @@ function onRightClick(event: MouseEvent, b: TagButton) {
   if (next === null) return
   dispatchTransition(b.tags, next)
 }
-
-// 暴露 searchPanelRef 給 App.vue 拿——AddTagPopup 透過這條 chain 取得 sessionTerms
-// + dismissTerms。SearchPanel 沒 mount（showSearchPanel=false）時 chain 為 null，
-// caller 端 fallback 到空 sessionTerms（chip 區看不到任何 chip，預期）
-defineExpose({ searchPanelRef })
 </script>
 
 <template>
@@ -454,7 +452,6 @@ defineExpose({ searchPanelRef })
       <div v-if="showSearchPanel" class="eqt-tag-bar__search-area">
         <span class="eqt-tag-bar__search-area-label">{{ t('tagbar.searchPanel') }}</span>
         <SearchPanel
-          ref="searchPanelRef"
           :model-value="searchText"
           :editing="editing"
           @update:model-value="emit('update:searchText', $event)"

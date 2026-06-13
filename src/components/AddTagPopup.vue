@@ -1,16 +1,15 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, computed } from 'vue'
+import { ref, watch, onMounted, computed, inject } from 'vue'
 import { loadTagDb, getFallbackEntries, DEFAULT_NS_ORDER, type TagEntry } from '@/services/tagDb'
 import { useNhWeight, nsFormat, defaultExactMatch } from '@/services/store'
 import { useTagSuggestions } from '@/composables/useTagSuggestions'
 import { usePopupBehavior } from '@/composables/usePopupBehavior'
-import { parseTerm, serializeTerm } from '@/services/searchSyntax'
+import { parseTerm, serializeEntry } from '@/services/searchSyntax'
 import { tokenize, tokenIdentity, buildIdentityIndex, getNextRightClickState, setTagState } from '@/services/tagState'
-import { nsToShort } from '@/composables/useSearchTerm'
+import { SearchSessionKey } from '@/composables/useSessionTerms'
 import { t } from '@/composables/useI18n'
 import SuggestionList from '@/components/SuggestionList.vue'
 import SearchTermRows from '@/components/SearchTermRows.vue'
-import type { TermEntry } from '@/composables/useSessionTerms'
 import { TagState } from '@/types'
 
 // === 心智模型 ===
@@ -21,20 +20,20 @@ import { TagState } from '@/types'
 //   - 中 上：input + SuggestionList（候選池，每 item 上色顯示當前 search state）
 //   - 中 下：SearchTermRows（當前 search chip，read-only 視窗）
 //
-// caller（App.vue）把 modelValue + sessionTerms（active+off）傳進來——這層只負責
-// UI 跟 toggle，state 持久化跟 history 由 SearchPanel 那邊的 useSessionTerms 管。
-// dismiss-terms emit 上拋給 caller 接到 SearchPanel.dismissTerms，走同一條 push
-// history 路徑、跟「直接從 SearchPanel chip 點 Include→Off」行為等價
+// session 從 inject 拿——App.vue 統一持有 useSessionTerms，這層 toggle 走的
+// dismissTerms 跟 SearchPanel 內部 chip toggle 是同個 instance，行為等價
 const props = defineProps<{
   modelValue: string
-  sessionTerms: TermEntry[]
 }>()
 
 const emit = defineEmits<{
   'update:modelValue': [value: string]
-  'dismiss-terms': [positives: string[]]
   close: []
 }>()
+
+const session = inject(SearchSessionKey)
+if (!session) throw new Error('AddTagPopup: SearchSessionKey not provided')
+const { sessionTerms, dismissTerms } = session
 
 const query = ref('')
 const inputEl = ref<HTMLInputElement | null>(null)
@@ -105,32 +104,24 @@ function entryStateOf(entry: TagEntry): TagState {
   return entryStates.value.get(entry.fullTag) ?? TagState.Off
 }
 
-// 把 entry 序列化成 e站合法 search token——含空格 → 自動加引號（serializeTerm
-// needsQuotes 分支），nsFormat=short → 用短前綴，defaultExactMatch → 自動補 $。
+// 把 entry 序列化成 e站合法 search token——細節（quoting / nsFormat / exactMatch）
+// 集中在 serializeEntry 內，跟 useSearchTerm.applySuggestionPick 走同一條路徑。
 // entry.fullTag 是裸 `ns:raw` 不夠用：含空格的 raw 餵 setTagState 會被空格切開
 // 成兩個 token、進 misc row（symptom：search panel 看到孤兒 chip）
 function tokenForEntry(entry: TagEntry): string {
-  const prefersShort = nsFormat.value === 'short'
-  const namespaceRaw = prefersShort ? (nsToShort(entry.ns) ?? entry.ns) : entry.ns
-  return serializeTerm({
-    raw: '',
-    prefix: null,
-    qualifier: null,
-    namespace: entry.ns,
-    namespaceRaw,
-    tag: entry.raw,
-    quoted: false,  // serializeTerm 看 tag.includes(' ') 自己決定要不要包引號
-    suffix: defaultExactMatch.value ? '$' : null,
+  return serializeEntry(entry, {
+    nsFormat: nsFormat.value,
+    exactMatch: defaultExactMatch.value,
   })
 }
 
 // === toggle 路徑：跟 SearchTermRows / TagBar 同邏輯 ===
-// Off 走 dismiss-terms 上拋（讓 caller 走 SearchPanel.dismissTerms，term 進 history）；
-// 其他態走 update:modelValue + setTagState（in-place 替換、保留位置）
+// Off 直接呼 dismissTerms（session inject 來的）→ markEntriesOff + push history +
+// emit update。其他態走 update:modelValue + setTagState（in-place 替換、保留位置）
 function applyEntryState(entry: TagEntry, next: TagState): void {
   const token = tokenForEntry(entry)
   if (next === TagState.Off) {
-    emit('dismiss-terms', [token])
+    dismissTerms([token])
   } else {
     emit('update:modelValue', setTagState(props.modelValue, [token], next))
   }
@@ -228,8 +219,9 @@ function onKeydown(e: KeyboardEvent): void {
           class="eqt-add-popup__chips"
           :model-value="modelValue"
           :session-terms="sessionTerms"
+          :identity-index="identityIndex"
           @update:model-value="emit('update:modelValue', $event)"
-          @dismiss-terms="emit('dismiss-terms', $event)"
+          @dismiss-terms="dismissTerms"
         />
       </div>
     </div>

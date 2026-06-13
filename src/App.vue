@@ -1,17 +1,36 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, provide } from 'vue'
 import TagBar from '@/components/TagBar.vue'
 import TagConfigPopup from '@/components/TagConfigPopup.vue'
 import UrlConfigPopup from '@/components/UrlConfigPopup.vue'
 import SettingsPopup from '@/components/SettingsPopup.vue'
 import AddTagPopup from '@/components/AddTagPopup.vue'
 import { GM_openInTab } from '$'
-import { removeTag } from '@/services/tagState'
 import type { Button, TagButton, UrlButton } from '@/types'
-import type { TermEntry } from '@/composables/useSessionTerms'
+import { useSessionTerms, SearchSessionKey } from '@/composables/useSessionTerms'
 import { lines, useNhWeight, fontFamily, fontWeight, profiles, activeProfileIdx, switchProfile, renameProfile, createProfile, deleteProfile, newTabActive, nsFormat, defaultExactMatch, tagDbMirror, tagDbTtlDays, type DblClickAction } from '@/services/store'
 import { loadTagDb } from '@/services/tagDb'
-import { useEhFormHost, type EhFormHost } from '@/composables/useEhFormHost'
+import { useEhFormHost } from '@/composables/useEhFormHost'
+
+// === 初始 search box 同步 + session 狀態機共用 ===
+//
+// useEhFormHost 拉到 setup 階段（過去是 onMounted）——這樣 searchText 在
+// useSessionTerms setup 之前就拿到 native input 的值，useSessionTerms 抓的
+// initialSubmittedIds snapshot 才會是「mount 那刻 URL 帶的 search」而非空字串
+//
+// userscript 在 DOMContentLoaded 後 inject，main.ts 也 await loadStore 後才
+// createApp.mount → setup 跑時 #f_search 一定存在；ehFormHost 只在某些非
+// EH 頁面（不該注入的情況）會回 null
+const ehFormHost = useEhFormHost()
+const searchInput = ehFormHost?.input ?? null
+const searchText = ref(searchInput?.value ?? '')
+const anchorReady = ref(ehFormHost !== null)
+
+const session = useSessionTerms({
+  modelValue: () => searchText.value,
+  emitUpdate: (v) => { searchText.value = v },
+})
+provide(SearchSessionKey, session)
 
 // 自訂字體 var 設在 anchor 元素而非 documentElement 上——這樣只有 #eqt-bar-anchor
 // 子樹（TagBar 整顆）能看到，#eqt-app（所有 popup 的 root）不會受影響。
@@ -57,11 +76,6 @@ function onCreateProfile(name: string) {
 function onDeleteProfile() {
   deleteProfile(activeProfileIdx.value)
 }
-
-const searchText = ref('')
-const anchorReady = ref(false)
-let searchInput: HTMLInputElement | null = null
-let ehFormHost: EhFormHost | null = null
 
 // --- tag / url config popup ---
 
@@ -159,33 +173,8 @@ function onAddToSearch() {
   showAddPopup.value = true
 }
 
-// === AddTagPopup 接線 ===
-//
-// SearchPanel 是 TagBar 內 child，AddTagPopup 在 App.vue level——chain ref 透過
-// TagBar.searchPanelRef 拿到 SearchPanelExposed，再取 sessionTerms / dismissTerms。
-// SearchPanel 沒 mount 時（showSearchPanel=false）fallback 空 sessionTerms，
-// chip 區無內容、toggle 仍能改 modelValue 但不殘留 Off chip（沒地方顯示）
-const tagBarRef = ref<InstanceType<typeof TagBar> | null>(null)
-
-const popupSessionTerms = computed<TermEntry[]>(() => {
-  // Vue defineExpose 的 instance proxy 對 ref 屬性自動 unwrap：
-  //   tagBarRef.value.searchPanelRef → SearchPanelExposed | null（已 unwrap）
-  //   sp.sessionTerms → TermEntry[]（已 unwrap）
-  // 訪問仍走 reactive proxy，依賴自動建立
-  const sp = tagBarRef.value?.searchPanelRef ?? null
-  return sp?.sessionTerms ?? []
-})
-
-function popupDismissTerms(positives: string[]): void {
-  const sp = tagBarRef.value?.searchPanelRef
-  if (sp) {
-    sp.dismissTerms(positives)
-  } else {
-    // SearchPanel 未 mount：走 modelValue 端 fallback——直接從 search 字串移除
-    // （history 推不進去，但功能不破）
-    searchText.value = removeTag(searchText.value, positives)
-  }
-}
+// AddTagPopup 不再需要 prop 傳 sessionTerms / dismiss-terms callback——
+// 直接從 inject(SearchSessionKey) 拿 session（跟 SearchPanel / TagBar 同源）
 
 function onSearch(action: DblClickAction) {
   if (!searchInput?.form) return
@@ -199,20 +188,22 @@ function onSearch(action: DblClickAction) {
 }
 
 // --- search box sync ---
+//
+// addEventListener / loadTagDb 都不依賴 Vue mount，可以 setup 階段就跑——
+// 但 applyFontVars 改 anchor 上的 CSS var，anchor 已在 useEhFormHost 內建好，
+// 也能 setup 階段套。保留 onMounted 只跑一次是因為 watch([fontFamily, fontWeight])
+// 不 immediate，得手動觸發一次
+
+if (searchInput) {
+  searchInput.addEventListener('input', () => {
+    searchText.value = searchInput.value
+  })
+}
+
+loadTagDb({ mirror: tagDbMirror.value, ttlDays: tagDbTtlDays.value })
 
 onMounted(() => {
-  loadTagDb({ mirror: tagDbMirror.value, ttlDays: tagDbTtlDays.value })
-  ehFormHost = useEhFormHost()
-  if (!ehFormHost) return
-
-  searchInput = ehFormHost.input
-  searchText.value = searchInput.value
-  searchInput.addEventListener('input', () => {
-    searchText.value = searchInput!.value
-  })
-
-  applyFontVars()  // 初次 apply：watch 不 immediate，由這裡套上當前 fontFamily/Weight
-  anchorReady.value = true
+  applyFontVars()
 })
 
 // 純轉接層：template @controls-width 沒辦法直接綁 ehFormHost?.setControlsWidth
@@ -231,7 +222,6 @@ watch(searchText, (val) => {
 <template>
   <Teleport v-if="anchorReady" to="#eqt-bar-anchor">
     <TagBar
-      ref="tagBarRef"
       :profile-name="profiles[activeProfileIdx]?.name ?? ''"
       :profile-idx="activeProfileIdx"
       :profile-count="profiles.length"
@@ -285,8 +275,6 @@ watch(searchText, (val) => {
   <AddTagPopup
     v-if="showAddPopup"
     v-model="searchText"
-    :session-terms="popupSessionTerms"
-    @dismiss-terms="popupDismissTerms"
     @close="showAddPopup = false"
   />
 </template>
