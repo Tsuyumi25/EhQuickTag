@@ -21,6 +21,16 @@ interface StoredEntry {
   ns: string
   raw: string
   name: string
+  /**
+   * EhTagTranslation 的 intro + links 欄位 stripped + lowercased，用 \0 串接。
+   *
+   * 為什麼搜這欄：intro 通常寫 cross-reference，例如 `thigh high boots` 的 intro
+   * 提到 stockings，使得 query `stock` 能命中相關 tag（跟 EhSyringe 一致）。
+   *
+   * 舊版（commit 458d707 之前）有，後來砍掉是基於「搜尋只需 raw+name」假設，
+   * 現在反例出現，加回。
+   */
+  introSearch: string
 }
 
 /** StoredEntry + pre-computed search fields (never serialized to cache). */
@@ -79,7 +89,11 @@ function buildIndex(db: DbJson): TagEntry[] {
 
     for (const [raw, info] of Object.entries(section.data)) {
       const name = removeEmojiAndImages(info.name)
-      result.push(addSearchFields({ fullTag: `${ns}:${raw}`, ns, raw, name }))
+      // \0 串接避免 intro 結尾跟 links 開頭黏在一起產生 false hit
+      let introSearch = ''
+      if (info.intro) introSearch += '\0' + stripHtml(info.intro).toLowerCase()
+      if (info.links) introSearch += '\0' + stripHtml(info.links).toLowerCase()
+      result.push(addSearchFields({ fullTag: `${ns}:${raw}`, ns, raw, name, introSearch }))
     }
   }
 
@@ -126,7 +140,10 @@ export async function loadTagDb(opts: LoadTagDbOptions = {}): Promise<TagEntry[]
   if (Date.now() - cachedTs < ttl) {
     const cached = await cacheGet(CACHE_KEY)
     if (cached) {
-      entries = (JSON.parse(cached) as StoredEntry[]).map(addSearchFields)
+      // 舊版 cache 沒 introSearch 欄位（commit 458d707 之前後又移除過）；缺值補空字串，
+      // 搜尋會自然退化為「沒 intro 命中」直到下次 refreshTagDb 把新欄位填上。
+      const raw = JSON.parse(cached) as Array<Partial<StoredEntry> & Pick<StoredEntry, 'fullTag' | 'ns' | 'raw' | 'name'>>
+      entries = raw.map(s => addSearchFields({ ...s, introSearch: s.introSearch ?? '' }))
       return entries
     }
   }
@@ -135,8 +152,8 @@ export async function loadTagDb(opts: LoadTagDbOptions = {}): Promise<TagEntry[]
   const db: DbJson = JSON.parse(raw)
   entries = buildIndex(db)
 
-  const stored: StoredEntry[] = entries.map(({ fullTag, ns, raw: r, name }) =>
-    ({ fullTag, ns, raw: r, name }),
+  const stored: StoredEntry[] = entries.map(({ fullTag, ns, raw: r, name, introSearch }) =>
+    ({ fullTag, ns, raw: r, name, introSearch }),
   )
   await cacheSet(CACHE_KEY, JSON.stringify(stored))
   await cacheSet(CACHE_TS_KEY, String(Date.now()))
@@ -174,8 +191,9 @@ export function findEntryByNsTag(ns: string, tag: string): TagEntry | undefined 
 
 // Match tier: how well does the search term match the tag?
 const enum MatchTier {
-  Prefix = 0,    // tag starts with search term
-  WordStart = 1, // a word in the tag starts with search term
+  Prefix = 0,         // tag starts with search term
+  WordStart = 1,      // a word in the tag starts with search term
+  IntroSubstring = 2, // search term found in intro/links cross-reference
 }
 
 /** Default namespace order (index = tier). */
@@ -208,6 +226,11 @@ function getMatchTier(entry: TagEntry, search: string, searchIsAscii: boolean): 
   }
   // CJK name substring: CJK has no word boundaries, so includes is needed
   if (!searchIsAscii && entry.nameLow.includes(search)) return MatchTier.WordStart
+
+  // intro substring：EhTagTranslation intro 通常含 cross-reference（例如 thigh high
+  // boots 的 intro 提到 stockings），讓 query `stock` 命中相關 tag。tier 排在 WordStart
+  // 後，避免 intro 噪音蓋過真實命中
+  if (entry.introSearch && entry.introSearch.includes(search)) return MatchTier.IntroSubstring
   return null
 }
 
