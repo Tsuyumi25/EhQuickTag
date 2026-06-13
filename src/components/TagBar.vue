@@ -490,6 +490,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
 
           <button
             class="eqt-tag-bar__ctrl eqt-tag-bar__ctrl--toggle"
+            :class="{ 'is-active': editing }"
             type="button"
             @click="editing = !editing"
           ><span :class="{ 'eqt-tag-bar__ctrl-hidden': !editing }"><Check :size="12" /> {{ t('tagbar.done') }}</span><span :class="{ 'eqt-tag-bar__ctrl-hidden': editing }"><Pencil :size="12" /> {{ t('tagbar.edit') }}</span></button>
@@ -1116,6 +1117,15 @@ function onRightClick(event: MouseEvent, b: TagButton) {
         display: inline-flex;
         align-items: center;
         gap: 4px;
+      }
+
+      // editing 時 bg 填成 border 色——border 跟 bg 同色變實心填充，
+      // 從外圍快速一瞄就能看出當前在編輯模式（不用先讀「完成 / 編輯」文字）。
+      // hover 也維持同色，否則 hover overlay 會把實心填充蓋掉、看起來像
+      // 退出了 editing 狀態
+      &.is-active,
+      &.is-active:hover {
+        background: var(--eqt-border);
       }
     }
   }
