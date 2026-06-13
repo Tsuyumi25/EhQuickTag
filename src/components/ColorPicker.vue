@@ -163,7 +163,6 @@ function onCopyRgb() { if (rgbText.value) rgbClip.copy(rgbText.value) }
 
     &:focus {
       outline: none;
-      border-color: var(--eqt-border-focus);
     }
   }
 

@@ -885,7 +885,6 @@ function onEditorPurge() {
 
     &:focus {
       outline: none;
-      border-color: var(--eqt-border-focus);
     }
 
     &--full {

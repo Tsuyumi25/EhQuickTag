@@ -560,8 +560,7 @@ const simOutput = computed(() => {
     color: var(--eqt-text);
 
     &:focus {
-      outline: 1px solid var(--eqt-border-focus);
-      outline-offset: -1px;
+      outline: none;
     }
   }
 }

@@ -1028,7 +1028,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
   &__profile-input {
     flex: 5;
     padding: 0;
-    border: var(--eqt-border-width) solid var(--eqt-border-focus);
+    border: var(--eqt-border-width) solid var(--eqt-border);
     border-radius: 3px;
     background: var(--eqt-bg);
     color: var(--eqt-text-secondary);

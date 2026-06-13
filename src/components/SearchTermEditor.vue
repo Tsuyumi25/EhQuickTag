@@ -258,7 +258,6 @@ const qualifierOptions = Array.from(QUALIFIER_SET).map(q => ({ value: `q:${q}`, 
 
   &:focus {
     outline: none;
-    border-color: var(--eqt-border-focus);
   }
 
   &--colon {
@@ -381,7 +380,6 @@ const qualifierOptions = Array.from(QUALIFIER_SET).map(q => ({ value: `q:${q}`, 
 
   &:focus {
     outline: none;
-    border-color: var(--eqt-border-focus);
   }
 
   &:empty::before {

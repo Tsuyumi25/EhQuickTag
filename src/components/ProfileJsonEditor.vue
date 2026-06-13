@@ -185,7 +185,6 @@ function onEditorExport() {
 
     &:focus {
       outline: none;
-      border-color: var(--eqt-border-focus);
     }
   }
 

@@ -77,10 +77,6 @@
       content: attr(data-placeholder);
       color: var(--eqt-text-hint);
     }
-
-    &:focus {
-      border-color: var(--eqt-border-focus);
-    }
   }
 
   &__label-row {
@@ -208,7 +204,6 @@
 
     &:focus {
       outline: none;
-      border-color: var(--eqt-border-focus);
     }
   }
 

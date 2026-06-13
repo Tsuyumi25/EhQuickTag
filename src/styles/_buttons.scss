@@ -98,16 +98,9 @@
 
 // ── 語意 action button ──
 
-// Primary action（綠色填充 + 白字）
+// Primary action：跟 __ctrl 共用 toned 樣式，統一非強調風格
 @mixin btn-primary {
-  @include btn-base;
-  border: var(--eqt-border-width) solid var(--eqt-primary-hover);
-  background: var(--eqt-primary);
-  color: var(--eqt-on-primary);
-
-  &:hover:not(:disabled) {
-    background: var(--eqt-primary-hover);
-  }
+  @include btn-toned;
 }
 
 // Destructive action（紅色填充 + 白字）
