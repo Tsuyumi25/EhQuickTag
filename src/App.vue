@@ -32,17 +32,21 @@ const session = useSessionTerms({
 })
 provide(SearchSessionKey, session)
 
-// 自訂字體 var 設在 anchor 元素而非 documentElement 上——這樣只有 #eqt-bar-anchor
-// 子樹（TagBar 整顆）能看到，#eqt-app（所有 popup 的 root）不會受影響。
-// preview 區（appearance tab 跟 JSON editor 內）走 inline style 直接讀 ref，
-// 也不依賴這個 var。
+// 自訂字體 var 設在兩個 mount 點上而非 documentElement：
+//   #eqt-bar-anchor → TagBar
+//   #eqt-app        → 所有 popup（含 SearchPopup、SettingsPopup 內 preview）
+// 兩處都 set 後，theme.scss 內既有的 `font-family/weight: var(... , inherit)`
+// 規則自動消費，子元件不必各自 inline-style 重複實作。
+// scope 限定在這兩個容器（不汙染 documentElement），EH 全站樣式不受影響。
 function applyFontVars(): void {
-  const el = ehFormHost?.anchor
-  if (!el) return
-  if (fontFamily.value) el.style.setProperty('--eqt-font-family', fontFamily.value)
-  else el.style.removeProperty('--eqt-font-family')
-  if (fontWeight.value) el.style.setProperty('--eqt-font-weight', fontWeight.value)
-  else el.style.removeProperty('--eqt-font-weight')
+  const els = [ehFormHost?.anchor, document.getElementById('eqt-app')]
+    .filter((el): el is HTMLElement => el !== null && el !== undefined)
+  for (const el of els) {
+    if (fontFamily.value) el.style.setProperty('--eqt-font-family', fontFamily.value)
+    else el.style.removeProperty('--eqt-font-family')
+    if (fontWeight.value) el.style.setProperty('--eqt-font-weight', fontWeight.value)
+    else el.style.removeProperty('--eqt-font-weight')
+  }
 }
 
 watch([fontFamily, fontWeight], applyFontVars)

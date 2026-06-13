@@ -445,7 +445,7 @@ function onEditorPurge() {
             </div>
 
             <h4 class="eqt-settings__subtitle">{{ t('settings.preview') }}</h4>
-            <div class="eqt-settings__font-preview" :class="currentTagStyleClass" :style="{ fontFamily: fontFamily || 'inherit', fontWeight: fontWeight || 'inherit' }">
+            <div class="eqt-settings__font-preview" :class="currentTagStyleClass">
               <template v-for="(line, li) in previewLines" :key="li">
                 <div v-if="line.kind === 'buttons' && line.buttons.length" class="eqt-settings__preview-line">
                   <span

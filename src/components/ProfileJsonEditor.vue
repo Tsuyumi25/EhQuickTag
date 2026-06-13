@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import { useClipboard, useTimeoutFn } from '@vueuse/core'
 import { Copy, Download, Check } from '@lucide/vue'
 import type { Line } from '@/types'
-import { isValidLine, fontFamily, fontWeight } from '@/services/store'
+import { isValidLine } from '@/services/store'
 import { t } from '@/composables/useI18n'
 import { currentTagStyleClass } from '@/composables/useTagStyle'
 
@@ -85,7 +85,6 @@ function onEditorExport() {
       v-if="editorPreview"
       class="eqt-settings__font-preview eqt-json-editor__preview"
       :class="currentTagStyleClass"
-      :style="{ fontFamily: fontFamily || 'inherit', fontWeight: fontWeight || 'inherit' }"
     >
       <template v-for="(line, li) in editorPreview" :key="li">
         <div v-if="line.kind === 'buttons' && line.buttons.length" class="eqt-settings__preview-line">

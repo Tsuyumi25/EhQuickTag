@@ -91,6 +91,8 @@ async function onSearchClick(): Promise<void> {
 </template>
 
 <style lang="scss">
+@use '../styles/buttons' as *;
+
 // 工具列：左群組 / 中間 addToSearch 撐滿剩餘寬度 / 右群組。
 // addToSearch 不顯示時自然剩兩 group，space-between 把它們推到兩端
 .eqt-search-controls {
@@ -107,27 +109,15 @@ async function onSearchClick(): Promise<void> {
 }
 
 .eqt-search-controls__lang-toggle {
+  @include btn-toned;
   display: inline-grid;
-  align-items: center;
   justify-items: center;
   height: 36px;
   padding: 0 10px;
-  border: var(--eqt-border-width) solid var(--eqt-border);
-  border-radius: 4px;
-  background: transparent;
-  color: var(--eqt-text-hint);
-  cursor: pointer;
-  font-size: 12px;
   line-height: 1;
-  transition: var(--eqt-transition-base);
 
   > span {
     grid-area: 1 / 1;
-  }
-
-  &:hover {
-    color: var(--eqt-text);
-    background: var(--eqt-bg-hover);
   }
 }
 
@@ -139,26 +129,13 @@ async function onSearchClick(): Promise<void> {
 // 這是打開 SearchPopup 的主要入口，視覺上做大方便瞄準。
 // 「+」icon 用 22px 當視覺主角；label 12px 跟旁邊 text-btn 字級對齊
 .eqt-search-controls__add {
-  display: inline-flex;
+  @include btn-toned;
   flex: 1;
-  align-items: center;
-  justify-content: center;
   gap: 6px;
   height: 36px;
   padding: 0 10px;
-  border: var(--eqt-border-width) solid var(--eqt-border);
-  border-radius: 4px;
-  background: transparent;
-  color: var(--eqt-text-hint);
-  cursor: pointer;
   line-height: 1;
   white-space: nowrap;
-  transition: var(--eqt-transition-base);
-
-  &:hover {
-    color: var(--eqt-text);
-    background: var(--eqt-bg-hover);
-  }
 }
 
 .eqt-search-controls__add-icon {
@@ -171,24 +148,10 @@ async function onSearchClick(): Promise<void> {
 
 // 文字按鈕：跟 __add / __lang-toggle 同高，寬度跟著文字 + 水平 padding
 .eqt-search-controls__text-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  @include btn-toned;
   height: 36px;
   padding: 0 10px;
-  border: var(--eqt-border-width) solid var(--eqt-border);
-  border-radius: 4px;
-  background: transparent;
-  color: var(--eqt-text-hint);
-  cursor: pointer;
-  font-size: 12px;
   line-height: 1;
   white-space: nowrap;
-  transition: var(--eqt-transition-base);
-
-  &:hover {
-    color: var(--eqt-text);
-    background: var(--eqt-bg-hover);
-  }
 }
 </style>
