@@ -47,7 +47,7 @@ export interface TermEntry { positive: string; active: boolean }
 export type SearchSession = ReturnType<typeof useSessionTerms>
 
 // provide/inject 共用 session：App.vue 在 setup 階段呼叫 useSessionTerms 後
-// provide 這個 key，SearchPanel / TagBar / AddTagPopup 各自 inject。比 chain
+// provide 這個 key，SearchPanel / TagBar / SearchPopup 各自 inject。比 chain
 // ref 乾淨——SearchPanel 沒 mount 也不影響其他 consumer 拿 dismissTerms
 export const SearchSessionKey: InjectionKey<SearchSession> = Symbol('searchSession')
 

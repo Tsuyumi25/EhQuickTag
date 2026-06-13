@@ -3,8 +3,8 @@ export default {
   'common.itemColor': 'ボタンの色',
 
   // TagBar
-  'addPopup.nsFilterLabel': 'Namespace で絞り込む',
-  'addPopup.nsFilterAll': 'すべて',
+  'nsFilter.label': 'Namespace で絞り込む',
+  'nsFilter.all': 'すべて',
   'tagbar.search': '検索',
   'tagbar.searchNewTab': '新しいタブで検索',
   'tagbar.clearSearch': '検索をクリア',

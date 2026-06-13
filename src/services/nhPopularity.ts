@@ -30,7 +30,7 @@ const TAG_POOL_NS: ReadonlySet<string> = new Set(['female', 'male', 'mixed', 'ot
  * - ns 屬於 TAG_POOL_NS（f/m/x/o）→ 查 _tag 池。
  * - 其他 ns（location/cosplayer/reclass/temp）→ undefined，排序退回 nsTier + length 兜底。
  *
- * Caller：searchTags 做排序權重；getFallbackEntries 取 ranked 預設清單給 AddTagPopup。
+ * Caller：searchTags 做排序權重；getFallbackEntries 取 ranked 預設清單給 SearchPopup。
  */
 export function getNhWeight(ns: string, raw: string): number | undefined {
   const key = normalize(raw)

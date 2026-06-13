@@ -361,7 +361,7 @@ export function searchTags(query: string, opts: SearchOptions = {}): TagEntry[] 
 }
 
 /**
- * 給 AddTagPopup 當「空查詢預設清單」的 ranked entries。
+ * 給 SearchPopup 當「空查詢預設清單」的 ranked entries。
  *
  * 不像舊版只撈有 nh 對應的 entry——本函式回傳**所有** entries（受 namespaces filter），
  * 用 nh 上傳量當 tie-breaker 把熱門的拉到前面、其他附在後。這樣 popup 點 namespace

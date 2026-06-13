@@ -5,7 +5,7 @@
 //
 // 兩個 caller：
 //   - SearchPanel：editing 模式下可拖出 chip → TagBar
-//   - AddTagPopup：read-only（editing=false），純當「當前搜尋狀態」的視窗
+//   - SearchPopup：read-only（editing=false），純當「當前搜尋狀態」的視窗
 </script>
 
 <script setup lang="ts">
@@ -26,11 +26,11 @@ const props = defineProps<{
   sessionTerms: TermEntry[]
   editing?: boolean
   // caller 已算好 identityIndex 時傳進來（避免同個 modelValue 在 caller 跟這層
-  // 各 build 一份）。AddTagPopup 用此路徑；SearchPanel 沒算就讓我自己 build
+  // 各 build 一份）。SearchPopup 用此路徑；SearchPanel 沒算就讓我自己 build
   identityIndex?: Map<string, string | null>
   // flat=true 時 root 用 display: contents，row label / cells 攤平到 caller 的
   // outer grid——SearchPanel 用此模式讓 namespace label 跟 history label 跨 row
-  // 對齊。AddTagPopup 不傳（自帶 grid，獨立的工作區視窗）
+  // 對齊。SearchPopup 不傳（自帶 grid，獨立的工作區視窗）
   flat?: boolean
 }>()
 
@@ -262,7 +262,7 @@ function cloneToButton({ literal, cloneLabel }: { literal: string; cloneLabel: s
 </template>
 
 <style lang="scss">
-// .eqt-search-panel-rows 預設自帶 grid（AddTagPopup 場景：獨立工作區視窗）。
+// .eqt-search-panel-rows 預設自帶 grid（SearchPopup 場景：獨立工作區視窗）。
 // flat 模式（SearchPanel 場景）改 display: contents，把 row 攤到 caller 的
 // outer grid，namespace label 跟 history label 跨 row 共用 column 自動對齊
 //

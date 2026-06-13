@@ -222,7 +222,7 @@ export interface SerializeEntryOptions {
 }
 
 /**
- * 把 TagEntry-like 物件序列化成合法 search token——AddTagPopup toggle 路徑跟
+ * 把 TagEntry-like 物件序列化成合法 search token——SearchPopup toggle 路徑跟
  * useSearchTerm.applySuggestionPick 的 nsFormat / exactMatch / quoting 規則統一
  * 集中在這。raw 含空格時 serializeTerm needsQuotes 分支會自動包引號
  */

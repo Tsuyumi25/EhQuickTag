@@ -3,8 +3,8 @@ export default {
   'common.itemColor': '按钮颜色',
 
   // TagBar
-  'addPopup.nsFilterLabel': '按 namespace 筛选',
-  'addPopup.nsFilterAll': '全部',
+  'nsFilter.label': '按 namespace 筛选',
+  'nsFilter.all': '全部',
   'tagbar.search': '搜索',
   'tagbar.searchNewTab': '新标签页搜索',
   'tagbar.clearSearch': '清空搜索框',

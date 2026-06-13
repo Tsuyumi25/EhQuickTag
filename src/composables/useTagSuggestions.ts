@@ -7,7 +7,7 @@ import type { Qualifier } from '@/services/searchSyntax'
  *
  * 兩個 caller 共用：
  *   - TagAutocomplete（dropdown 模式，empty query → 空清單）
- *   - AddTagPopup（fzf 模式，empty query → 用 emptyFallback 給的清單，例如 nh top 500）
+ *   - SearchPopup（fzf 模式，empty query → 用 emptyFallback 給的清單，例如 nh top 500）
  *
  * 用 getter 收參數避免要求 caller 必須給 ref——caller 那邊 props 是 reactive 但
  * 不是 ref，這樣寫不用 toRef 包裝。
@@ -16,7 +16,7 @@ export interface UseTagSuggestionsOptions {
   query: () => string
   qualifier?: () => Qualifier | null
   useNhWeight: () => boolean
-  /** popup-local 篩選；AddTagPopup 用此跟 namespace 篩選按鈕綁定 */
+  /** popup-local 篩選；SearchPopup 用此跟 namespace 篩選按鈕綁定 */
   namespaces?: () => readonly string[] | undefined
   emptyFallback?: () => TagEntry[]
   debounceMs?: number
@@ -64,7 +64,7 @@ export function useTagSuggestions(opts: UseTagSuggestionsOptions) {
   )
 
   // fallback 單獨用 shallow watcher：caller 給的 fallback 通常是 `() => someRef.value`，
-  // someRef 後到位（譬如 AddTagPopup 的 topNh 在 onMounted 才填好）就 retrigger。
+  // someRef 後到位（譬如 SearchPopup 的 topNh 在 onMounted 才填好）就 retrigger。
   // 不能塞進主 watcher 然後 deep:true，因為 topNh 是 500 筆 TagEntry 物件、每筆 7+ 個欄位，
   // deep walk 太貴；用 reference identity 比較就夠（topNh.value 重新 assign 後 ref 變了）。
   if (opts.emptyFallback) {

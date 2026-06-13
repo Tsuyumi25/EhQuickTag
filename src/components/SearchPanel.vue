@@ -3,7 +3,7 @@ import { computed, ref, inject } from 'vue'
 import Draggable from 'vuedraggable'
 import { parseTerm } from '@/services/searchSyntax'
 import { tokenize, tokenIdentity } from '@/services/tagState'
-import { lines, searchPanelShowCJK as showCJK, enableHistory } from '@/services/store'
+import { lines, enableHistory } from '@/services/store'
 import { findEntryByNsTag, tagDbVersion } from '@/services/tagDb'
 import { t } from '@/composables/useI18n'
 import { baseDragOptions, EQT_TAGS_GROUP } from '@/utils/drag'
@@ -11,6 +11,7 @@ import { SearchSessionKey } from '@/composables/useSessionTerms'
 import { useBilingualWrap } from '@/composables/useBilingualWrap'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
 import SearchTermRows from '@/components/SearchTermRows.vue'
+import SearchControls from '@/components/SearchControls.vue'
 import type { TagButton } from '@/types'
 
 const props = defineProps<{
@@ -28,14 +29,8 @@ const emit = defineEmits<{
   'drag-end': []
 }>()
 
-// term 顯示語言：預設跟 locale 走、可在 controls-row 用 toggle 按鈕 override。
-// 持久化到 GM storage（store 的 searchPanelShowCJK），跨頁 / 重開瀏覽器後
-// 維持上次選擇。store 端命名比較具體、檔案內 alias 成 showCJK 用習慣的短名
-function toggleLang(): void { showCJK.value = !showCJK.value }
-
-// resolvedMode / effectiveShowCJK 跟 SuggestionList / SearchTermRows 共用一份解析
-// 邏輯（useDisplayConfig）。改邏輯一處到位
-const { resolvedMode, effectiveShowCJK, cjkDisplay } = useDisplayConfig()
+// effectiveShowCJK 跟 SuggestionList / SearchTermRows 共用一份解析邏輯（useDisplayConfig）
+const { effectiveShowCJK, cjkDisplay } = useDisplayConfig()
 
 // === sessionTerms / history 狀態機從 App.vue inject ===
 //
@@ -47,7 +42,7 @@ if (!session) throw new Error('SearchPanel: SearchSessionKey not provided')
 const {
   sessionTerms, history,
   sessionIdentitySet,
-  dismissTerms, clearSearch, clearHistory, recordSubmitAndFlush,
+  dismissTerms,
   onRestoreHistory, onHistoryChange,
 } = session
 
@@ -180,17 +175,6 @@ function onHistoryClick(positive: string): void {
   if (props.editing) return
   onRestoreHistory(positive)
 }
-
-function onAddClick(): void { emit('addToSearch') }
-// 送出前先把當前 A 推進 H + sync flush GM storage：
-//   - navigate 走後新頁面 mount 也會在 loadHistory 補一次，但若不 await flush，
-//     form.submit() 同步 navigate 跟 cacheSet async write 會競賽（finding #3）
-//   - searchNewTab 路徑當前 tab 不 navigate，flush 也只是把 100ms debounce 提前
-//     觸發，無副作用
-async function onSearchClick(): Promise<void> {
-  await recordSubmitAndFlush()
-  emit('search')
-}
 </script>
 
 <template>
@@ -241,44 +225,16 @@ async function onSearchClick(): Promise<void> {
       </div>
     </div>
 
-    <div class="eqt-search-panel__controls-row">
-      <div class="eqt-search-panel__controls-group">
-        <button
-          v-if="resolvedMode === 'toggle'"
-          class="eqt-search-panel__lang-toggle"
-          type="button"
-          :title="t('tagbar.toggleLang')"
-          @click="toggleLang"
-        ><span :class="{ 'eqt-search-panel__lang-hidden': !showCJK }">中文</span><span :class="{ 'eqt-search-panel__lang-hidden': showCJK }">EN</span></button>
-        <button
-          v-if="enableHistory"
-          class="eqt-search-panel__text-btn"
-          type="button"
-          data-testid="clear-history"
-          @click="clearHistory"
-        >{{ t('tagbar.clearHistory') }}</button>
-      </div>
-      <button
-        class="eqt-search-panel__add"
-        type="button"
-        :title="t('tagbar.findTag')"
-        @click="onAddClick"
-      ><span class="eqt-search-panel__add-icon">+</span><span class="eqt-search-panel__add-label">{{ t('tagbar.findTag') }}</span></button>
-      <div class="eqt-search-panel__controls-group">
-        <button
-          class="eqt-search-panel__text-btn"
-          type="button"
-          data-testid="clear-search"
-          @click="clearSearch"
-        >{{ t('tagbar.clearSearch') }}</button>
-        <button
-          class="eqt-search-panel__text-btn"
-          type="button"
-          data-testid="search-submit"
-          @click="onSearchClick"
-        >{{ t('tagbar.search') }}</button>
-      </div>
-    </div>
+    <SearchControls
+      class="eqt-search-panel__controls"
+      show-lang-toggle
+      show-clear-history
+      show-add-to-search
+      show-clear-search
+      show-search
+      @add-to-search="emit('addToSearch')"
+      @search="emit('search')"
+    />
   </div>
 </template>
 
@@ -294,106 +250,9 @@ async function onSearchClick(): Promise<void> {
   align-items: start;
 }
 
-// 工具列：左群組（lang toggle + clear history）／右群組（clear search + search + 新增）。
-// grid-column: 1 / -1 跨完整寬度——這是 outer grid 共用 column 換來的成本
-.eqt-search-panel__controls-row {
+// SearchControls 在 outer grid 內當第三個 row，跨整列。視覺樣式由 SearchControls
+// 自家 CSS 負責，這層只給跨欄定位
+.eqt-search-panel__controls {
   grid-column: 1 / -1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.eqt-search-panel__controls-group {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.eqt-search-panel__lang-toggle {
-  display: inline-grid;
-  align-items: center;
-  justify-items: center;
-  height: 36px;
-  padding: 0 10px;
-  border: var(--eqt-border-width) solid var(--eqt-border);
-  border-radius: 4px;
-  background: transparent;
-  color: var(--eqt-text-hint);
-  cursor: pointer;
-  font-size: 12px;
-  line-height: 1;
-  transition: var(--eqt-transition-base);
-
-  > span {
-    grid-area: 1 / 1;
-  }
-
-  &:hover {
-    color: var(--eqt-text-secondary);
-    background: var(--eqt-bg-hover);
-  }
-}
-
-.eqt-search-panel__lang-hidden {
-  visibility: hidden;
-}
-
-// 中間的「尋找標籤」按鈕：兩側 control group 之間撐滿剩餘寬度——這是打開
-// AddTagPopup 的主要入口，視覺上做大方便瞄準。
-// 「+」icon 用 22px 當視覺主角；label 12px 跟旁邊 text-btn 字級對齊
-.eqt-search-panel__add {
-  display: inline-flex;
-  flex: 1;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  height: 36px;
-  padding: 0 10px;
-  border: var(--eqt-border-width) solid var(--eqt-border);
-  border-radius: 4px;
-  background: transparent;
-  color: var(--eqt-text-hint);
-  cursor: pointer;
-  line-height: 1;
-  white-space: nowrap;
-  transition: var(--eqt-transition-base);
-
-  &:hover {
-    color: var(--eqt-text-secondary);
-    background: var(--eqt-bg-hover);
-  }
-}
-
-.eqt-search-panel__add-icon {
-  font-size: 22px;
-}
-
-.eqt-search-panel__add-label {
-  font-size: 12px;
-}
-
-// 文字按鈕：跟 __add / __lang-toggle 同高，寬度跟著文字 + 水平 padding。
-// 跟 __lang-toggle 統一 font-size 12px，視覺上是同一組控制項
-.eqt-search-panel__text-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 36px;
-  padding: 0 10px;
-  border: var(--eqt-border-width) solid var(--eqt-border);
-  border-radius: 4px;
-  background: transparent;
-  color: var(--eqt-text-hint);
-  cursor: pointer;
-  font-size: 12px;
-  line-height: 1;
-  white-space: nowrap;
-  transition: var(--eqt-transition-base);
-
-  &:hover {
-    color: var(--eqt-text-secondary);
-    background: var(--eqt-bg-hover);
-  }
 }
 </style>

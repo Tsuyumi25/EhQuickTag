@@ -76,7 +76,7 @@ export function useBilingualWrap(opts: UseBilingualWrapOptions) {
 
   // containerRef 可能是 display: contents 元素（SearchTermRows flat 模式）——
   // ResizeObserver 對沒 layout box 的元素不 fire，所以額外掛 window resize 當
-  // fallback。對普通 box container（AddTagPopup 內的獨立 grid）也無害、頂多兩條
+  // fallback。對普通 box container（SearchPopup 內的獨立 grid）也無害、頂多兩條
   // 路徑都觸發 refresh，refreshContainerWidth 是 idempotent
   useResizeObserver(opts.containerRef, refreshContainerWidth)
   useEventListener(window, 'resize', refreshContainerWidth)

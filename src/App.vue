@@ -4,7 +4,7 @@ import TagBar from '@/components/TagBar.vue'
 import TagConfigPopup from '@/components/TagConfigPopup.vue'
 import UrlConfigPopup from '@/components/UrlConfigPopup.vue'
 import SettingsPopup from '@/components/SettingsPopup.vue'
-import AddTagPopup from '@/components/AddTagPopup.vue'
+import SearchPopup from '@/components/SearchPopup.vue'
 import { GM_openInTab } from '$'
 import type { Button, TagButton, UrlButton } from '@/types'
 import { useSessionTerms, SearchSessionKey } from '@/composables/useSessionTerms'
@@ -167,13 +167,13 @@ const editingLineColor = computed(() => {
 // --- settings popup ---
 
 const showSettings = ref(false)
-const showAddPopup = ref(false)
+const showSearchPopup = ref(false)
 
 function onAddToSearch() {
-  showAddPopup.value = true
+  showSearchPopup.value = true
 }
 
-// AddTagPopup 不再需要 prop 傳 sessionTerms / dismiss-terms callback——
+// SearchPopup 不需要 prop 傳 sessionTerms / dismiss-terms callback——
 // 直接從 inject(SearchSessionKey) 拿 session（跟 SearchPanel / TagBar 同源）
 
 function onSearch(action: DblClickAction) {
@@ -272,9 +272,10 @@ watch(searchText, (val) => {
     @close="showSettings = false"
   />
 
-  <AddTagPopup
-    v-if="showAddPopup"
+  <SearchPopup
+    v-if="showSearchPopup"
     v-model="searchText"
-    @close="showAddPopup = false"
+    @search="onSearch('search')"
+    @close="showSearchPopup = false"
   />
 </template>

@@ -9,7 +9,7 @@ import { TagState } from '@/types'
 const props = defineProps<{
   suggestions: TagEntry[]
   selectedIdx: number
-  // 可選 state map（key = entry.fullTag）：AddTagPopup toggle 模式用，控制 chip
+  // 可選 state map（key = entry.fullTag）：SearchPopup toggle 模式用，控制 chip
   // 上色（include/or/exclude）。TagAutocomplete dropdown 模式不傳，項目維持中性
   entryStates?: Map<string, TagState>
 }>()
@@ -176,7 +176,7 @@ const { cjkDisplay } = useDisplayConfig()
 <style lang="scss">
 // 純清單呈現：背景、邊框、捲動、文字對齊。位置交給 caller 給的 class
 // （TagAutocomplete 套 .eqt-popup__suggestions 做 absolute dropdown；
-//   AddTagPopup 不套，直接 in-flow 撐滿 popup 主體高度）
+//   SearchPopup 不套，直接 in-flow 撐滿 popup 主體高度）
 .eqt-suggestion-list {
   background: var(--eqt-bg-elevated);
   border: var(--eqt-border-width) solid var(--eqt-border);
