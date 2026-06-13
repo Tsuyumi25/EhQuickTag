@@ -39,7 +39,7 @@
 
   &:hover:not(:disabled) {
     background: var(--eqt-bg-hover);
-    color: var(--eqt-text-secondary);
+    color: var(--eqt-text);
   }
 }
 
@@ -48,7 +48,7 @@
   @include btn-base;
   border: var(--eqt-border-width) solid var(--eqt-border);
   background: transparent;
-  color: var(--eqt-text-secondary);
+  color: var(--eqt-text);
 
   &:hover:not(:disabled) {
     background: var(--eqt-bg-hover);
@@ -74,7 +74,7 @@
   @include btn-base;
   border: var(--eqt-border-width) solid var(--eqt-border);
   background: var(--eqt-bg-btn);
-  color: var(--eqt-text-secondary);
+  color: var(--eqt-text);
 
   &:hover:not(:disabled) {
     background: var(--eqt-bg-hover);
@@ -92,7 +92,7 @@
   color: var(--eqt-text-hint);
 
   &:hover:not(:disabled) {
-    color: var(--eqt-text-secondary);
+    color: var(--eqt-text);
   }
 }
 
@@ -146,7 +146,7 @@
 
   &:hover:not(:disabled) {
     background: var(--eqt-bg-hover);
-    color: var(--eqt-text-secondary);
+    color: var(--eqt-text);
   }
 
   & + & {

@@ -238,7 +238,7 @@ function onEditorPurge() {
           @click="activeTab = key; editingProfileIdx = -1"
         >{{ t(tabLabelKeys[key]) }}</button>
         <div class="eqt-settings__sidebar-spacer" />
-        <button class="eqt-popup__btn" type="button" @click="emit('close')">
+        <button class="eqt-popup__btn eqt-settings__close-btn" type="button" @click="emit('close')">
           {{ t('settings.close') }}
         </button>
       </nav>
@@ -572,6 +572,10 @@ function onEditorPurge() {
   flex: 1;
 }
 
+#eqt-app .eqt-settings__close-btn {
+  font-weight: bold;
+}
+
 .eqt-settings__tab {
   display: block;
   width: 100%;
@@ -875,7 +879,7 @@ function onEditorPurge() {
     border-radius: 3px;
     font-size: 12px;
     line-height: 1.4;
-    color: var(--eqt-text-secondary);
+    color: var(--eqt-text);
     background: transparent;
   }
 

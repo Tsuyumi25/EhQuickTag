@@ -541,7 +541,7 @@ const simOutput = computed(() => {
 
   &__label {
     font-size: 12px;
-    color: var(--eqt-text-secondary);
+    color: var(--eqt-text);
   }
 
   // readonly input：cursor 可移動、文字可選 / 複製，但無法編輯。

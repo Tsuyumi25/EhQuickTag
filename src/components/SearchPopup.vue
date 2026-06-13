@@ -282,7 +282,7 @@ function onKeydown(e: KeyboardEvent): void {
   // 選中態：用 bg-active + 加深 border 區分，跟整體統一的中性風格一致
   &.is-active {
     background: var(--eqt-bg-active);
-    border-color: var(--eqt-text-secondary);
+    border-color: var(--eqt-text);
   }
 }
 

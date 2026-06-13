@@ -170,7 +170,7 @@ function onCopyRgb() { if (rgbText.value) rgbClip.copy(rgbText.value) }
     @include btn-filled;
     flex-shrink: 0;
     padding: 4px 6px;
-    color: var(--eqt-text-secondary);
+    color: var(--eqt-text);
 
     &:hover:not(:disabled) {
       background: var(--eqt-bg-hover);

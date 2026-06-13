@@ -66,7 +66,7 @@ function clearColor() {
   &__clear {
     @include btn-filled;
     padding: 4px 8px;
-    color: var(--eqt-text-secondary);
+    color: var(--eqt-text);
 
     &:hover:not(:disabled) {
       background: var(--eqt-bg-hover);

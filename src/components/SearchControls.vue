@@ -126,7 +126,7 @@ async function onSearchClick(): Promise<void> {
   }
 
   &:hover {
-    color: var(--eqt-text-secondary);
+    color: var(--eqt-text);
     background: var(--eqt-bg-hover);
   }
 }
@@ -156,7 +156,7 @@ async function onSearchClick(): Promise<void> {
   transition: var(--eqt-transition-base);
 
   &:hover {
-    color: var(--eqt-text-secondary);
+    color: var(--eqt-text);
     background: var(--eqt-bg-hover);
   }
 }
@@ -187,7 +187,7 @@ async function onSearchClick(): Promise<void> {
   transition: var(--eqt-transition-base);
 
   &:hover {
-    color: var(--eqt-text-secondary);
+    color: var(--eqt-text);
     background: var(--eqt-bg-hover);
   }
 }

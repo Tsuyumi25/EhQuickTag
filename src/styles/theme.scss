@@ -112,7 +112,7 @@
   // checkbox 預設尺寸 / 勾勾顏色（必須放 :root inherited，不能放全域 input 規則內，
   // 否則 component 級 override 會被全域 (1,1,1) 在同 element 上壓過去）
   --eqt-checkbox-size: 20px;
-  --eqt-checkbox-color: var(--eqt-text-secondary);
+  --eqt-checkbox-color: var(--eqt-text);
 }
 
 // Light theme (e-hentai.org) — on :root so Teleported content inherits
@@ -124,8 +124,7 @@
   --eqt-bg-btn: #edeada;
   --eqt-bg-btn-hover: #e2dfcf;
   --eqt-bg-disabled: #e8e6da;
-  --eqt-text: #34353b;
-  --eqt-text-secondary: #5c0d12;
+  --eqt-text: #5c0d12;
   --eqt-text-hint: #8a8271;
   --eqt-border: #b5a4a4;
   --eqt-border-width: 2px;
@@ -160,7 +159,6 @@
   --eqt-bg-btn-hover: #3e3f45;
   --eqt-bg-disabled: #2b2c31;
   --eqt-text: #ddd;
-  --eqt-text-secondary: #ddd;
   --eqt-text-hint: #b0b0b0;
   --eqt-border: #8d8d8d;
   --eqt-border-width: 2px;

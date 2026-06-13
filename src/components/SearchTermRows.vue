@@ -327,7 +327,7 @@ function cloneToButton({ literal, cloneLabel }: { literal: string; cloneLabel: s
   border: var(--eqt-border-width) solid var(--eqt-border);
   border-radius: 3px;
   background: var(--eqt-bg-btn);
-  color: var(--eqt-text-secondary);
+  color: var(--eqt-text);
   cursor: pointer;
   font-size: 12px;
   line-height: 1.4;
@@ -377,7 +377,7 @@ function cloneToButton({ literal, cloneLabel }: { literal: string; cloneLabel: s
     &:hover {
       opacity: 1;
       background: var(--eqt-bg-hover);
-      color: var(--eqt-text-secondary);
+      color: var(--eqt-text);
     }
   }
 

@@ -571,7 +571,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
     border: var(--eqt-border-width) solid var(--eqt-border);
     border-radius: var(--eqt-radius-md);
     box-shadow: var(--eqt-shadow-popover);
-    color: var(--eqt-text-secondary);
+    color: var(--eqt-text);
     font-size: var(--eqt-fs-sm);
     text-align: left;
     // pre 識別 i18n 字串內的 \n 作換行、但不 wrap——tooltip 寬度跟著最長那行
@@ -717,7 +717,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
   }
   &__ctrl-split-btn {
     @include btn-split-item;
-    color: var(--eqt-text-secondary);
+    color: var(--eqt-text);
   }
 
   // btn-icon 的非正方變體：高度照樣是 row-h，但寬度由內容決定（保留 padding）。
@@ -990,7 +990,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
     padding: 0;
     border: none;
     background: var(--eqt-bg-btn);
-    color: var(--eqt-text-secondary);
+    color: var(--eqt-text);
     cursor: pointer;
     font-size: 13px;
     font-weight: bold;
@@ -1045,7 +1045,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
     border: var(--eqt-border-width) solid var(--eqt-border);
     border-radius: 3px;
     background: var(--eqt-bg);
-    color: var(--eqt-text-secondary);
+    color: var(--eqt-text);
     font-size: 13px;
     font-weight: bold;
     line-height: 1.4;
@@ -1067,7 +1067,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
     border: var(--eqt-border-width) solid var(--line-color, var(--eqt-border));
     border-radius: 3px;
     background: color-mix(in srgb, var(--line-color, var(--eqt-bg-btn)) 15%, var(--eqt-bg-btn));
-    color: var(--eqt-text-secondary);
+    color: var(--eqt-text);
     cursor: pointer;
     font-size: 12px;
     line-height: 1.4;
