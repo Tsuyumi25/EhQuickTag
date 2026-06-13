@@ -14,6 +14,8 @@
  * Output: src/data/nh-popularity-{endpoint}.json  ({ normalized_name: count })
  */
 
+import { normalize } from '../src/services/nhNormalize'
+
 const NH_API = 'https://nhentai.net/api/v2/tags'
 const PER_PAGE = 100  // nh API max; actual response often includes ~20 bonus items
 const OUT_DIR = 'src/data'
@@ -41,10 +43,6 @@ interface NhTag {
 
 interface NhTagResponse {
   result: NhTag[]
-}
-
-function normalize(name: string): string {
-  return name.toLowerCase().replace(/[-_ ]/g, '')
 }
 
 async function fetchPage(endpoint: Endpoint, page: number): Promise<NhTag[]> {

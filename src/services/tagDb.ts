@@ -208,6 +208,10 @@ export const DEFAULT_NS_ORDER = [
 
 export const ALL_NAMESPACES = DEFAULT_NS_ORDER
 
+const NS_TIER_MAP: ReadonlyMap<string, number> = new Map(
+  DEFAULT_NS_ORDER.map((ns, i) => [ns, i]),
+)
+
 const NS_ALIASES: Record<string, string> = {
   r: 'reclass', g: 'group', a: 'artist', cos: 'cosplayer',
   p: 'parody', c: 'character', f: 'female', m: 'male',
@@ -270,30 +274,24 @@ export function searchTags(query: string, opts: SearchOptions = {}): TagEntry[] 
 
   const { useNhWeight = false, namespaces } = opts
 
-  // ns → tier 用 DEFAULT_NS_ORDER 當固定事實來源
-  const nsTierMap = new Map<string, number>()
-  for (let i = 0; i < DEFAULT_NS_ORDER.length; i++) {
-    nsTierMap.set(DEFAULT_NS_ORDER[i], i)
-  }
-
   let q = query.toLowerCase().normalize().trim()
   let pool = entries
 
   // namespace filter: "f:stock" → filter to female, search "stock"
-  let prefixMatched = false
+  let prefixNs: string | null = null
   const colIdx = q.indexOf(':')
   if (colIdx >= 1) {
     const prefix = q.slice(0, colIdx)
     const resolvedNs = NS_ALIASES[prefix] ?? prefix
-    if (nsTierMap.has(resolvedNs)) {
+    if (NS_TIER_MAP.has(resolvedNs)) {
       pool = pool.filter(e => e.ns === resolvedNs)
       q = q.slice(colIdx + 1)
-      prefixMatched = true
+      prefixNs = resolvedNs
     }
   }
 
   // popup-local 篩選器；prefix 命中時跳過（prefix 是「單次明確指令」優先於持續狀態）
-  if (!prefixMatched && namespaces && namespaces.length) {
+  if (!prefixNs && namespaces && namespaces.length) {
     const nsSet = new Set(namespaces)
     pool = pool.filter(e => nsSet.has(e.ns))
   }
@@ -301,7 +299,14 @@ export function searchTags(query: string, opts: SearchOptions = {}): TagEntry[] 
   // strip leading quote (EH exact-match syntax)
   if (q.startsWith('"')) q = q.slice(1)
 
-  if (!q) return pool
+  // prefix 命中但沒留字（user 打 `f:`）或 query 化簡後變空——委派給 getFallbackEntries
+  // 走完整 nh+nsTier+length 排序鏈，不要回 raw pool 失去排序
+  if (!q) {
+    return getFallbackEntries({
+      namespaces: prefixNs ? [prefixNs] : namespaces,
+      useNhWeight,
+    })
+  }
 
   // build search terms: original + CJK variants
   const qIsAscii = isASCII(q)
@@ -315,7 +320,7 @@ export function searchTags(query: string, opts: SearchOptions = {}): TagEntry[] 
 
   for (const entry of pool) {
     // 不在 DEFAULT_NS_ORDER 的 ns 被排除（理論上不會發生，DB 解析時 ns 都有覆蓋）
-    const nsTier = nsTierMap.get(entry.ns)
+    const nsTier = NS_TIER_MAP.get(entry.ns)
     if (nsTier === undefined) continue
 
     let matchTier: MatchTier | null = null
@@ -366,13 +371,11 @@ export function getFallbackEntries(opts: FallbackEntriesOptions = {}): TagEntry[
   if (!entries) return []
 
   const nsSet = opts.namespaces && opts.namespaces.length ? new Set(opts.namespaces) : null
-  const nsTierMap = new Map<string, number>()
-  for (let i = 0; i < DEFAULT_NS_ORDER.length; i++) nsTierMap.set(DEFAULT_NS_ORDER[i], i)
 
   const ranked: NhRankable[] = []
   for (const entry of entries) {
     if (nsSet && !nsSet.has(entry.ns)) continue
-    const nsTier = nsTierMap.get(entry.ns)
+    const nsTier = NS_TIER_MAP.get(entry.ns)
     if (nsTier === undefined) continue
     ranked.push({
       entry,
