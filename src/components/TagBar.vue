@@ -286,6 +286,11 @@ function onRightClick(event: MouseEvent, b: TagButton) {
   if (next === null) return
   dispatchTransition(b.tags, next)
 }
+
+// 暴露 searchPanelRef 給 App.vue 拿——AddTagPopup 透過這條 chain 取得 sessionTerms
+// + dismissTerms。SearchPanel 沒 mount（showSearchPanel=false）時 chain 為 null，
+// caller 端 fallback 到空 sessionTerms（chip 區看不到任何 chip，預期）
+defineExpose({ searchPanelRef })
 </script>
 
 <template>

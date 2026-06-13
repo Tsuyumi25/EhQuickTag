@@ -5,12 +5,10 @@ import TagConfigPopup from '@/components/TagConfigPopup.vue'
 import UrlConfigPopup from '@/components/UrlConfigPopup.vue'
 import SettingsPopup from '@/components/SettingsPopup.vue'
 import AddTagPopup from '@/components/AddTagPopup.vue'
-import { nsToShort } from '@/composables/useSearchTerm'
-import { setTagState } from '@/services/tagState'
-import { TagState } from '@/types'
-import type { TagEntry } from '@/services/tagDb'
 import { GM_openInTab } from '$'
+import { removeTag } from '@/services/tagState'
 import type { Button, TagButton, UrlButton } from '@/types'
+import type { TermEntry } from '@/composables/useSessionTerms'
 import { lines, useNhWeight, fontFamily, fontWeight, profiles, activeProfileIdx, switchProfile, renameProfile, createProfile, deleteProfile, newTabActive, nsFormat, defaultExactMatch, tagDbMirror, tagDbTtlDays, type DblClickAction } from '@/services/store'
 import { loadTagDb } from '@/services/tagDb'
 import { useEhFormHost, type EhFormHost } from '@/composables/useEhFormHost'
@@ -161,17 +159,32 @@ function onAddToSearch() {
   showAddPopup.value = true
 }
 
-function onPickAddTag(entry: TagEntry) {
-  // 跟 SearchTermEditor.applySuggestionPick 同套規則：尊重 nsFormat 跟 defaultExactMatch
-  const ns = nsFormat.value === 'short' ? (nsToShort(entry.ns) ?? entry.ns) : entry.ns
-  const suffix = defaultExactMatch.value ? '$' : ''
-  const tagPart = entry.raw.includes(' ') ? `"${entry.raw}${suffix}"` : `${entry.raw}${suffix}`
-  const token = `${ns}:${tagPart}`
-  // 走 setTagState 是身份戳語意：search 已有同身份 token（不論前綴/後綴）就 in-place
-  // 覆蓋成新 view，沒有就補尾巴。直接字串 concat 會產生同身份重複 → 破壞
-  // identityIndex 的唯一性 invariant，buttons 跟 chips 會跟著當掉。
-  searchText.value = setTagState(searchText.value, [token], TagState.Include)
-  showAddPopup.value = false
+// === AddTagPopup 接線 ===
+//
+// SearchPanel 是 TagBar 內 child，AddTagPopup 在 App.vue level——chain ref 透過
+// TagBar.searchPanelRef 拿到 SearchPanelExposed，再取 sessionTerms / dismissTerms。
+// SearchPanel 沒 mount 時（showSearchPanel=false）fallback 空 sessionTerms，
+// chip 區無內容、toggle 仍能改 modelValue 但不殘留 Off chip（沒地方顯示）
+const tagBarRef = ref<InstanceType<typeof TagBar> | null>(null)
+
+const popupSessionTerms = computed<TermEntry[]>(() => {
+  // Vue defineExpose 的 instance proxy 對 ref 屬性自動 unwrap：
+  //   tagBarRef.value.searchPanelRef → SearchPanelExposed | null（已 unwrap）
+  //   sp.sessionTerms → TermEntry[]（已 unwrap）
+  // 訪問仍走 reactive proxy，依賴自動建立
+  const sp = tagBarRef.value?.searchPanelRef ?? null
+  return sp?.sessionTerms ?? []
+})
+
+function popupDismissTerms(positives: string[]): void {
+  const sp = tagBarRef.value?.searchPanelRef
+  if (sp) {
+    sp.dismissTerms(positives)
+  } else {
+    // SearchPanel 未 mount：走 modelValue 端 fallback——直接從 search 字串移除
+    // （history 推不進去，但功能不破）
+    searchText.value = removeTag(searchText.value, positives)
+  }
 }
 
 function onSearch(action: DblClickAction) {
@@ -218,6 +231,7 @@ watch(searchText, (val) => {
 <template>
   <Teleport v-if="anchorReady" to="#eqt-bar-anchor">
     <TagBar
+      ref="tagBarRef"
       :profile-name="profiles[activeProfileIdx]?.name ?? ''"
       :profile-idx="activeProfileIdx"
       :profile-count="profiles.length"
@@ -270,7 +284,9 @@ watch(searchText, (val) => {
 
   <AddTagPopup
     v-if="showAddPopup"
-    @pick="onPickAddTag"
+    v-model="searchText"
+    :session-terms="popupSessionTerms"
+    @dismiss-terms="popupDismissTerms"
     @close="showAddPopup = false"
   />
 </template>

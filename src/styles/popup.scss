@@ -250,6 +250,23 @@
     &--active {
       background: var(--eqt-bg-active);
     }
+
+    // AddTagPopup toggle 模式：entryStates 給 chip 上色傳達當前 search state。
+    // 用 left border 一條色塊（不像 chip 整顆變色）——suggestion item 視覺主體
+    // 還是「候選 entry」，state 是輔助訊息、不該蓋掉文字底色
+    //
+    // Off 不上色（沒進 search、視同無 state，跟 entryStates 沒命中相同呈現）
+    &--include {
+      box-shadow: inset 3px 0 0 var(--eqt-status-include);
+    }
+
+    &--or {
+      box-shadow: inset 3px 0 0 var(--eqt-status-or);
+    }
+
+    &--exclude {
+      box-shadow: inset 3px 0 0 var(--eqt-status-exclude);
+    }
   }
 
   &__suggestion-ns {

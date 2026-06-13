@@ -1,14 +1,38 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, computed } from 'vue'
 import { loadTagDb, getFallbackEntries, DEFAULT_NS_ORDER, type TagEntry } from '@/services/tagDb'
-import { useNhWeight } from '@/services/store'
+import { useNhWeight, nsFormat, defaultExactMatch } from '@/services/store'
 import { useTagSuggestions } from '@/composables/useTagSuggestions'
 import { usePopupBehavior } from '@/composables/usePopupBehavior'
+import { parseTerm, serializeTerm } from '@/services/searchSyntax'
+import { tokenize, tokenIdentity, buildIdentityIndex, getNextRightClickState, setTagState } from '@/services/tagState'
+import { nsToShort } from '@/composables/useSearchTerm'
 import { t } from '@/composables/useI18n'
 import SuggestionList from '@/components/SuggestionList.vue'
+import SearchTermRows from '@/components/SearchTermRows.vue'
+import type { TermEntry } from '@/composables/useSessionTerms'
+import { TagState } from '@/types'
+
+// === 心智模型 ===
+//
+// AddTagPopup 不是「找一個 tag → 關閉」的單發 picker，而是「邊看當前搜尋狀態、
+// 邊在候選池裡 toggle」的批次編輯器：
+//   - 左 sidebar：namespace 篩選按鈕（影響候選池內容）
+//   - 中 上：input + SuggestionList（候選池，每 item 上色顯示當前 search state）
+//   - 中 下：SearchTermRows（當前 search chip，read-only 視窗）
+//
+// caller（App.vue）把 modelValue + sessionTerms（active+off）傳進來——這層只負責
+// UI 跟 toggle，state 持久化跟 history 由 SearchPanel 那邊的 useSessionTerms 管。
+// dismiss-terms emit 上拋給 caller 接到 SearchPanel.dismissTerms，走同一條 push
+// history 路徑、跟「直接從 SearchPanel chip 點 Include→Off」行為等價
+const props = defineProps<{
+  modelValue: string
+  sessionTerms: TermEntry[]
+}>()
 
 const emit = defineEmits<{
-  pick: [entry: TagEntry]
+  'update:modelValue': [value: string]
+  'dismiss-terms': [positives: string[]]
   close: []
 }>()
 
@@ -57,7 +81,76 @@ onMounted(async () => {
   inputEl.value?.focus()
 })
 
-// Escape 走 usePopupBehavior 統一處理；這裡只 handle 清單導覽 + Enter pick
+// === state map：把 modelValue 解析後給 SuggestionList 上色 ===
+// SuggestionList 自己不知道 search syntax，靠 entryStates prop（Map<fullTag, state>）
+// 看出哪些 entry 已在 search 內
+const identityIndex = computed(() => buildIdentityIndex(tokenize(props.modelValue)))
+
+const entryStates = computed(() => {
+  const map = new Map<string, TagState>()
+  for (const entry of suggestions.value) {
+    const id = tokenIdentity(entry.fullTag)
+    if (!id) continue
+    const present = identityIndex.value.get(id)
+    if (!present) continue
+    const prefix = parseTerm(present).prefix
+    if (prefix === '-') map.set(entry.fullTag, TagState.Exclude)
+    else if (prefix === '~') map.set(entry.fullTag, TagState.Or)
+    else map.set(entry.fullTag, TagState.Include)
+  }
+  return map
+})
+
+function entryStateOf(entry: TagEntry): TagState {
+  return entryStates.value.get(entry.fullTag) ?? TagState.Off
+}
+
+// 把 entry 序列化成 e站合法 search token——含空格 → 自動加引號（serializeTerm
+// needsQuotes 分支），nsFormat=short → 用短前綴，defaultExactMatch → 自動補 $。
+// entry.fullTag 是裸 `ns:raw` 不夠用：含空格的 raw 餵 setTagState 會被空格切開
+// 成兩個 token、進 misc row（symptom：search panel 看到孤兒 chip）
+function tokenForEntry(entry: TagEntry): string {
+  const prefersShort = nsFormat.value === 'short'
+  const namespaceRaw = prefersShort ? (nsToShort(entry.ns) ?? entry.ns) : entry.ns
+  return serializeTerm({
+    raw: '',
+    prefix: null,
+    qualifier: null,
+    namespace: entry.ns,
+    namespaceRaw,
+    tag: entry.raw,
+    quoted: false,  // serializeTerm 看 tag.includes(' ') 自己決定要不要包引號
+    suffix: defaultExactMatch.value ? '$' : null,
+  })
+}
+
+// === toggle 路徑：跟 SearchTermRows / TagBar 同邏輯 ===
+// Off 走 dismiss-terms 上拋（讓 caller 走 SearchPanel.dismissTerms，term 進 history）；
+// 其他態走 update:modelValue + setTagState（in-place 替換、保留位置）
+function applyEntryState(entry: TagEntry, next: TagState): void {
+  const token = tokenForEntry(entry)
+  if (next === TagState.Off) {
+    emit('dismiss-terms', [token])
+  } else {
+    emit('update:modelValue', setTagState(props.modelValue, [token], next))
+  }
+}
+
+function onPick(entry: TagEntry): void {
+  // 跟 SearchTermRows.onTermClick 同邏輯：Include → Off，其他態 → Include
+  const cur = entryStateOf(entry)
+  const next = cur === TagState.Include ? TagState.Off : TagState.Include
+  applyEntryState(entry, next)
+}
+
+function onCtxMenu(entry: TagEntry): void {
+  const cur = entryStateOf(entry)
+  const next = getNextRightClickState([entry.fullTag], undefined, cur)
+  if (next === null) return
+  applyEntryState(entry, next)
+}
+
+// Escape 走 usePopupBehavior 統一處理；這裡只 handle 清單導覽 + Enter 沿用左鍵語意
 function onKeydown(e: KeyboardEvent): void {
   if (e.key === 'ArrowDown') {
     e.preventDefault()
@@ -68,7 +161,7 @@ function onKeydown(e: KeyboardEvent): void {
   } else if (e.key === 'Enter') {
     e.preventDefault()
     const entry = suggestions.value[selectedIdx.value]
-    if (entry) emit('pick', entry)
+    if (entry) onPick(entry)
   }
 }
 </script>
@@ -123,12 +216,21 @@ function onKeydown(e: KeyboardEvent): void {
           class="eqt-add-popup__list"
           :suggestions="suggestions"
           :selected-idx="selectedIdx"
+          :entry-states="entryStates"
           @update:selected-idx="selectedIdx = $event"
-          @pick="emit('pick', $event)"
+          @pick="onPick"
+          @ctxmenu="onCtxMenu"
         />
         <div v-else-if="dbReady" class="eqt-add-popup__empty">
           {{ t('tagConfig.noResult') }}
         </div>
+        <SearchTermRows
+          class="eqt-add-popup__chips"
+          :model-value="modelValue"
+          :session-terms="sessionTerms"
+          @update:model-value="emit('update:modelValue', $event)"
+          @dismiss-terms="emit('dismiss-terms', $event)"
+        />
       </div>
     </div>
   </div>
@@ -137,7 +239,7 @@ function onKeydown(e: KeyboardEvent): void {
 <style lang="scss">
 @use '../styles/buttons' as *;
 
-// fzf 風 popup：左側 namespace 篩選 sidebar，右側 input + 清單
+// fzf 風 popup：左側 namespace 篩選 sidebar，右側 input + 候選池 + 當前搜尋 chip 區
 .eqt-add-popup {
   // 整個 popup 等比例放大——zoom 比 transform: scale 乾淨，會影響 layout 計算所以
   // overlay 置中跟 click 位置不會錯位
@@ -146,7 +248,7 @@ function onKeydown(e: KeyboardEvent): void {
   flex-direction: row;
   width: clamp(30rem, 60vw, 52rem);
   min-height: auto;
-  max-height: 70vh;
+  max-height: 80vh;
   padding: 10px;
   gap: 10px;
   overflow: hidden;
@@ -182,7 +284,10 @@ function onKeydown(e: KeyboardEvent): void {
   }
 }
 
-// 右側主區：input + suggestion list 垂直排
+// 右側主區：input → SuggestionList → SearchTermRows 垂直排
+//
+// 高度分配：input 跟 SearchTermRows 自然高度，SuggestionList 用 flex: 1 撐滿
+// 剩餘空間（候選池才是視覺主角）。chip 區自然高度避免擠壓候選池
 .eqt-add-popup__main {
   flex: 1;
   display: flex;
@@ -207,5 +312,15 @@ function onKeydown(e: KeyboardEvent): void {
   color: var(--eqt-text-hint);
   font-size: var(--eqt-fs-md);
   text-align: center;
+}
+
+// 當前 search chip 區：在候選池下方，自然高度（不擠壓上方候選池）。
+// max-height 防 session 內 term 太多時把 popup 撐爆；overflow auto 內部捲動
+.eqt-add-popup__chips {
+  flex-shrink: 0;
+  max-height: 35vh;
+  overflow-y: auto;
+  padding: 6px 4px 2px;
+  border-top: var(--eqt-border-width) solid var(--eqt-border);
 }
 </style>

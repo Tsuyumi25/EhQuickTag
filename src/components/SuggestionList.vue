@@ -4,16 +4,50 @@ import type { TagEntry } from '@/services/tagDb'
 import { isCJKLocale, locale, t } from '@/composables/useI18n'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
 import { useTextMeasure } from '@/composables/useTextMeasure'
+import { TagState } from '@/types'
 
 const props = defineProps<{
   suggestions: TagEntry[]
   selectedIdx: number
+  // 可選 state map（key = entry.fullTag）：AddTagPopup toggle 模式用，控制 chip
+  // 上色（include/or/exclude）。TagAutocomplete dropdown 模式不傳，項目維持中性
+  entryStates?: Map<string, TagState>
 }>()
 
 const emit = defineEmits<{
   'update:selectedIdx': [value: number]
+  // 左鍵：dropdown 模式視為「選中此 entry」；toggle 模式視為「切 Include↔Off」
   pick: [entry: TagEntry]
+  // 右鍵：toggle 模式用——cycle 到下一個 Or/Exclude 態。dropdown 模式 caller
+  // 不掛 listener、預設不擋瀏覽器選單
+  ctxmenu: [entry: TagEntry]
 }>()
+
+// state → class 對照表，跟 SearchTermRows 同套色系
+const STATE_CLASS: Record<TagState, string> = {
+  [TagState.Include]: 'eqt-popup__suggestion--include',
+  [TagState.Or]:      'eqt-popup__suggestion--or',
+  [TagState.Exclude]: 'eqt-popup__suggestion--exclude',
+  [TagState.Off]:     'eqt-popup__suggestion--off',
+}
+
+function stateClassOf(entry: TagEntry): string | undefined {
+  if (!props.entryStates) return undefined
+  const s = props.entryStates.get(entry.fullTag)
+  if (s === undefined || s === TagState.Off) return undefined
+  return STATE_CLASS[s]
+}
+
+// mousedown 路徑：只接 left button。右鍵 mousedown 在某些平台也會 fire，這裡
+// filter 掉避免雙觸發（contextmenu 那條另外處理）
+function onItemMousedown(entry: TagEntry, e: MouseEvent): void {
+  if (e.button !== 0) return
+  emit('pick', entry)
+}
+
+function onItemContextMenu(entry: TagEntry): void {
+  emit('ctxmenu', entry)
+}
 
 // 跟舊版 TagAutocomplete 同等值，behaviour 一致
 const EST_ITEM_HEIGHT = 32
@@ -124,8 +158,12 @@ const { cjkDisplay } = useDisplayConfig()
         v-for="{ data: entry, index: si } in virtualSuggestions"
         :key="entry.fullTag"
         class="eqt-popup__suggestion"
-        :class="{ 'eqt-popup__suggestion--active': si === selectedIdx }"
-        @mousedown.prevent="emit('pick', entry)"
+        :class="[
+          { 'eqt-popup__suggestion--active': si === selectedIdx },
+          stateClassOf(entry),
+        ]"
+        @mousedown.prevent="onItemMousedown(entry, $event)"
+        @contextmenu.prevent="onItemContextMenu(entry)"
         @mouseenter="onItemMouseenter(si)"
       >
         <span class="eqt-popup__suggestion-ns">{{ t('ns.' + entry.ns) }}：</span>
