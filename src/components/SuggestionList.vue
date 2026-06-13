@@ -151,6 +151,7 @@ const { cjkDisplay } = useDisplayConfig()
     class="eqt-suggestion-list"
     :style="nsColWidth > 0 ? { '--ns-col-width': nsColWidth + 'px' } : undefined"
     @scroll="onScroll"
+    @mouseleave="emit('update:selectedIdx', -1)"
   >
     <div :style="wrapperStyle">
       <div
