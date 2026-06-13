@@ -238,7 +238,7 @@ function onEditorPurge() {
           @click="activeTab = key; editingProfileIdx = -1"
         >{{ t(tabLabelKeys[key]) }}</button>
         <div class="eqt-settings__sidebar-spacer" />
-        <button class="eqt-popup__btn eqt-popup__btn--primary" type="button" @click="emit('close')">
+        <button class="eqt-popup__btn" type="button" @click="emit('close')">
           {{ t('settings.close') }}
         </button>
       </nav>
@@ -841,7 +841,7 @@ function onEditorPurge() {
 
   &__weight-slider {
     flex: 1;
-    accent-color: var(--eqt-border-focus);
+    accent-color: var(--eqt-green);
   }
 
   &__weight-value {
@@ -881,8 +881,8 @@ function onEditorPurge() {
 
   &__active-badge {
     font-size: var(--eqt-fs-xs);
-    color: var(--eqt-on-primary);
-    background: var(--eqt-primary);
+    color: var(--eqt-text-on-color);
+    background: var(--eqt-green);
     padding: 1px 4px;
     border-radius: 2px;
     margin-left: 4px;

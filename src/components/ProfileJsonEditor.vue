@@ -114,12 +114,12 @@ function onEditorExport() {
       <button class="eqt-popup__btn eqt-popup__btn--delete" type="button" @click="emit('purge')">{{ t('settings.purgeProfile') }}</button>
     </div>
     <div v-else-if="mode === 'deleted'" class="eqt-popup__actions" style="justify-content: center">
-      <button class="eqt-popup__btn eqt-popup__btn--primary" type="button" @click="emit('restore')">{{ t('settings.restoreProfile') }}</button>
+      <button class="eqt-popup__btn eqt-popup__btn--green" type="button" @click="emit('restore')">{{ t('settings.restoreProfile') }}</button>
       <button class="eqt-popup__btn eqt-popup__btn--delete" type="button" @click="emit('purge')">{{ t('settings.purgeProfile') }}</button>
     </div>
     <div v-else class="eqt-popup__actions">
       <div class="eqt-popup__spacer" />
-      <button class="eqt-popup__btn eqt-popup__btn--primary" type="button" @click="onEditorSave">{{ t('settings.save') }}</button>
+      <button class="eqt-popup__btn eqt-popup__btn--green" type="button" @click="onEditorSave">{{ t('settings.save') }}</button>
     </div>
   </div>
 </template>

@@ -173,8 +173,10 @@
     @include btn-filled;
     padding: 4px 12px;
 
-    &--primary {
-      @include btn-primary;
+    // 綠色填實 + 白字——給「commit 工作區」的 action（save / restore）。
+    // close / cancel 走預設 btn-filled toned，視覺次要
+    &--green {
+      @include btn-green;
     }
 
     &--delete {

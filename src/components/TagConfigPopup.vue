@@ -365,7 +365,7 @@ const simOutput = computed(() => {
         <button class="eqt-popup__btn" type="button" @click="emit('close')">
           {{ t('tagConfig.cancel') }} <kbd class="eqt-popup__kbd">Esc</kbd>
         </button>
-        <button class="eqt-popup__btn eqt-popup__btn--primary" type="button" @click="onSave">
+        <button class="eqt-popup__btn eqt-popup__btn--green" type="button" @click="onSave">
           {{ t('tagConfig.save') }} <kbd class="eqt-popup__kbd">Ctrl+Enter</kbd>
         </button>
       </div>

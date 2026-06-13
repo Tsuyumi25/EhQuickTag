@@ -96,19 +96,29 @@
   }
 }
 
-// ── 語意 action button ──
+// ── 純色 action button（綠 / 紅）──
+//
+// 不綁「primary / secondary」這種抽象語意——caller 自己決定哪個動作該綠該紅。
+// 目前 save / restore 用綠（commit 工作區）、delete 用紅（destructive）
 
-// Primary action：跟 __ctrl 共用 toned 樣式，統一非強調風格
-@mixin btn-primary {
-  @include btn-toned;
+// 綠色填充 + 白字
+@mixin btn-green {
+  @include btn-base;
+  border: var(--eqt-border-width) solid var(--eqt-green-hover);
+  background: var(--eqt-green);
+  color: var(--eqt-text-on-color);
+
+  &:hover:not(:disabled) {
+    background: var(--eqt-green-hover);
+  }
 }
 
-// Destructive action（紅色填充 + 白字）
+// 紅色填充 + 白字
 @mixin btn-danger {
   @include btn-base;
   border: var(--eqt-border-width) solid var(--eqt-danger-hover);
   background: var(--eqt-danger);
-  color: var(--eqt-on-primary);
+  color: var(--eqt-text-on-color);
 
   &:hover:not(:disabled) {
     background: var(--eqt-danger-hover);

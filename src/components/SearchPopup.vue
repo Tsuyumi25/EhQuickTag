@@ -188,7 +188,7 @@ function onKeydown(e: KeyboardEvent): void {
           {{ t('ns.' + ns) }}
         </button>
         <button
-          class="eqt-popup__btn eqt-popup__btn--primary eqt-search-popup__close-btn"
+          class="eqt-popup__btn eqt-search-popup__close-btn"
           type="button"
           @click="emit('close')"
         >

@@ -129,7 +129,6 @@
   --eqt-text-hint: #8a8271;
   --eqt-border: #b5a4a4;
   --eqt-border-width: 2px;
-  --eqt-border-focus: #4a7c59;
   --eqt-divider: #c5c0b0;
   --eqt-overlay: rgba(0, 0, 0, 0.4);
   --eqt-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
@@ -138,13 +137,17 @@
   --eqt-status-or: #f5c518;
   --eqt-status-exclude: #8c3333;
 
-  // action 色（primary / danger）：給 popup 主按鈕、刪除確認、線段刪除等
-  --eqt-primary: #4a7c59;
-  --eqt-primary-hover: #3d6b4a;
-  --eqt-on-primary: #fff;
+  // 純色 token——不綁語意，caller 自己決定怎麼用。
+  // 綠色給「需要 commit」的 action（save / restore）跟 profile active badge；
+  // 紅色給刪除 / 排除這類 destructive。
+  --eqt-green: #4a7c59;
+  --eqt-green-hover: #3d6b4a;
   --eqt-danger: #8c3333;
   --eqt-danger-hover: #743030;
   --eqt-danger-bg-hover: rgba(140, 51, 51, 0.15);
+
+  // 實色 button 上的前景色（白字）。跟 --eqt-green / --eqt-danger 配對用
+  --eqt-text-on-color: #fff;
 }
 
 // Dark theme (exhentai.org)
@@ -161,7 +164,6 @@
   --eqt-text-hint: #b0b0b0;
   --eqt-border: #8d8d8d;
   --eqt-border-width: 2px;
-  --eqt-border-focus: #5a9a6a;
   --eqt-divider: #4f535b;
   --eqt-overlay: rgba(0, 0, 0, 0.6);
   --eqt-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
@@ -170,11 +172,12 @@
   --eqt-status-or: #f5c518;
   --eqt-status-exclude: #8c3333;
 
-  --eqt-primary: #5a9a6a;
-  --eqt-primary-hover: #4a7c59;
-  --eqt-on-primary: #fff;
+  --eqt-green: #5a9a6a;
+  --eqt-green-hover: #4a7c59;
   // 原本 hardcoded #8c3333 兩個 theme 都用同色，dark variant 不另作差異化
   --eqt-danger: #8c3333;
   --eqt-danger-hover: #743030;
   --eqt-danger-bg-hover: rgba(140, 51, 51, 0.15);
+
+  --eqt-text-on-color: #fff;
 }
