@@ -232,12 +232,18 @@ function compareNhFallback(a: NhRankable, b: NhRankable): number {
 
 export interface SearchOptions {
   useNhWeight?: boolean
+  /**
+   * 限定回傳的 namespace 集合（popup-local 篩選器用）。query 的 namespace prefix
+   * （`f:stock`）一旦命中會完全覆蓋此參數——prefix 是更明確的單次指令，不該被
+   * popup 持續狀態干擾。
+   */
+  namespaces?: readonly string[]
 }
 
 export function searchTags(query: string, opts: SearchOptions = {}): TagEntry[] {
   if (!entries || !query.trim()) return []
 
-  const { useNhWeight = false } = opts
+  const { useNhWeight = false, namespaces } = opts
 
   // ns → tier 用 DEFAULT_NS_ORDER 當固定事實來源
   const nsTierMap = new Map<string, number>()
@@ -249,6 +255,7 @@ export function searchTags(query: string, opts: SearchOptions = {}): TagEntry[] 
   let pool = entries
 
   // namespace filter: "f:stock" → filter to female, search "stock"
+  let prefixMatched = false
   const colIdx = q.indexOf(':')
   if (colIdx >= 1) {
     const prefix = q.slice(0, colIdx)
@@ -256,7 +263,14 @@ export function searchTags(query: string, opts: SearchOptions = {}): TagEntry[] 
     if (nsTierMap.has(resolvedNs)) {
       pool = pool.filter(e => e.ns === resolvedNs)
       q = q.slice(colIdx + 1)
+      prefixMatched = true
     }
+  }
+
+  // popup-local 篩選器；prefix 命中時跳過（prefix 是「單次明確指令」優先於持續狀態）
+  if (!prefixMatched && namespaces && namespaces.length) {
+    const nsSet = new Set(namespaces)
+    pool = pool.filter(e => nsSet.has(e.ns))
   }
 
   // strip leading quote (EH exact-match syntax)
@@ -305,29 +319,38 @@ export function searchTags(query: string, opts: SearchOptions = {}): TagEntry[] 
 /**
  * 給 AddTagPopup 當「空查詢預設清單」的 ranked entries。
  *
- * 不像舊版只撈有 nh 對應的 entry——本函式回傳**所有** entries，用 nh 上傳量
- * 當 tie-breaker 把熱門的拉到前面、其他附在後。這樣 popup 清單不會變空白，
- * 但 female/male 仍然會按 nh 熱榜排序。
+ * 不像舊版只撈有 nh 對應的 entry——本函式回傳**所有** entries（受 namespaces filter），
+ * 用 nh 上傳量當 tie-breaker 把熱門的拉到前面、其他附在後。這樣 popup 點 namespace
+ * 篩選按鈕到 character/artist 等沒 nh 資料的類別時，清單不會變空白，但 female/male
+ * 仍然會按 nh 熱榜排序。
  *
  * 排序鏈跟 searchTags 共用 `compareNhFallback`，nh 權重的相對重要性一處決定。
+ *
+ * 結果按 namespaces 組合 memoize；refreshTagDb 時整個 Map clear。
  */
 const _fallbackCache = new Map<string, TagEntry[]>()
-export function getFallbackEntries(): TagEntry[] {
-  const cached = _fallbackCache.get('*')
+export interface FallbackEntriesOptions {
+  namespaces?: readonly string[]
+}
+export function getFallbackEntries(opts: FallbackEntriesOptions = {}): TagEntry[] {
+  const cacheKey = opts.namespaces && opts.namespaces.length ? [...opts.namespaces].sort().join(',') : '*'
+  const cached = _fallbackCache.get(cacheKey)
   if (cached) return cached
   if (!entries) return []
 
+  const nsSet = opts.namespaces && opts.namespaces.length ? new Set(opts.namespaces) : null
   const nsTierMap = new Map<string, number>()
   for (let i = 0; i < DEFAULT_NS_ORDER.length; i++) nsTierMap.set(DEFAULT_NS_ORDER[i], i)
 
   const ranked: NhRankable[] = []
   for (const entry of entries) {
+    if (nsSet && !nsSet.has(entry.ns)) continue
     const nsTier = nsTierMap.get(entry.ns)
     if (nsTier === undefined) continue
     ranked.push({ entry, nhCount: getNhWeight(entry.ns, entry.raw) ?? 0, nsTier })
   }
   ranked.sort(compareNhFallback)
   const result = ranked.map(r => r.entry)
-  _fallbackCache.set('*', result)
+  _fallbackCache.set(cacheKey, result)
   return result
 }

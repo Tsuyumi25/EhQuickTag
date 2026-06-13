@@ -16,6 +16,8 @@ export interface UseTagSuggestionsOptions {
   query: () => string
   qualifier?: () => Qualifier | null
   useNhWeight: () => boolean
+  /** popup-local 篩選；AddTagPopup 用此跟 namespace 篩選按鈕綁定 */
+  namespaces?: () => readonly string[] | undefined
   emptyFallback?: () => TagEntry[]
   debounceMs?: number
 }
@@ -41,6 +43,7 @@ export function useTagSuggestions(opts: UseTagSuggestionsOptions) {
     timer = window.setTimeout(() => {
       suggestions.value = searchTags(q, {
         useNhWeight: opts.useNhWeight(),
+        namespaces: opts.namespaces?.(),
       })
     }, opts.debounceMs ?? 80)
   }
@@ -53,10 +56,11 @@ export function useTagSuggestions(opts: UseTagSuggestionsOptions) {
 
   onScopeDispose(() => clearTimeout(timer))
 
-  // 主 watcher：scalar 變動就重跑；陣列 / 物件參數的 deep 比較留給後續 commit 接 namespaces 時再加
+  // 主 watcher：scalar 跟小陣列（namespaces ≤13 個 string）才走 deep:true，便宜
   watch(
-    () => [opts.query(), opts.qualifier?.() ?? null, opts.useNhWeight()],
+    () => [opts.query(), opts.qualifier?.() ?? null, opts.useNhWeight(), opts.namespaces?.() ?? null],
     triggerSearch,
+    { deep: true },
   )
 
   // fallback 單獨用 shallow watcher：caller 給的 fallback 通常是 `() => someRef.value`，

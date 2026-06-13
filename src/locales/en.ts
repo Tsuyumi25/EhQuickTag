@@ -3,6 +3,8 @@ export default {
   'common.itemColor': 'Button color',
 
   // TagBar
+  'addPopup.nsFilterLabel': 'Filter by namespace',
+  'addPopup.nsFilterAll': 'All',
   'tagbar.search': 'Search',
   'tagbar.searchNewTab': 'Search in new tab',
   'tagbar.clearSearch': 'Clear search',

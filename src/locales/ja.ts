@@ -3,6 +3,8 @@ export default {
   'common.itemColor': 'ボタンの色',
 
   // TagBar
+  'addPopup.nsFilterLabel': 'Namespace で絞り込む',
+  'addPopup.nsFilterAll': 'すべて',
   'tagbar.search': '検索',
   'tagbar.searchNewTab': '新しいタブで検索',
   'tagbar.clearSearch': '検索をクリア',
@@ -180,7 +182,7 @@ export default {
   'ns.parody': '原作',
   'ns.character': 'キャラ',
   'ns.artist': '作家',
-  'ns.cosplayer': 'コスプレイヤー',
+  'ns.cosplayer': 'レイヤー',
   'ns.group': 'サークル',
   'ns.reclass': '再分類',
   'ns.temp': '一時',

@@ -3,6 +3,8 @@ export default {
   'common.itemColor': '按鈕顏色',
 
   // TagBar
+  'addPopup.nsFilterLabel': '依 namespace 篩選',
+  'addPopup.nsFilterAll': '全部',
   'tagbar.search': '搜尋',
   'tagbar.searchNewTab': '新分頁搜尋',
   'tagbar.clearSearch': '清空搜尋框',
