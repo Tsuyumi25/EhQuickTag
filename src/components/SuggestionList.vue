@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import type { TagEntry } from '@/services/tagDb'
-import { isCJKLocale, t } from '@/composables/useI18n'
+import { isCJKLocale, locale, t } from '@/composables/useI18n'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
+import { useTextMeasure } from '@/composables/useTextMeasure'
 
 const props = defineProps<{
   suggestions: TagEntry[]
@@ -54,6 +55,27 @@ watch(() => props.suggestions, () => {
   if (listEl.value) listEl.value.scrollTop = 0
 })
 
+// ns 欄寬：用 useTextMeasure 量「當前 list 出現的 ns 翻譯字串中最寬的」。
+// 量出的寬度設成 --ns-col-width，outer grid 第一欄寬度跟著走，name 起始點對齊
+const { getWidth, version } = useTextMeasure({
+  containerRef: listEl,
+  itemSelector: '.eqt-popup__suggestion-ns',
+  itemsSignal: () => props.suggestions,
+})
+
+const nsColWidth = computed(() => {
+  void version.value
+  void locale.value
+  if (!props.suggestions.length) return 0
+  const nsSet = new Set(props.suggestions.map(s => s.ns))
+  let max = 0
+  for (const ns of nsSet) {
+    const w = getWidth(t('ns.' + ns) + '：')
+    if (w > max) max = w
+  }
+  return max
+})
+
 // 分辨 selectedIdx 變動來源：mouseenter 觸發時設旗標，watch 看到旗標就跳過 scroll。
 // 否則會卡 feedback loop：hover 部分露出的 item → watch 滾起來讓它整個入視野 →
 // 內容上移、滑鼠 screen 座標不變、游標下方換成下一個 item → 又 mouseenter → 一直滑。
@@ -94,6 +116,7 @@ const { cjkDisplay } = useDisplayConfig()
   <div
     ref="listEl"
     class="eqt-suggestion-list"
+    :style="nsColWidth > 0 ? { '--ns-col-width': nsColWidth + 'px' } : undefined"
     @scroll="onScroll"
   >
     <div :style="wrapperStyle">
@@ -123,5 +146,6 @@ const { cjkDisplay } = useDisplayConfig()
   border-radius: var(--eqt-radius-sm);
   overflow-y: auto;
   text-align: left;
+
 }
 </style>

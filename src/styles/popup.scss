@@ -237,13 +237,14 @@
     z-index: var(--eqt-z-popover);
   }
 
+  // ns / name / tag 三欄對齊：第一欄寬由 SuggestionList 用 useTextMeasure 量「當前
+  // list 出現的 ns 翻譯字串中最寬的」設成 --ns-col-width，name 起始點對齊
   &__suggestion {
-    display: flex;
+    display: grid;
+    grid-template-columns: var(--ns-col-width, 6em) 1fr auto;
     align-items: center;
     padding: 4px 8px;
     cursor: pointer;
-    flex-wrap: wrap;
-    gap: 0 8px;
 
     &:hover,
     &--active {
@@ -254,19 +255,15 @@
   &__suggestion-ns {
     font-size: var(--eqt-fs-sm);
     color: var(--eqt-text-hint);
-    flex-shrink: 0;
   }
 
   &__suggestion-name {
     font-size: var(--eqt-fs-lg);
-    flex: 1;
     min-width: 0;
   }
 
   &__suggestion-tag {
     font-size: var(--eqt-fs-sm);
     color: var(--eqt-text-hint);
-    flex-shrink: 0;
-    margin-left: auto;
   }
 }
