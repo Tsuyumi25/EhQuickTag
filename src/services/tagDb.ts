@@ -6,14 +6,16 @@ import { hasGMXHR, cacheGet, cacheSet } from '@/services/gmStorage'
 export type TagDbMirror = 'jsdelivr' | 'fastly' | 'gcore' | 'github'
 
 export const TAG_DB_MIRRORS: Record<TagDbMirror, { label: string; url: string }> = {
-  jsdelivr: { label: 'jsDelivr', url: 'https://cdn.jsdelivr.net/gh/EhTagTranslation/DatabaseReleases@master/db.html.json' },
-  fastly: { label: 'jsDelivr (Fastly)', url: 'https://fastly.jsdelivr.net/gh/EhTagTranslation/DatabaseReleases@master/db.html.json' },
-  gcore: { label: 'jsDelivr (Gcore)', url: 'https://gcore.jsdelivr.net/gh/EhTagTranslation/DatabaseReleases@master/db.html.json' },
-  github: { label: 'GitHub Raw', url: 'https://raw.githubusercontent.com/EhTagTranslation/DatabaseReleases/master/db.html.json' },
+  jsdelivr: { label: 'jsDelivr', url: 'https://cdn.jsdelivr.net/gh/EhTagTranslation/DatabaseReleases@master/db.text.json' },
+  fastly: { label: 'jsDelivr (Fastly)', url: 'https://fastly.jsdelivr.net/gh/EhTagTranslation/DatabaseReleases@master/db.text.json' },
+  gcore: { label: 'jsDelivr (Gcore)', url: 'https://gcore.jsdelivr.net/gh/EhTagTranslation/DatabaseReleases@master/db.text.json' },
+  github: { label: 'GitHub Raw', url: 'https://raw.githubusercontent.com/EhTagTranslation/DatabaseReleases/master/db.text.json' },
 }
 
-const CACHE_KEY = 'eqt_tag_db'
-const CACHE_TS_KEY = 'eqt_tag_db_ts'
+// v2: 改抓 db.text.json 並加入 introSearch 欄位（commit b/c html 版把 cross-reference 詞
+// 藏在 <abbr title="..."> 屬性裡，textContent 拿不到，導致 introSearch 永遠沒命中）
+const CACHE_KEY = 'eqt_tag_db_v2'
+const CACHE_TS_KEY = 'eqt_tag_db_v2_ts'
 
 /** Fields persisted to cache. */
 interface StoredEntry {
@@ -354,9 +356,11 @@ export function searchTags(query: string, opts: SearchOptions = {}): TagEntry[] 
 const _fallbackCache = new Map<string, TagEntry[]>()
 export interface FallbackEntriesOptions {
   namespaces?: readonly string[]
+  useNhWeight?: boolean
 }
 export function getFallbackEntries(opts: FallbackEntriesOptions = {}): TagEntry[] {
-  const cacheKey = opts.namespaces && opts.namespaces.length ? [...opts.namespaces].sort().join(',') : '*'
+  const nsKey = opts.namespaces && opts.namespaces.length ? [...opts.namespaces].sort().join(',') : '*'
+  const cacheKey = `${nsKey}|nh:${opts.useNhWeight ? 1 : 0}`
   const cached = _fallbackCache.get(cacheKey)
   if (cached) return cached
   if (!entries) return []
@@ -370,7 +374,11 @@ export function getFallbackEntries(opts: FallbackEntriesOptions = {}): TagEntry[
     if (nsSet && !nsSet.has(entry.ns)) continue
     const nsTier = nsTierMap.get(entry.ns)
     if (nsTier === undefined) continue
-    ranked.push({ entry, nhCount: getNhWeight(entry.ns, entry.raw) ?? 0, nsTier })
+    ranked.push({
+      entry,
+      nhCount: opts.useNhWeight ? (getNhWeight(entry.ns, entry.raw) ?? 0) : 0,
+      nsTier,
+    })
   }
   ranked.sort(compareNhFallback)
   const result = ranked.map(r => r.entry)

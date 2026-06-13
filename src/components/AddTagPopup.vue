@@ -40,18 +40,20 @@ const { dbReady, suggestions } = useTagSuggestions({
 // suggestions 換新清單時拉回頂端，避免過濾完按 Enter 拿到 undefined / 高亮看不見
 watch(suggestions, () => { selectedIdx.value = 0 })
 
-// 篩選按鈕變動：重抓 fallbackEntries 以對應新的 namespace 集合（query 結果由
-// useTagSuggestions 內部 watcher 處理）
-watch(selectedNs, () => {
+// 篩選按鈕 / useNhWeight 變動：重抓 fallbackEntries（query 結果由 useTagSuggestions
+// 內部 watcher 處理）。useNhWeight 必須進這個 watcher，否則設定關閉時 fallback 清單
+// 仍會帶 nh 加權順序
+watch([selectedNs, useNhWeight], () => {
   if (!dbReady.value) return
   fallbackEntries.value = getFallbackEntries({
     namespaces: selectedNs.value ? [selectedNs.value] : undefined,
+    useNhWeight: useNhWeight.value,
   })
 })
 
 onMounted(async () => {
   await loadTagDb()
-  fallbackEntries.value = getFallbackEntries()
+  fallbackEntries.value = getFallbackEntries({ useNhWeight: useNhWeight.value })
   inputEl.value?.focus()
 })
 

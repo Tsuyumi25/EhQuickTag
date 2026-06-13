@@ -300,7 +300,7 @@ function onEditorPurge() {
               />
               <span class="eqt-settings__label">{{ t('settings.useNhWeight') }}</span>
             </label>
-            <p class="eqt-settings__hint">
+            <p class="eqt-settings__hint" style="white-space: pre-line">
               {{ t('settings.useNhWeightHint') }}
             </p>
 
