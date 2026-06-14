@@ -279,7 +279,7 @@ watch(searchText, (val) => {
   <SearchPopup
     v-if="showSearchPopup"
     v-model="searchText"
-    @search="onSearch('search')"
+    @search="onSearch"
     @close="showSearchPopup = false"
   />
 </template>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, computed, inject } from 'vue'
 import { loadTagDb, getFallbackEntries, DEFAULT_NS_ORDER, type TagEntry } from '@/services/tagDb'
-import { useNhWeight, nsFormat, defaultExactMatch } from '@/services/store'
+import { useNhWeight, nsFormat, defaultExactMatch, dblClickLeft, dblClickRight, type DblClickAction } from '@/services/store'
 import { useTagSuggestions } from '@/composables/useTagSuggestions'
 import { usePopupBehavior } from '@/composables/usePopupBehavior'
 import { parseTerm, serializeEntry } from '@/services/searchSyntax'
@@ -30,13 +30,15 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:modelValue': [value: string]
-  search: []
+  // 帶 action payload：背景雙擊路徑要區分 search / searchNewTab，App.onSearch
+  // 才能走對 branch。SearchControls submit 永遠送 'search'
+  search: [action: DblClickAction]
   close: []
 }>()
 
 const session = inject(SearchSessionKey)
 if (!session) throw new Error('SearchPopup: SearchSessionKey not provided')
-const { sessionTerms, dismissTerms } = session
+const { sessionTerms, dismissTerms, recordSubmitAndFlush } = session
 
 const query = ref('')
 const inputEl = ref<HTMLInputElement | null>(null)
@@ -144,6 +146,64 @@ function onCtxMenu(entry: TagEntry): void {
   applyEntryState(entry, next)
 }
 
+// === 背景雙擊 action ===
+// 白名單只走 search / searchNewTab / clearSearch；toggleEdit / openSearchPopup
+// 在 SearchPopup 內無語意（沒有 editing 態、已開啟），none 不動。
+//
+// 「背景」= popup 內非互動區域。用 closest(INTERACTIVE_SELECTOR) 過濾——
+// 用 @dblclick.self 太嚴格（popup 子節點幾乎填滿視覺空間，使用者感知的
+// 「背景」其實大多落在 SuggestionList wrapper 等子元素上）。
+//
+// dblclick 預設會選下層文字，即使 action 不執行也要 preventDefault 殺掉，
+// 否則背景雙擊冒出劃詞選單。contextmenu 同理對稱處理
+const BG_DBL_ALLOWED: ReadonlySet<DblClickAction> = new Set<DblClickAction>([
+  'search', 'searchNewTab', 'clearSearch',
+])
+
+const INTERACTIVE_SELECTOR =
+  'button, a, input, select, textarea, [contenteditable], .eqt-popup__suggestion, .eqt-search-panel__button'
+
+function isInteractive(e: MouseEvent): boolean {
+  return !!(e.target as HTMLElement).closest(INTERACTIVE_SELECTOR)
+}
+
+// async 因為 search / searchNewTab 路徑要先 await recordSubmitAndFlush——
+// 跟 TagBar.execDblClickAction / SearchControls.onSearchClick 同邏輯，避免
+// form.submit() navigate 跑在 GM_setValue 100ms debounce 寫入前面
+async function execBgDblClick(action: DblClickAction): Promise<void> {
+  if (!BG_DBL_ALLOWED.has(action)) return
+  if (action === 'clearSearch') {
+    emit('update:modelValue', '')
+  } else {
+    await recordSubmitAndFlush()
+    emit('search', action)
+  }
+}
+
+function onBgDblClick(e: MouseEvent): void {
+  if (isInteractive(e)) return
+  e.preventDefault()
+  window.getSelection()?.removeAllRanges()
+  execBgDblClick(dblClickLeft.value)
+}
+
+let lastRightClickTime = 0
+function onBgContextMenu(e: MouseEvent): void {
+  if (isInteractive(e)) return
+  // preventDefault 先呼叫——whitelist 失敗也要擋原生 context menu，跟
+  // onBgDblClick 永遠 preventDefault 對稱（action='none' 等也不冒選單）
+  e.preventDefault()
+  const action = dblClickRight.value
+  if (!BG_DBL_ALLOWED.has(action)) return
+  const now = Date.now()
+  if (now - lastRightClickTime < 500) {
+    execBgDblClick(action)
+    lastRightClickTime = 0
+  } else {
+    lastRightClickTime = now
+  }
+}
+
 // Escape 走 usePopupBehavior 統一處理；這裡只 handle 清單導覽 + Enter 沿用左鍵語意
 function onKeydown(e: KeyboardEvent): void {
   if (e.key === 'ArrowDown') {
@@ -162,7 +222,13 @@ function onKeydown(e: KeyboardEvent): void {
 
 <template>
   <div class="eqt-popup-overlay">
-    <div ref="popupEl" class="eqt-popup eqt-search-popup" @keydown="onKeydown">
+    <div
+      ref="popupEl"
+      class="eqt-popup eqt-search-popup"
+      @keydown="onKeydown"
+      @dblclick="onBgDblClick"
+      @contextmenu="onBgContextMenu"
+    >
       <aside
         class="eqt-search-popup__ns-filter"
         role="group"
@@ -231,7 +297,7 @@ function onKeydown(e: KeyboardEvent): void {
           show-lang-toggle
           show-clear-search
           show-search
-          @search="emit('search')"
+          @search="emit('search', 'search')"
         />
       </div>
     </div>
