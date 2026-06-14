@@ -112,7 +112,8 @@
 
   // checkbox 預設尺寸 / 勾勾顏色（必須放 :root inherited，不能放全域 input 規則內，
   // 否則 component 級 override 會被全域 (1,1,1) 在同 element 上壓過去）
-  --eqt-checkbox-size: 20px;
+  // 對齊 .eqt-settings__locale-btn 渲染高度（~25px），settings 表單視覺一致
+  --eqt-checkbox-size: 25px;
   --eqt-checkbox-color: var(--eqt-text);
 }
 
