@@ -76,6 +76,7 @@ export default {
   'settings.actionSearchNewTab': '搜尋（新分頁）',
   'settings.actionClear': '清空搜尋框',
   'settings.actionToggleEdit': '編輯（On/Off）',
+  'settings.actionOpenSearchPopup': '瀏覽標籤',
   'settings.actionNone': '無',
   'settings.newTabActivate': '新分頁搜尋時切換到該分頁',
   'settings.reset': '重置',

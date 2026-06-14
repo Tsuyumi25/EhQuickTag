@@ -26,6 +26,7 @@ const ACTION_KEYS: Record<DblClickAction, string> = {
   searchNewTab: 'tagbar.searchNewTab',
   clearSearch: 'tagbar.clearSearch',
   toggleEdit: 'tagbar.toggleEdit',
+  openSearchPopup: 'tagbar.browseTag',
   none: 'tagbar.none',
 }
 
@@ -112,6 +113,11 @@ async function execDblClickAction(action: DblClickAction) {
   if (action === 'none') return
   if (action === 'toggleEdit') {
     editing.value = !editing.value
+    return
+  }
+  if (action === 'openSearchPopup') {
+    // 重用既有的 + 鈕 event chain：TagBar emit → App.onAddToSearch → showSearchPopup
+    emit('addToSearch')
     return
   }
   if (action === 'clearSearch') {

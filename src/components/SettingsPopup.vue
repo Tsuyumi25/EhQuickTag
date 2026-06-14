@@ -348,6 +348,7 @@ function onEditorPurge() {
                 <option value="searchNewTab">{{ t('settings.actionSearchNewTab') }}</option>
                 <option value="clearSearch">{{ t('settings.actionClear') }}</option>
                 <option value="toggleEdit">{{ t('settings.actionToggleEdit') }}</option>
+                <option value="openSearchPopup">{{ t('settings.actionOpenSearchPopup') }}</option>
                 <option value="none">{{ t('settings.actionNone') }}</option>
               </select>
             </div>

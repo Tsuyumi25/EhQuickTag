@@ -76,6 +76,7 @@ export default {
   'settings.actionSearchNewTab': 'Search (new tab)',
   'settings.actionClear': 'Clear search',
   'settings.actionToggleEdit': 'Edit (On/Off)',
+  'settings.actionOpenSearchPopup': 'Browse tags',
   'settings.actionNone': 'None',
   'settings.newTabActivate': 'Switch to new tab when searching',
   'settings.reset': 'Reset',

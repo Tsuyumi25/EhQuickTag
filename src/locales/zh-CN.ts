@@ -76,6 +76,7 @@ export default {
   'settings.actionSearchNewTab': '搜索（新标签页）',
   'settings.actionClear': '清空搜索框',
   'settings.actionToggleEdit': '编辑（On/Off）',
+  'settings.actionOpenSearchPopup': '浏览标签',
   'settings.actionNone': '无',
   'settings.newTabActivate': '新标签页搜索时切换到该标签页',
   'settings.reset': '重置',

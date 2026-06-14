@@ -76,6 +76,7 @@ export default {
   'settings.actionSearchNewTab': '検索（新しいタブ）',
   'settings.actionClear': '検索をクリア',
   'settings.actionToggleEdit': '編集（On/Off）',
+  'settings.actionOpenSearchPopup': 'タグを閲覧',
   'settings.actionNone': 'なし',
   'settings.newTabActivate': '新しいタブで検索時にそのタブへ切り替える',
   'settings.reset': 'リセット',
