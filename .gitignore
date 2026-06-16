@@ -5,4 +5,7 @@ dist
 TODO.md
 test-results/
 playwright-report/
+.env
+.env.*
+!.env.example
 
