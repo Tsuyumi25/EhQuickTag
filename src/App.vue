@@ -1,36 +1,30 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, provide } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import TagBar from '@/components/TagBar.vue'
 import TagConfigPopup from '@/components/TagConfigPopup.vue'
 import UrlConfigPopup from '@/components/UrlConfigPopup.vue'
 import SettingsPopup from '@/components/SettingsPopup.vue'
-import SearchPopup from '@/components/SearchPopup.vue'
+import SearchPopup from '@/components/search/SearchPopup.vue'
 import { GM_openInTab } from '$'
 import type { Button, TagButton, UrlButton } from '@/types'
-import { useSessionTerms, SearchSessionKey } from '@/composables/useSessionTerms'
+import { bindSearchBar } from '@/services/search/searchSession'
 import { lines, fontFamily, fontWeight, profiles, activeProfileIdx, switchProfile, renameProfile, createProfile, deleteProfile, newTabActive, nsFormat, defaultExactMatch, tagDbMirror, tagDbTtlDays, type DblClickAction } from '@/services/store'
 import { loadTagDb } from '@/services/tagDb'
 import { useEhFormHost } from '@/composables/useEhFormHost'
 
-// === 初始 search box 同步 + session 狀態機共用 ===
-//
-// useEhFormHost 拉到 setup 階段（過去是 onMounted）——這樣 searchText 在
-// useSessionTerms setup 之前就拿到 native input 的值，useSessionTerms 抓的
-// initialSubmittedIds snapshot 才會是「mount 那刻 URL 帶的 search」而非空字串
-//
-// userscript 在 DOMContentLoaded 後 inject，main.ts 也 await loadStore 後才
-// createApp.mount → setup 跑時 #f_search 一定存在；ehFormHost 只在某些非
-// EH 頁面（不該注入的情況）會回 null
+// useEhFormHost 在 setup 階段呼叫（非 onMounted）——searchText 在 bindSearchBar
+// 之前就要拿到 native input 的值，session 抓的 initialSubmittedIds snapshot 才
+// 會是「mount 那刻 URL 帶的 search」而非空字串。userscript 在 DOMContentLoaded
+// 後 inject，setup 跑時 #f_search 一定存在；ehFormHost 只在非 EH 頁面回 null。
 const ehFormHost = useEhFormHost()
 const searchInput = ehFormHost?.input ?? null
 const searchText = ref(searchInput?.value ?? '')
 const anchorReady = ref(ehFormHost !== null)
 
-const session = useSessionTerms({
+bindSearchBar({
   modelValue: () => searchText.value,
   emitUpdate: (v) => { searchText.value = v },
 })
-provide(SearchSessionKey, session)
 
 // 自訂字體 var 設在兩個 mount 點上而非 documentElement：
 //   #eqt-bar-anchor → TagBar
@@ -176,9 +170,6 @@ const showSearchPopup = ref(false)
 function onAddToSearch() {
   showSearchPopup.value = true
 }
-
-// SearchPopup 不需要 prop 傳 sessionTerms / dismiss-terms callback——
-// 直接從 inject(SearchSessionKey) 拿 session（跟 SearchPanel / TagBar 同源）
 
 function onSearch(action: DblClickAction) {
   if (!searchInput?.form) return

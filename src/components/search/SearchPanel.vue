@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, inject } from 'vue'
+import { computed, ref } from 'vue'
 import Draggable from 'vuedraggable'
 import { parseTerm } from '@/services/searchSyntax'
 import { tokenize, tokenIdentity } from '@/services/tagState'
@@ -7,11 +7,14 @@ import { lines, enableHistory } from '@/services/store'
 import { findEntryByNsTag, tagDbVersion } from '@/services/tagDb'
 import { t } from '@/composables/useI18n'
 import { baseDragOptions, EQT_TAGS_GROUP } from '@/utils/drag'
-import { SearchSessionKey } from '@/composables/useSessionTerms'
+import {
+  sessionTerms, history, sessionIdentitySet,
+  dismissTerms, onRestoreHistory, onHistoryChange,
+} from '@/services/search/searchSession'
 import { useBilingualWrap } from '@/composables/useBilingualWrap'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
-import SearchTermRows from '@/components/SearchTermRows.vue'
-import SearchControls from '@/components/SearchControls.vue'
+import SearchTermRows from '@/components/search/SearchTermRows.vue'
+import SearchControls from '@/components/search/SearchControls.vue'
 import type { TagButton } from '@/types'
 
 const props = defineProps<{
@@ -31,20 +34,6 @@ const emit = defineEmits<{
 
 // effectiveShowCJK 跟 SuggestionList / SearchTermRows 共用一份解析邏輯（useDisplayConfig）
 const { effectiveShowCJK, cjkDisplay } = useDisplayConfig()
-
-// === sessionTerms / history 狀態機從 App.vue inject ===
-//
-// 細節跟 invariants 證明在 composables/useSessionTerms.ts。
-// SearchPanel 不再自己持有 session——App.vue 在 setup 階段呼一次 useSessionTerms
-// 後 provide，這層只負責 render + 接 emit
-const session = inject(SearchSessionKey)
-if (!session) throw new Error('SearchPanel: SearchSessionKey not provided')
-const {
-  sessionTerms, history,
-  sessionIdentitySet,
-  dismissTerms,
-  onRestoreHistory, onHistoryChange,
-} = session
 
 // loadTagDb 不在這呼叫——App.vue 已經 setup 階段觸發。historyDisplays computed
 // 用 tagDb.tagDbVersion 當 reactive signal，DB ready 時自動 recompute

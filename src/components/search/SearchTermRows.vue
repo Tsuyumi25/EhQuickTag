@@ -1,7 +1,7 @@
 <script lang="ts">
 // 共用元件：把搜尋 chip 按 namespace 分組顯示成 rows + 提供 toggle / drag-clone。
-// 不含 history row、controls-row、useSessionTerms——caller 負責管 session 狀態
-// 跟 history，這層只渲染給定的 sessionTerms 並 emit state 變更。
+// 不含 history row、controls-row、session 狀態管理——只渲染 caller 給的
+// sessionTerms 並 emit state 變更。
 //
 // 兩個 caller：
 //   - SearchPanel：editing 模式下可拖出 chip → TagBar
@@ -18,7 +18,7 @@ import { t } from '@/composables/useI18n'
 import { baseDragOptions, EQT_TAGS_GROUP } from '@/utils/drag'
 import { useBilingualWrap } from '@/composables/useBilingualWrap'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
-import type { TermEntry } from '@/composables/useSessionTerms'
+import type { TermEntry } from '@/services/search/sessionState'
 import { TagState, type TagButton } from '@/types'
 
 const props = defineProps<{

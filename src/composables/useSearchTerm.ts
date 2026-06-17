@@ -1,14 +1,20 @@
 import { nextTick, type Ref } from 'vue'
+import type { SearchTerm } from '@/services/searchSyntax'
 import {
-  parseTerm, serializeTerm,
-  NS_TO_SHORT,
-  type SearchTerm, type Prefix, type Suffix, type Qualifier,
-} from '@/services/searchSyntax'
+  parseRawText, serializeToken,
+  applyPrefix, applyColonPrefix, applyTagValue,
+  applyCycleSuffix, applyCycleNsFormat, applySuggestionPick,
+  buildExplain, getColonPrefixValue, getNsFormatLabel,
+  EXPLAIN_CLASSES,
+  type SuggestionEntry,
+} from '@/services/searchTermState'
+import type { Prefix } from '@/services/searchSyntax'
 import { t } from '@/composables/useI18n'
 
 // === RowState：每一筆 term 編輯器的狀態容器 ===
 // 由 TagConfigPopup 建立陣列、各 SearchTermEditor 接管自己這筆。
 // token 是結構化資料、rawText 是字串顯示，hook 內負責雙向同步。
+
 export interface RowState {
   id: symbol
   token: SearchTerm
@@ -20,14 +26,16 @@ export interface RowState {
 export function makeRow(raw: string): RowState {
   return {
     id: Symbol(),
-    token: parseTerm(raw),
+    token: parseRawText(raw),
     rawText: raw,
     undoStack: [],
     redoStack: [],
   }
 }
 
-// === file-private contenteditable 黑魔法 ===
+export { cyclePrefix, nsToShort } from '@/services/searchTermState'
+
+// === file-private contenteditable DOM 操作 ===
 
 function getCursorOffset(el: HTMLElement): number {
   const sel = window.getSelection()
@@ -73,59 +81,13 @@ function setCursorOffset(el: HTMLElement, offset: number): void {
   sel.addRange(range)
 }
 
-const EXPLAIN_CLASSES: Record<string, string> = {
-  prefix: 'eqt-explain--prefix',
-  ns: 'eqt-explain--ns',
-  qualifier: 'eqt-explain--qualifier',
-  tag: 'eqt-explain--tag',
-  suffix: 'eqt-explain--suffix',
-  error: 'eqt-explain--error',
-  punct: 'eqt-explain--punct',
-}
-
-interface ExplainSegment { text: string; cls: string; label: string }
-
-function buildExplain(token: SearchTerm): ExplainSegment[] {
-  if (token.parseError && token.tag === token.raw) {
-    return [{ text: token.raw, cls: EXPLAIN_CLASSES.error, label: t('tagConfig.explainError') }]
-  }
-
-  const segs: ExplainSegment[] = []
-  if (token.prefix) {
-    segs.push({ text: token.prefix, cls: EXPLAIN_CLASSES.prefix, label: t('tagConfig.explainPrefix') })
-  }
-  if (token.qualifier) {
-    segs.push({ text: token.qualifier, cls: EXPLAIN_CLASSES.qualifier, label: t('tagConfig.explainQualifier') })
-    segs.push({ text: ':', cls: EXPLAIN_CLASSES.punct, label: '' })
-  } else if (token.namespace) {
-    const nsDisplay = token.namespaceRaw ?? token.namespace
-    segs.push({ text: nsDisplay, cls: EXPLAIN_CLASSES.ns, label: t('tagConfig.explainNs') })
-    segs.push({ text: ':', cls: EXPLAIN_CLASSES.punct, label: '' })
-  }
-  const needsQuotes = token.tag.includes(' ')
-  if (needsQuotes) {
-    segs.push({ text: '"', cls: EXPLAIN_CLASSES.punct, label: '' })
-    segs.push({ text: token.tag, cls: EXPLAIN_CLASSES.tag, label: t('tagConfig.explainTag') })
-    if (token.suffix) {
-      segs.push({ text: token.suffix, cls: EXPLAIN_CLASSES.suffix, label: t('tagConfig.explainSuffix') })
-    }
-    segs.push({ text: '"', cls: EXPLAIN_CLASSES.punct, label: '' })
-  } else if (token.tag) {
-    segs.push({ text: token.tag, cls: EXPLAIN_CLASSES.tag, label: t('tagConfig.explainTag') })
-    if (token.suffix) {
-      segs.push({ text: token.suffix, cls: EXPLAIN_CLASSES.suffix, label: t('tagConfig.explainSuffix') })
-    }
-  }
-  return segs
-}
-
 function renderHighlight(el: HTMLElement, row: RowState): void {
   if (!row.rawText) {
     el.innerHTML = ''
     return
   }
 
-  let segs = buildExplain(row.token)
+  let segs = buildExplain(row.token, t)
   // 重組後若跟 rawText 對不起來（解析誤差），退回 raw 顯示避免文字消失
   const reconstructed = segs.map(s => s.text).join('')
   if (reconstructed !== row.rawText.trim()) {
@@ -145,23 +107,10 @@ function renderHighlight(el: HTMLElement, row: RowState): void {
   if (isFocused) setCursorOffset(el, offset)
 }
 
-export function cyclePrefix(current: Prefix): Prefix {
-  if (current === null) return '-'
-  if (current === '-') return '~'
-  return null
-}
-
-function cycleSuffix(current: Suffix): Suffix {
-  if (current === null) return '$'
-  if (current === '$') return '*'
-  return null
-}
-
-export const nsToShort = (ns: string): string | undefined => NS_TO_SHORT[ns] as string | undefined
-
 // === main hook ===
-// rawEl 由 caller 透過 template ref 提供。hook 內負責所有 token ↔ rawText 同步、
-// undo/redo、highlight render、structured field setter。
+// rawEl 由 caller 透過 template ref 提供。hook 內負責 token ↔ rawText 同步、
+// undo/redo、highlight render 排程、structured field setter。
+
 export function useSearchTerm(
   row: RowState,
   rawEl: Ref<HTMLElement | null>,
@@ -181,7 +130,7 @@ export function useSearchTerm(
   function updateFromStructured(): void {
     if (syncing) return
     syncing = true
-    row.rawText = serializeTerm(row.token)
+    row.rawText = serializeToken(row.token)
     syncing = false
     refreshHighlight()
   }
@@ -192,7 +141,7 @@ export function useSearchTerm(
     row.redoStack.length = 0
     syncing = true
     row.rawText = text
-    row.token = parseTerm(text.trim())
+    row.token = parseRawText(text)
     syncing = false
     refreshHighlight()
   }
@@ -200,7 +149,7 @@ export function useSearchTerm(
   function applyText(text: string): void {
     syncing = true
     row.rawText = text
-    row.token = parseTerm(text.trim())
+    row.token = parseRawText(text)
     syncing = false
     refreshHighlight()
     nextTick(() => {
@@ -220,82 +169,39 @@ export function useSearchTerm(
     applyText(row.redoStack.pop()!)
   }
 
-  function rowPrefersShort(): boolean {
-    return row.token.namespace && row.token.namespaceRaw
-      ? row.token.namespaceRaw !== row.token.namespace
-      : (options.nsFormat ?? 'long') === 'short'
+  const nsFormat = options.nsFormat ?? 'long'
+  const suggestionOpts = {
+    defaultExactMatch: options.defaultExactMatch,
+    defaultNsFormat: nsFormat,
   }
 
   function setPrefix(prefix: Prefix): void {
-    row.token.prefix = prefix
+    row.token = applyPrefix(row.token, prefix)
     updateFromStructured()
   }
 
   function setColonPrefix(value: string): void {
-    if (!value) {
-      row.token.qualifier = null
-      row.token.namespace = null
-      row.token.namespaceRaw = null
-    } else if (value.startsWith('q:')) {
-      const q = value.slice(2)
-      row.token.qualifier = q as Qualifier
-      row.token.namespace = null
-      row.token.namespaceRaw = null
-    } else if (value.startsWith('ns:')) {
-      const ns = value.slice(3)
-      const prefersShort = rowPrefersShort()
-      row.token.qualifier = null
-      row.token.namespace = ns
-      row.token.namespaceRaw = prefersShort ? (nsToShort(ns) ?? ns) : ns
-    }
+    row.token = applyColonPrefix(row.token, value, nsFormat)
     updateFromStructured()
   }
 
   function setTagValue(value: string): void {
-    row.token.tag = value
-    row.token.quoted = value.includes(' ')
+    row.token = applyTagValue(row.token, value)
     updateFromStructured()
   }
 
   function onCycleSuffix(): void {
-    row.token.suffix = cycleSuffix(row.token.suffix)
+    row.token = applyCycleSuffix(row.token)
     updateFromStructured()
   }
 
   function cycleNsFormat(): void {
-    if (!row.token.namespace) return
-    const ns = row.token.namespace
-    const short = nsToShort(ns)
-    if (!short) return
-    row.token.namespaceRaw = row.token.namespaceRaw === ns ? short : ns
+    row.token = applyCycleNsFormat(row.token)
     updateFromStructured()
   }
 
-  function getNsFormatLabel(): string {
-    if (!row.token.namespace) return ''
-    const short = nsToShort(row.token.namespace)
-    if (!short) return '-'
-    return row.token.namespaceRaw === row.token.namespace
-      ? t('settings.nsFormatLong')
-      : t('settings.nsFormatShort')
-  }
-
-  function getColonPrefixValue(): string {
-    if (row.token.qualifier) return `q:${row.token.qualifier}`
-    if (row.token.namespace) return `ns:${row.token.namespace}`
-    return ''
-  }
-
-  function applySuggestionPick(entry: { ns: string; raw: string }): void {
-    const prefersShort = rowPrefersShort()
-    row.token.namespace = entry.ns
-    row.token.namespaceRaw = prefersShort ? (nsToShort(entry.ns) ?? entry.ns) : entry.ns
-    row.token.qualifier = null
-    row.token.tag = entry.raw
-    row.token.quoted = entry.raw.includes(' ')
-    if (row.token.suffix === null && (options.defaultExactMatch ?? true)) {
-      row.token.suffix = '$'
-    }
+  function applyPickSuggestion(entry: SuggestionEntry): void {
+    row.token = applySuggestionPick(row.token, entry, suggestionOpts)
     updateFromStructured()
   }
 
@@ -309,8 +215,8 @@ export function useSearchTerm(
     setTagValue,
     onCycleSuffix,
     cycleNsFormat,
-    getNsFormatLabel,
-    getColonPrefixValue,
-    applySuggestionPick,
+    getNsFormatLabel: () => getNsFormatLabel(row.token, t),
+    getColonPrefixValue: () => getColonPrefixValue(row.token),
+    applySuggestionPick: applyPickSuggestion,
   }
 }

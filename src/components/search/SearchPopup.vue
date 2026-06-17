@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, computed, inject } from 'vue'
+import { ref, watch, onMounted, computed } from 'vue'
 import { loadTagDb, getFallbackEntries, DEFAULT_NS_ORDER, type TagEntry } from '@/services/tagDb'
 import { nsFormat, defaultExactMatch, dblClickLeft, dblClickRight, type DblClickAction } from '@/services/store'
 import { useTagSuggestions } from '@/composables/useTagSuggestions'
 import { usePopupBehavior } from '@/composables/usePopupBehavior'
 import { parseTerm, serializeEntry } from '@/services/searchSyntax'
 import { tokenize, tokenIdentity, buildIdentityIndex, getNextRightClickState, setTagState } from '@/services/tagState'
-import { SearchSessionKey } from '@/composables/useSessionTerms'
+import { sessionTerms, dismissTerms, recordSubmitAndFlush } from '@/services/search/searchSession'
 import { t } from '@/composables/useI18n'
 import SuggestionList from '@/components/SuggestionList.vue'
-import SearchTermRows from '@/components/SearchTermRows.vue'
-import SearchControls from '@/components/SearchControls.vue'
+import SearchTermRows from '@/components/search/SearchTermRows.vue'
+import SearchControls from '@/components/search/SearchControls.vue'
 import { TagState } from '@/types'
 
 // === 心智模型 ===
@@ -22,8 +22,8 @@ import { TagState } from '@/types'
 //   - 中 中：SearchTermRows（當前 search chip）
 //   - 中 下：SearchControls（lang toggle / clear search / submit）
 //
-// session 從 inject 拿——App.vue 統一持有 useSessionTerms，這層 toggle 走的
-// dismissTerms 跟 SearchPanel 內部 chip toggle 是同個 instance，行為等價
+// 這層 toggle 走的 dismissTerms 跟 SearchPanel 內部 chip toggle 是同個 ref，
+// 行為等價（共用 services/searchSession 的 state）。
 const props = defineProps<{
   modelValue: string
 }>()
@@ -35,10 +35,6 @@ const emit = defineEmits<{
   search: [action: DblClickAction]
   close: []
 }>()
-
-const session = inject(SearchSessionKey)
-if (!session) throw new Error('SearchPopup: SearchSessionKey not provided')
-const { sessionTerms, dismissTerms, recordSubmitAndFlush } = session
 
 const query = ref('')
 const inputEl = ref<HTMLInputElement | null>(null)
@@ -117,8 +113,8 @@ function tokenForEntry(entry: TagEntry): string {
 }
 
 // === toggle 路徑：跟 SearchTermRows / TagBar 同邏輯 ===
-// Off 直接呼 dismissTerms（session inject 來的）→ markEntriesOff + push history +
-// emit update。其他態走 update:modelValue + setTagState（in-place 替換、保留位置）
+// Off 直接呼 dismissTerms → markEntriesOff + push history + emit update。
+// 其他態走 update:modelValue + setTagState（in-place 替換、保留位置）
 function applyEntryState(entry: TagEntry, next: TagState): void {
   const token = tokenForEntry(entry)
   if (next === TagState.Off) {
@@ -301,7 +297,7 @@ function onKeydown(e: KeyboardEvent): void {
 </template>
 
 <style lang="scss">
-@use '../styles/buttons' as *;
+@use '../../styles/buttons' as *;
 
 // fzf 風 popup：左側 namespace 篩選 sidebar，右側 input + 候選池 + 當前搜尋 chip 區
 .eqt-search-popup {

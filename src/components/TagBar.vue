@@ -1,25 +1,19 @@
 <script setup lang="ts">
-import { ref, computed, inject, nextTick } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import { useResizeObserver } from '@vueuse/core'
 import Draggable from 'vuedraggable'
 import { ChevronLeft, ChevronRight, ExternalLink, GripVertical, Trash2, Pencil, Check, Settings, Plus, Info } from '@lucide/vue'
 import ContentEditable from 'vue-contenteditable'
 import LineColorSwatch from '@/components/LineColorSwatch.vue'
 import SeparatorSettingsPopup from '@/components/SeparatorSettingsPopup.vue'
-import SearchPanel from '@/components/SearchPanel.vue'
+import SearchPanel from '@/components/search/SearchPanel.vue'
 import { TagState, type Line, type Button, type TagButton } from '@/types'
 import { tokenize, buildIdentityIndex, getState as _getState, setTagState, getNextRightClickState } from '@/services/tagState'
 import { lines, dblClickLeft, dblClickRight, useAccentOnInclude, showSearchPanel, type DblClickAction } from '@/services/store'
 import { baseDragOptions, EQT_TAGS_GROUP } from '@/utils/drag'
-import { SearchSessionKey } from '@/composables/useSessionTerms'
+import { dismissTerms, recordSubmitAndFlush } from '@/services/search/searchSession'
 import { t } from '@/composables/useI18n'
 import { currentTagStyleClass } from '@/composables/useTagStyle'
-
-// SearchPanel 把 useSessionTerms 提升到 App.vue 後，TagBar 透過 inject 直接拿
-// dismissTerms / recordSubmitAndFlush——不再需要 searchPanelRef chain + fallback
-const session = inject(SearchSessionKey)
-if (!session) throw new Error('TagBar: SearchSessionKey not provided')
-const { dismissTerms, recordSubmitAndFlush } = session
 
 const ACTION_KEYS: Record<DblClickAction, string> = {
   search: 'tagbar.search',
@@ -267,8 +261,8 @@ function getState(b: TagButton): TagState {
 // --- normal mode handlers ---
 
 // toggle Off 走 dismissTerms（殘留 off 灰按鈕 + push history），跟 SearchPanel
-// 內部 button 被點 Off 的行為一致。useSessionTerms 提到 App.vue 後 dismissTerms
-// 永遠可用，不需要 showSearchPanel 守衛（即使 panel 視覺收起，session 邏輯仍在）
+// 內部 button 被點 Off 的行為一致。session 是 module-level singleton、不需要
+// showSearchPanel 守衛（即使 panel 視覺收起，session 邏輯仍在）
 function dispatchTransition(tags: string[], next: TagState): void {
   if (next === TagState.Off) {
     dismissTerms(tags)

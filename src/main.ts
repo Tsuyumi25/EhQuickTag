@@ -1,13 +1,15 @@
 import { createApp } from 'vue'
 import App from '@/App.vue'
 import { loadStore, startAutoSave } from '@/services/store'
+import { loadSessionHistory } from '@/services/search/searchSession'
 import '@/styles/theme.scss'
 import '@/styles/popup.scss'
 import '@/styles/tag-style.scss'
 import '@/styles/native-search-row.scss'
 
 ;(async () => {
-  await loadStore()
+  // 讀不同 GM key、無依賴，並行省一條 round-trip
+  await Promise.all([loadStore(), loadSessionHistory()])
 
   const app = createApp(App)
   app.mount(

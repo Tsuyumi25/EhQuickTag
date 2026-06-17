@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { inject } from 'vue'
 import { searchPanelShowCJK as showCJK, enableHistory } from '@/services/store'
-import { SearchSessionKey } from '@/composables/useSessionTerms'
+import { clearSearch, clearHistory, recordSubmitAndFlush } from '@/services/search/searchSession'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
 import { t } from '@/composables/useI18n'
 
@@ -9,9 +8,6 @@ import { t } from '@/composables/useI18n'
 // caller 用 prop 控制顯示哪些——SearchPanel 全顯示、SearchPopup 顯示 lang toggle
 // + clearSearch + search（不要 addToSearch 因為自己就是 add 模式、不要
 // clearHistory 因為 popup 內沒 history 視覺呈現）。
-//
-// session 操作（clearSearch / clearHistory / recordSubmitAndFlush）走 inject，
-// 跟 caller 持有的同個 useSessionTerms instance
 defineProps<{
   showLangToggle?: boolean
   showClearHistory?: boolean
@@ -24,10 +20,6 @@ const emit = defineEmits<{
   addToSearch: []
   search: []
 }>()
-
-const session = inject(SearchSessionKey)
-if (!session) throw new Error('SearchControls: SearchSessionKey not provided')
-const { clearSearch, clearHistory, recordSubmitAndFlush } = session
 
 // resolvedMode 決定 lang toggle 顯示與否——auto 模式（跟 UI locale 走）就沒
 // toggle 動作可做，只在 user 明確 opt-in 'toggle' mode 時才出現按鈕
@@ -91,7 +83,7 @@ async function onSearchClick(): Promise<void> {
 </template>
 
 <style lang="scss">
-@use '../styles/buttons' as *;
+@use '../../styles/buttons' as *;
 
 // 工具列：左群組 / 中間 addToSearch 撐滿剩餘寬度 / 右群組。
 // addToSearch 不顯示時自然剩兩 group，space-between 把它們推到兩端
