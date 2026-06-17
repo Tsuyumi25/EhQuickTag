@@ -33,7 +33,7 @@ E-Hentai / ExHentai 搜尋快捷標籤列。
 ### 標籤資料庫搜尋
 
 - 整合 [EhTagTranslation](https://github.com/EhTagTranslation/Database)，支援中文（繁／簡）、日文、英文搜尋
-- **nhentai 人氣權重**：可開關，啟用時上傳量高的標籤優先呈現
+- **人氣權重排序**：依各 namespace 的圖庫數量排序——f/m/x/o/language 來自 e-hentai、artist/character/parody/group 來自 nhentai
 - **OpenCC 繁簡轉換**：中文翻譯可選 自動 / 繁體 / 簡體（DB 原文）
 - **Namespace 順序與可見性**：自訂 namespace 排序權重，可隱藏不感興趣的類別
 - **資料庫鏡像與快取**：可選 CDN 鏡像、調整快取天數、手動立即更新

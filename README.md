@@ -33,7 +33,7 @@ Adds a quick tag bar above the search box for one-click condition assembly. A co
 ### Tag database search
 
 - Integrates [EhTagTranslation](https://github.com/EhTagTranslation/Database) — search in Traditional/Simplified Chinese, Japanese, or English
-- **nhentai popularity weighting**: Optional; when enabled, frequently uploaded tags are prioritized in suggestions
+- **Popularity-weighted suggestions**: Tags ranked by gallery count — e-hentai per-namespace for f/m/x/o/language, nhentai per-namespace for artist/character/parody/group
 - **OpenCC Simplified-to-Traditional**: Choose Auto / Traditional / Simplified (DB original) for Chinese tag labels
 - **Namespace order & visibility**: Customize namespace ranking; hide categories you don't care about
 - **Database mirror & cache**: Choose a CDN mirror, adjust cache TTL, or refresh manually
