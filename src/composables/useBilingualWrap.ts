@@ -1,4 +1,4 @@
-import { ref, onMounted, type Ref, type WatchSource } from 'vue'
+import { ref, watch, onMounted, type Ref, type WatchSource } from 'vue'
 import { useResizeObserver, useEventListener } from '@vueuse/core'
 import { useTextMeasure } from '@/composables/useTextMeasure'
 
@@ -81,6 +81,7 @@ export function useBilingualWrap(opts: UseBilingualWrapOptions) {
   useResizeObserver(opts.containerRef, refreshContainerWidth)
   useEventListener(window, 'resize', refreshContainerWidth)
   onMounted(refreshContainerWidth)
+  watch(opts.itemsSignal, refreshContainerWidth, { flush: 'post' })
 
   return {
     chunkBilingual,
