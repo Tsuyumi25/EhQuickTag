@@ -30,12 +30,18 @@ importers:
         specifier: ^4.1.0
         version: 4.1.0(vue@3.5.34(typescript@6.0.3))
     devDependencies:
+      '@fast-check/vitest':
+        specifier: ^0.4.1
+        version: 0.4.1(vitest@4.1.6(vite@8.0.13(jiti@2.7.0)(sass@1.99.0)))
       '@playwright/test':
         specifier: ^1.60.0
         version: 1.60.0
       '@vitejs/plugin-vue':
         specifier: ^6.0.7
         version: 6.0.7(vite@8.0.13(jiti@2.7.0)(sass@1.99.0))(vue@3.5.34(typescript@6.0.3))
+      fast-check:
+        specifier: ^4.8.0
+        version: 4.8.0
       release-it:
         specifier: ^20.0.1
         version: 20.0.1
@@ -85,6 +91,11 @@ packages:
 
   '@emnapi/wasi-threads@1.2.1':
     resolution: {integrity: sha512-uTII7OYF+/Mes/MrcIOYp5yOtSMLBWSIoLPpcgwipoiKbli6k322tcoFsxoIIxPDqW01SQGAgko4EzZi2BNv2w==}
+
+  '@fast-check/vitest@0.4.1':
+    resolution: {integrity: sha512-OX6TecB+ZzRfPc49jcPChcV1cf5aDu77CdDU8liecWVam7eD7mPvJNP50b9bBSTxVoGN5wzxrX9PIcCnqgC8bg==}
+    peerDependencies:
+      vitest: ^4.1.0
 
   '@floating-ui/core@1.7.5':
     resolution: {integrity: sha512-1Ih4WTWyw0+lKyFMcBHGbb5U5FtuHJuujoyyr5zTaWS5EYMeT6Jb2AuDeftsCsEuchO+mM2ij5+q9crhydzLhQ==}
@@ -952,6 +963,10 @@ packages:
   exsolve@1.0.8:
     resolution: {integrity: sha512-LmDxfWXwcTArk8fUEnOfSZpHOJ6zOMUJKOtFLFqJLoKJetuQG874Uc7/Kki7zFLzYybmZhp1M7+98pfMqeX8yA==}
 
+  fast-check@4.8.0:
+    resolution: {integrity: sha512-GOJ158CUMnN6cSahsv4+ExARvIDuzzinFjkp0E9WtiBa5zcVeLozVkWaE4IzFcc+Y48Wp1EDlUZsXRyAztQcSg==}
+    engines: {node: '>=12.17.0'}
+
   fast-content-type-parse@3.0.0:
     resolution: {integrity: sha512-ZvLdcY8P+N8mGQJahJV5G4U88CSvT1rP8ApL6uETe88MBXrBHAkZlSEySdUlyztF7ccb+Znos3TFqaepHxdhBg==}
 
@@ -1343,6 +1358,9 @@ packages:
   proxy-from-env@1.1.0:
     resolution: {integrity: sha512-D+zkORCbA9f1tdWRK0RaCR3GPv50cMxcrz4X8k5LTSUD1Dkw47mKJEZQNunItRTkWwgtaUSo1RVFRIG9ZXiFYg==}
 
+  pure-rand@8.4.0:
+    resolution: {integrity: sha512-IoM8YF/jY0hiugFo/wOWqfmarlE6J0wc6fDK1PhftMk7MGhVZl88sZimmqBBFomLOCSmcCCpsfj7wXASCpvK9A==}
+
   quickjs-wasi@0.0.1:
     resolution: {integrity: sha512-fBWNLTBkxkLAhe1AzF1hyXEvuA+N+vV1WMP2D6iiMUblvmOt8Pp5t8zUcgvz7aYA1ldUdxDlgUse15dmcKjkNg==}
 
@@ -1697,6 +1715,11 @@ snapshots:
     dependencies:
       tslib: 2.8.1
     optional: true
+
+  '@fast-check/vitest@0.4.1(vitest@4.1.6(vite@8.0.13(jiti@2.7.0)(sass@1.99.0)))':
+    dependencies:
+      fast-check: 4.8.0
+      vitest: 4.1.6(vite@8.0.13(jiti@2.7.0)(sass@1.99.0))
 
   '@floating-ui/core@1.7.5':
     dependencies:
@@ -2421,6 +2444,10 @@ snapshots:
 
   exsolve@1.0.8: {}
 
+  fast-check@4.8.0:
+    dependencies:
+      pure-rand: 8.4.0
+
   fast-content-type-parse@3.0.0: {}
 
   fast-string-truncated-width@3.0.3: {}
@@ -2784,6 +2811,8 @@ snapshots:
       - supports-color
 
   proxy-from-env@1.1.0: {}
+
+  pure-rand@8.4.0: {}
 
   quickjs-wasi@0.0.1: {}
 

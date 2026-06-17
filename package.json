@@ -22,8 +22,10 @@
     "vuedraggable": "^4.1.0"
   },
   "devDependencies": {
+    "@fast-check/vitest": "^0.4.1",
     "@playwright/test": "^1.60.0",
     "@vitejs/plugin-vue": "^6.0.7",
+    "fast-check": "^4.8.0",
     "release-it": "^20.0.1",
     "sass": "^1.99.0",
     "typescript": "^6.0.3",
