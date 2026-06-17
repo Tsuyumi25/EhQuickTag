@@ -7,9 +7,7 @@
  * dispatch logic). Endpoints are stored as separate JSON files for clarity—
  * each tag pool stays in its own file.
  *
- * Usage: npx tsx scripts/gen-nh-popularity.ts [tagPages]
- *   tagPages — override pages for /tags/tag (defaults defined in DEFAULT_PAGES).
- *              Other endpoints use their own DEFAULT_PAGES values.
+ * Usage: npx tsx scripts/gen-nh-popularity.ts
  *
  * Output: src/data/nh-popularity-{endpoint}.json  ({ normalized_name: count })
  */
@@ -23,17 +21,15 @@ const UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Geck
 const REQUEST_DELAY_MS = 2500  // nh rate limit guard
 const RATE_LIMIT_BACKOFF_MS = 60000  // 60s wait on HTTP 429
 
-const ENDPOINTS = ['tag', 'artist', 'character', 'parody', 'group', 'language'] as const
+const ENDPOINTS = ['artist', 'character', 'parody', 'group'] as const
 type Endpoint = typeof ENDPOINTS[number]
 
 // character / parody 內容多，5 頁能拉到尾巴 count ~10 以上
 const DEFAULT_PAGES: Record<Endpoint, number> = {
-  tag: 10,
   artist: 2,
   character: 5,
   parody: 5,
   group: 1,
-  language: 1,
 }
 
 interface NhTag {
@@ -82,15 +78,12 @@ async function fetchEndpoint(endpoint: Endpoint, pages: number): Promise<Record<
 }
 
 async function main() {
-  const tagOverride = Number(process.argv[2])
-  const pagesPlan: Record<Endpoint, number> = { ...DEFAULT_PAGES }
-  if (tagOverride > 0) pagesPlan.tag = tagOverride
-  console.log(`fetching nh popularity snapshots (pages: ${JSON.stringify(pagesPlan)})…`)
+  console.log(`fetching nh popularity snapshots (pages: ${JSON.stringify(DEFAULT_PAGES)})…`)
 
   const { writeFileSync } = await import('fs')
 
   for (const endpoint of ENDPOINTS) {
-    const map = await fetchEndpoint(endpoint, pagesPlan[endpoint])
+    const map = await fetchEndpoint(endpoint, DEFAULT_PAGES[endpoint])
     const out = `${OUT_DIR}/nh-popularity-${endpoint}.json`
     writeFileSync(out, JSON.stringify(map))
     if (endpoint !== ENDPOINTS[ENDPOINTS.length - 1]) {
@@ -98,7 +91,7 @@ async function main() {
     }
   }
 
-  console.log(`\nwrote 6 files to ${OUT_DIR}/`)
+  console.log(`\nwrote ${ENDPOINTS.length} files to ${OUT_DIR}/`)
 }
 
 main()
