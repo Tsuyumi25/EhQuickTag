@@ -16,7 +16,6 @@ const props = defineProps<{
   tag: TagButton
   lineColor?: string
   isAdd?: boolean
-  useNhWeight?: boolean
   nsFormat?: 'long' | 'short'
   defaultExactMatch?: boolean
 }>()
@@ -265,7 +264,6 @@ const simOutput = computed(() => {
             :default-exact-match="defaultExactMatch"
             :ns-format="nsFormat"
             :db-ready="dbReady"
-            :use-nh-weight="useNhWeight ?? false"
             :active="activeRow === i"
             @update:active="(val: boolean) => onChildActive(i, val)"
             @remove="removeRow(i)"

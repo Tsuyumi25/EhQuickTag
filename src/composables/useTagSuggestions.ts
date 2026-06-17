@@ -15,7 +15,6 @@ import type { Qualifier } from '@/services/searchSyntax'
 export interface UseTagSuggestionsOptions {
   query: () => string
   qualifier?: () => Qualifier | null
-  useNhWeight: () => boolean
   /** popup-local 篩選；SearchPopup 用此跟 namespace 篩選按鈕綁定 */
   namespaces?: () => readonly string[] | undefined
   emptyFallback?: () => TagEntry[]
@@ -42,7 +41,6 @@ export function useTagSuggestions(opts: UseTagSuggestionsOptions) {
     }
     timer = window.setTimeout(() => {
       suggestions.value = searchTags(q, {
-        useNhWeight: opts.useNhWeight(),
         namespaces: opts.namespaces?.(),
       })
     }, opts.debounceMs ?? 80)
@@ -58,7 +56,7 @@ export function useTagSuggestions(opts: UseTagSuggestionsOptions) {
 
   // 主 watcher：scalar 跟小陣列（namespaces ≤13 個 string）才走 deep:true，便宜
   watch(
-    () => [opts.query(), opts.qualifier?.() ?? null, opts.useNhWeight(), opts.namespaces?.() ?? null],
+    () => [opts.query(), opts.qualifier?.() ?? null, opts.namespaces?.() ?? null],
     triggerSearch,
     { deep: true },
   )

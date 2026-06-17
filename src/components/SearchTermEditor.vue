@@ -11,7 +11,6 @@ const props = defineProps<{
   defaultExactMatch?: boolean
   nsFormat?: 'long' | 'short'
   dbReady: boolean
-  useNhWeight: boolean
   active: boolean
 }>()
 
@@ -162,7 +161,6 @@ const qualifierOptions = Array.from(QUALIFIER_SET).map(q => ({ value: `q:${q}`, 
         v-if="active && dbReady"
         :query="rowState.token.tag.trim()"
         :qualifier="rowState.token.qualifier"
-        :use-nh-weight="useNhWeight"
         :input-el="tagInputEl"
         @pick="onPickSuggestion"
       />

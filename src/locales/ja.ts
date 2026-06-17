@@ -67,8 +67,6 @@ export default {
   'settings.convertToTraditionalAuto': '自動',
   'settings.convertToTraditionalOn': '繁体字',
   'settings.convertToTraditionalOff': '簡体字（DB 原文）',
-  'settings.useNhWeight': 'nhentai の作品数順で並べ替え',
-  'settings.useNhWeightHint': '有効にすると、検索候補と「+ タグを閲覧」のデフォルト一覧が nhentai 上の各タグの作品数で並べ替えられ、作品数が多いタグが上位に表示されます。それ以外はデフォルトの計算式で並べ替えます。\n注意：nhentai の一般 tag プールは namespace で分かれていないため、female / male / mixed / other の 4 つは同じ順位を共有し、e-hentai の実際の件数とは一致しない場合があります。',
   'settings.dblClickActions': '背景ダブルクリック動作',
   'settings.dblClickLeft': '左ダブルクリック',
   'settings.dblClickRight': '右ダブルクリック',

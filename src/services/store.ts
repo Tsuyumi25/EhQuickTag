@@ -54,7 +54,6 @@ export type ConvertToTraditional = typeof CONVERT_TO_TRADITIONAL_MODES[number]['
 // 新增 setting 只要：① INITIAL_SETTINGS 加一欄 + ② 加一行 named export。
 // load / save / watch 自動掃描 refs。locale 走獨立處理（從 useI18n import）。
 const INITIAL_SETTINGS = {
-  useNhWeight: true,
   fontFamily: '',
   fontWeight: '',
   dblClickLeft: 'search' as DblClickAction,
@@ -102,7 +101,6 @@ const refs = Object.fromEntries(
   Object.entries(INITIAL_SETTINGS).map(([k, v]) => [k, ref(v)]),
 ) as { [K in SettingKey]: Ref<Settings[K]> }
 
-export const useNhWeight       = refs.useNhWeight
 export const fontFamily        = refs.fontFamily
 export const fontWeight        = refs.fontWeight
 export const dblClickLeft      = refs.dblClickLeft

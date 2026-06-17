@@ -67,8 +67,6 @@ export default {
   'settings.convertToTraditionalAuto': '自動',
   'settings.convertToTraditionalOn': '繁體',
   'settings.convertToTraditionalOff': '簡體（DB 原文）',
-  'settings.useNhWeight': '依 nhentai 作品數量排序',
-  'settings.useNhWeightHint': '開啟後，搜尋建議跟「+ 瀏覽標籤」預設清單會依 nhentai 各 tag 的作品數量排序，數量多的排前面，其餘按預設公式排序。\n注意：nhentai 的一般 tag 池不分 namespace，所以 female / male / mixed / other 四個 ns 共用同一份排序，不一定反映 e-hentai 端的實際數量。',
   'settings.dblClickActions': '背景雙擊動作',
   'settings.dblClickLeft': '左鍵雙擊',
   'settings.dblClickRight': '右鍵雙擊',

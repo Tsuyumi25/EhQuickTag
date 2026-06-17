@@ -274,7 +274,6 @@ function compareNhFallback(a: NhRankable, b: NhRankable): number {
 }
 
 export interface SearchOptions {
-  useNhWeight?: boolean
   /**
    * 限定回傳的 namespace 集合（popup-local 篩選器用）。query 的 namespace prefix
    * （`f:stock`）一旦命中會完全覆蓋此參數——prefix 是更明確的單次指令，不該被
@@ -286,7 +285,7 @@ export interface SearchOptions {
 export function searchTags(query: string, opts: SearchOptions = {}): TagEntry[] {
   if (!entries || !query.trim()) return []
 
-  const { useNhWeight = false, namespaces } = opts
+  const { namespaces } = opts
 
   let q = query.toLowerCase().normalize().trim()
   let pool = entries
@@ -318,7 +317,6 @@ export function searchTags(query: string, opts: SearchOptions = {}): TagEntry[] 
   if (!q) {
     return getFallbackEntries({
       namespaces: prefixNs ? [prefixNs] : namespaces,
-      useNhWeight,
     })
   }
 
@@ -348,7 +346,7 @@ export function searchTags(query: string, opts: SearchOptions = {}): TagEntry[] 
     ranked.push({
       entry,
       matchTier,
-      nhCount: useNhWeight ? (getNhWeight(entry.ns, entry.raw) ?? 0) : 0,
+      nhCount: getNhWeight(entry.ns, entry.raw) ?? 0,
       nsTier,
     })
   }
@@ -375,11 +373,9 @@ export function searchTags(query: string, opts: SearchOptions = {}): TagEntry[] 
 const _fallbackCache = new Map<string, TagEntry[]>()
 export interface FallbackEntriesOptions {
   namespaces?: readonly string[]
-  useNhWeight?: boolean
 }
 export function getFallbackEntries(opts: FallbackEntriesOptions = {}): TagEntry[] {
-  const nsKey = opts.namespaces && opts.namespaces.length ? [...opts.namespaces].sort().join(',') : '*'
-  const cacheKey = `${nsKey}|nh:${opts.useNhWeight ? 1 : 0}`
+  const cacheKey = opts.namespaces && opts.namespaces.length ? [...opts.namespaces].sort().join(',') : '*'
   const cached = _fallbackCache.get(cacheKey)
   if (cached) return cached
   if (!entries) return []
@@ -393,7 +389,7 @@ export function getFallbackEntries(opts: FallbackEntriesOptions = {}): TagEntry[
     if (nsTier === undefined) continue
     ranked.push({
       entry,
-      nhCount: opts.useNhWeight ? (getNhWeight(entry.ns, entry.raw) ?? 0) : 0,
+      nhCount: getNhWeight(entry.ns, entry.raw) ?? 0,
       nsTier,
     })
   }

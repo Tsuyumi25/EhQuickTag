@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, computed, inject } from 'vue'
 import { loadTagDb, getFallbackEntries, DEFAULT_NS_ORDER, type TagEntry } from '@/services/tagDb'
-import { useNhWeight, nsFormat, defaultExactMatch, dblClickLeft, dblClickRight, type DblClickAction } from '@/services/store'
+import { nsFormat, defaultExactMatch, dblClickLeft, dblClickRight, type DblClickAction } from '@/services/store'
 import { useTagSuggestions } from '@/composables/useTagSuggestions'
 import { usePopupBehavior } from '@/composables/usePopupBehavior'
 import { parseTerm, serializeEntry } from '@/services/searchSyntax'
@@ -60,7 +60,6 @@ usePopupBehavior({ popupEl, onClose: () => emit('close') })
 
 const { dbReady, suggestions } = useTagSuggestions({
   query: () => query.value,
-  useNhWeight: () => useNhWeight.value,
   namespaces: () => selectedNs.value ? [selectedNs.value] : undefined,
   emptyFallback: () => fallbackEntries.value,
 })
@@ -68,20 +67,17 @@ const { dbReady, suggestions } = useTagSuggestions({
 // suggestions 換新清單時拉回頂端，避免過濾完按 Enter 拿到 undefined / 高亮看不見
 watch(suggestions, () => { selectedIdx.value = 0 })
 
-// 篩選按鈕 / useNhWeight 變動：重抓 fallbackEntries（query 結果由 useTagSuggestions
-// 內部 watcher 處理）。useNhWeight 必須進這個 watcher，否則設定關閉時 fallback 清單
-// 仍會帶 nh 加權順序
-watch([selectedNs, useNhWeight], () => {
+// 篩選按鈕變動：重抓 fallbackEntries（query 結果由 useTagSuggestions 內部 watcher 處理）
+watch(selectedNs, () => {
   if (!dbReady.value) return
   fallbackEntries.value = getFallbackEntries({
     namespaces: selectedNs.value ? [selectedNs.value] : undefined,
-    useNhWeight: useNhWeight.value,
   })
 })
 
 onMounted(async () => {
   await loadTagDb()
-  fallbackEntries.value = getFallbackEntries({ useNhWeight: useNhWeight.value })
+  fallbackEntries.value = getFallbackEntries()
   inputEl.value?.focus()
 })
 

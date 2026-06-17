@@ -21,12 +21,7 @@ import ProfileListItem from '@/components/ProfileListItem.vue'
 import ProfileJsonEditor from '@/components/ProfileJsonEditor.vue'
 import SettingsAboutTab from '@/components/SettingsAboutTab.vue'
 
-const props = defineProps<{
-  useNhWeight: boolean
-}>()
-
 const emit = defineEmits<{
-  'update:useNhWeight': [value: boolean]
   'close': []
 }>()
 
@@ -292,18 +287,6 @@ function onEditorPurge() {
           </div>
 
           <div v-show="activeTab === 'search'" class="eqt-settings__tab-content">
-            <label class="eqt-settings__row">
-              <input
-                type="checkbox"
-                :checked="props.useNhWeight"
-                @change="emit('update:useNhWeight', ($event.target as HTMLInputElement).checked)"
-              />
-              <span class="eqt-settings__label">{{ t('settings.useNhWeight') }}</span>
-            </label>
-            <p class="eqt-settings__hint" style="white-space: pre-line">
-              {{ t('settings.useNhWeightHint') }}
-            </p>
-
             <h4 class="eqt-settings__subtitle">{{ t('settings.nsFormat') }}</h4>
             <div class="eqt-settings__locale-row">
               <button

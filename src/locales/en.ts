@@ -67,8 +67,6 @@ export default {
   'settings.convertToTraditionalAuto': 'Auto',
   'settings.convertToTraditionalOn': 'Traditional',
   'settings.convertToTraditionalOff': 'Simplified (DB raw)',
-  'settings.useNhWeight': 'Sort by nhentai gallery count',
-  'settings.useNhWeightHint': 'When enabled, search suggestions and the "+ Browse tags" default list are sorted by each tag\'s gallery count on nhentai—tags with more galleries come first, others follow the default formula.\nNote: nhentai\'s general tag pool isn\'t split by namespace, so female / male / mixed / other share the same ranking and may not reflect actual e-hentai counts.',
   'settings.dblClickActions': 'Background double-click actions',
   'settings.dblClickLeft': 'Left double-click',
   'settings.dblClickRight': 'Right double-click',

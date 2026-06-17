@@ -8,7 +8,7 @@ import SearchPopup from '@/components/SearchPopup.vue'
 import { GM_openInTab } from '$'
 import type { Button, TagButton, UrlButton } from '@/types'
 import { useSessionTerms, SearchSessionKey } from '@/composables/useSessionTerms'
-import { lines, useNhWeight, fontFamily, fontWeight, profiles, activeProfileIdx, switchProfile, renameProfile, createProfile, deleteProfile, newTabActive, nsFormat, defaultExactMatch, tagDbMirror, tagDbTtlDays, type DblClickAction } from '@/services/store'
+import { lines, fontFamily, fontWeight, profiles, activeProfileIdx, switchProfile, renameProfile, createProfile, deleteProfile, newTabActive, nsFormat, defaultExactMatch, tagDbMirror, tagDbTtlDays, type DblClickAction } from '@/services/store'
 import { loadTagDb } from '@/services/tagDb'
 import { useEhFormHost } from '@/composables/useEhFormHost'
 
@@ -252,7 +252,6 @@ watch(searchText, (val) => {
     :tag="tagPopupValue"
     :line-color="editingLineColor"
     :is-add="pendingAdd"
-    :use-nh-weight="useNhWeight"
     :ns-format="nsFormat"
     :default-exact-match="defaultExactMatch"
     @save="onSave"
@@ -272,7 +271,6 @@ watch(searchText, (val) => {
 
   <SettingsPopup
     v-if="showSettings"
-    v-model:use-nh-weight="useNhWeight"
     @close="showSettings = false"
   />
 
