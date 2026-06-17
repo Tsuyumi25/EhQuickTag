@@ -276,14 +276,16 @@ function onKeydown(e: KeyboardEvent): void {
         <div v-else-if="dbReady" class="eqt-search-popup__empty">
           {{ t('tagConfig.noResult') }}
         </div>
-        <SearchTermRows
-          class="eqt-search-popup__chips"
-          :model-value="modelValue"
-          :session-terms="sessionTerms"
-          :identity-index="identityIndex"
-          @update:model-value="emit('update:modelValue', $event)"
-          @dismiss-terms="dismissTerms"
-        />
+        <div class="eqt-search-popup__chips-scroll">
+          <SearchTermRows
+            class="eqt-search-popup__chips"
+            :model-value="modelValue"
+            :session-terms="sessionTerms"
+            :identity-index="identityIndex"
+            @update:model-value="emit('update:modelValue', $event)"
+            @dismiss-terms="dismissTerms"
+          />
+        </div>
         <SearchControls
           class="eqt-search-popup__controls"
           show-lang-toggle
@@ -375,13 +377,18 @@ function onKeydown(e: KeyboardEvent): void {
 }
 
 // 當前 search chip 區：在候選池下方，自然高度（不擠壓上方候選池）。
-// max-height 防 session 內 term 太多時把 popup 撐爆；overflow auto 內部捲動
-.eqt-search-popup__chips {
+// 外 wrap 負責 scroll、內 chips 只當 grid container——兩者拆開避免 flex item
+// 預設 min-height: auto 讓 max-height 失效造成內部 row 重疊（無 scrollbar）
+.eqt-search-popup__chips-scroll {
   flex-shrink: 0;
+  min-height: 0;
   max-height: 35vh;
   overflow-y: auto;
-  padding: 6px 4px 2px;
   border-top: var(--eqt-border-width) solid var(--eqt-border);
+}
+
+.eqt-search-popup__chips {
+  padding: 6px 4px 2px;
 }
 
 // SearchControls 在 chip 區下方，自然高度（不參與 flex 1）
