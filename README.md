@@ -4,7 +4,7 @@
 
 > ⚠️ Early development. Data formats (profiles, settings, etc.) may change in future versions and require reconfiguration.
 
-![screenshot](docs/screenshot.png)
+[Kooha-2026-06-22-21-23-13.webm](https://github.com/user-attachments/assets/f3db2250-dc81-4e15-b50c-1555502debbb)
 
 A customizable quick tag bar for E-Hentai / ExHentai search.
 
