@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import type { TagEntry } from '@/services/tagDb'
+import { DEFAULT_NS_ORDER, type TagEntry } from '@/services/tagDb'
 import { isCJKLocale, locale, t } from '@/composables/useI18n'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
 import { useTextMeasure } from '@/composables/useTextMeasure'
@@ -9,9 +9,17 @@ import { TagState } from '@/types'
 const props = defineProps<{
   suggestions: TagEntry[]
   selectedIdx: number
-  // 可選 state map（key = entry.fullTag）：SearchPopup toggle 模式用，控制 chip
-  // 上色（include/or/exclude）。TagAutocomplete dropdown 模式不傳，項目維持中性
-  entryStates?: Map<string, TagState>
+  // 可選 state lookup function：SearchPopup toggle 模式傳入，控制 chip 上色
+  // （include/or/exclude）。TagAutocomplete dropdown 模式不傳，項目維持中性。
+  //
+  // 為什麼是 function 而不是 Map：caller 端要避免「對全部 suggestions iterate
+  // 一遍預算 Map」的 O(N) 開銷——function 形式只對 v-for 實際 render 出來的
+  // visible items（虛擬滾動切片後 ~20 個）call，跟著虛擬化一起省成本
+  stateOf?: (entry: TagEntry) => TagState
+  // 可選：限制 ns 欄寬 measure 的 ns 集合。caller 知道篩選態（譬如 SearchPopup
+  // 的 selectedNs）時傳入單一 ns 可省 measure 次數；不傳時用 DEFAULT_NS_ORDER
+  // 全 13 個量出穩定 col width（不會隨 suggestions 變動而抖動）
+  nsList?: readonly string[]
 }>()
 
 const emit = defineEmits<{
@@ -32,9 +40,8 @@ const STATE_CLASS: Partial<Record<TagState, string>> = {
 }
 
 function stateClassOf(entry: TagEntry): string | undefined {
-  if (!props.entryStates) return undefined
-  const s = props.entryStates.get(entry.fullTag)
-  return s !== undefined ? STATE_CLASS[s] : undefined
+  if (!props.stateOf) return undefined
+  return STATE_CLASS[props.stateOf(entry)]
 }
 
 // mousedown 路徑：只接 left button。右鍵 mousedown 在某些平台也會 fire，這裡
@@ -99,10 +106,12 @@ const { getWidth, version } = useTextMeasure({
 const nsColWidth = computed(() => {
   void version.value
   void locale.value
-  if (!props.suggestions.length) return 0
-  const nsSet = new Set(props.suggestions.map(s => s.ns))
+  // 依賴源是常數陣列（或 caller 傳的小集合），不再 walk suggestions——避免
+  // 「suggestions 變動就 O(N) iterate + Set 重建」的無謂工作。getWidth 內部
+  // 有 cache，第一輪後 ns label 的量測都是 hit
+  const nsList = props.nsList ?? DEFAULT_NS_ORDER
   let max = 0
-  for (const ns of nsSet) {
+  for (const ns of nsList) {
     const w = getWidth(t('ns.' + ns) + '：')
     if (w > max) max = w
   }

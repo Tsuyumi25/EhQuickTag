@@ -1,4 +1,4 @@
-import { ref, watch, onMounted, onScopeDispose } from 'vue'
+import { ref, shallowRef, watch, onMounted, onScopeDispose } from 'vue'
 import { loadTagDb, searchTags, type TagEntry } from '@/services/tagDb'
 import type { Qualifier } from '@/services/searchSyntax'
 
@@ -23,7 +23,10 @@ export interface UseTagSuggestionsOptions {
 
 export function useTagSuggestions(opts: UseTagSuggestionsOptions) {
   const dbReady = ref(false)
-  const suggestions = ref<TagEntry[]>([])
+  // shallowRef：suggestions 永遠是「整批替換」，不做 item-level mutation。
+  // 用 ref 會 deep-proxy 每個 TagEntry 的所有欄位，iterate 千筆時 Proxy get trap
+  // 是 popup 開啟 long task 的主要 CPU 大頭（~20%）
+  const suggestions = shallowRef<TagEntry[]>([])
   let timer = 0
 
   function triggerSearch(): void {

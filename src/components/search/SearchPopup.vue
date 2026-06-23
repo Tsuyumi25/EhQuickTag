@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, computed } from 'vue'
+import { ref, shallowRef, watch, onMounted, computed } from 'vue'
 import { loadTagDb, getFallbackEntries, DEFAULT_NS_ORDER, type TagEntry } from '@/services/tagDb'
 import { nsFormat, defaultExactMatch, dblClickLeft, dblClickRight, type DblClickAction } from '@/services/store'
 import { useTagSuggestions } from '@/composables/useTagSuggestions'
@@ -40,7 +40,8 @@ const query = ref('')
 const inputEl = ref<HTMLInputElement | null>(null)
 const popupEl = ref<HTMLElement | null>(null)
 const selectedIdx = ref(0)
-const fallbackEntries = ref<TagEntry[]>([])
+// shallowRef：跟 useTagSuggestions.suggestions 同理，永遠整批 reassign
+const fallbackEntries = shallowRef<TagEntry[]>([])
 
 // 篩選按鈕：單選 + 可清除。null = 不篩選（預設，顯示全部 namespace 的 nh 熱榜）；
 // 點一個 ns = 只看該 ns；點同一個 = 取消回 null
@@ -49,6 +50,11 @@ const selectedNs = ref<string | null>(null)
 function toggleNs(ns: string): void {
   selectedNs.value = selectedNs.value === ns ? null : ns
 }
+
+// 包成 computed 給 SuggestionList 用的 nsList prop——避免 template 內每次 render
+// 都建一個新的 [selectedNs] 陣列字面量、讓 SuggestionList 的 nsColWidth 在每次
+// 父 re-render（譬如 selectedIdx / query 變動）都因為 prop reference 不同而 dirty
+const popupNsList = computed(() => selectedNs.value ? [selectedNs.value] : undefined)
 
 // 跟其他 popup 同套：onClickOutside + Escape + useScrollLock 一條龍，
 // 避免 SearchPopup 開啟時滾輪穿透到背景 EH 列表
@@ -77,28 +83,24 @@ onMounted(async () => {
   inputEl.value?.focus()
 })
 
-// === state map：把 modelValue 解析後給 SuggestionList 上色 ===
-// SuggestionList 自己不知道 search syntax，靠 entryStates prop（Map<fullTag, state>）
-// 看出哪些 entry 已在 search 內
+// === state lookup：把 modelValue 解析後給 SuggestionList 上色 ===
+// SuggestionList 自己不知道 search syntax，靠 stateOf function prop 查狀態。
+//
+// 為什麼是 function 而不是預算好的 Map：popup 開啟時 suggestions 可能上千筆，
+// 但只有 SuggestionList 虛擬滾動可見的 ~20 個 item 需要 state。預先全量算 Map
+// 是 popup 開啟時 long task 的主要結構性 cost（O(N) computed iterate 全部
+// suggestions），改成 function 後只對 visible items call ~20 次
 const identityIndex = computed(() => buildIdentityIndex(tokenize(props.modelValue)))
 
-const entryStates = computed(() => {
-  const map = new Map<string, TagState>()
-  for (const entry of suggestions.value) {
-    const id = tokenIdentity(entry.fullTag)
-    if (!id) continue
-    const present = identityIndex.value.get(id)
-    if (!present) continue
-    const prefix = parseTerm(present).prefix
-    if (prefix === '-') map.set(entry.fullTag, TagState.Exclude)
-    else if (prefix === '~') map.set(entry.fullTag, TagState.Or)
-    else map.set(entry.fullTag, TagState.Include)
-  }
-  return map
-})
-
 function entryStateOf(entry: TagEntry): TagState {
-  return entryStates.value.get(entry.fullTag) ?? TagState.Off
+  const id = tokenIdentity(entry.fullTag)
+  if (!id) return TagState.Off
+  const present = identityIndex.value.get(id)
+  if (!present) return TagState.Off
+  const prefix = parseTerm(present).prefix
+  if (prefix === '-') return TagState.Exclude
+  if (prefix === '~') return TagState.Or
+  return TagState.Include
 }
 
 // 把 entry 序列化成 e站合法 search token——細節（quoting / nsFormat / exactMatch）
@@ -268,7 +270,8 @@ function onKeydown(e: KeyboardEvent): void {
           class="eqt-search-popup__list"
           :suggestions="suggestions"
           :selected-idx="selectedIdx"
-          :entry-states="entryStates"
+          :state-of="entryStateOf"
+          :ns-list="popupNsList"
           @update:selected-idx="selectedIdx = $event"
           @pick="onPick"
           @ctxmenu="onCtxMenu"
