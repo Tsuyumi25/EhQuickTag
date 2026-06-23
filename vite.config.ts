@@ -1,6 +1,6 @@
 import { fileURLToPath, URL } from 'url'
 
-import { defineConfig } from 'vite'
+import { configDefaults, defineConfig } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
 import monkey from 'vite-plugin-monkey'
 import pkg from './package.json'
@@ -64,5 +64,8 @@ export default defineConfig(({ command }) => ({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
       'vuedraggable': 'vuedraggable/src/vuedraggable.js',
     },
+  },
+  test: {
+    exclude: [...configDefaults.exclude, 'tests/e2e/**'],
   },
 }))
