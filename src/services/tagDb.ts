@@ -226,12 +226,6 @@ const NS_TIER_MAP: ReadonlyMap<string, number> = new Map(
   DEFAULT_NS_ORDER.map((ns, i) => [ns, i]),
 )
 
-const NS_ALIASES: Record<string, string> = {
-  r: 'reclass', g: 'group', a: 'artist', cos: 'cosplayer',
-  p: 'parody', c: 'character', f: 'female', m: 'male',
-  x: 'mixed', l: 'language', o: 'other', loc: 'location',
-}
-
 function getMatchTier(entry: TagEntry, search: string, searchIsAscii: boolean): MatchTier | null {
   // prefix: entire field starts with search
   if (entry.rawLow.startsWith(search) || entry.nameLow.startsWith(search)) {
@@ -274,11 +268,7 @@ function compareNhFallback(a: NhRankable, b: NhRankable): number {
 }
 
 export interface SearchOptions {
-  /**
-   * 限定回傳的 namespace 集合（popup-local 篩選器用）。query 的 namespace prefix
-   * （`f:stock`）一旦命中會完全覆蓋此參數——prefix 是更明確的單次指令，不該被
-   * popup 持續狀態干擾。
-   */
+  /** 限定回傳的 namespace 集合（popup-local 篩選器用） */
   namespaces?: readonly string[]
 }
 
@@ -290,21 +280,8 @@ export function searchTags(query: string, opts: SearchOptions = {}): TagEntry[] 
   let q = query.toLowerCase().normalize().trim()
   let pool = entries
 
-  // namespace filter: "f:stock" → filter to female, search "stock"
-  let prefixNs: string | null = null
-  const colIdx = q.indexOf(':')
-  if (colIdx >= 1) {
-    const prefix = q.slice(0, colIdx)
-    const resolvedNs = NS_ALIASES[prefix] ?? prefix
-    if (NS_TIER_MAP.has(resolvedNs)) {
-      pool = pool.filter(e => e.ns === resolvedNs)
-      q = q.slice(colIdx + 1)
-      prefixNs = resolvedNs
-    }
-  }
-
-  // popup-local 篩選器；prefix 命中時跳過（prefix 是「單次明確指令」優先於持續狀態）
-  if (!prefixNs && namespaces && namespaces.length) {
+  // popup-local 篩選器
+  if (namespaces && namespaces.length) {
     const nsSet = new Set(namespaces)
     pool = pool.filter(e => nsSet.has(e.ns))
   }
@@ -312,12 +289,10 @@ export function searchTags(query: string, opts: SearchOptions = {}): TagEntry[] 
   // strip leading quote (EH exact-match syntax)
   if (q.startsWith('"')) q = q.slice(1)
 
-  // prefix 命中但沒留字（user 打 `f:`）或 query 化簡後變空——委派給 getFallbackEntries
-  // 走完整 nh+nsTier+length 排序鏈，不要回 raw pool 失去排序
+  // query 化簡後變空——委派給 getFallbackEntries 走完整 nh+nsTier+length 排序鏈，
+  // 不要回 raw pool 失去排序
   if (!q) {
-    return getFallbackEntries({
-      namespaces: prefixNs ? [prefixNs] : namespaces,
-    })
+    return getFallbackEntries({ namespaces })
   }
 
   // build search terms: original + CJK variants
