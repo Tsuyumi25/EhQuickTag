@@ -1,7 +1,7 @@
-import { GM, GM_xmlhttpRequest } from '$'
+import { GM } from '$'
 
 export const hasGM = typeof GM?.getValue === 'function'
-export const hasGMXHR = typeof GM_xmlhttpRequest === 'function'
+export const hasGMXHR = typeof GM?.xmlHttpRequest === 'function'
 
 export async function cacheGet(key: string): Promise<string | null> {
   if (hasGM) return (await GM.getValue<string>(key, '')) || null

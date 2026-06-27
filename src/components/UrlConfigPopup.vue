@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed, onScopeDispose } from 'vue'
-import { GM_xmlhttpRequest } from '$'
+import { GM } from '$'
 import { hasGMXHR } from '@/services/gmStorage'
 import ContentEditable from 'vue-contenteditable'
 import LineColorSwatch from '@/components/LineColorSwatch.vue'
@@ -70,7 +70,7 @@ function fetchTitle() {
 
   abortFetch?.abort()
   fetchingTitle.value = true
-  abortFetch = GM_xmlhttpRequest({
+  abortFetch = GM.xmlHttpRequest({
     method: 'GET',
     url: trimmed,
     headers: { Range: 'bytes=0-8191' },
