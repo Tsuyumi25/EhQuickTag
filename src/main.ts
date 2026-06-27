@@ -6,6 +6,7 @@ import '@/styles/theme.scss'
 import '@/styles/popup.scss'
 import '@/styles/tag-style.scss'
 import '@/styles/native-search-row.scss'
+import '@/styles/tag-icon.scss'
 
 ;(async () => {
   // 讀不同 GM key、無依賴，並行省一條 round-trip

@@ -176,7 +176,7 @@ const { cjkDisplay } = useDisplayConfig()
         @mouseenter="onItemMouseenter(si)"
       >
         <span class="eqt-popup__suggestion-ns">{{ t('ns.' + entry.ns) }}：</span>
-        <span class="eqt-popup__suggestion-name">{{ isCJK ? cjkDisplay(entry.name) : entry.raw }}</span>
+        <span class="eqt-popup__suggestion-name"><img v-if="entry.iconUrl" :src="entry.iconUrl" class="eqt-tag-icon" alt="" />{{ isCJK ? cjkDisplay(entry.name) : entry.raw }}</span>
         <span class="eqt-popup__suggestion-tag">{{ entry.fullTag }}</span>
       </div>
     </div>
