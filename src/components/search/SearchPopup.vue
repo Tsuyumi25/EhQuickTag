@@ -56,6 +56,8 @@ function toggleNs(ns: string): void {
 // 父 re-render（譬如 selectedIdx / query 變動）都因為 prop reference 不同而 dirty
 const popupNsList = computed(() => selectedNs.value ? [selectedNs.value] : undefined)
 
+const SEARCH_NS_LIST = DEFAULT_NS_ORDER.filter(ns => ns !== 'temp')
+
 // 跟其他 popup 同套：onClickOutside + Escape + useScrollLock 一條龍，
 // 避免 SearchPopup 開啟時滾輪穿透到背景 EH 列表
 usePopupBehavior({ popupEl, onClose: () => emit('close') })
@@ -237,7 +239,7 @@ function onKeydown(e: KeyboardEvent): void {
           {{ t('nsFilter.all') }}
         </button>
         <button
-          v-for="ns in DEFAULT_NS_ORDER"
+          v-for="ns in SEARCH_NS_LIST"
           :key="ns"
           type="button"
           class="eqt-search-popup__ns-btn"
