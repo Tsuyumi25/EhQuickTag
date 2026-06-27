@@ -7,14 +7,14 @@ import { hasGMXHR, cacheGet, cacheSet } from '@/services/gmStorage'
 export type TagDbMirror = 'jsdelivr' | 'fastly' | 'gcore' | 'github'
 
 export const TAG_DB_MIRRORS: Record<TagDbMirror, { label: string; url: string }> = {
-  jsdelivr: { label: 'jsDelivr', url: 'https://cdn.jsdelivr.net/gh/EhTagTranslation/DatabaseReleases@master/db.text.json' },
-  fastly: { label: 'jsDelivr (Fastly)', url: 'https://fastly.jsdelivr.net/gh/EhTagTranslation/DatabaseReleases@master/db.text.json' },
-  gcore: { label: 'jsDelivr (Gcore)', url: 'https://gcore.jsdelivr.net/gh/EhTagTranslation/DatabaseReleases@master/db.text.json' },
-  github: { label: 'GitHub Raw', url: 'https://raw.githubusercontent.com/EhTagTranslation/DatabaseReleases/master/db.text.json' },
+  jsdelivr: { label: 'jsDelivr', url: 'https://cdn.jsdelivr.net/gh/EhTagTranslation/DatabaseReleases@master/db.html.json' },
+  fastly: { label: 'jsDelivr (Fastly)', url: 'https://fastly.jsdelivr.net/gh/EhTagTranslation/DatabaseReleases@master/db.html.json' },
+  gcore: { label: 'jsDelivr (Gcore)', url: 'https://gcore.jsdelivr.net/gh/EhTagTranslation/DatabaseReleases@master/db.html.json' },
+  github: { label: 'GitHub Raw', url: 'https://raw.githubusercontent.com/EhTagTranslation/DatabaseReleases/master/db.html.json' },
 }
 
-// v2: 改抓 db.text.json 並加入 introSearch 欄位（commit b/c html 版把 cross-reference 詞
-// 藏在 <abbr title="..."> 屬性裡，textContent 拿不到，導致 introSearch 永遠沒命中）
+// 抓 db.html.json：name 欄位含 <img> 取出當 iconUrl，intro/links 的 <abbr title="...">
+// cross-reference 由 buildIntroSearch 攤進 introSearch（textContent 拿不到屬性值）
 const CACHE_KEY = 'eqt_tag_db_v2'
 const CACHE_TS_KEY = 'eqt_tag_db_v2_ts'
 
@@ -24,6 +24,11 @@ interface StoredEntry {
   ns: string
   raw: string
   name: string
+  /**
+   * EhTagTranslation 提供的 icon webp URL（從 name 欄位的 <img src> 抽出）。
+   * 僅 parody / female / male 等少數 ns 有，多數 entry 不存。
+   */
+  iconUrl?: string
   /**
    * EhTagTranslation 的 intro + links 欄位 stripped + lowercased，用 \0 串接。
    *
@@ -62,16 +67,31 @@ export const tagDbVersion = ref(0)
 // --- HTML / text processing ---
 
 const _domParser = new DOMParser()
-function stripHtml(html: string): string {
-  return _domParser.parseFromString(html, 'text/html').body.textContent ?? ''
+
+/**
+ * Parse name HTML：抽 <img src> 當 iconUrl，textContent 當 plain name（含 emoji）。
+ * html 版的 name 結構為 `<p><img src=...>文字</p>` 或 `<p>文字 emoji</p>`，最多一個 img。
+ */
+function processName(html: string): { name: string; iconUrl?: string } {
+  const doc = _domParser.parseFromString(html, 'text/html')
+  const iconUrl = doc.querySelector('img')?.getAttribute('src') ?? undefined
+  const name = (doc.body.textContent ?? '').trim()
+  return iconUrl ? { name, iconUrl } : { name }
 }
 
-function removeEmojiAndImages(html: string): string {
-  // strip <img> tags first, then strip HTML, then remove emoji
-  const noImg = html.replace(/<img[^>]*>/gi, '')
-  const text = stripHtml(noImg)
-  // remove emoji (unicode ranges for common emoji blocks)
-  return text.replace(/[\u{1F000}-\u{1FFFF}]|[\u{2600}-\u{27BF}]|[\u{FE00}-\u{FE0F}]|[\u{200D}]|[\u{20E3}]|[\u{E0020}-\u{E007F}]/gu, '').trim()
+/**
+ * 把 intro / links HTML 攤成搜尋字串。textContent 拿不到 <abbr title="..."> 屬性裡的
+ * cross-reference 詞（例如「芙拉蒂蕾娜·米利杰」對應的 title="vladilena milize"），
+ * 額外用 querySelector 抽 abbr title 補進去。
+ */
+function buildIntroSearch(html: string): string {
+  const doc = _domParser.parseFromString(html, 'text/html')
+  const text = (doc.body.textContent ?? '').toLowerCase()
+  const titles: string[] = []
+  doc.querySelectorAll('abbr[title]').forEach(a => {
+    titles.push(a.getAttribute('title')!.toLowerCase())
+  })
+  return titles.length ? text + '\0' + titles.join('\0') : text
 }
 
 // --- index building ---
@@ -102,12 +122,12 @@ function buildIndex(db: DbJson): TagEntry[] {
     if (ns === 'rows') continue
 
     for (const [raw, info] of Object.entries(section.data)) {
-      const name = removeEmojiAndImages(info.name)
+      const { name, iconUrl } = processName(info.name)
       // \0 串接避免 intro 結尾跟 links 開頭黏在一起產生 false hit
       let introSearch = ''
-      if (info.intro) introSearch += '\0' + stripHtml(info.intro).toLowerCase()
-      if (info.links) introSearch += '\0' + stripHtml(info.links).toLowerCase()
-      result.push(addSearchFields({ fullTag: `${ns}:${raw}`, ns, raw, name, introSearch }))
+      if (info.intro) introSearch += '\0' + buildIntroSearch(info.intro)
+      if (info.links) introSearch += '\0' + buildIntroSearch(info.links)
+      result.push(addSearchFields({ fullTag: `${ns}:${raw}`, ns, raw, name, iconUrl, introSearch }))
     }
   }
 
@@ -167,8 +187,8 @@ export async function loadTagDb(opts: LoadTagDbOptions = {}): Promise<TagEntry[]
   const db: DbJson = JSON.parse(raw)
   entries = buildIndex(db)
 
-  const stored: StoredEntry[] = entries.map(({ fullTag, ns, raw: r, name, introSearch }) =>
-    ({ fullTag, ns, raw: r, name, introSearch }),
+  const stored: StoredEntry[] = entries.map(({ fullTag, ns, raw: r, name, iconUrl, introSearch }) =>
+    ({ fullTag, ns, raw: r, name, iconUrl, introSearch }),
   )
   await cacheSet(CACHE_KEY, JSON.stringify(stored))
   await cacheSet(CACHE_TS_KEY, String(Date.now()))
