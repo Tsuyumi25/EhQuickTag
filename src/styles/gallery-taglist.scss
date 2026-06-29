@@ -207,9 +207,4 @@
     grid-column: 3;
     grid-row: 2;
   }
-
-  // 純 icon 的 button（譬如齒輪設定）padding 縮小一點、避免 icon 周圍空洞太大
-  &--icon {
-    padding: 4px 8px;
-  }
 }

@@ -14,6 +14,7 @@ import {
   dblClickLeft, dblClickRight, newTabActive, nsFormat, defaultExactMatch,
   tagDbMirror, tagDbTtlDays, tagStylePreset, useAccentOnInclude, type DblClickAction,
   showSearchPanel, searchPanelLangMode, convertToTraditional, enableHistory,
+  taggingEnhancerEnabled, galleryDragSelectEnabled,
   SEARCH_PANEL_LANG_MODES, CONVERT_TO_TRADITIONAL_MODES,
 } from '@/services/store'
 import { TAG_STYLE_PRESETS, currentTagStyleClass } from '@/composables/useTagStyle'
@@ -33,18 +34,31 @@ const dragOptions = {
 
 // --- tabs ---
 
-const tabKeys = ['appearance', 'searchBar', 'search', 'data', 'about'] as const
+const tabKeys = ['appearance', 'searchBar', 'search', 'gallery', 'data', 'about'] as const
 type TabKey = typeof tabKeys[number]
 
 const tabLabelKeys: Record<TabKey, string> = {
   searchBar: 'settings.tabSearchBar',
   search: 'settings.tabSearch',
   appearance: 'settings.tabAppearance',
+  gallery: 'settings.tabGallery',
   data: 'settings.tabData',
   about: 'settings.tabAbout',
 }
 
-const activeTab = ref<TabKey | null>('appearance')
+const props = defineProps<{
+  // 預設打開哪個 tab。caller 從不同入口開設定時可以指定 context，譬如
+  // gallery 的 settings 按鈕傳 'gallery' 直接落到對應分頁。用 string 不用
+  // TabKey 是因為 caller (App.vue) 不該被 SettingsPopup 內部 tabKeys 集合
+  // 綁死；不認識的字串就 fallback 到預設 tab
+  initialTab?: string | null
+}>()
+
+function narrowTab(s: string | null | undefined): TabKey | null {
+  return s && (tabKeys as readonly string[]).includes(s) ? (s as TabKey) : null
+}
+
+const activeTab = ref<TabKey | null>(narrowTab(props.initialTab) ?? 'appearance')
 
 const dblClickOptions = [
   { labelKey: 'settings.dblClickLeft', ref: dblClickLeft },
@@ -344,6 +358,34 @@ function onEditorPurge() {
               />
               <span class="eqt-settings__label">{{ t('settings.newTabActivate') }}</span>
             </label>
+          </div>
+
+          <!-- 設定：畫廊 -->
+          <div v-show="activeTab === 'gallery'" class="eqt-settings__tab-content">
+            <label class="eqt-settings__row">
+              <input
+                type="checkbox"
+                :checked="taggingEnhancerEnabled"
+                @change="taggingEnhancerEnabled = ($event.target as HTMLInputElement).checked"
+              />
+              <span class="eqt-settings__label">{{ t('settings.taggingEnhancer') }}</span>
+            </label>
+            <p class="eqt-settings__hint">
+              {{ t('settings.taggingEnhancerHint') }}
+            </p>
+
+            <label class="eqt-settings__row">
+              <input
+                type="checkbox"
+                :checked="galleryDragSelectEnabled"
+                :disabled="!taggingEnhancerEnabled"
+                @change="galleryDragSelectEnabled = ($event.target as HTMLInputElement).checked"
+              />
+              <span class="eqt-settings__label">{{ t('settings.galleryDragSelect') }}</span>
+            </label>
+            <p class="eqt-settings__hint">
+              {{ t('settings.galleryDragSelectHint') }}
+            </p>
           </div>
 
           <!-- 設定：資料 -->

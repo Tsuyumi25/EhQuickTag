@@ -225,6 +225,13 @@ export default {
   'gallery.addTags': 'タグを追加',
   'gallery.sessionExpired': 'セッションの有効期限が切れました。ページを再読み込みして再ログインしてください。',
 
+  // Gallery settings tab
+  'settings.tabGallery': 'ギャラリー',
+  'settings.taggingEnhancer': 'Tagging Enhancer を有効化',
+  'settings.taggingEnhancerHint': '/g/ 詳細ページの taglist を引き継ぎ、vote / search / picker などの強化機能を提供します。オフの場合はネイティブ UI のまま。ページを再読み込みすると反映されます。',
+  'settings.galleryDragSelect': 'ドラッグ選択を有効化',
+  'settings.galleryDragSelectHint': 'オフにするとクリックでのみ選択でき、ドラッグで一括切り替えはできません。',
+
   // Intro panel
   'intro.close': '閉じる',
   'intro.empty': '定義がありません',

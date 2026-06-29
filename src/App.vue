@@ -10,7 +10,7 @@ import GalleryIntroPanel from '@/components/gallery/GalleryIntroPanel.vue'
 import { GM } from '$'
 import type { Button, TagButton, UrlButton } from '@/types'
 import { bindSearchBar } from '@/services/search/searchSession'
-import { lines, fontFamily, fontWeight, profiles, activeProfileIdx, switchProfile, renameProfile, createProfile, deleteProfile, newTabActive, nsFormat, defaultExactMatch, tagDbMirror, tagDbTtlDays, type DblClickAction } from '@/services/store'
+import { lines, fontFamily, fontWeight, profiles, activeProfileIdx, switchProfile, renameProfile, createProfile, deleteProfile, newTabActive, nsFormat, defaultExactMatch, tagDbMirror, tagDbTtlDays, taggingEnhancerEnabled, type DblClickAction } from '@/services/store'
 import { loadTagDb } from '@/services/tagDb'
 import { useEhFormHost } from '@/composables/useEhFormHost'
 import { useEhGalleryHost } from '@/composables/useEhGalleryHost'
@@ -24,8 +24,11 @@ const searchInput = ehFormHost?.input ?? null
 const searchText = ref(searchInput?.value ?? '')
 const anchorReady = ref(ehFormHost !== null)
 
-// Gallery 詳情頁 host：跟 ehFormHost 互斥（列表頁有 #f_search、詳情頁有 #taglist）
-const galleryHost = useEhGalleryHost()
+// Gallery 詳情頁 host：跟 ehFormHost 互斥（列表頁有 #f_search、詳情頁有 #taglist）。
+// taggingEnhancerEnabled = false 時連 host 都不跑（host 有 wrap native / inject
+// anchor 的 side effect），plugin 在 /g/ 頁面完全 stand down。settings 在 setup
+// 後 toggle 不會即時生效——需 reload，hint 會提示
+const galleryHost = taggingEnhancerEnabled.value ? useEhGalleryHost() : null
 const galleryReady = ref(galleryHost !== null)
 
 bindSearchBar({
@@ -172,6 +175,13 @@ const editingLineColor = computed(() => {
 // --- settings popup ---
 
 const showSettings = ref(false)
+// 開設定時可以指定預設打開的 tab，由 caller (TagBar / GalleryTagList 等) 提供
+// 對應 context。null 走 SettingsPopup 自己的 'appearance' 預設
+const initialSettingsTab = ref<string | null>(null)
+function openSettings(tab: string | null = null) {
+  initialSettingsTab.value = tab
+  showSettings.value = true
+}
 const showSearchPopup = ref(false)
 
 function onAddToSearch() {
@@ -247,7 +257,7 @@ watch(searchText, (val) => {
       @rename-profile="onRenameProfile"
       @create-profile="onCreateProfile"
       @delete-profile="onDeleteProfile"
-      @settings="showSettings = true"
+      @settings="openSettings()"
       @add-to-search="onAddToSearch"
       @search="onSearch"
       @controls-width="onControlsWidth"
@@ -278,6 +288,7 @@ watch(searchText, (val) => {
 
   <SettingsPopup
     v-if="showSettings"
+    :initial-tab="initialSettingsTab"
     @close="showSettings = false"
   />
 
@@ -292,7 +303,7 @@ watch(searchText, (val) => {
     <GalleryTagList
       :tags="galleryHost.tags"
       :taglist-el="galleryHost.taglistEl"
-      @open-settings="showSettings = true"
+      @open-settings="openSettings('gallery')"
     />
   </Teleport>
 
