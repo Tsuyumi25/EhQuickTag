@@ -4,10 +4,9 @@
 //     search mode → 左 toggle Include/Off、右 cycle Or → Exclude → Off (TagBar 模型)
 //     vote mode → 左 toggle voteSelected up、右 toggle voteSelected down
 //       (一個 tag 在 vote 維度只有 3 態互斥：off / up / down，存進單一 Map)
-//   - 底部兩排 action 永久 visible：
-//     row 1 執行類（瀏覽 placeholder / 搜索 N / 發送 ↑U/↓D / 取消選取）
-//     row 2 模式 + 設定（搜尋|投票 mode toggle / 插件|原生 debug / ⚙ open settings）
-//   - vote 發送：兩個 POST 一鍵 batch（同方向 atomic batch、不同方向依序發、避免並行）
+//   - 任何 click 都 setPanelTag(chip.tag)：對 x tag 的任何操作都繼續顯示定義，
+//     直到 search + vote 兩個 list 都空才 auto close panel
+//   - 底部兩排 action 永久 visible（原生模式 chip 區 hide、actions 不能跟著否則切回不去）
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { GM } from '$'
 import { parseTerm, serializeEntry } from '@/services/searchSyntax'
@@ -19,6 +18,7 @@ import { t, isCJKLocale } from '@/composables/useI18n'
 import { batchVote, type VoteState } from '@/services/galleryVote'
 import { useToast } from 'vue-toastification'
 import { parseTaglistRoot, type GalleryTag } from '@/composables/useEhGalleryHost'
+import { useIntroPanel } from '@/composables/useIntroPanel'
 import { Settings } from '@lucide/vue'
 import { TagState } from '@/types'
 
@@ -84,6 +84,7 @@ onBeforeUnmount(() => {
 })
 
 const { cjkDisplay } = useDisplayConfig()
+const { setPanelTag, close: closePanel } = useIntroPanel()
 
 const identityIndex = computed(() => buildIdentityIndex(tokenize(modelValue.value)))
 
@@ -156,14 +157,10 @@ const searchSelectedCount = computed(() =>
     acc + g.chips.filter(c => c.state !== TagState.Off).length, 0),
 )
 
-// === Vote state: 單一 Map<nsRaw, 'up'|'down'> 三態互斥 ===
-// 左右鍵不是兩個獨立 list 而是同一狀態的兩個 setter，所以「左點 up 再右點」
-// 應該切到 down 而不是兩邊都選——拆兩個 Set 會違反這個語意
 const voteSelected = ref<Map<string, VotePending>>(new Map())
 
 function setVotePending(nsRaw: string, target: VotePending): void {
   const next = new Map(voteSelected.value)
-  // 對自己 toggle off；對另一方向就覆蓋（強制換邊，符合「三態互斥」直覺）
   if (next.get(nsRaw) === target) next.delete(nsRaw)
   else next.set(nsRaw, target)
   voteSelected.value = next
@@ -187,6 +184,7 @@ function applyState(token: string, next: TagState): void {
 }
 
 function onChipLeftClick(chip: ChipView): void {
+  setPanelTag(chip.tag)
   if (galleryTaglistMode.value === 'vote') {
     setVotePending(chip.tag.nsRaw, 'up')
     return
@@ -197,11 +195,11 @@ function onChipLeftClick(chip: ChipView): void {
 
 function onChipRightClick(chip: ChipView, e: MouseEvent): void {
   e.preventDefault()
+  setPanelTag(chip.tag)
   if (galleryTaglistMode.value === 'vote') {
     setVotePending(chip.tag.nsRaw, 'down')
     return
   }
-  // search mode 右鍵 cycle Off/Include → Or → Exclude → Off
   const next = getNextRightClickState([chip.token], undefined, chip.state)
   if (next === null) return
   applyState(chip.token, next)
@@ -215,7 +213,6 @@ function onSearch(): void {
   onClearSelection()
 }
 
-// === Batch vote (一鍵發送、兩 POST atomic) ===
 function tagsFor(target: VotePending): GalleryTag[] {
   return currentTags.value.filter(t => voteSelected.value.get(t.nsRaw) === target)
 }
@@ -227,7 +224,6 @@ async function onSendBatchVotes(): Promise<void> {
   if (ups.length === 0 && downs.length === 0) return
 
   votePending.value = true
-  // 樂觀套用，server 真實狀態等 tagpaneHtml 寫回 #taglist → MutationObserver 同步
   for (const tag of ups) userVotes.value[tag.nsRaw] = 'up'
   for (const tag of downs) userVotes.value[tag.nsRaw] = 'down'
 
@@ -245,7 +241,6 @@ async function dispatchBatch(tags: GalleryTag[], voteValue: 1 | -1): Promise<voi
   if (response.tagpaneHtml) {
     props.taglistEl.innerHTML = response.tagpaneHtml
   } else if (response.error) {
-    // 沒 tagpane 可 reconcile，回退到原始 voteClass 同步
     syncUserVotesFromTags()
   }
   if (response.error) toast.error(response.error)
@@ -257,6 +252,14 @@ function onClearSelection(): void {
   modelValue.value = ''
   voteSelected.value = new Map()
 }
+
+// 對齊 user「直到選取都被清除才 off define」的語意：search + vote 兩個 list 全空
+// 時 auto close panel（user 也可 panel 內 close button 手動關）
+watch([modelValue, voteSelected], () => {
+  if (modelValue.value === '' && voteSelected.value.size === 0) {
+    closePanel()
+  }
+})
 </script>
 
 <template>

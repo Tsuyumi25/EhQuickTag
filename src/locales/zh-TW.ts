@@ -230,4 +230,8 @@ export default {
   'gallery.modeVoteTitle': '左鍵 +1、右鍵 −1，一鍵發送 batch',
   'gallery.sendBatchVote': '發送 ↑{u} / ↓{d}',
   'gallery.sessionExpired': '登入狀態已過期，請重新整理頁面後再試。',
+
+  // Intro panel
+  'intro.close': '關閉',
+  'intro.empty': '沒有定義內容',
 } as Record<string, string>

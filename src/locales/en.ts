@@ -230,4 +230,8 @@ export default {
   'gallery.modeVoteTitle': 'Left: +1 / Right: −1; send all in one batch',
   'gallery.sendBatchVote': 'Send ↑{u} / ↓{d}',
   'gallery.sessionExpired': 'Your session has expired. Please refresh the page to log in again.',
+
+  // Intro panel
+  'intro.close': 'Close',
+  'intro.empty': 'No definition available',
 } as Record<string, string>

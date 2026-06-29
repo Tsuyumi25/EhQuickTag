@@ -1,0 +1,149 @@
+// 對齊 EhSyringe introduce panel 視覺（直接 port 其 less，class 改我們的），
+// 色票來自 EH 原生：#edebdf 米黃底（#gd2 同）、#5c0d12 深紅分隔（#gd4 border 同）、
+// EX dark #4f535b。inset 右側 -5px 視覺貼齊外框、border-radius 僅右下 6px（EhSyringe
+// 的細節）。
+//
+// EH 原生 #gd5 沒設 position，順手補 relative 讓 absolute inset 對齊內框。
+#gd5 {
+  position: relative;
+}
+
+.eqt-intro-panel {
+  position: absolute;
+  inset: 0 -5px 0 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  background: #edebdf;
+  border-radius: 0 0 6px 0;
+  overflow: auto;
+  text-align: left;
+  font-family: verdana, sans-serif;
+  font-size: 9pt;
+  color: inherit;
+
+  &__title {
+    flex: none;
+    display: flex;
+    flex-direction: row;
+    margin: 0 8px;
+    padding: 3px 0;
+    border-bottom: 1px solid #5c0d12;
+    line-height: 14px;
+  }
+
+  &__name {
+    flex: auto;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &__name-cn {
+    font-weight: bold;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__name-key {
+    opacity: 0.7;
+    font-family: monospace;
+    font-size: 8pt;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__close-btn {
+    flex: none;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    user-select: none;
+    color: inherit;
+    font-size: 16px;
+    line-height: 28px;
+    width: 20px;
+    text-align: center;
+    padding: 0;
+    opacity: 0.8;
+
+    &:hover { opacity: 1; }
+  }
+
+  &__content {
+    flex: auto;
+    overflow: auto;
+    margin: 4px 0;
+    padding: 4px 8px;
+    scrollbar-width: thin;
+    scrollbar-color: #5c0d12 transparent;
+
+    &::-webkit-scrollbar { width: 4px; height: 4px; }
+    &::-webkit-scrollbar-thumb { background: #5c0d12; }
+
+    // 把 abbr 的 title 屬性露出來變成尾隨「(title)」灰小字
+    abbr[title] {
+      padding: 0 1px;
+      &::after {
+        content: ' (' attr(title) ')';
+        font-size: 90%;
+      }
+    }
+
+    p { margin: 4px 0; }
+  }
+
+  &__empty {
+    opacity: 0.6;
+    text-align: center;
+    font-weight: bold;
+    padding: 8px;
+  }
+
+  &__links {
+    flex: none;
+    margin: 0 8px;
+    padding-bottom: 3px;
+    border-top: 1px solid #5c0d12;
+    line-height: 24px;
+
+    &:empty { display: none; }
+  }
+}
+
+// 提權蓋過 EH 原生 `#gd5 img { width:5px; height:7px; margin-left:10px }`（給 mr.gif
+// 箭頭用，跟 panel 內的 intro 圖視覺需求完全不同）。selector 用 `#gd5` 前綴讓
+// specificity (1,1,1) > 原生 (1,0,1)
+#gd5 .eqt-intro-panel__content img {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 4px 0;
+  border: 0;
+}
+
+// 標題列的 emoji/icon 圖：inline 跟在中文名稱前面、跟字差不多大
+#gd5 .eqt-intro-panel__name-icon {
+  display: inline;
+  width: 1em;
+  height: 1em;
+  margin: 0 4px 0 0;
+  vertical-align: -2px;
+  border: 0;
+}
+
+// ExHentai 深色 (對齊 EhSyringe :root.ehs-ex)
+.eqt-dark .eqt-intro-panel {
+  background: #4f535b;
+  border-radius: 0;
+  color: #e7e7e7;
+
+  .eqt-intro-panel__title { border-bottom: 1px solid #000; }
+  .eqt-intro-panel__links { border-top: 1px solid #000; }
+  .eqt-intro-panel__content {
+    scrollbar-color: #000 transparent;
+    &::-webkit-scrollbar-thumb { background: #000; }
+  }
+}

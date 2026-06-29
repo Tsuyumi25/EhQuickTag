@@ -9,6 +9,7 @@ import '@/styles/tag-style.scss'
 import '@/styles/native-search-row.scss'
 import '@/styles/tag-icon.scss'
 import '@/styles/gallery-taglist.scss'
+import '@/styles/gallery-intro-panel.scss'
 import 'vue-toastification/dist/index.css'
 import '@/styles/toast-overrides.scss'
 

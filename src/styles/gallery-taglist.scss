@@ -61,6 +61,7 @@ body:not(.eqt-gallery-plugin-active) .eqt-gallery-taglist__chips {
 .eqt-gallery-taglist__row {
   display: grid;
   grid-template-columns: minmax(48px, auto) 1fr;
+  column-gap: 6px;
   align-items: start;
 }
 

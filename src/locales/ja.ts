@@ -230,4 +230,8 @@ export default {
   'gallery.modeVoteTitle': '左 +1 / 右 −1、一括送信',
   'gallery.sendBatchVote': '送信 ↑{u} / ↓{d}',
   'gallery.sessionExpired': 'セッションの有効期限が切れました。ページを再読み込みして再ログインしてください。',
+
+  // Intro panel
+  'intro.close': '閉じる',
+  'intro.empty': '定義がありません',
 } as Record<string, string>

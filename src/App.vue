@@ -6,6 +6,7 @@ import UrlConfigPopup from '@/components/UrlConfigPopup.vue'
 import SettingsPopup from '@/components/SettingsPopup.vue'
 import SearchPopup from '@/components/search/SearchPopup.vue'
 import GalleryTagList from '@/components/gallery/GalleryTagList.vue'
+import GalleryIntroPanel from '@/components/gallery/GalleryIntroPanel.vue'
 import { GM } from '$'
 import type { Button, TagButton, UrlButton } from '@/types'
 import { bindSearchBar } from '@/services/search/searchSession'
@@ -287,4 +288,6 @@ watch(searchText, (val) => {
       @open-settings="showSettings = true"
     />
   </Teleport>
+
+  <GalleryIntroPanel v-if="galleryReady" />
 </template>
