@@ -67,6 +67,9 @@ export default {
   'settings.convertToTraditionalAuto': '自動',
   'settings.convertToTraditionalOn': '繁體',
   'settings.convertToTraditionalOff': '簡體（DB 原文）',
+  'settings.galleryTaglistMode': '圖庫標籤預設模式',
+  'settings.galleryTaglistModeSearch': '搜尋',
+  'settings.galleryTaglistModeVote': '投票',
   'settings.dblClickActions': '背景雙擊動作',
   'settings.dblClickLeft': '左鍵雙擊',
   'settings.dblClickRight': '右鍵雙擊',
@@ -223,4 +226,8 @@ export default {
   'gallery.browseTags': '瀏覽標籤',
   'gallery.modeSearch': '搜尋',
   'gallery.modeVote': '投票',
+  'gallery.modeSearchTitle': '左鍵 Include、右鍵循環 Or / Exclude / Off',
+  'gallery.modeVoteTitle': '左鍵 +1、右鍵 −1，一鍵發送 batch',
+  'gallery.sendBatchVote': '發送 ↑{u} / ↓{d}',
+  'gallery.sessionExpired': '登入狀態已過期，請重新整理頁面後再試。',
 } as Record<string, string>

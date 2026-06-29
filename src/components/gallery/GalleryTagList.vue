@@ -1,29 +1,40 @@
 <script setup lang="ts">
 // Gallery 詳情頁的 taglist 接管：
-//   - chip 左鍵 toggle Include/Off、右鍵 cycle Or → Exclude → Off（對齊 TagBar 模型）
-//   - 底部兩排 action：row 1 是執行類（搜索 / 取消選取）、row 2 是 mode 切換 + 設定
-//   - 兩排永久 visible：原生模式下我們的 chips 區會 hide，actions 不能跟著否則切回不去
-//
-// 狀態管理選擇本地 ref `modelValue` 而非接 searchSession——gallery 頁無 #f_search、
-// 跟列表頁的 search session 是兩個獨立 context，第一輪不做跨頁同步
+//   - chip 左右鍵依 galleryTaglistMode 分流：
+//     search mode → 左 toggle Include/Off、右 cycle Or → Exclude → Off (TagBar 模型)
+//     vote mode → 左 toggle voteSelected up、右 toggle voteSelected down
+//       (一個 tag 在 vote 維度只有 3 態互斥：off / up / down，存進單一 Map)
+//   - 底部兩排 action 永久 visible：
+//     row 1 執行類（瀏覽 placeholder / 搜索 N / 發送 ↑U/↓D / 取消選取）
+//     row 2 模式 + 設定（搜尋|投票 mode toggle / 插件|原生 debug / ⚙ open settings）
+//   - vote 發送：兩個 POST 一鍵 batch（同方向 atomic batch、不同方向依序發、避免並行）
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { GM } from '$'
 import { parseTerm, serializeEntry } from '@/services/searchSyntax'
 import { tokenize, tokenIdentity, buildIdentityIndex, getNextRightClickState, setTagState, removeTag } from '@/services/tagState'
 import { findEntryByNsTag, DEFAULT_NS_ORDER, tagDbVersion } from '@/services/tagDb'
-import { nsFormat, defaultExactMatch, newTabActive } from '@/services/store'
+import { nsFormat, defaultExactMatch, newTabActive, galleryTaglistMode } from '@/services/store'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
 import { t, isCJKLocale } from '@/composables/useI18n'
+import { batchVote, type VoteState } from '@/services/galleryVote'
+import { useToast } from 'vue-toastification'
 import { parseTaglistRoot, type GalleryTag } from '@/composables/useEhGalleryHost'
+import { Settings } from '@lucide/vue'
 import { TagState } from '@/types'
 
 type TagTier = 'gt' | 'gtl' | 'gtw'
-type VoteState = 'up' | 'down' | null
+type VotePending = 'up' | 'down'
 
 const props = defineProps<{
   tags: GalleryTag[]
   taglistEl: HTMLElement
 }>()
+
+const emit = defineEmits<{
+  'open-settings': []
+}>()
+
+const toast = useToast()
 
 const modelValue = ref('')
 
@@ -145,6 +156,26 @@ const searchSelectedCount = computed(() =>
     acc + g.chips.filter(c => c.state !== TagState.Off).length, 0),
 )
 
+// === Vote state: 單一 Map<nsRaw, 'up'|'down'> 三態互斥 ===
+// 左右鍵不是兩個獨立 list 而是同一狀態的兩個 setter，所以「左點 up 再右點」
+// 應該切到 down 而不是兩邊都選——拆兩個 Set 會違反這個語意
+const voteSelected = ref<Map<string, VotePending>>(new Map())
+
+function setVotePending(nsRaw: string, target: VotePending): void {
+  const next = new Map(voteSelected.value)
+  // 對自己 toggle off；對另一方向就覆蓋（強制換邊，符合「三態互斥」直覺）
+  if (next.get(nsRaw) === target) next.delete(nsRaw)
+  else next.set(nsRaw, target)
+  voteSelected.value = next
+}
+
+const upSelectedCount = computed(() =>
+  [...voteSelected.value.values()].filter(v => v === 'up').length)
+const downSelectedCount = computed(() =>
+  [...voteSelected.value.values()].filter(v => v === 'down').length)
+
+const votePending = ref(false)
+
 // === click handlers ===
 
 function applyState(token: string, next: TagState): void {
@@ -156,12 +187,21 @@ function applyState(token: string, next: TagState): void {
 }
 
 function onChipLeftClick(chip: ChipView): void {
+  if (galleryTaglistMode.value === 'vote') {
+    setVotePending(chip.tag.nsRaw, 'up')
+    return
+  }
   const next = chip.state === TagState.Include ? TagState.Off : TagState.Include
   applyState(chip.token, next)
 }
 
 function onChipRightClick(chip: ChipView, e: MouseEvent): void {
   e.preventDefault()
+  if (galleryTaglistMode.value === 'vote') {
+    setVotePending(chip.tag.nsRaw, 'down')
+    return
+  }
+  // search mode 右鍵 cycle Off/Include → Or → Exclude → Off
   const next = getNextRightClickState([chip.token], undefined, chip.state)
   if (next === null) return
   applyState(chip.token, next)
@@ -171,14 +211,51 @@ function onSearch(): void {
   if (searchSelectedCount.value === 0) return
   const url = new URL('/', window.location.href)
   url.searchParams.set('f_search', modelValue.value)
-  // fire-and-forget；GM.openInTab 視 manager 實作回 control 物件或 Promise，
-  // Promise.resolve 收齊兩種、`.catch` 兜底避免 unhandled rejection 噴 console
   Promise.resolve(GM.openInTab(url.href, { active: newTabActive.value })).catch(() => {})
   onClearSelection()
 }
 
+// === Batch vote (一鍵發送、兩 POST atomic) ===
+function tagsFor(target: VotePending): GalleryTag[] {
+  return currentTags.value.filter(t => voteSelected.value.get(t.nsRaw) === target)
+}
+
+async function onSendBatchVotes(): Promise<void> {
+  if (votePending.value) return
+  const ups = tagsFor('up')
+  const downs = tagsFor('down')
+  if (ups.length === 0 && downs.length === 0) return
+
+  votePending.value = true
+  // 樂觀套用，server 真實狀態等 tagpaneHtml 寫回 #taglist → MutationObserver 同步
+  for (const tag of ups) userVotes.value[tag.nsRaw] = 'up'
+  for (const tag of downs) userVotes.value[tag.nsRaw] = 'down'
+
+  try {
+    if (ups.length) await dispatchBatch(ups, 1)
+    if (downs.length) await dispatchBatch(downs, -1)
+  } finally {
+    votePending.value = false
+  }
+  onClearSelection()
+}
+
+async function dispatchBatch(tags: GalleryTag[], voteValue: 1 | -1): Promise<void> {
+  const response = await batchVote(tags, voteValue)
+  if (response.tagpaneHtml) {
+    props.taglistEl.innerHTML = response.tagpaneHtml
+  } else if (response.error) {
+    // 沒 tagpane 可 reconcile，回退到原始 voteClass 同步
+    syncUserVotesFromTags()
+  }
+  if (response.error) toast.error(response.error)
+  if (response.needsLogin) toast.warning(t('gallery.sessionExpired'))
+  if (response.redirect) toast.info(`Redirect: ${response.redirect}`)
+}
+
 function onClearSelection(): void {
   modelValue.value = ''
+  voteSelected.value = new Map()
 }
 </script>
 
@@ -201,6 +278,8 @@ function onClearSelection(): void {
               `eqt-gallery-chip--${chip.tier}`,
               userVotes[chip.tag.nsRaw] === 'up' && 'eqt-gallery-chip--voted-up',
               userVotes[chip.tag.nsRaw] === 'down' && 'eqt-gallery-chip--voted-down',
+              voteSelected.get(chip.tag.nsRaw) === 'up' && 'eqt-gallery-chip--vote-up-pending',
+              voteSelected.get(chip.tag.nsRaw) === 'down' && 'eqt-gallery-chip--vote-down-pending',
             ]"
           >
             <button
@@ -227,6 +306,7 @@ function onClearSelection(): void {
         {{ t('gallery.browseTags') }}
       </button>
       <button
+        v-if="galleryTaglistMode === 'search'"
         type="button"
         class="eqt-gallery-taglist__action-btn"
         :disabled="searchSelectedCount === 0"
@@ -235,22 +315,32 @@ function onClearSelection(): void {
         {{ t('gallery.searchN', { n: String(searchSelectedCount) }) }}
       </button>
       <button
+        v-if="galleryTaglistMode === 'vote'"
         type="button"
         class="eqt-gallery-taglist__action-btn"
-        :disabled="searchSelectedCount === 0"
+        :disabled="(upSelectedCount === 0 && downSelectedCount === 0) || votePending"
+        @click="onSendBatchVotes"
+      >
+        {{ t('gallery.sendBatchVote', { u: String(upSelectedCount), d: String(downSelectedCount) }) }}
+      </button>
+      <button
+        type="button"
+        class="eqt-gallery-taglist__action-btn"
+        :disabled="searchSelectedCount === 0 && upSelectedCount === 0 && downSelectedCount === 0"
         @click="onClearSelection"
       >
         {{ t('gallery.clearSelection') }}
       </button>
     </div>
 
-    <!-- Row 2: mode 切換 + 設定 (mode toggle / 設定 button 暫時 disabled、後續 commit 接邏輯) -->
+    <!-- Row 2: mode 切換 + 設定 -->
     <div class="eqt-gallery-taglist__actions">
       <button
         type="button"
         class="eqt-gallery-taglist__action-btn"
-        disabled
-      >{{ t('gallery.modeSearch') }}</button>
+        :title="galleryTaglistMode === 'search' ? t('gallery.modeSearchTitle') : t('gallery.modeVoteTitle')"
+        @click="galleryTaglistMode = galleryTaglistMode === 'search' ? 'vote' : 'search'"
+      >{{ galleryTaglistMode === 'search' ? t('gallery.modeSearch') : t('gallery.modeVote') }}</button>
       <button
         type="button"
         class="eqt-gallery-taglist__action-btn"
@@ -259,9 +349,12 @@ function onClearSelection(): void {
       >{{ showNative ? '插件' : '原生' }}</button>
       <button
         type="button"
-        class="eqt-gallery-taglist__action-btn"
-        disabled
-      >⚙</button>
+        class="eqt-gallery-taglist__action-btn eqt-gallery-taglist__action-btn--icon"
+        :title="t('settings.title')"
+        @click="emit('open-settings')"
+      >
+        <Settings :size="14" />
+      </button>
     </div>
   </div>
 </template>

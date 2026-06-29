@@ -67,6 +67,9 @@ export default {
   'settings.convertToTraditionalAuto': '自動',
   'settings.convertToTraditionalOn': '繁体字',
   'settings.convertToTraditionalOff': '簡体字（DB 原文）',
+  'settings.galleryTaglistMode': 'ギャラリータグリストの既定モード',
+  'settings.galleryTaglistModeSearch': '検索',
+  'settings.galleryTaglistModeVote': '投票',
   'settings.dblClickActions': '背景ダブルクリック動作',
   'settings.dblClickLeft': '左ダブルクリック',
   'settings.dblClickRight': '右ダブルクリック',
@@ -223,4 +226,8 @@ export default {
   'gallery.browseTags': 'タグを参照',
   'gallery.modeSearch': '検索',
   'gallery.modeVote': '投票',
+  'gallery.modeSearchTitle': '左クリック: Include / 右クリック: Or → Exclude → Off',
+  'gallery.modeVoteTitle': '左 +1 / 右 −1、一括送信',
+  'gallery.sendBatchVote': '送信 ↑{u} / ↓{d}',
+  'gallery.sessionExpired': 'セッションの有効期限が切れました。ページを再読み込みして再ログインしてください。',
 } as Record<string, string>

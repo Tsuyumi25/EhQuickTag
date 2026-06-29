@@ -281,6 +281,10 @@ watch(searchText, (val) => {
   />
 
   <Teleport v-if="galleryReady && galleryHost" to="#eqt-gallery-anchor">
-    <GalleryTagList :tags="galleryHost.tags" :taglist-el="galleryHost.taglistEl" />
+    <GalleryTagList
+      :tags="galleryHost.tags"
+      :taglist-el="galleryHost.taglistEl"
+      @open-settings="showSettings = true"
+    />
   </Teleport>
 </template>

@@ -67,6 +67,9 @@ export default {
   'settings.convertToTraditionalAuto': 'Auto',
   'settings.convertToTraditionalOn': 'Traditional',
   'settings.convertToTraditionalOff': 'Simplified (DB raw)',
+  'settings.galleryTaglistMode': 'Gallery taglist default mode',
+  'settings.galleryTaglistModeSearch': 'Search',
+  'settings.galleryTaglistModeVote': 'Vote',
   'settings.dblClickActions': 'Background double-click actions',
   'settings.dblClickLeft': 'Left double-click',
   'settings.dblClickRight': 'Right double-click',
@@ -223,4 +226,8 @@ export default {
   'gallery.browseTags': 'Browse tags',
   'gallery.modeSearch': 'Search',
   'gallery.modeVote': 'Vote',
+  'gallery.modeSearchTitle': 'Left: Include / Right: cycle Or → Exclude → Off',
+  'gallery.modeVoteTitle': 'Left: +1 / Right: −1; send all in one batch',
+  'gallery.sendBatchVote': 'Send ↑{u} / ↓{d}',
+  'gallery.sessionExpired': 'Your session has expired. Please refresh the page to log in again.',
 } as Record<string, string>

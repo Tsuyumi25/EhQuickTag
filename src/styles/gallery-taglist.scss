@@ -10,9 +10,17 @@
 // 走 .eqt-dark 那套
 @use 'buttons' as *;
 
+// 「插件模式」隱藏原生 taglist / tagmenu_act / gwrd。scope 在 body class 下方便
+// debug toggle 按鈕一鍵還原：
+//   - `#taglist`：原生 chip 區，由我們 component 取代
+//   - `#tagmenu_act` (float:left)：toggle_tagmenu 借用路徑會把它 display:block，
+//     吃掉浮動空間 → 整個 taglist 視覺往上跳
+//   - `#gwrd` (float:right)：vote XHR 期間原生 code 切 waitroller visibility，
+//     在 #gd4 的浮動 context 跟我們的 taglist 互動造成飄移
+// `!important` 從 stylesheet 強制——native code 用 inline style 沒 !important 蓋不過去
 // #gd4 變 grid container：native wrap 跟我們的 __chips 重疊在 grid row 1
-// （由 max(兩者) 撐 row height）、actions 自動排到 row 2。切 mode 時用
-// visibility:hidden 而不是 display:none——後者會讓 hidden 那邊不佔 grid cell、
+// （由 max(兩者) 撐 row height）、actions 自動排到 row 2 / row 3。切 mode 時
+// 用 visibility:hidden 而不是 display:none——後者會讓 hidden 那邊不佔 grid cell、
 // row height 跳動 → actions 位置上下飄。grid items 自動建獨立 formatting context、
 // native 的 float:left (#tagmenu_act / #tagmenu_new / #gwrd) 不外洩
 #gd4 {
@@ -38,8 +46,8 @@ body.eqt-gallery-plugin-active #eqt-native-wrap {
   visibility: hidden;
 }
 
-// 原生模式：hide 我們的 chip 區但保留 cell 空間。actions 永久 visible，否則 user
-// 切到原生模式就無法切回插件
+// 原生模式：hide 我們的 chip 區但保留 cell 空間。兩排 actions 永久 visible，
+// 否則 user 切到原生模式就無法切回插件
 body:not(.eqt-gallery-plugin-active) .eqt-gallery-taglist__chips {
   visibility: hidden;
 }
@@ -74,6 +82,8 @@ body:not(.eqt-gallery-plugin-active) .eqt-gallery-taglist__chips {
 }
 
 // === Chip ===
+// 三件套：[+] body [-]，整顆當一個視覺 unit。border 用 1px 對齊原生（蓋 --eqt-border-width 的 2px）
+//
 // 顏色直接抄 native（eh-g.css 第 356-358 行）：
 //   - gt   border-color #806769（深棕）、bg #F2EFDF（米色）
 //   - gtl  border-color #9a7c7e（淺棕）
@@ -143,8 +153,10 @@ body:not(.eqt-gallery-plugin-active) .eqt-gallery-taglist__chips {
   &:hover { background: color-mix(in srgb, var(--eqt-status-exclude) 70%, transparent); }
 }
 
-// === Vote feedback (從 native voteClass 同步而來) ===
-// 對齊 native a.tup{color:green} / a.tdn{color:red}（eh-g.css 第 303-304 行）
+// === Vote feedback ===
+// 對齊 native a.tup{color:green} / a.tdn{color:red}（eh-g.css 第 303-304 行）：
+// 染整顆 chip 的 body 文字，不單獨染 vote 按鈕——後者跟 native 沒對應、雙重著色
+// 也顯得太搶眼
 .eqt-gallery-chip--voted-up .eqt-gallery-chip__body {
   color: green;
 }
@@ -153,7 +165,20 @@ body:not(.eqt-gallery-plugin-active) .eqt-gallery-taglist__chips {
   color: red;
 }
 
-// === 底部 action row ===
+// Vote pending：voteSelected Map 內的 entry → outline 標記方向。up = 綠、down
+// = 紅。outline 不影響 chip layout（不擠走其他 chip）、跟 search state 的
+// background 染色不衝突
+.eqt-gallery-chip--vote-up-pending {
+  outline: 2px solid #2d8a2d;
+  outline-offset: -1px;
+}
+
+.eqt-gallery-chip--vote-down-pending {
+  outline: 2px solid #b03030;
+  outline-offset: -1px;
+}
+
+// === 底部 action 按鈕 ===
 .eqt-gallery-taglist__actions {
   display: flex;
   flex-wrap: wrap;
@@ -172,5 +197,10 @@ body:not(.eqt-gallery-plugin-active) .eqt-gallery-taglist__chips {
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+
+  // 純 icon 的 button（譬如齒輪設定）padding 縮小一點、避免 icon 周圍空洞太大
+  &--icon {
+    padding: 4px 8px;
   }
 }

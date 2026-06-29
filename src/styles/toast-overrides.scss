@@ -1,0 +1,43 @@
+// vue-toastification 預設尺寸太大（min-height 64px、padding 22px 24px、font 16px、
+// min-width 326px），蓋掉縮成 EH 頁面適配的緊湊版本
+.Vue-Toastification__container {
+  padding: 8px;
+  width: auto;
+}
+
+.Vue-Toastification__toast {
+  min-height: 0;
+  min-width: 220px;
+  max-width: 360px;
+  margin-bottom: 6px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-family: inherit;
+}
+
+.Vue-Toastification__toast-body {
+  font-size: 13px;
+  line-height: 1.4;
+  padding: 0;
+}
+
+.Vue-Toastification__icon {
+  width: 16px;
+  height: 16px;
+  margin: 0 8px 0 0;
+  align-self: flex-start;
+  flex-shrink: 0;
+}
+
+.Vue-Toastification__close-button {
+  padding: 0 0 0 8px;
+  font-size: 16px;
+  font-weight: normal;
+  opacity: 0.6;
+
+  &:hover, &:focus { opacity: 1; }
+}
+
+.Vue-Toastification__progress-bar {
+  height: 2px;
+}

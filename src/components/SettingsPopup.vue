@@ -14,7 +14,8 @@ import {
   dblClickLeft, dblClickRight, newTabActive, nsFormat, defaultExactMatch,
   tagDbMirror, tagDbTtlDays, tagStylePreset, useAccentOnInclude, type DblClickAction,
   showSearchPanel, searchPanelLangMode, convertToTraditional, enableHistory,
-  SEARCH_PANEL_LANG_MODES, CONVERT_TO_TRADITIONAL_MODES,
+  galleryTaglistMode,
+  SEARCH_PANEL_LANG_MODES, CONVERT_TO_TRADITIONAL_MODES, GALLERY_TAGLIST_MODES,
 } from '@/services/store'
 import { TAG_STYLE_PRESETS, currentTagStyleClass } from '@/composables/useTagStyle'
 import ProfileListItem from '@/components/ProfileListItem.vue'
@@ -282,6 +283,18 @@ function onEditorPurge() {
                 class="eqt-settings__locale-btn"
                 :class="{ 'eqt-settings__locale-btn--active': convertToTraditional === m.id }"
                 @click="convertToTraditional = m.id"
+              >{{ t(m.labelKey) }}</button>
+            </div>
+
+            <h4 class="eqt-settings__subtitle">{{ t('settings.galleryTaglistMode') }}</h4>
+            <div class="eqt-settings__locale-row">
+              <button
+                v-for="m in GALLERY_TAGLIST_MODES"
+                :key="m.id"
+                type="button"
+                class="eqt-settings__locale-btn"
+                :class="{ 'eqt-settings__locale-btn--active': galleryTaglistMode === m.id }"
+                @click="galleryTaglistMode = m.id"
               >{{ t(m.labelKey) }}</button>
             </div>
           </div>

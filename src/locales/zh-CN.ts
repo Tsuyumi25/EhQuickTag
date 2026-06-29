@@ -67,6 +67,9 @@ export default {
   'settings.convertToTraditionalAuto': '自动',
   'settings.convertToTraditionalOn': '繁体',
   'settings.convertToTraditionalOff': '简体（DB 原文）',
+  'settings.galleryTaglistMode': '图库标签默认模式',
+  'settings.galleryTaglistModeSearch': '搜索',
+  'settings.galleryTaglistModeVote': '投票',
   'settings.dblClickActions': '背景双击动作',
   'settings.dblClickLeft': '左键双击',
   'settings.dblClickRight': '右键双击',
@@ -223,4 +226,8 @@ export default {
   'gallery.browseTags': '浏览标签',
   'gallery.modeSearch': '搜索',
   'gallery.modeVote': '投票',
+  'gallery.modeSearchTitle': '左键 Include、右键循环 Or / Exclude / Off',
+  'gallery.modeVoteTitle': '左键 +1、右键 −1，一键发送 batch',
+  'gallery.sendBatchVote': '发送 ↑{u} / ↓{d}',
+  'gallery.sessionExpired': '登录状态已过期，请刷新页面后重试。',
 } as Record<string, string>
