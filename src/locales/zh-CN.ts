@@ -216,4 +216,11 @@ export default {
   'default.anthology': '选集',
   'default.profileName': '默认标签组',
   'default.general': '一般',
+
+  // Gallery
+  'gallery.searchN': '搜索 {n} 个标签',
+  'gallery.clearSelection': '取消选取',
+  'gallery.browseTags': '浏览标签',
+  'gallery.modeSearch': '搜索',
+  'gallery.modeVote': '投票',
 } as Record<string, string>

@@ -216,4 +216,11 @@ export default {
   'default.anthology': 'アンソロジー',
   'default.profileName': 'デフォルト',
   'default.general': '一般',
+
+  // Gallery
+  'gallery.searchN': '{n} 個のタグで検索',
+  'gallery.clearSelection': '選択解除',
+  'gallery.browseTags': 'タグを参照',
+  'gallery.modeSearch': '検索',
+  'gallery.modeVote': '投票',
 } as Record<string, string>

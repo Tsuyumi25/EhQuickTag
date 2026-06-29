@@ -216,4 +216,11 @@ export default {
   'default.anthology': '選集',
   'default.profileName': '預設標籤組',
   'default.general': '一般',
+
+  // Gallery
+  'gallery.searchN': '搜索 {n} 個標籤',
+  'gallery.clearSelection': '取消選取',
+  'gallery.browseTags': '瀏覽標籤',
+  'gallery.modeSearch': '搜尋',
+  'gallery.modeVote': '投票',
 } as Record<string, string>

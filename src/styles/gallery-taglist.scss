@@ -113,8 +113,34 @@ body:not(.eqt-gallery-plugin-active) .eqt-gallery-taglist__chips {
   border: none;
   background: transparent;
   color: var(--eqt-text);
+  cursor: pointer;
   font: inherit;
   white-space: nowrap;
+
+  &:hover {
+    background: var(--eqt-bg-hover);
+  }
+}
+
+// === Selection 著色（chip body bg）===
+// 不染 chip 整顆 border-color：避免吃掉 tier border-color 信號（native border 顏色
+// 也帶意義：gt 用 #806769 比 gtl/gtw 的 #9a7c7e 深）。改用 chip body bg overlay
+.eqt-gallery-chip--include .eqt-gallery-chip__body {
+  background: color-mix(in srgb, var(--eqt-status-include) 55%, transparent);
+
+  &:hover { background: color-mix(in srgb, var(--eqt-status-include) 70%, transparent); }
+}
+
+.eqt-gallery-chip--or .eqt-gallery-chip__body {
+  background: color-mix(in srgb, var(--eqt-status-or) 55%, transparent);
+
+  &:hover { background: color-mix(in srgb, var(--eqt-status-or) 70%, transparent); }
+}
+
+.eqt-gallery-chip--exclude .eqt-gallery-chip__body {
+  background: color-mix(in srgb, var(--eqt-status-exclude) 55%, transparent);
+
+  &:hover { background: color-mix(in srgb, var(--eqt-status-exclude) 70%, transparent); }
 }
 
 // === Vote feedback (從 native voteClass 同步而來) ===
@@ -142,4 +168,9 @@ body:not(.eqt-gallery-plugin-active) .eqt-gallery-taglist__chips {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 }

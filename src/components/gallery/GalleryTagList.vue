@@ -1,11 +1,21 @@
 <script setup lang="ts">
-// Gallery 詳情頁的 taglist 接管（foundation）：只展示 chip + 提供「插件 / 原生」
-// debug toggle，沒接 click handler、沒投票、沒 search 互動——這些後續 commit 增加
+// Gallery 詳情頁的 taglist 接管：
+//   - chip 左鍵 toggle Include/Off、右鍵 cycle Or → Exclude → Off（對齊 TagBar 模型）
+//   - 底部兩排 action：row 1 是執行類（搜索 / 取消選取）、row 2 是 mode 切換 + 設定
+//   - 兩排永久 visible：原生模式下我們的 chips 區會 hide，actions 不能跟著否則切回不去
+//
+// 狀態管理選擇本地 ref `modelValue` 而非接 searchSession——gallery 頁無 #f_search、
+// 跟列表頁的 search session 是兩個獨立 context，第一輪不做跨頁同步
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { GM } from '$'
+import { parseTerm, serializeEntry } from '@/services/searchSyntax'
+import { tokenize, tokenIdentity, buildIdentityIndex, getNextRightClickState, setTagState, removeTag } from '@/services/tagState'
 import { findEntryByNsTag, DEFAULT_NS_ORDER, tagDbVersion } from '@/services/tagDb'
+import { nsFormat, defaultExactMatch, newTabActive } from '@/services/store'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
 import { t, isCJKLocale } from '@/composables/useI18n'
 import { parseTaglistRoot, type GalleryTag } from '@/composables/useEhGalleryHost'
+import { TagState } from '@/types'
 
 type TagTier = 'gt' | 'gtl' | 'gtw'
 type VoteState = 'up' | 'down' | null
@@ -15,10 +25,8 @@ const props = defineProps<{
   taglistEl: HTMLElement
 }>()
 
-// 臨時 debug toggle：切「原生 / 插件」taglist 樣式做對照。預設 false = 插件模式
-// （useEhGalleryHost 同步加的 body.eqt-gallery-plugin-active 已 hide 原生）。
-// 切到 true = 移除 body class → 原生 #eqt-native-wrap 解除 visibility、我們的
-// chip 區自己用 .__chips 內 css 處理隱藏；toggle 按鈕永遠 visible（不然回不來）
+const modelValue = ref('')
+
 const showNative = ref(false)
 watch(showNative, (val) => {
   document.body.classList.toggle('eqt-gallery-plugin-active', !val)
@@ -27,12 +35,7 @@ onBeforeUnmount(() => {
   document.body.classList.remove('eqt-gallery-plugin-active')
 })
 
-// currentTags：mutable working copy。兩個來源會更新：
-//   1. 初始 mount：props.tags（mount 那刻 useEhGalleryHost 的 scrape）
-//   2. MutationObserver：原生 tag_from_field 或撤銷自家標籤會改 #taglist、observer 觸發
 const currentTags = ref<GalleryTag[]>([...props.tags])
-
-// userVotes 從 currentTags.voteClass 同步——同一條真實源頭，避免漂移
 const userVotes = ref<Record<string, VoteState>>({})
 
 function syncUserVotesFromTags(): void {
@@ -46,7 +49,6 @@ function syncUserVotesFromTags(): void {
 }
 syncUserVotesFromTags()
 
-// gt / gtl / gtw → 邊框實線 / 虛線 / 點虛線（native EH 用這 3 個 class 區分 tier）
 function tierOf(cls: string): TagTier {
   if (/\bgtw\b/.test(cls)) return 'gtw'
   if (/\bgtl\b/.test(cls)) return 'gtl'
@@ -72,11 +74,33 @@ onBeforeUnmount(() => {
 
 const { cjkDisplay } = useDisplayConfig()
 
+const identityIndex = computed(() => buildIdentityIndex(tokenize(modelValue.value)))
+
 interface ChipView {
   tag: GalleryTag
+  token: string
   display: string
+  state: TagState
   tier: TagTier
   iconUrl?: string
+}
+
+const STATE_CLASS: Record<TagState, string> = {
+  [TagState.Include]: 'eqt-gallery-chip--include',
+  [TagState.Or]:      'eqt-gallery-chip--or',
+  [TagState.Exclude]: 'eqt-gallery-chip--exclude',
+  [TagState.Off]:     'eqt-gallery-chip--off',
+}
+
+function stateOf(token: string): TagState {
+  const id = tokenIdentity(token)
+  if (!id) return TagState.Off
+  const present = identityIndex.value.get(id)
+  if (!present) return TagState.Off
+  const prefix = parseTerm(present).prefix
+  if (prefix === '-') return TagState.Exclude
+  if (prefix === '~') return TagState.Or
+  return TagState.Include
 }
 
 interface ChipGroup {
@@ -86,17 +110,21 @@ interface ChipGroup {
 }
 
 const groups = computed<ChipGroup[]>(() => {
-  // tagDbVersion 是 async loadTagDb 完成的 reactive signal——沒這條 chip 文字第一輪
-  // 顯示 raw、DB 載完後不會自動翻成 CJK
   void tagDbVersion.value
 
   const buckets = new Map<string, ChipView[]>()
   for (const tag of currentTags.value) {
+    const token = serializeEntry(
+      { ns: tag.ns, raw: tag.raw },
+      { nsFormat: nsFormat.value, exactMatch: defaultExactMatch.value },
+    )
     const entry = findEntryByNsTag(tag.ns, tag.raw)
     const display = isCJKLocale() && entry ? cjkDisplay(entry.name) : tag.raw
     const chip: ChipView = {
       tag,
+      token,
       display,
+      state: stateOf(token),
       tier: tierOf(tag.tierClass),
       iconUrl: entry?.iconUrl,
     }
@@ -104,8 +132,6 @@ const groups = computed<ChipGroup[]>(() => {
     buckets.get(tag.ns)!.push(chip)
   }
 
-  // 順序跟 gallery 原 #taglist 一致（buckets Map 已照 currentTags scrape 順序排好）
-  // ns label：已知走翻譯、未知 fallback raw
   const result: ChipGroup[] = []
   const knownNs = new Set(DEFAULT_NS_ORDER)
   for (const [ns, chips] of buckets) {
@@ -113,6 +139,47 @@ const groups = computed<ChipGroup[]>(() => {
   }
   return result
 })
+
+const searchSelectedCount = computed(() =>
+  groups.value.reduce((acc, g) =>
+    acc + g.chips.filter(c => c.state !== TagState.Off).length, 0),
+)
+
+// === click handlers ===
+
+function applyState(token: string, next: TagState): void {
+  if (next === TagState.Off) {
+    modelValue.value = removeTag(modelValue.value, [token])
+  } else {
+    modelValue.value = setTagState(modelValue.value, [token], next)
+  }
+}
+
+function onChipLeftClick(chip: ChipView): void {
+  const next = chip.state === TagState.Include ? TagState.Off : TagState.Include
+  applyState(chip.token, next)
+}
+
+function onChipRightClick(chip: ChipView, e: MouseEvent): void {
+  e.preventDefault()
+  const next = getNextRightClickState([chip.token], undefined, chip.state)
+  if (next === null) return
+  applyState(chip.token, next)
+}
+
+function onSearch(): void {
+  if (searchSelectedCount.value === 0) return
+  const url = new URL('/', window.location.href)
+  url.searchParams.set('f_search', modelValue.value)
+  // fire-and-forget；GM.openInTab 視 manager 實作回 control 物件或 Promise，
+  // Promise.resolve 收齊兩種、`.catch` 兜底避免 unhandled rejection 噴 console
+  Promise.resolve(GM.openInTab(url.href, { active: newTabActive.value })).catch(() => {})
+  onClearSelection()
+}
+
+function onClearSelection(): void {
+  modelValue.value = ''
+}
 </script>
 
 <template>
@@ -130,26 +197,71 @@ const groups = computed<ChipGroup[]>(() => {
             :key="chip.tag.nsRaw"
             class="eqt-gallery-chip"
             :class="[
+              STATE_CLASS[chip.state],
               `eqt-gallery-chip--${chip.tier}`,
               userVotes[chip.tag.nsRaw] === 'up' && 'eqt-gallery-chip--voted-up',
               userVotes[chip.tag.nsRaw] === 'down' && 'eqt-gallery-chip--voted-down',
             ]"
           >
-            <div class="eqt-gallery-chip__body">
+            <button
+              type="button"
+              class="eqt-gallery-chip__body"
+              @click="onChipLeftClick(chip)"
+              @contextmenu="onChipRightClick(chip, $event)"
+            >
               <img v-if="chip.iconUrl" :src="chip.iconUrl" class="eqt-tag-icon" alt="" />{{ chip.display }}
-            </div>
+            </button>
           </div>
         </div>
       </div>
     </div>
 
+    <!-- Row 1: 執行類 action -->
     <div class="eqt-gallery-taglist__actions">
+      <button
+        type="button"
+        class="eqt-gallery-taglist__action-btn"
+        disabled
+        :title="t('gallery.browseTags')"
+      >
+        {{ t('gallery.browseTags') }}
+      </button>
+      <button
+        type="button"
+        class="eqt-gallery-taglist__action-btn"
+        :disabled="searchSelectedCount === 0"
+        @click="onSearch"
+      >
+        {{ t('gallery.searchN', { n: String(searchSelectedCount) }) }}
+      </button>
+      <button
+        type="button"
+        class="eqt-gallery-taglist__action-btn"
+        :disabled="searchSelectedCount === 0"
+        @click="onClearSelection"
+      >
+        {{ t('gallery.clearSelection') }}
+      </button>
+    </div>
+
+    <!-- Row 2: mode 切換 + 設定 (mode toggle / 設定 button 暫時 disabled、後續 commit 接邏輯) -->
+    <div class="eqt-gallery-taglist__actions">
+      <button
+        type="button"
+        class="eqt-gallery-taglist__action-btn"
+        disabled
+      >{{ t('gallery.modeSearch') }}</button>
       <button
         type="button"
         class="eqt-gallery-taglist__action-btn"
         :title="showNative ? '切回插件樣式' : '切換到原生樣式'"
         @click="showNative = !showNative"
       >{{ showNative ? '插件' : '原生' }}</button>
+      <button
+        type="button"
+        class="eqt-gallery-taglist__action-btn"
+        disabled
+      >⚙</button>
     </div>
   </div>
 </template>

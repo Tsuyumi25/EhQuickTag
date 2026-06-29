@@ -216,4 +216,11 @@ export default {
   'default.anthology': 'Anthology',
   'default.profileName': 'Default',
   'default.general': 'General',
+
+  // Gallery
+  'gallery.searchN': 'Search {n} tags',
+  'gallery.clearSelection': 'Clear selection',
+  'gallery.browseTags': 'Browse tags',
+  'gallery.modeSearch': 'Search',
+  'gallery.modeVote': 'Vote',
 } as Record<string, string>
