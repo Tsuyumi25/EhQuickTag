@@ -2,4 +2,7 @@
   height: 1em;
   vertical-align: middle;
   margin-right: 2px;
+  // icon 是純裝飾、不接事件——避免 browser 對 <img> 啟動 native drag-and-drop，
+  // 也讓 chip drag-select 的 elementFromPoint 跳過 icon 拿到 chip
+  pointer-events: none;
 }
