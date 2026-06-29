@@ -87,18 +87,7 @@ export function useEhGalleryHost(): EhGalleryHost | null {
 
   const tags = parseTaglistRoot(tagList)
 
-  // 「隱藏原生 taglist / tagmenu_act / gwrd」的邏輯改走 CSS rule（scope 在
-  // body.eqt-gallery-plugin-active 下，gallery-taglist.scss 內定義）。原因：
-  //   1. native vote callback 會用 inline `style.display = 'block'` 蓋掉我們的
-  //      inline hide，造成 taglist 飄移（先前 bug）
-  //   2. 要支援「原生 / 插件」toggle 來除錯——切到原生時整批解除隱藏，class-based
-  //      開關是最低耦合做法
-  // 這裡同步加 body class 確保 mount 前就已生效（避免原生 taglist 閃一下）。
-  // GalleryTagList component 之後接手用 watch 跟 toggle 按鈕控制
-  document.body.classList.add('eqt-gallery-plugin-active')
-
-  // #tagmenu_act2 是第三方插件注入（譬如 quick-tag-voting）、不在我們的 toggle
-  // 範圍內，直接 inline 隱藏：使用者在 plugin / native 兩種模式下都不需要看到
+  // #tagmenu_act2 是第三方插件注入（譬如 quick-tag-voting）、不在我們的接管範圍
   const tagmenuAct2 = gd4.querySelector<HTMLElement>('#tagmenu_act2')
   if (tagmenuAct2) tagmenuAct2.style.display = 'none'
 

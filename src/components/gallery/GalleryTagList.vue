@@ -6,7 +6,6 @@
 //       (一個 tag 在 vote 維度只有 3 態互斥：off / up / down，存進單一 Map)
 //   - 任何 click 都 setPanelTag(chip.tag)：對 x tag 的任何操作都繼續顯示定義，
 //     直到 search + vote 兩個 list 都空才 auto close panel
-//   - 底部兩排 action 永久 visible（原生模式 chip 區 hide、actions 不能跟著否則切回不去）
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { GM } from '$'
 import { parseTerm, serializeEntry } from '@/services/searchSyntax'
@@ -37,14 +36,6 @@ const emit = defineEmits<{
 const toast = useToast()
 
 const modelValue = ref('')
-
-const showNative = ref(false)
-watch(showNative, (val) => {
-  document.body.classList.toggle('eqt-gallery-plugin-active', !val)
-})
-onBeforeUnmount(() => {
-  document.body.classList.remove('eqt-gallery-plugin-active')
-})
 
 const currentTags = ref<GalleryTag[]>([...props.tags])
 const userVotes = ref<Record<string, VoteState>>({})
@@ -344,12 +335,6 @@ watch([modelValue, voteSelected], () => {
         :title="galleryTaglistMode === 'search' ? t('gallery.modeSearchTitle') : t('gallery.modeVoteTitle')"
         @click="galleryTaglistMode = galleryTaglistMode === 'search' ? 'vote' : 'search'"
       >{{ galleryTaglistMode === 'search' ? t('gallery.modeSearch') : t('gallery.modeVote') }}</button>
-      <button
-        type="button"
-        class="eqt-gallery-taglist__action-btn"
-        :title="showNative ? '切回插件樣式' : '切換到原生樣式'"
-        @click="showNative = !showNative"
-      >{{ showNative ? '插件' : '原生' }}</button>
       <button
         type="button"
         class="eqt-gallery-taglist__action-btn eqt-gallery-taglist__action-btn--icon"

@@ -10,28 +10,14 @@
 // 走 .eqt-dark 那套
 @use 'buttons' as *;
 
-// 「插件模式」隱藏原生 taglist / tagmenu_act / gwrd。scope 在 body class 下方便
-// debug toggle 按鈕一鍵還原：
-//   - `#taglist`：原生 chip 區，由我們 component 取代
-//   - `#tagmenu_act` (float:left)：toggle_tagmenu 借用路徑會把它 display:block，
-//     吃掉浮動空間 → 整個 taglist 視覺往上跳
-//   - `#gwrd` (float:right)：vote XHR 期間原生 code 切 waitroller visibility，
-//     在 #gd4 的浮動 context 跟我們的 taglist 互動造成飄移
-// `!important` 從 stylesheet 強制——native code 用 inline style 沒 !important 蓋不過去
-// #gd4 變 grid container：native wrap 跟我們的 __chips 重疊在 grid row 1
-// （由 max(兩者) 撐 row height）、actions 自動排到 row 2 / row 3。切 mode 時
-// 用 visibility:hidden 而不是 display:none——後者會讓 hidden 那邊不佔 grid cell、
-// row height 跳動 → actions 位置上下飄。grid items 自動建獨立 formatting context、
-// native 的 float:left (#tagmenu_act / #tagmenu_new / #gwrd) 不外洩
+// #gd4 變 grid container：chips + 兩排 actions 各佔一 row。align-content:start 阻止
+// auto rows 在 #gd4 有剩餘高度時被均勻拉開（譬如 chip 少時 actions row 會飄遠）。
+// grid items 自動建獨立 formatting context、native 的 float:left
+// (#tagmenu_act / #tagmenu_new / #gwrd) 不外洩
 #gd4 {
   display: grid;
   grid-template-columns: 1fr;
-}
-
-#eqt-native-wrap,
-.eqt-gallery-taglist__chips {
-  grid-row: 1;
-  grid-column: 1;
+  align-content: start;
 }
 
 // anchor + GalleryTagList root 用 display:contents 讓 chips / actions 直接成為
@@ -41,15 +27,9 @@
   display: contents;
 }
 
-// 插件模式：hide native wrap 但保留 cell 空間
-body.eqt-gallery-plugin-active #eqt-native-wrap {
-  visibility: hidden;
-}
-
-// 原生模式：hide 我們的 chip 區但保留 cell 空間。兩排 actions 永久 visible，
-// 否則 user 切到原生模式就無法切回插件
-body:not(.eqt-gallery-plugin-active) .eqt-gallery-taglist__chips {
-  visibility: hidden;
+// 原生 #taglist 保留在 DOM 給 native vote XHR callback 操作，但永久 hide
+#eqt-native-wrap {
+  display: none;
 }
 
 .eqt-gallery-taglist__chips {
@@ -180,9 +160,13 @@ body:not(.eqt-gallery-plugin-active) .eqt-gallery-taglist__chips {
 }
 
 // === 底部 action 按鈕 ===
+// align-self:start：actions 是 grid item，預設 stretch 會被拉成 row 高，按鈕跟著抽高
+// align-items:center：actions 是 flex container，預設 stretch 也會把 button 拉滿
 .eqt-gallery-taglist__actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
+  align-self: start;
   gap: 6px;
   margin-top: 6px;
 }
