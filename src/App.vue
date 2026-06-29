@@ -5,12 +5,14 @@ import TagConfigPopup from '@/components/TagConfigPopup.vue'
 import UrlConfigPopup from '@/components/UrlConfigPopup.vue'
 import SettingsPopup from '@/components/SettingsPopup.vue'
 import SearchPopup from '@/components/search/SearchPopup.vue'
-import { GM_openInTab } from '$'
+import GalleryTagList from '@/components/gallery/GalleryTagList.vue'
+import { GM } from '$'
 import type { Button, TagButton, UrlButton } from '@/types'
 import { bindSearchBar } from '@/services/search/searchSession'
 import { lines, fontFamily, fontWeight, profiles, activeProfileIdx, switchProfile, renameProfile, createProfile, deleteProfile, newTabActive, nsFormat, defaultExactMatch, tagDbMirror, tagDbTtlDays, type DblClickAction } from '@/services/store'
 import { loadTagDb } from '@/services/tagDb'
 import { useEhFormHost } from '@/composables/useEhFormHost'
+import { useEhGalleryHost } from '@/composables/useEhGalleryHost'
 
 // useEhFormHost 在 setup 階段呼叫（非 onMounted）——searchText 在 bindSearchBar
 // 之前就要拿到 native input 的值，session 抓的 initialSubmittedIds snapshot 才
@@ -20,6 +22,10 @@ const ehFormHost = useEhFormHost()
 const searchInput = ehFormHost?.input ?? null
 const searchText = ref(searchInput?.value ?? '')
 const anchorReady = ref(ehFormHost !== null)
+
+// Gallery 詳情頁 host：跟 ehFormHost 互斥（列表頁有 #f_search、詳情頁有 #taglist）
+const galleryHost = useEhGalleryHost()
+const galleryReady = ref(galleryHost !== null)
 
 bindSearchBar({
   modelValue: () => searchText.value,
@@ -176,7 +182,9 @@ function onSearch(action: DblClickAction) {
   if (action === 'searchNewTab') {
     const url = new URL(searchInput.form.action || window.location.href)
     new FormData(searchInput.form).forEach((v, k) => url.searchParams.set(k, v as string))
-    GM_openInTab(url.href, { active: newTabActive.value })
+    // fire-and-forget；GM.openInTab 視 manager 實作回 control 物件或 Promise，
+    // Promise.resolve 收齊兩種、`.catch` 兜底避免 unhandled rejection 噴 console
+    Promise.resolve(GM.openInTab(url.href, { active: newTabActive.value })).catch(() => {})
   } else {
     searchInput.form.submit()
   }
@@ -271,4 +279,8 @@ watch(searchText, (val) => {
     @search="onSearch"
     @close="showSearchPopup = false"
   />
+
+  <Teleport v-if="galleryReady && galleryHost" to="#eqt-gallery-anchor">
+    <GalleryTagList :tags="galleryHost.tags" :taglist-el="galleryHost.taglistEl" />
+  </Teleport>
 </template>
