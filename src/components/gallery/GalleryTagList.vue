@@ -1,28 +1,26 @@
 <script setup lang="ts">
 // Gallery 詳情頁的 taglist 接管：
-//   - chip 左右鍵依 galleryTaglistMode 分流：
-//     search mode → 左 toggle Include/Off、右 cycle Or → Exclude → Off (TagBar 模型)
-//     vote mode → 左 toggle voteSelected up、右 toggle voteSelected down
-//       (一個 tag 在 vote 維度只有 3 態互斥：off / up / down，存進單一 Map)
-//   - 任何 click 都 setPanelTag(chip.tag)：對 x tag 的任何操作都繼續顯示定義，
-//     直到 search + vote 兩個 list 都空才 auto close panel
+//   - 統一 selection Map<nsRaw, 'positive' | 'negative'>：左鍵 positive、右鍵 negative，
+//     兩態互斥（再點同邊取消、點對邊覆蓋）。selection 跟 action 解耦——同一份選擇
+//     可以送 search（positive=include / negative=exclude）也可以送 vote
+//     (positive=+1 / negative=−1)
+//   - 任何 chip click 都 setPanelTag(chip.tag)：對 x tag 的任何操作都繼續顯示定義，
+//     直到 selection 全空才 auto close panel
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { GM } from '$'
-import { parseTerm, serializeEntry } from '@/services/searchSyntax'
-import { tokenize, tokenIdentity, buildIdentityIndex, getNextRightClickState, setTagState, removeTag } from '@/services/tagState'
+import { serializeEntry } from '@/services/searchSyntax'
 import { findEntryByNsTag, DEFAULT_NS_ORDER, tagDbVersion } from '@/services/tagDb'
-import { nsFormat, defaultExactMatch, newTabActive, galleryTaglistMode } from '@/services/store'
+import { nsFormat, defaultExactMatch, newTabActive } from '@/services/store'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
 import { t, isCJKLocale } from '@/composables/useI18n'
 import { batchVote, type VoteState } from '@/services/galleryVote'
 import { useToast } from 'vue-toastification'
 import { parseTaglistRoot, type GalleryTag } from '@/composables/useEhGalleryHost'
 import { useIntroPanel } from '@/composables/useIntroPanel'
-import { Settings } from '@lucide/vue'
-import { TagState } from '@/types'
+import { Settings, Search } from '@lucide/vue'
 
 type TagTier = 'gt' | 'gtl' | 'gtw'
-type VotePending = 'up' | 'down'
+type Selection = 'positive' | 'negative'
 
 const props = defineProps<{
   tags: GalleryTag[]
@@ -34,8 +32,6 @@ const emit = defineEmits<{
 }>()
 
 const toast = useToast()
-
-const modelValue = ref('')
 
 const currentTags = ref<GalleryTag[]>([...props.tags])
 const userVotes = ref<Record<string, VoteState>>({})
@@ -77,33 +73,15 @@ onBeforeUnmount(() => {
 const { cjkDisplay } = useDisplayConfig()
 const { setPanelTag, close: closePanel } = useIntroPanel()
 
-const identityIndex = computed(() => buildIdentityIndex(tokenize(modelValue.value)))
+const selection = ref<Map<string, Selection>>(new Map())
 
 interface ChipView {
   tag: GalleryTag
   token: string
   display: string
-  state: TagState
+  selected: Selection | undefined
   tier: TagTier
   iconUrl?: string
-}
-
-const STATE_CLASS: Record<TagState, string> = {
-  [TagState.Include]: 'eqt-gallery-chip--include',
-  [TagState.Or]:      'eqt-gallery-chip--or',
-  [TagState.Exclude]: 'eqt-gallery-chip--exclude',
-  [TagState.Off]:     'eqt-gallery-chip--off',
-}
-
-function stateOf(token: string): TagState {
-  const id = tokenIdentity(token)
-  if (!id) return TagState.Off
-  const present = identityIndex.value.get(id)
-  if (!present) return TagState.Off
-  const prefix = parseTerm(present).prefix
-  if (prefix === '-') return TagState.Exclude
-  if (prefix === '~') return TagState.Or
-  return TagState.Include
 }
 
 interface ChipGroup {
@@ -127,7 +105,7 @@ const groups = computed<ChipGroup[]>(() => {
       tag,
       token,
       display,
-      state: stateOf(token),
+      selected: selection.value.get(tag.nsRaw),
       tier: tierOf(tag.tierClass),
       iconUrl: entry?.iconUrl,
     }
@@ -143,75 +121,57 @@ const groups = computed<ChipGroup[]>(() => {
   return result
 })
 
-const searchSelectedCount = computed(() =>
-  groups.value.reduce((acc, g) =>
-    acc + g.chips.filter(c => c.state !== TagState.Off).length, 0),
-)
-
-const voteSelected = ref<Map<string, VotePending>>(new Map())
-
-function setVotePending(nsRaw: string, target: VotePending): void {
-  const next = new Map(voteSelected.value)
-  if (next.get(nsRaw) === target) next.delete(nsRaw)
-  else next.set(nsRaw, target)
-  voteSelected.value = next
-}
-
-const upSelectedCount = computed(() =>
-  [...voteSelected.value.values()].filter(v => v === 'up').length)
-const downSelectedCount = computed(() =>
-  [...voteSelected.value.values()].filter(v => v === 'down').length)
+const positiveCount = computed(() =>
+  [...selection.value.values()].filter(v => v === 'positive').length)
+const negativeCount = computed(() =>
+  [...selection.value.values()].filter(v => v === 'negative').length)
+const selectedCount = computed(() => selection.value.size)
 
 const votePending = ref(false)
 
 // === click handlers ===
 
-function applyState(token: string, next: TagState): void {
-  if (next === TagState.Off) {
-    modelValue.value = removeTag(modelValue.value, [token])
-  } else {
-    modelValue.value = setTagState(modelValue.value, [token], next)
-  }
+function setSelection(nsRaw: string, target: Selection): void {
+  const next = new Map(selection.value)
+  if (next.get(nsRaw) === target) next.delete(nsRaw)
+  else next.set(nsRaw, target)
+  selection.value = next
 }
 
 function onChipLeftClick(chip: ChipView): void {
   setPanelTag(chip.tag)
-  if (galleryTaglistMode.value === 'vote') {
-    setVotePending(chip.tag.nsRaw, 'up')
-    return
-  }
-  const next = chip.state === TagState.Include ? TagState.Off : TagState.Include
-  applyState(chip.token, next)
+  setSelection(chip.tag.nsRaw, 'positive')
 }
 
 function onChipRightClick(chip: ChipView, e: MouseEvent): void {
   e.preventDefault()
   setPanelTag(chip.tag)
-  if (galleryTaglistMode.value === 'vote') {
-    setVotePending(chip.tag.nsRaw, 'down')
-    return
-  }
-  const next = getNextRightClickState([chip.token], undefined, chip.state)
-  if (next === null) return
-  applyState(chip.token, next)
+  setSelection(chip.tag.nsRaw, 'negative')
 }
 
 function onSearch(): void {
-  if (searchSelectedCount.value === 0) return
+  if (selectedCount.value === 0) return
+  const tokens: string[] = []
+  for (const group of groups.value) {
+    for (const chip of group.chips) {
+      if (chip.selected === 'positive') tokens.push(chip.token)
+      else if (chip.selected === 'negative') tokens.push(`-${chip.token}`)
+    }
+  }
   const url = new URL('/', window.location.href)
-  url.searchParams.set('f_search', modelValue.value)
+  url.searchParams.set('f_search', tokens.join(' '))
   Promise.resolve(GM.openInTab(url.href, { active: newTabActive.value })).catch(() => {})
   onClearSelection()
 }
 
-function tagsFor(target: VotePending): GalleryTag[] {
-  return currentTags.value.filter(t => voteSelected.value.get(t.nsRaw) === target)
+function tagsFor(target: Selection): GalleryTag[] {
+  return currentTags.value.filter(t => selection.value.get(t.nsRaw) === target)
 }
 
 async function onSendBatchVotes(): Promise<void> {
   if (votePending.value) return
-  const ups = tagsFor('up')
-  const downs = tagsFor('down')
+  const ups = tagsFor('positive')
+  const downs = tagsFor('negative')
   if (ups.length === 0 && downs.length === 0) return
 
   votePending.value = true
@@ -240,109 +200,98 @@ async function dispatchBatch(tags: GalleryTag[], voteValue: 1 | -1): Promise<voi
 }
 
 function onClearSelection(): void {
-  modelValue.value = ''
-  voteSelected.value = new Map()
+  selection.value = new Map()
 }
 
-// 對齊 user「直到選取都被清除才 off define」的語意：search + vote 兩個 list 全空
-// 時 auto close panel（user 也可 panel 內 close button 手動關）
-watch([modelValue, voteSelected], () => {
-  if (modelValue.value === '' && voteSelected.value.size === 0) {
-    closePanel()
-  }
+// selection 全空時 auto close panel（user 也可 panel 內 close button 手動關）
+watch(selection, () => {
+  if (selection.value.size === 0) closePanel()
 })
 </script>
 
 <template>
   <div class="eqt-gallery-taglist">
-    <div class="eqt-gallery-taglist__chips">
-      <div
-        v-for="group in groups"
-        :key="group.ns"
-        class="eqt-gallery-taglist__row"
-      >
-        <div class="eqt-gallery-taglist__label">{{ group.label }}:</div>
-        <div class="eqt-gallery-taglist__cells">
-          <div
-            v-for="chip in group.chips"
-            :key="chip.tag.nsRaw"
-            class="eqt-gallery-chip"
-            :class="[
-              STATE_CLASS[chip.state],
-              `eqt-gallery-chip--${chip.tier}`,
-              userVotes[chip.tag.nsRaw] === 'up' && 'eqt-gallery-chip--voted-up',
-              userVotes[chip.tag.nsRaw] === 'down' && 'eqt-gallery-chip--voted-down',
-              voteSelected.get(chip.tag.nsRaw) === 'up' && 'eqt-gallery-chip--vote-up-pending',
-              voteSelected.get(chip.tag.nsRaw) === 'down' && 'eqt-gallery-chip--vote-down-pending',
-            ]"
+    <div
+      v-for="group in groups"
+      :key="group.ns"
+      class="eqt-gallery-taglist__row"
+    >
+      <div class="eqt-gallery-taglist__label">{{ group.label }}:</div>
+      <div class="eqt-gallery-taglist__cells">
+        <div
+          v-for="chip in group.chips"
+          :key="chip.tag.nsRaw"
+          class="eqt-gallery-chip"
+          :class="[
+            chip.selected === 'positive' && 'eqt-gallery-chip--selected-positive',
+            chip.selected === 'negative' && 'eqt-gallery-chip--selected-negative',
+            `eqt-gallery-chip--${chip.tier}`,
+            userVotes[chip.tag.nsRaw] === 'up' && 'eqt-gallery-chip--voted-up',
+            userVotes[chip.tag.nsRaw] === 'down' && 'eqt-gallery-chip--voted-down',
+          ]"
+        >
+          <button
+            type="button"
+            class="eqt-gallery-chip__body"
+            @click="onChipLeftClick(chip)"
+            @contextmenu="onChipRightClick(chip, $event)"
           >
-            <button
-              type="button"
-              class="eqt-gallery-chip__body"
-              @click="onChipLeftClick(chip)"
-              @contextmenu="onChipRightClick(chip, $event)"
-            >
-              <img v-if="chip.iconUrl" :src="chip.iconUrl" class="eqt-tag-icon" alt="" />{{ chip.display }}
-            </button>
-          </div>
+            <img v-if="chip.iconUrl" :src="chip.iconUrl" class="eqt-tag-icon" alt="" />{{ chip.display }}
+          </button>
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Row 1: 執行類 action -->
-    <div class="eqt-gallery-taglist__actions">
-      <button
-        type="button"
-        class="eqt-gallery-taglist__action-btn"
-        disabled
-        :title="t('gallery.browseTags')"
-      >
-        {{ t('gallery.browseTags') }}
-      </button>
-      <button
-        v-if="galleryTaglistMode === 'search'"
-        type="button"
-        class="eqt-gallery-taglist__action-btn"
-        :disabled="searchSelectedCount === 0"
-        @click="onSearch"
-      >
-        {{ t('gallery.searchN', { n: String(searchSelectedCount) }) }}
-      </button>
-      <button
-        v-if="galleryTaglistMode === 'vote'"
-        type="button"
-        class="eqt-gallery-taglist__action-btn"
-        :disabled="(upSelectedCount === 0 && downSelectedCount === 0) || votePending"
-        @click="onSendBatchVotes"
-      >
-        {{ t('gallery.sendBatchVote', { u: String(upSelectedCount), d: String(downSelectedCount) }) }}
-      </button>
-      <button
-        type="button"
-        class="eqt-gallery-taglist__action-btn"
-        :disabled="searchSelectedCount === 0 && upSelectedCount === 0 && downSelectedCount === 0"
-        @click="onClearSelection"
-      >
-        {{ t('gallery.clearSelection') }}
-      </button>
-    </div>
+  <!-- Action 區：3 欄 × 2 列 grid。search 左跨 2 列、vote 右跨 2 列（兩個大方塊，
+       物理距離把誤觸代價較高的 vote 跟 search 隔開）。中間欄第 1 列 Browse、
+       第 2 列 Clear + Settings -->
+  <div class="eqt-gallery-actions">
+    <button
+      type="button"
+      class="eqt-gallery-actions__btn eqt-gallery-actions__btn--search"
+      :disabled="selectedCount === 0"
+      @click="onSearch"
+    >
+      <Search :size="20" />
+      <span>{{ t('gallery.searchN', { n: String(selectedCount) }) }}</span>
+    </button>
 
-    <!-- Row 2: mode 切換 + 設定 -->
-    <div class="eqt-gallery-taglist__actions">
-      <button
-        type="button"
-        class="eqt-gallery-taglist__action-btn"
-        :title="galleryTaglistMode === 'search' ? t('gallery.modeSearchTitle') : t('gallery.modeVoteTitle')"
-        @click="galleryTaglistMode = galleryTaglistMode === 'search' ? 'vote' : 'search'"
-      >{{ galleryTaglistMode === 'search' ? t('gallery.modeSearch') : t('gallery.modeVote') }}</button>
-      <button
-        type="button"
-        class="eqt-gallery-taglist__action-btn eqt-gallery-taglist__action-btn--icon"
-        :title="t('settings.title')"
-        @click="emit('open-settings')"
-      >
-        <Settings :size="14" />
-      </button>
-    </div>
+    <button
+      type="button"
+      class="eqt-gallery-actions__btn eqt-gallery-actions__btn--browse"
+      disabled
+      :title="t('gallery.browseTags')"
+    >
+      {{ t('gallery.browseTags') }}
+    </button>
+
+    <button
+      type="button"
+      class="eqt-gallery-actions__btn eqt-gallery-actions__btn--clear"
+      :disabled="selectedCount === 0"
+      @click="onClearSelection"
+    >
+      {{ t('gallery.clearSelection') }}
+    </button>
+
+    <button
+      type="button"
+      class="eqt-gallery-actions__btn eqt-gallery-actions__btn--settings eqt-gallery-actions__btn--icon"
+      :title="t('settings.title')"
+      @click="emit('open-settings')"
+    >
+      <Settings :size="14" />
+    </button>
+
+    <button
+      type="button"
+      class="eqt-gallery-actions__btn eqt-gallery-actions__btn--vote"
+      :disabled="selectedCount === 0 || votePending"
+      @click="onSendBatchVotes"
+    >
+      <span class="eqt-gallery-actions__vote-counts">↑{{ positiveCount }} ↓{{ negativeCount }}</span>
+      <span>{{ t('gallery.vote') }}</span>
+    </button>
   </div>
 </template>

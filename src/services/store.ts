@@ -50,14 +50,6 @@ export const CONVERT_TO_TRADITIONAL_MODES = [
 ] as const
 export type ConvertToTraditional = typeof CONVERT_TO_TRADITIONAL_MODES[number]['id']
 
-// Gallery taglist 子 mode（左右鍵分流）：'search' (左 include / 右 cycle or-exclude)、
-// 'vote' (左 +1 / 右 -1)；底部 toggle 即時切，跨 reload 持久
-export const GALLERY_TAGLIST_MODES = [
-  { id: 'search', labelKey: 'settings.galleryTaglistModeSearch' },
-  { id: 'vote',   labelKey: 'settings.galleryTaglistModeVote' },
-] as const
-export type GalleryTaglistMode = typeof GALLERY_TAGLIST_MODES[number]['id']
-
 // --- settings: single source of truth ---
 // 新增 setting 只要：① INITIAL_SETTINGS 加一欄 + ② 加一行 named export。
 // load / save / watch 自動掃描 refs。locale 走獨立處理（從 useI18n import）。
@@ -96,9 +88,6 @@ const INITIAL_SETTINGS = {
   //   'off'  → 一律 DB 原文（簡體）
   // 預設 'auto'，跟 searchPanelLangMode 同 pattern——locale 變動會自動跟上
   convertToTraditional: 'auto' as ConvertToTraditional,
-  // Gallery taglist 子 mode：'search' (左 include / 右 cycle or-exclude)、'vote'
-  // (左 +1 / 右 -1)；底部 toggle 即時切、跨 reload 持久
-  galleryTaglistMode: 'search' as GalleryTaglistMode,
   // SearchPanel 是否記錄 history（dismissTerms / clearSearch 推到 history 列表
   // 並持久化到 GM storage）。隱私考量可關。關掉後 history row 隱藏、不再 push，
   // 既有 storage 內容保留——再開啟時繼續長
@@ -128,7 +117,6 @@ export const showSearchPanel    = refs.showSearchPanel
 export const searchPanelLangMode = refs.searchPanelLangMode
 export const convertToTraditional = refs.convertToTraditional
 export const enableHistory      = refs.enableHistory
-export const galleryTaglistMode = refs.galleryTaglistMode
 
 // enum-shape setting 的合法 id 集合。壞值 silently fallback 到 INITIAL_SETTINGS 預設——
 // 沒這層守門 GM storage 被竄改塞個壞字串會直接灌進 ref，UI 永久卡在「無 active button、
@@ -137,7 +125,6 @@ export const galleryTaglistMode = refs.galleryTaglistMode
 const SETTING_VALIDATORS: Partial<{ [K in SettingKey]: (v: unknown) => boolean }> = {
   searchPanelLangMode:  v => SEARCH_PANEL_LANG_MODES.some(m => m.id === v),
   convertToTraditional: v => CONVERT_TO_TRADITIONAL_MODES.some(m => m.id === v),
-  galleryTaglistMode:   v => GALLERY_TAGLIST_MODES.some(m => m.id === v),
 }
 
 function loadAllSettings(persisted: Partial<Settings>): void {

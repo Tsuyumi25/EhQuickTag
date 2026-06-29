@@ -10,20 +10,9 @@
 // 走 .eqt-dark 那套
 @use 'buttons' as *;
 
-// #gd4 變 grid container：chips + 兩排 actions 各佔一 row。align-content:start 阻止
-// auto rows 在 #gd4 有剩餘高度時被均勻拉開（譬如 chip 少時 actions row 會飄遠）。
-// grid items 自動建獨立 formatting context、native 的 float:left
-// (#tagmenu_act / #tagmenu_new / #gwrd) 不外洩
-#gd4 {
-  display: grid;
-  grid-template-columns: 1fr;
-  align-content: start;
-}
-
-// anchor + GalleryTagList root 用 display:contents 讓 chips / actions 直接成為
-// #gd4 的 grid items（不被包進 anchor 自己的 box）
-#eqt-gallery-anchor,
-.eqt-gallery-taglist {
+// anchor 用 display:contents 讓 taglist / actions 直接掛在 #gd4 下（不被包進
+// anchor 自己的 box）
+#eqt-gallery-anchor {
   display: contents;
 }
 
@@ -32,7 +21,12 @@
   display: none;
 }
 
-.eqt-gallery-taglist__chips {
+// 仿 native `#taglist { height:295px; overflow:auto }` 的招數：固定身高 + 內部
+// scroll，actions 自然落在下方、位置永遠在同一個 y，不需要 grid / flex / align
+// 那套。245 = #gmid 330 - actions ~72 - margin 緩衝 ~13，剛好塞進
+.eqt-gallery-taglist {
+  height: 245px;
+  overflow: auto;
   font-size: 9pt;
 }
 
@@ -115,20 +109,15 @@
 
 // === Selection 著色（chip body bg）===
 // 不染 chip 整顆 border-color：避免吃掉 tier border-color 信號（native border 顏色
-// 也帶意義：gt 用 #806769 比 gtl/gtw 的 #9a7c7e 深）。改用 chip body bg overlay
-.eqt-gallery-chip--include .eqt-gallery-chip__body {
+// 也帶意義：gt 用 #806769 比 gtl/gtw 的 #9a7c7e 深）。改用 chip body bg overlay。
+// positive (左鍵) = include / vote up 共用綠、negative (右鍵) = exclude / vote down 共用紅
+.eqt-gallery-chip--selected-positive .eqt-gallery-chip__body {
   background: color-mix(in srgb, var(--eqt-status-include) 55%, transparent);
 
   &:hover { background: color-mix(in srgb, var(--eqt-status-include) 70%, transparent); }
 }
 
-.eqt-gallery-chip--or .eqt-gallery-chip__body {
-  background: color-mix(in srgb, var(--eqt-status-or) 55%, transparent);
-
-  &:hover { background: color-mix(in srgb, var(--eqt-status-or) 70%, transparent); }
-}
-
-.eqt-gallery-chip--exclude .eqt-gallery-chip__body {
+.eqt-gallery-chip--selected-negative .eqt-gallery-chip__body {
   background: color-mix(in srgb, var(--eqt-status-exclude) 55%, transparent);
 
   &:hover { background: color-mix(in srgb, var(--eqt-status-exclude) 70%, transparent); }
@@ -146,42 +135,71 @@
   color: red;
 }
 
-// Vote pending：voteSelected Map 內的 entry → outline 標記方向。up = 綠、down
-// = 紅。outline 不影響 chip layout（不擠走其他 chip）、跟 search state 的
-// background 染色不衝突
-.eqt-gallery-chip--vote-up-pending {
-  outline: 2px solid #2d8a2d;
-  outline-offset: -1px;
-}
-
-.eqt-gallery-chip--vote-down-pending {
-  outline: 2px solid #b03030;
-  outline-offset: -1px;
-}
-
-// === 底部 action 按鈕 ===
-// align-self:start：actions 是 grid item，預設 stretch 會被拉成 row 高，按鈕跟著抽高
-// align-items:center：actions 是 flex container，預設 stretch 也會把 button 拉滿
-.eqt-gallery-taglist__actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  align-self: start;
+// === Action 區 ===
+// 4 欄 × 2 列 grid：search 跨 col 1 / row 1-2、vote 跨 col 4 / row 1-2，兩個大方塊
+// 把誤觸代價較高的 vote 從 search 拉開。中間欄第 1 列 browse（跨兩 col 撐滿）、
+// 第 2 列 clear + settings
+.eqt-gallery-actions {
+  display: grid;
+  grid-template-columns: 64px 1fr auto 64px;
+  grid-template-rows: auto auto;
   gap: 6px;
-  margin-top: 6px;
+  margin: 6px 6px 0 0;
 }
 
-.eqt-gallery-taglist__action-btn {
+.eqt-gallery-actions__btn {
   @include btn-toned;
   padding: 4px 12px;
   font-size: var(--eqt-fs-md);
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
 
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+
+  // search / vote 大方塊：column flow 把 icon (或 vote 的 ↑↓ 計數) 疊在 label 上方
+  &--search,
+  &--vote {
+    flex-direction: column;
+    padding: 6px;
+    gap: 2px;
+  }
+
+  // vote 把計數放在原本 icon 的位置，bold + 大字撐住視覺份量、對齊 search icon size
+  &--vote .eqt-gallery-actions__vote-counts {
+    font-weight: bold;
+    font-size: 14px;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  &--search {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+  }
+
+  &--vote {
+    grid-column: 4;
+    grid-row: 1 / span 2;
+  }
+
+  &--browse {
+    grid-column: 2 / span 2;
+    grid-row: 1;
+  }
+
+  &--clear {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  &--settings {
+    grid-column: 3;
+    grid-row: 2;
   }
 
   // 純 icon 的 button（譬如齒輪設定）padding 縮小一點、避免 icon 周圍空洞太大
