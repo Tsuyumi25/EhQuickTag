@@ -103,13 +103,19 @@ interface ChipGroup {
   chips: ChipView[]
 }
 
-function buildChipView(tag: GalleryTag): ChipView {
+const KNOWN_NS_SET = new Set<string>(DEFAULT_NS_ORDER)
+
+function buildChipView(tag: GalleryTag, showNs = false): ChipView {
   const token = serializeEntry(
     { ns: tag.ns, raw: tag.raw },
     { nsFormat: nsFormat.value, exactMatch: defaultExactMatch.value },
   )
   const entry = findEntryByNsTag(tag.ns, tag.raw)
-  const display = isCJKLocale() && entry ? cjkDisplay(entry.name) : tag.raw
+  const baseDisplay = isCJKLocale() && entry ? cjkDisplay(entry.name) : tag.raw
+  // 「新增」row 混 ns、沒有單一 ns label 可掛在 row 開頭，每個 chip 自帶 ns 前綴
+  // 才能辨識（譬如「女:yuri」「畫師:foo」）。原生 row 跟 ns label row 不重複標
+  const nsLabel = KNOWN_NS_SET.has(tag.ns) ? t(`ns.${tag.ns}`) : tag.ns
+  const display = showNs ? `${nsLabel}:${baseDisplay}` : baseDisplay
   return {
     tag,
     token,
@@ -136,12 +142,12 @@ const groups = computed<ChipGroup[]>(() => {
     result.push({ ns, label: knownNs.has(ns) ? t(`ns.${ns}`) : ns, chips })
   }
 
-  // 「新增」row 排最後；只在 addedTags 非空時顯示
+  // 「新增」row 排最後；只在 addedTags 非空時顯示。chips 用 showNs=true 因為混 ns
   if (addedTags.value.length) {
     result.push({
       ns: '__added',
       label: t('gallery.added'),
-      chips: addedTags.value.map(buildChipView),
+      chips: addedTags.value.map(t => buildChipView(t, true)),
     })
   }
   return result
@@ -190,25 +196,35 @@ const pickedIds = computed<ReadonlySet<string>>(() => {
   return ids
 })
 
-function onPickFromAdd(entry: TagEntry): void {
+function onPickFromAdd(entry: TagEntry, mode: 'positive' | 'negative'): void {
   // dedup：先看是不是已在原 taglist；若是直接改原 chip，不重複加進 addedTags
   const existing = currentTags.value.find(t => t.nsRaw === entry.fullTag)
   const added = addedTags.value.find(t => t.nsRaw === entry.fullTag)
   const tag = existing ?? added
 
   if (tag) {
-    // 已存在 → toggle positive / off（picker 行為對齊 SearchPopup 的 onPick）
+    // 左鍵 (+1)：cur ∈ {off, negative} → positive；cur = positive → no-op (cap=1)
+    // 右鍵 (-1)：cur = positive → off；cur ∈ {off, negative} → no-op (picker min=0)
     const cur = selection.value.get(tag.nsRaw)
-    const next = new Map(selection.value)
-    if (cur === 'positive') next.delete(tag.nsRaw)
-    else next.set(tag.nsRaw, 'positive')
-    selection.value = next
+    if (mode === 'positive') {
+      if (cur === 'positive') return
+      const next = new Map(selection.value)
+      next.set(tag.nsRaw, 'positive')
+      selection.value = next
+    } else {
+      if (cur !== 'positive') return
+      const next = new Map(selection.value)
+      next.delete(tag.nsRaw)
+      selection.value = next
+    }
     setPanelTag(tag)
     return
   }
 
-  // 全新 → 進 addedTags + positive。tagid=0 placeholder：batchVote 只用 nsRaw、
-  // native vote() 路徑不會走到 added chip
+  // 全新 entry：只有左鍵 (+1) 才 push 進 addedTags；右鍵 (-1) 對 off 起點 = 0→-1 禁止
+  if (mode !== 'positive') return
+
+  // tagid=0 placeholder：batchVote 只用 nsRaw、native vote() 路徑不會走到 added chip
   const newAdded: GalleryTag = {
     tagid: 0,
     ns: entry.ns,
@@ -285,16 +301,29 @@ async function onSendBatchVotes(): Promise<void> {
   for (const tag of ups) userVotes.value[tag.nsRaw] = 'up'
   for (const tag of downs) userVotes.value[tag.nsRaw] = 'down'
 
+  // 記下這個 batch 涵蓋了哪些 addedTags placeholder：vote 成功後 EH server 會
+  // 把新 tag 寫進 gallery taglist，回傳的 tagpaneHtml 一刷 currentTags 就會包含，
+  // 我們可以清掉 placeholder（保留會導致同一 nsRaw 在 currentTags + addedTags 雙列）
+  const addedBefore = new Set(addedTags.value.map(t => t.nsRaw))
+  const votedAddedIds = [...ups, ...downs]
+    .map(t => t.nsRaw)
+    .filter(id => addedBefore.has(id))
+
   try {
-    if (ups.length) await dispatchBatch(ups, 1)
-    if (downs.length) await dispatchBatch(downs, -1)
+    let allOk = true
+    if (ups.length) allOk = (await dispatchBatch(ups, 1)) && allOk
+    if (downs.length) allOk = (await dispatchBatch(downs, -1)) && allOk
+    if (allOk && votedAddedIds.length) {
+      const removed = new Set(votedAddedIds)
+      addedTags.value = addedTags.value.filter(t => !removed.has(t.nsRaw))
+    }
   } finally {
     votePending.value = false
   }
   onClearSelection()
 }
 
-async function dispatchBatch(tags: GalleryTag[], voteValue: 1 | -1): Promise<void> {
+async function dispatchBatch(tags: GalleryTag[], voteValue: 1 | -1): Promise<boolean> {
   const response = await batchVote(tags, voteValue)
   if (response.tagpaneHtml) {
     props.taglistEl.innerHTML = response.tagpaneHtml
@@ -304,6 +333,7 @@ async function dispatchBatch(tags: GalleryTag[], voteValue: 1 | -1): Promise<voi
   if (response.error) toast.error(response.error)
   if (response.needsLogin) toast.warning(t('gallery.sessionExpired'))
   if (response.redirect) toast.info(`Redirect: ${response.redirect}`)
+  return !response.error && !response.needsLogin
 }
 
 function onClearSelection(): void {

@@ -18,7 +18,9 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  pick: [entry: TagEntry]
+  // mode: 左鍵 / Enter = positive (+1)、右鍵 = negative (-1)。對齊 taglist
+  // 「左 +1 / 右 -1」操作模型，picker 額外限制 min=0（禁止 0 → -1）
+  pick: [entry: TagEntry, mode: 'positive' | 'negative']
   close: []
 }>()
 
@@ -60,6 +62,12 @@ function recomputePanelRect(): void {
 
 useEventListener(window, 'resize', recomputePanelRect)
 
+// Esc 關閉：input lose focus 時 panel-level @keydown 收不到，掛到 document
+// 才能保證隨時生效（click-outside 仍然鎖死、只有 × 按鈕跟 Esc 能關）
+useEventListener(document, 'keydown', (e: KeyboardEvent) => {
+  if (e.key === 'Escape') emit('close')
+})
+
 const { dbReady, suggestions } = useTagSuggestions({
   query: () => query.value,
   namespaces: () => selectedNs.value ? [selectedNs.value] : undefined,
@@ -94,8 +102,8 @@ function entryStateOf(entry: TagEntry): TagState {
   return props.pickedIds.has(entry.fullTag) ? TagState.Include : TagState.Off
 }
 
-function onPick(entry: TagEntry): void {
-  emit('pick', entry)
+function onPick(entry: TagEntry, mode: 'positive' | 'negative' = 'positive'): void {
+  emit('pick', entry, mode)
 }
 
 function onKeydown(e: KeyboardEvent): void {
@@ -108,7 +116,7 @@ function onKeydown(e: KeyboardEvent): void {
   } else if (e.key === 'Enter') {
     e.preventDefault()
     const entry = suggestions.value[selectedIdx.value]
-    if (entry) onPick(entry)
+    if (entry) onPick(entry, 'positive')
   }
 }
 </script>
@@ -179,7 +187,8 @@ function onKeydown(e: KeyboardEvent): void {
           :state-of="entryStateOf"
           :ns-list="popupNsList"
           @update:selected-idx="selectedIdx = $event"
-          @pick="onPick"
+          @pick="onPick($event, 'positive')"
+          @ctxmenu="onPick($event, 'negative')"
         />
         <div v-else-if="dbReady" class="eqt-gallery-add-inline__empty">
           {{ t('tagConfig.noResult') }}
