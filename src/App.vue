@@ -179,16 +179,23 @@ function onAddToSearch() {
 }
 
 function onSearch(action: DblClickAction) {
-  if (!searchInput?.form) return
-  if (action === 'searchNewTab') {
-    const url = new URL(searchInput.form.action || window.location.href)
-    new FormData(searchInput.form).forEach((v, k) => url.searchParams.set(k, v as string))
-    // fire-and-forget；GM.openInTab 視 manager 實作回 control 物件或 Promise，
-    // Promise.resolve 收齊兩種、`.catch` 兜底避免 unhandled rejection 噴 console
-    Promise.resolve(GM.openInTab(url.href, { active: newTabActive.value })).catch(() => {})
-  } else {
-    searchInput.form.submit()
+  if (searchInput?.form) {
+    if (action === 'searchNewTab') {
+      const url = new URL(searchInput.form.action || window.location.href)
+      new FormData(searchInput.form).forEach((v, k) => url.searchParams.set(k, v as string))
+      // fire-and-forget；GM.openInTab 視 manager 實作回 control 物件或 Promise，
+      // Promise.resolve 收齊兩種、`.catch` 兜底避免 unhandled rejection 噴 console
+      Promise.resolve(GM.openInTab(url.href, { active: newTabActive.value })).catch(() => {})
+    } else {
+      searchInput.form.submit()
+    }
+    return
   }
+  // 沒 searchInput.form（譬如 gallery 詳情頁、SearchPopup 從那邊開出來）：手刻
+  // URL，永遠 open new tab 避免 navigate 走當前頁
+  const url = new URL('/', window.location.href)
+  url.searchParams.set('f_search', searchText.value)
+  Promise.resolve(GM.openInTab(url.href, { active: newTabActive.value })).catch(() => {})
 }
 
 // --- search box sync ---

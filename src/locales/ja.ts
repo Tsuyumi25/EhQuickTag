@@ -220,8 +220,9 @@ export default {
   // Gallery
   'gallery.searchN': '検索 {n}',
   'gallery.vote': '投票',
+  'gallery.added': '追加',
   'gallery.clearSelection': '選択解除',
-  'gallery.browseTags': 'タグを参照',
+  'gallery.addTags': 'タグを追加',
   'gallery.sessionExpired': 'セッションの有効期限が切れました。ページを再読み込みして再ログインしてください。',
 
   // Intro panel

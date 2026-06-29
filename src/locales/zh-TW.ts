@@ -220,8 +220,9 @@ export default {
   // Gallery
   'gallery.searchN': '搜尋 {n}',
   'gallery.vote': '投票',
+  'gallery.added': '新增',
   'gallery.clearSelection': '取消選取',
-  'gallery.browseTags': '瀏覽標籤',
+  'gallery.addTags': '新增標籤',
   'gallery.sessionExpired': '登入狀態已過期，請重新整理頁面後再試。',
 
   // Intro panel

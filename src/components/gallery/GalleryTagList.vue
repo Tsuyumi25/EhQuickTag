@@ -23,6 +23,8 @@ import { useIntroPanel } from '@/composables/useIntroPanel'
 import { Settings, Search } from '@lucide/vue'
 import { useDragSelect } from '@/composables/useDragSelect'
 import type { ChipRef, TriState, Selection } from '@/services/gallery/dragSelectMachine'
+import GalleryAddInline from './GalleryAddInline.vue'
+import type { TagEntry } from '@/services/tagDb'
 
 type TagTier = 'gt' | 'gtl' | 'gtw'
 
@@ -79,6 +81,13 @@ const { setPanelTag, close: closePanel } = useIntroPanel()
 
 const selection = ref<Map<string, Selection>>(new Map())
 
+// 「新增」row：picker pick 來的新 tag 進這裡（dedup 規則：已在 currentTags 的不
+// 進來、直接改原 chip 為 positive）。off 不消失，跟 SearchPanel session terms 同
+// 行為；右鍵不能 negative（add 跟 exclude 在語意上無關、vote 為本位）
+const addedTags = ref<GalleryTag[]>([])
+const showAddPopup = ref(false)
+const addedNsRaws = computed(() => new Set(addedTags.value.map(t => t.nsRaw)))
+
 interface ChipView {
   tag: GalleryTag
   token: string
@@ -94,25 +103,29 @@ interface ChipGroup {
   chips: ChipView[]
 }
 
+function buildChipView(tag: GalleryTag): ChipView {
+  const token = serializeEntry(
+    { ns: tag.ns, raw: tag.raw },
+    { nsFormat: nsFormat.value, exactMatch: defaultExactMatch.value },
+  )
+  const entry = findEntryByNsTag(tag.ns, tag.raw)
+  const display = isCJKLocale() && entry ? cjkDisplay(entry.name) : tag.raw
+  return {
+    tag,
+    token,
+    display,
+    selected: selection.value.get(tag.nsRaw),
+    tier: tierOf(tag.tierClass),
+    iconUrl: entry?.iconUrl,
+  }
+}
+
 const groups = computed<ChipGroup[]>(() => {
   void tagDbVersion.value
 
   const buckets = new Map<string, ChipView[]>()
   for (const tag of currentTags.value) {
-    const token = serializeEntry(
-      { ns: tag.ns, raw: tag.raw },
-      { nsFormat: nsFormat.value, exactMatch: defaultExactMatch.value },
-    )
-    const entry = findEntryByNsTag(tag.ns, tag.raw)
-    const display = isCJKLocale() && entry ? cjkDisplay(entry.name) : tag.raw
-    const chip: ChipView = {
-      tag,
-      token,
-      display,
-      selected: selection.value.get(tag.nsRaw),
-      tier: tierOf(tag.tierClass),
-      iconUrl: entry?.iconUrl,
-    }
+    const chip = buildChipView(tag)
     if (!buckets.has(tag.ns)) buckets.set(tag.ns, [])
     buckets.get(tag.ns)!.push(chip)
   }
@@ -121,6 +134,15 @@ const groups = computed<ChipGroup[]>(() => {
   const knownNs = new Set(DEFAULT_NS_ORDER)
   for (const [ns, chips] of buckets) {
     result.push({ ns, label: knownNs.has(ns) ? t(`ns.${ns}`) : ns, chips })
+  }
+
+  // 「新增」row 排最後；只在 addedTags 非空時顯示
+  if (addedTags.value.length) {
+    result.push({
+      ns: '__added',
+      label: t('gallery.added'),
+      chips: addedTags.value.map(buildChipView),
+    })
   }
   return result
 })
@@ -138,17 +160,68 @@ const votePending = ref(false)
 // target 是「按鍵方向」：左鍵 = +1、右鍵 = −1。當前狀態 + delta 後 clamp 到 [-1, 1]：
 //   off + 左 = positive；positive + 左 = positive（已上限）；negative + 左 = off
 //   off + 右 = negative；negative + 右 = negative（已下限）；positive + 右 = off
+//
+// 「新增」row 的 chip min 抬高到 0（不能 -1）——add 跟 exclude 在語意上無關
 function setSelection(nsRaw: string, target: Selection): void {
   const cur = selection.value.get(nsRaw)
   const curN = cur === 'positive' ? 1 : cur === 'negative' ? -1 : 0
   const delta = target === 'positive' ? 1 : -1
-  const nextN = Math.max(-1, Math.min(1, curN + delta))
+  const min = addedNsRaws.value.has(nsRaw) ? 0 : -1
+  const nextN = Math.max(min, Math.min(1, curN + delta))
   if (nextN === curN) return
 
   const next = new Map(selection.value)
   if (nextN === 0) next.delete(nsRaw)
   else next.set(nsRaw, nextN === 1 ? 'positive' : 'negative')
   selection.value = next
+}
+
+// === GalleryAddInline picker 對接 ===
+// pickedIds：popup 用來標亮已選 entry（fullTag 比對）。包含原 taglist 跟
+// addedTags 內已 positive 的條目，這樣 dedup 後使用者看得到「已加過了」
+const pickedIds = computed<ReadonlySet<string>>(() => {
+  const ids = new Set<string>()
+  for (const tag of currentTags.value) {
+    if (selection.value.get(tag.nsRaw) === 'positive') ids.add(tag.nsRaw)
+  }
+  for (const tag of addedTags.value) {
+    if (selection.value.get(tag.nsRaw) === 'positive') ids.add(tag.nsRaw)
+  }
+  return ids
+})
+
+function onPickFromAdd(entry: TagEntry): void {
+  // dedup：先看是不是已在原 taglist；若是直接改原 chip，不重複加進 addedTags
+  const existing = currentTags.value.find(t => t.nsRaw === entry.fullTag)
+  const added = addedTags.value.find(t => t.nsRaw === entry.fullTag)
+  const tag = existing ?? added
+
+  if (tag) {
+    // 已存在 → toggle positive / off（picker 行為對齊 SearchPopup 的 onPick）
+    const cur = selection.value.get(tag.nsRaw)
+    const next = new Map(selection.value)
+    if (cur === 'positive') next.delete(tag.nsRaw)
+    else next.set(tag.nsRaw, 'positive')
+    selection.value = next
+    setPanelTag(tag)
+    return
+  }
+
+  // 全新 → 進 addedTags + positive。tagid=0 placeholder：batchVote 只用 nsRaw、
+  // native vote() 路徑不會走到 added chip
+  const newAdded: GalleryTag = {
+    tagid: 0,
+    ns: entry.ns,
+    raw: entry.raw,
+    nsRaw: entry.fullTag,
+    tierClass: 'gt',
+    voteClass: '',
+  }
+  addedTags.value = [...addedTags.value, newAdded]
+  const next = new Map(selection.value)
+  next.set(newAdded.nsRaw, 'positive')
+  selection.value = next
+  setPanelTag(newAdded)
 }
 
 // drag-select 狀態機跟 click 路徑封裝在 useDragSelect，邏輯放在
@@ -171,6 +244,7 @@ function applySelectionById(nsRaw: string, mode: Selection): void {
 
 function setPanelTagById(nsRaw: string): void {
   const tag = currentTags.value.find(t => t.nsRaw === nsRaw)
+    ?? addedTags.value.find(t => t.nsRaw === nsRaw)
   if (tag) setPanelTag(tag)
 }
 
@@ -196,7 +270,9 @@ function onSearch(): void {
 }
 
 function tagsFor(target: Selection): GalleryTag[] {
-  return currentTags.value.filter(t => selection.value.get(t.nsRaw) === target)
+  // 原 taglist + addedTags 都要收：vote batch / search 兩條都共用這個
+  return [...currentTags.value, ...addedTags.value]
+    .filter(t => selection.value.get(t.nsRaw) === target)
 }
 
 async function onSendBatchVotes(): Promise<void> {
@@ -294,10 +370,11 @@ watch(selection, () => {
     <button
       type="button"
       class="eqt-gallery-actions__btn eqt-gallery-actions__btn--browse"
-      disabled
-      :title="t('gallery.browseTags')"
+      :class="{ 'is-active': showAddPopup }"
+      :title="t('gallery.addTags')"
+      @click="showAddPopup = !showAddPopup"
     >
-      {{ t('gallery.browseTags') }}
+      {{ t('gallery.addTags') }}
     </button>
 
     <button
@@ -328,4 +405,11 @@ watch(selection, () => {
       <span>{{ t('gallery.vote') }}</span>
     </button>
   </div>
+
+  <GalleryAddInline
+    v-if="showAddPopup"
+    :picked-ids="pickedIds"
+    @pick="onPickFromAdd"
+    @close="showAddPopup = false"
+  />
 </template>

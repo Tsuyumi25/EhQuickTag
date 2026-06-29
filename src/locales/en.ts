@@ -220,8 +220,9 @@ export default {
   // Gallery
   'gallery.searchN': 'Search {n}',
   'gallery.vote': 'Vote',
+  'gallery.added': 'Added',
   'gallery.clearSelection': 'Clear selection',
-  'gallery.browseTags': 'Browse tags',
+  'gallery.addTags': 'Add tags',
   'gallery.sessionExpired': 'Your session has expired. Please refresh the page to log in again.',
 
   // Intro panel
