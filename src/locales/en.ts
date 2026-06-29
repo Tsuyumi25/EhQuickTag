@@ -225,6 +225,13 @@ export default {
   'gallery.addTags': 'Add tags',
   'gallery.sessionExpired': 'Your session has expired. Please refresh the page to log in again.',
 
+  // Gallery settings tab
+  'settings.tabGallery': 'Gallery',
+  'settings.taggingEnhancer': 'Enable Tagging Enhancer',
+  'settings.taggingEnhancerHint': 'Takes over the taglist on /g/ detail pages with vote / search / picker affordances. When off, the native UI is preserved. Reload the page to apply.',
+  'settings.galleryDragSelect': 'Enable drag-select',
+  'settings.galleryDragSelectHint': 'When off, chips are click-only; dragging will not toggle multiple at once.',
+
   // Intro panel
   'intro.close': 'Close',
   'intro.empty': 'No definition available',

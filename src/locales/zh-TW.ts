@@ -225,6 +225,13 @@ export default {
   'gallery.addTags': '新增標籤',
   'gallery.sessionExpired': '登入狀態已過期，請重新整理頁面後再試。',
 
+  // Gallery settings tab
+  'settings.tabGallery': '畫廊',
+  'settings.taggingEnhancer': '啟用標籤強化（Tagging Enhancer）',
+  'settings.taggingEnhancerHint': '在 /g/ 詳情頁接管 taglist，提供 vote / search / picker 等強化功能。關閉後保持 EH 原生介面。需重新整理頁面生效。',
+  'settings.galleryDragSelect': '啟用拖曳多選',
+  'settings.galleryDragSelectHint': '關閉後僅能單擊選取，拖曳將不會觸發批次標記。',
+
   // Intro panel
   'intro.close': '關閉',
   'intro.empty': '沒有定義內容',

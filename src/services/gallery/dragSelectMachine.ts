@@ -244,12 +244,16 @@ export interface DragSelectStore {
 }
 
 export function createDragSelectStore(
-  config: DragSelectConfig = DEFAULT_CONFIG,
+  configOrGetter: DragSelectConfig | (() => DragSelectConfig) = DEFAULT_CONFIG,
 ): DragSelectStore {
   let current: DragSelectState = IDLE
+  // getter 形式：caller 想要設定能 reactive 跟著變（譬如 settings toggle 改
+  // threshold 來啟用 / 禁用 drag）。靜態形式保留給 test / property test 直接用
+  const getConfig =
+    typeof configOrGetter === 'function' ? configOrGetter : () => configOrGetter
   return {
     dispatch(event) {
-      const r = reduce(current, event, config)
+      const r = reduce(current, event, getConfig())
       current = r.state
       return r.effects
     },

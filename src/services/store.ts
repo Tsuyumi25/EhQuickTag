@@ -92,6 +92,15 @@ const INITIAL_SETTINGS = {
   // 並持久化到 GM storage）。隱私考量可關。關掉後 history row 隱藏、不再 push，
   // 既有 storage 內容保留——再開啟時繼續長
   enableHistory: true,
+  // Tagging Enhancer：plugin 在 /g/ 詳情頁是否接管原生 taglist UI，提供 vote /
+  // search / picker 等強化功能。關掉等於 plugin 在 gallery 頁面完全 stand down
+  // ——不 wrap native、不注入 anchor、保留原版介面。
+  // App.vue setup 階段讀一次，toggle 後需重新整理頁面才生效（mid-flight 改會
+  // 留下半生不熟的 wrap state）
+  taggingEnhancerEnabled: true,
+  // Gallery taglist 的 drag-select 是否啟用。關掉後 mousedown → mouseup 一律走
+  // click 語意（用 Infinity threshold 讓 reducer 永遠不進 dragging state）
+  galleryDragSelectEnabled: true,
 }
 
 type Settings = typeof INITIAL_SETTINGS
@@ -117,6 +126,8 @@ export const showSearchPanel    = refs.showSearchPanel
 export const searchPanelLangMode = refs.searchPanelLangMode
 export const convertToTraditional = refs.convertToTraditional
 export const enableHistory      = refs.enableHistory
+export const taggingEnhancerEnabled = refs.taggingEnhancerEnabled
+export const galleryDragSelectEnabled = refs.galleryDragSelectEnabled
 
 // enum-shape setting 的合法 id 集合。壞值 silently fallback 到 INITIAL_SETTINGS 預設——
 // 沒這層守門 GM storage 被竄改塞個壞字串會直接灌進 ref，UI 永久卡在「無 active button、

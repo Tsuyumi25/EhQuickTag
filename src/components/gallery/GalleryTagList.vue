@@ -13,7 +13,7 @@ import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { GM } from '$'
 import { serializeEntry } from '@/services/searchSyntax'
 import { findEntryByNsTag, DEFAULT_NS_ORDER, tagDbVersion } from '@/services/tagDb'
-import { nsFormat, defaultExactMatch, newTabActive } from '@/services/store'
+import { nsFormat, defaultExactMatch, newTabActive, galleryDragSelectEnabled } from '@/services/store'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
 import { t, isCJKLocale } from '@/composables/useI18n'
 import { batchVote, type VoteState } from '@/services/galleryVote'
@@ -268,6 +268,7 @@ const { onAreaMouseDown } = useDragSelect({
   chipFromPoint,
   applySelection: applySelectionById,
   setPanelTag: setPanelTagById,
+  enabled: () => galleryDragSelectEnabled.value,
 })
 
 function onSearch(): void {
@@ -418,11 +419,12 @@ watch(selection, () => {
 
     <button
       type="button"
-      class="eqt-gallery-actions__btn eqt-gallery-actions__btn--settings eqt-gallery-actions__btn--icon"
+      class="eqt-gallery-actions__btn eqt-gallery-actions__btn--settings"
       :title="t('settings.title')"
       @click="emit('open-settings')"
     >
       <Settings :size="14" />
+      <span>{{ t('settings.title') }}</span>
     </button>
 
     <button
