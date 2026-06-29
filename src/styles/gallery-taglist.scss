@@ -10,6 +10,12 @@
 // 走 .eqt-dark 那套
 @use 'buttons' as *;
 
+// 整個 #gd4 區域禁文字選取——drag select 滑鼠拖過 chip 不該意外把 chip 文字
+// 反白，也避免從 #gd4 內按下拖出去意外選到外面的文字
+#gd4 {
+  user-select: none;
+}
+
 // anchor 用 display:contents 讓 taglist / actions 直接掛在 #gd4 下（不被包進
 // anchor 自己的 box）
 #eqt-gallery-anchor {

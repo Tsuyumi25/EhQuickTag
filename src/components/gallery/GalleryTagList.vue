@@ -1,10 +1,13 @@
 <script setup lang="ts">
 // Gallery 詳情頁的 taglist 接管：
-//   - 統一 selection Map<nsRaw, 'positive' | 'negative'>：左鍵 positive、右鍵 negative，
-//     兩態互斥（再點同邊取消、點對邊覆蓋）。selection 跟 action 解耦——同一份選擇
-//     可以送 search（positive=include / negative=exclude）也可以送 vote
-//     (positive=+1 / negative=−1)
-//   - 任何 chip click 都 setPanelTag(chip.tag)：對 x tag 的任何操作都繼續顯示定義，
+//   - 統一 selection Map<nsRaw, 'positive' | 'negative'>，state ∈ {1, 0, -1}（後者
+//     用 undefined 代表）。對齊 vote 的心智模型：左鍵 +1、右鍵 −1，clamp 到 [-1, 1]
+//   - selection 跟 action 解耦——同一份選擇可以送 search（positive=include /
+//     negative=exclude）也可以送 vote (positive=+1 / negative=−1)
+//   - drag select 走 cohort 模型：drag 只影響跟起點同態的 chip。起點 + drag 方向
+//     決定 cohort 跟 transition：起點 0 + 左 = 把 0 推 1、起點 1 + 右 = 把 1 推 0
+//     (cancel)、起點 -1 + 左 = 把 -1 推 0 (cancel)，依此類推
+//   - 任何選取動作都 setPanelTag(chip.tag)：對 x tag 的任何操作都繼續顯示定義，
 //     直到 selection 全空才 auto close panel
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { GM } from '$'
@@ -18,9 +21,10 @@ import { useToast } from 'vue-toastification'
 import { parseTaglistRoot, type GalleryTag } from '@/composables/useEhGalleryHost'
 import { useIntroPanel } from '@/composables/useIntroPanel'
 import { Settings, Search } from '@lucide/vue'
+import { useDragSelect } from '@/composables/useDragSelect'
+import type { ChipRef, TriState, Selection } from '@/services/gallery/dragSelectMachine'
 
 type TagTier = 'gt' | 'gtl' | 'gtw'
-type Selection = 'positive' | 'negative'
 
 const props = defineProps<{
   tags: GalleryTag[]
@@ -129,25 +133,52 @@ const selectedCount = computed(() => selection.value.size)
 
 const votePending = ref(false)
 
-// === click handlers ===
-
+// === selection update ===
+// vote-style 3-state: 1/0/-1（positive / off / negative）。
+// target 是「按鍵方向」：左鍵 = +1、右鍵 = −1。當前狀態 + delta 後 clamp 到 [-1, 1]：
+//   off + 左 = positive；positive + 左 = positive（已上限）；negative + 左 = off
+//   off + 右 = negative；negative + 右 = negative（已下限）；positive + 右 = off
 function setSelection(nsRaw: string, target: Selection): void {
+  const cur = selection.value.get(nsRaw)
+  const curN = cur === 'positive' ? 1 : cur === 'negative' ? -1 : 0
+  const delta = target === 'positive' ? 1 : -1
+  const nextN = Math.max(-1, Math.min(1, curN + delta))
+  if (nextN === curN) return
+
   const next = new Map(selection.value)
-  if (next.get(nsRaw) === target) next.delete(nsRaw)
-  else next.set(nsRaw, target)
+  if (nextN === 0) next.delete(nsRaw)
+  else next.set(nsRaw, nextN === 1 ? 'positive' : 'negative')
   selection.value = next
 }
 
-function onChipLeftClick(chip: ChipView): void {
-  setPanelTag(chip.tag)
-  setSelection(chip.tag.nsRaw, 'positive')
+// drag-select 狀態機跟 click 路徑封裝在 useDragSelect，邏輯放在
+// services/gallery/dragSelectMachine.ts（pure reducer + property test）。
+// 這裡只負責把 DOM hit-test 跟業務動作注入
+function chipFromPoint(x: number, y: number): ChipRef | null {
+  const el = document.elementFromPoint(x, y) as HTMLElement | null
+  const chipEl = el?.closest<HTMLElement>('.eqt-gallery-chip')
+  if (!chipEl) return null
+  const nsRaw = chipEl.dataset.nsRaw
+  if (!nsRaw) return null
+  const s = selection.value.get(nsRaw)
+  const state: TriState = s === 'positive' ? 1 : s === 'negative' ? -1 : 0
+  return { id: nsRaw, state }
 }
 
-function onChipRightClick(chip: ChipView, e: MouseEvent): void {
-  e.preventDefault()
-  setPanelTag(chip.tag)
-  setSelection(chip.tag.nsRaw, 'negative')
+function applySelectionById(nsRaw: string, mode: Selection): void {
+  setSelection(nsRaw, mode)
 }
+
+function setPanelTagById(nsRaw: string): void {
+  const tag = currentTags.value.find(t => t.nsRaw === nsRaw)
+  if (tag) setPanelTag(tag)
+}
+
+const { onAreaMouseDown } = useDragSelect({
+  chipFromPoint,
+  applySelection: applySelectionById,
+  setPanelTag: setPanelTagById,
+})
 
 function onSearch(): void {
   if (selectedCount.value === 0) return
@@ -210,7 +241,11 @@ watch(selection, () => {
 </script>
 
 <template>
-  <div class="eqt-gallery-taglist">
+  <div
+    class="eqt-gallery-taglist"
+    @mousedown="onAreaMouseDown"
+    @contextmenu.prevent
+  >
     <div
       v-for="group in groups"
       :key="group.ns"
@@ -222,6 +257,7 @@ watch(selection, () => {
           v-for="chip in group.chips"
           :key="chip.tag.nsRaw"
           class="eqt-gallery-chip"
+          :data-ns-raw="chip.tag.nsRaw"
           :class="[
             chip.selected === 'positive' && 'eqt-gallery-chip--selected-positive',
             chip.selected === 'negative' && 'eqt-gallery-chip--selected-negative',
@@ -233,8 +269,6 @@ watch(selection, () => {
           <button
             type="button"
             class="eqt-gallery-chip__body"
-            @click="onChipLeftClick(chip)"
-            @contextmenu="onChipRightClick(chip, $event)"
           >
             <img v-if="chip.iconUrl" :src="chip.iconUrl" class="eqt-tag-icon" alt="" />{{ chip.display }}
           </button>
