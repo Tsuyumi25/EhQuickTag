@@ -29,6 +29,10 @@ interface StoredEntry {
    * 僅 parody / female / male 等少數 ns 有，多數 entry 不存。
    */
   iconUrl?: string
+  /** EhTagTranslation intro 欄位的原始 HTML（intro panel 用，僅有 intro 的 entry 才存） */
+  introHtml?: string
+  /** EhTagTranslation links 欄位的原始 HTML（intro panel footer 用） */
+  linksHtml?: string
   /**
    * EhTagTranslation 的 intro + links 欄位 stripped + lowercased，用 \0 串接。
    *
@@ -127,7 +131,9 @@ function buildIndex(db: DbJson): TagEntry[] {
       let introSearch = ''
       if (info.intro) introSearch += '\0' + buildIntroSearch(info.intro)
       if (info.links) introSearch += '\0' + buildIntroSearch(info.links)
-      result.push(addSearchFields({ fullTag: `${ns}:${raw}`, ns, raw, name, iconUrl, introSearch }))
+      const introHtml = info.intro || undefined
+      const linksHtml = info.links || undefined
+      result.push(addSearchFields({ fullTag: `${ns}:${raw}`, ns, raw, name, iconUrl, introHtml, linksHtml, introSearch }))
     }
   }
 
@@ -187,8 +193,8 @@ export async function loadTagDb(opts: LoadTagDbOptions = {}): Promise<TagEntry[]
   const db: DbJson = JSON.parse(raw)
   entries = buildIndex(db)
 
-  const stored: StoredEntry[] = entries.map(({ fullTag, ns, raw: r, name, iconUrl, introSearch }) =>
-    ({ fullTag, ns, raw: r, name, iconUrl, introSearch }),
+  const stored: StoredEntry[] = entries.map(({ fullTag, ns, raw: r, name, iconUrl, introHtml, linksHtml, introSearch }) =>
+    ({ fullTag, ns, raw: r, name, iconUrl, introHtml, linksHtml, introSearch }),
   )
   await cacheSet(CACHE_KEY, JSON.stringify(stored))
   await cacheSet(CACHE_TS_KEY, String(Date.now()))
