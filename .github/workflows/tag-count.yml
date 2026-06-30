@@ -1,0 +1,49 @@
+name: Tag Count Update
+
+on:
+  schedule:
+    - cron: '0 4 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tag-count-update
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download URenko/e-hentai-db nightly SQLite
+        run: |
+          set -euo pipefail
+          curl -fsSL -o e-hentai.db.zstd \
+            https://github.com/URenko/e-hentai-db/releases/download/nightly/e-hentai.db.zstd
+          zstd -d e-hentai.db.zstd -o e-hentai.db
+          rm e-hentai.db.zstd
+
+      - name: Generate CSV
+        run: python3 scripts/gen-tag-count.py e-hentai.db tagname_count.csv.gz
+
+      - name: Publish to data/tag-count branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir /tmp/publish
+          mv tagname_count.csv.gz /tmp/publish/
+          cd /tmp/publish
+          git init -b data/tag-count
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+          git add tagname_count.csv.gz
+          git commit -m "tag count snapshot $(date -u +%Y-%m-%d)"
+          git push --force \
+            "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+            "data/tag-count:data/tag-count"
