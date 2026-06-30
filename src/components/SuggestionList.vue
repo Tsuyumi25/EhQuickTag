@@ -192,7 +192,7 @@ const { cjkDisplay } = useDisplayConfig()
   border: var(--eqt-border-width) solid var(--eqt-border);
   border-radius: var(--eqt-radius-sm);
   overflow-y: auto;
+  overscroll-behavior: contain;
   text-align: left;
-
 }
 </style>

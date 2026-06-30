@@ -312,6 +312,7 @@ body.eqt-gallery-add-inline-open {
     flex: auto;
     min-height: 0;
     overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   &__empty {
