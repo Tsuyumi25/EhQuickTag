@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { GM } from '$'
 import { isASCII, toCN, toJP } from '@/services/cjkDict'
-import { getNhWeight } from '@/services/nhPopularity'
+import { getTagCount, loadTagCount } from '@/services/tagCount'
 import { hasGMXHR, cacheGet, cacheSet } from '@/services/gmStorage'
 
 export type TagDbMirror = 'jsdelivr' | 'fastly' | 'gcore' | 'github'
@@ -173,6 +173,10 @@ export interface LoadTagDbOptions {
 }
 
 export async function loadTagDb(opts: LoadTagDbOptions = {}): Promise<TagEntry[]> {
+  // 順便 warm tag-count（search ranking 用）。tagCount 失敗時 weight 退化為 0、
+  // 排序回到 nsTier + length——可接受，不擋 tagDb 載入
+  void loadTagCount({ ttlDays: opts.ttlDays }).catch(e => console.error('loadTagCount warm failed', e))
+
   if (entries) return entries
 
   const ttl = (opts.ttlDays ?? 7) * 24 * 60 * 60 * 1000
@@ -277,18 +281,17 @@ function getMatchTier(entry: TagEntry, search: string, searchIsAscii: boolean): 
 interface RankedEntry {
   entry: TagEntry
   matchTier: MatchTier
-  nhCount: number // 0 if no nh data
+  weight: number // tag-count（EH 全站 gallery 數），0 if 沒對應 entry
   nsTier: number
 }
 
 /**
  * 共用 tie-breaker：searchTags（matchTier 等同後）跟 fallback 清單（沒 query）
- * 都用同一條 nh-first → ns tier → length 的鏈，避免兩處 sort 邏輯 drift。
- * 任一支改了 nh 權重的相對重要性，另一支自動同步。
+ * 都用同一條 weight-first → ns tier → length 的鏈，避免兩處 sort 邏輯 drift。
  */
-type NhRankable = { entry: TagEntry; nhCount: number; nsTier: number }
-function compareNhFallback(a: NhRankable, b: NhRankable): number {
-  return (b.nhCount - a.nhCount)
+type WeightRankable = { entry: TagEntry; weight: number; nsTier: number }
+function compareWeightFallback(a: WeightRankable, b: WeightRankable): number {
+  return (b.weight - a.weight)
     || (a.nsTier - b.nsTier)
     || (a.entry.raw.length - b.entry.raw.length)
 }
@@ -347,13 +350,13 @@ export function searchTags(query: string, opts: SearchOptions = {}): TagEntry[] 
     ranked.push({
       entry,
       matchTier,
-      nhCount: getNhWeight(entry.ns, entry.raw) ?? 0,
+      weight: getTagCount(entry.ns, entry.raw) ?? 0,
       nsTier,
     })
   }
 
   ranked.sort((a, b) =>
-    (a.matchTier - b.matchTier) || compareNhFallback(a, b),
+    (a.matchTier - b.matchTier) || compareWeightFallback(a, b),
   )
 
   return ranked.map(r => r.entry)
@@ -362,13 +365,11 @@ export function searchTags(query: string, opts: SearchOptions = {}): TagEntry[] 
 /**
  * 給 SearchPopup 當「空查詢預設清單」的 ranked entries。
  *
- * 不像舊版只撈有 nh 對應的 entry——本函式回傳**所有** entries（受 namespaces filter），
- * 用 nh 上傳量當 tie-breaker 把熱門的拉到前面、其他附在後。這樣 popup 點 namespace
- * 篩選按鈕到 character/artist 等沒 nh 資料的類別時，清單不會變空白，但 female/male
- * 仍然會按 nh 熱榜排序。
+ * 回傳**所有** entries（受 namespaces filter），用 tag-count 當 tie-breaker
+ * 把熱門的拉到前面、其他附在後。每個 db entry 都查得到 count（tag-count 是 EH 全集），
+ * 所以排序覆蓋 100%。
  *
- * 排序鏈跟 searchTags 共用 `compareNhFallback`，nh 權重的相對重要性一處決定。
- *
+ * 排序鏈跟 searchTags 共用 `compareWeightFallback`，weight 的相對重要性一處決定。
  * 結果按 namespaces 組合 memoize；refreshTagDb 時整個 Map clear。
  */
 const _fallbackCache = new Map<string, TagEntry[]>()
@@ -383,18 +384,18 @@ export function getFallbackEntries(opts: FallbackEntriesOptions = {}): TagEntry[
 
   const nsSet = opts.namespaces && opts.namespaces.length ? new Set(opts.namespaces) : null
 
-  const ranked: NhRankable[] = []
+  const ranked: WeightRankable[] = []
   for (const entry of entries) {
     if (nsSet && !nsSet.has(entry.ns)) continue
     const nsTier = NS_TIER_MAP.get(entry.ns)
     if (nsTier === undefined) continue
     ranked.push({
       entry,
-      nhCount: getNhWeight(entry.ns, entry.raw) ?? 0,
+      weight: getTagCount(entry.ns, entry.raw) ?? 0,
       nsTier,
     })
   }
-  ranked.sort(compareNhFallback)
+  ranked.sort(compareWeightFallback)
   const result = ranked.map(r => r.entry)
   _fallbackCache.set(cacheKey, result)
   return result
