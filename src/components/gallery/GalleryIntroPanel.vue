@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, watch, nextTick } from 'vue'
-import { Teleport } from 'vue'
 import { t } from '@/composables/useI18n'
 import { useIntroPanel } from '@/composables/useIntroPanel'
 
