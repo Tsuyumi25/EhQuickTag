@@ -2,10 +2,10 @@ import { ref } from 'vue'
 import { GM } from '$'
 import { hasGMXHR, cacheGet, cacheSet } from '@/services/gmStorage'
 
-// mokurin000 (== 000ylop alias) e-hentai-tag-count：每小時 GHA 自動 release。
-// 整條 pipeline: URenko/e-hentai-db nightly SQLite → group by tag_name → CSV.
-// 我們只用 tagname_count.csv.gz（兩欄含 header），不用 legacy tid_count_tag。
-const CSV_URL = 'https://github.com/mokurin000/e-hentai-tag-count/releases/latest/download/tagname_count.csv.gz'
+// 資料源：URenko/e-hentai-db nightly SQLite，本 repo GHA 每週跑 distinct-root
+// group by。比 mokurin000 上游 CSV 對齊 EH search 真實 count（後者用 raw
+// gid_tid count，把 replaced 多版本算多次）
+const CSV_URL = 'https://cdn.jsdelivr.net/gh/Tsuyumi25/EhQuickTag@data/tag-count/tagname_count.csv.gz'
 
 const CACHE_KEY = 'eqt_tag_count_v1'
 const CACHE_TS_KEY = 'eqt_tag_count_v1_ts'
