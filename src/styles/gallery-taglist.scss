@@ -139,7 +139,7 @@
 
 // === Action 區 ===
 // 4 欄 × 2 列 grid：search 跨 col 1 / row 1-2、vote 跨 col 4 / row 1-2，兩個大方塊
-// 把誤觸代價較高的 vote 從 search 拉開。中間欄第 1 列 browse（跨兩 col 撐滿）、
+// 把誤觸代價較高的 vote 從 search 拉開。中間欄第 1 列 add（跨兩 col 撐滿）、
 // 第 2 列 clear + settings
 .eqt-gallery-actions {
   display: grid;
@@ -189,7 +189,7 @@
     grid-row: 1 / span 2;
   }
 
-  &--browse {
+  &--add {
     grid-column: 2 / span 2;
     grid-row: 1;
   }

@@ -419,8 +419,7 @@ watch(selection, () => {
 
     <button
       type="button"
-      class="eqt-gallery-actions__btn eqt-gallery-actions__btn--browse"
-      :class="{ 'is-active': showAddPopup }"
+      class="eqt-gallery-actions__btn eqt-gallery-actions__btn--add"
       :title="t('gallery.addTags')"
       @click="showAddPopup = !showAddPopup"
     >
