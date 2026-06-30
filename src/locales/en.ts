@@ -224,6 +224,7 @@ export default {
   'gallery.clearSelection': 'Clear selection',
   'gallery.addTags': 'Add tags',
   'gallery.sessionExpired': 'Your session has expired. Please refresh the page to log in again.',
+  'gallery.tagDbLoadFailed': 'Failed to load tag database. Please retry later or check your network.',
 
   // Gallery settings tab
   'settings.tabGallery': 'Gallery',

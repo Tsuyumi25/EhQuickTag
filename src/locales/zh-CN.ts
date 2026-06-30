@@ -224,6 +224,7 @@ export default {
   'gallery.clearSelection': '取消选取',
   'gallery.addTags': '新增标签',
   'gallery.sessionExpired': '登录状态已过期，请刷新页面后重试。',
+  'gallery.tagDbLoadFailed': '标签数据库加载失败，请稍后再试或检查网络。',
 
   // Gallery settings tab
   'settings.tabGallery': '图库',
