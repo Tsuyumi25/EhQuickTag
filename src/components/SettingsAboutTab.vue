@@ -56,6 +56,14 @@ const appVersion = __APP_VERSION__
           <Code :size="12" /> OpenCC
           <span class="eqt-about__item-detail">{{ t('about.openccDetail') }}</span>
         </a>
+        <a class="eqt-about__item" href="https://github.com/mokurin000/e-hentai-tag-count" target="_blank" rel="noopener">
+          <Code :size="12" /> e-hentai-tag-count
+          <span class="eqt-about__item-detail">{{ t('about.tagCountDetail') }}</span>
+        </a>
+        <a class="eqt-about__item" href="https://github.com/URenko/e-hentai-db" target="_blank" rel="noopener">
+          <Code :size="12" /> e-hentai-db
+          <span class="eqt-about__item-detail">{{ t('about.urenkoDbDetail') }}</span>
+        </a>
       </div>
     </div>
 

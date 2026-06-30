@@ -33,7 +33,7 @@ Adds a quick tag bar above the search box for one-click condition assembly. A co
 ### Tag database search
 
 - Integrates [EhTagTranslation](https://github.com/EhTagTranslation/Database) — search in Traditional/Simplified Chinese, Japanese, or English
-- **Popularity-weighted suggestions**: Tags ranked by gallery count — e-hentai per-namespace for f/m/x/o/language, nhentai per-namespace for artist/character/parody/group
+- **Popularity-weighted suggestions**: Tags ranked by global EH gallery count from [e-hentai-tag-count](https://github.com/mokurin000/e-hentai-tag-count) — covers every tag across all namespaces, refreshed hourly
 - **OpenCC Simplified-to-Traditional**: Choose Auto / Traditional / Simplified (DB original) for Chinese tag labels
 - **Namespace order & visibility**: Customize namespace ranking; hide categories you don't care about
 - **Database mirror & cache**: Choose a CDN mirror, adjust cache TTL, or refresh manually
@@ -91,6 +91,8 @@ pnpm build     # Output dist/eh-quick-tag.user.js
 - [EhTagTranslation/Database](https://github.com/EhTagTranslation/Database) — Tag translation database (CC BY-NC-SA 3.0)
 - [EhSyringe](https://github.com/EhTagTranslation/EhSyringe) — Search ranking logic reference (MIT)
 - [OpenCC](https://github.com/BYVoid/OpenCC) — CJK character mapping data (Apache-2.0)
+- [e-hentai-tag-count](https://github.com/mokurin000/e-hentai-tag-count) — Hourly EH tag count CSV (search ranking weight)
+- [e-hentai-db](https://github.com/URenko/e-hentai-db) — Nightly EH metadata SQLite (upstream of tag-count)
 
 ## Inspiration
 

@@ -195,6 +195,8 @@ export default {
   'about.ehttDetail': '标签中文翻译数据库（CC BY-NC-SA 3.0）',
   'about.ehsyringeDetail': '搜索排序权重逻辑参考（MIT）',
   'about.openccDetail': '繁简转换字表数据（Apache-2.0）',
+  'about.tagCountDetail': 'EH 全站 tag count（搜索排序权重）',
+  'about.urenkoDbDetail': 'EH metadata nightly SQLite（tag-count 上游）',
 
   // Default tag labels
   'default.chinese': '中文',
