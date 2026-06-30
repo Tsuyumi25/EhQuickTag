@@ -1,0 +1,51 @@
+name: Tag Wiki Update
+
+on:
+  schedule:
+    - cron: '0 5 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: data-branch-publish
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout source (main)
+        uses: actions/checkout@v4
+
+      - name: Checkout data branch (separate worktree)
+        uses: actions/checkout@v4
+        with:
+          ref: data
+          path: data-branch
+
+      - name: Incremental fetch + extract
+        run: |
+          set -euo pipefail
+          python3 scripts/fetch-wiki-tags.py incremental \
+            --existing-json data-branch/tag-wiki/wiki.json.gz \
+            --out data-branch/tag-wiki/wiki.json.gz \
+            --days 7
+
+      - name: Publish to data branch (tag-wiki/)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          cd data-branch
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+          if git diff --quiet -- tag-wiki/; then
+            echo "no change, skip commit"
+            exit 0
+          fi
+          git add tag-wiki/
+          git commit -m "tag-wiki incremental $(date -u +%Y-%m-%d)"
+          git push origin data

@@ -6,6 +6,9 @@ Per category, report:
   - Unique <b>KEY</b> labels found + occurrence count + %
   - Pages that have NO content extractor match (likely structure deviation)
   - Sample values for each key
+
+Uses the same body extraction + comment/reminder stripping as wiki_extract,
+so analysis output reflects what production extractor actually sees.
 """
 from __future__ import annotations
 import re
@@ -13,32 +16,29 @@ import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).parent))
+from wiki_extract import (  # noqa: E402
+    CATEGORIES, BODY_RE, COMMENT_RE, REMINDER_RE, LI_RE, KV_RE, TAG_STRIP,
+)
+
 CACHE = Path.home() / 'eh-wiki-cache'
-CATEGORIES = ['tag', 'character', 'creator', 'language']
-
-# Body content: between <div class="mw-content-ltr mw-parser-output"> and end of that div
-BODY_RE = re.compile(
-    r'<div class="mw-content-ltr mw-parser-output"[^>]*>(.*?)<div class="printfooter"',
-    re.DOTALL,
-)
-# <li><b>KEY</b>: VALUE (VALUE goes until </li>)
-# Also handle <li><a ...><b>KEY</b></a> form
-LI_KEY_RE = re.compile(
-    r'<li>(?:<a[^>]*>)?<b>([^<]+)</b>:?\s*(.*?)</li>',
-    re.DOTALL,
-)
-# Strip tags for VALUE preview
-TAG_STRIP = re.compile(r'<[^>]+>')
 
 
-def extract_body(html: str) -> str | None:
-    m = BODY_RE.search(html)
-    return m.group(1) if m else None
-
-
-def extract_keys(body: str) -> list[tuple[str, str]]:
-    """Return [(KEY, raw_value_html), ...]"""
-    return LI_KEY_RE.findall(body)
+def extract_raw_kvs(html: str) -> list[tuple[str, str]] | None:
+    """Return raw [(KEY, raw_value_html), ...] without normalization, preserving
+    duplicates within page (so analyser can spot keys appearing twice — e.g.
+    ai_generated's dual Description). Returns None if no wiki body found."""
+    body_m = BODY_RE.search(html)
+    if body_m is None:
+        return None
+    body = COMMENT_RE.sub('', body_m.group(1))
+    body = REMINDER_RE.sub('', body)
+    out: list[tuple[str, str]] = []
+    for li in LI_RE.findall(body):
+        m = KV_RE.match(li.strip())
+        if m:
+            out.append((m.group(1).strip(), m.group(2)))
+    return out
 
 
 def value_preview(raw: str, max_len: int = 100) -> str:
@@ -55,27 +55,23 @@ def analyze_category(cat: str) -> dict:
         'no_keys': [],
         'key_counts': Counter(),
         'key_samples': defaultdict(list),
-        'unrecognized_structure': [],
     }
     for f in files:
         html = f.read_text(errors='replace')
-        body = extract_body(html)
-        if body is None:
+        kvs = extract_raw_kvs(html)
+        if kvs is None:
             stats['no_body'].append(f.name)
             continue
-        keys = extract_keys(body)
-        if not keys:
+        if not kvs:
             stats['no_keys'].append(f.name)
             continue
         seen_in_this_page = set()
-        for key, raw_val in keys:
-            key_norm = key.strip()
-            stats['key_counts'][key_norm] += 1
-            if key_norm not in seen_in_this_page:
-                seen_in_this_page.add(key_norm)
-                # Keep up to 3 sample values per key, with filename
-                if len(stats['key_samples'][key_norm]) < 3:
-                    stats['key_samples'][key_norm].append(
+        for key, raw_val in kvs:
+            stats['key_counts'][key] += 1
+            if key not in seen_in_this_page:
+                seen_in_this_page.add(key)
+                if len(stats['key_samples'][key]) < 3:
+                    stats['key_samples'][key].append(
                         (f.name, value_preview(raw_val))
                     )
     return stats
