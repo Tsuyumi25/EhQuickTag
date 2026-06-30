@@ -10,9 +10,10 @@ import GalleryIntroPanel from '@/components/gallery/GalleryIntroPanel.vue'
 import { GM } from '$'
 import type { Button, TagButton, UrlButton } from '@/types'
 import { bindSearchBar } from '@/services/search/searchSession'
-import { lines, fontFamily, fontWeight, profiles, activeProfileIdx, switchProfile, renameProfile, createProfile, deleteProfile, newTabActive, nsFormat, defaultExactMatch, tagDbMirror, tagDbTtlDays, tagCountMirror, tagCountTtlDays, taggingEnhancerEnabled, type DblClickAction } from '@/services/store'
+import { lines, fontFamily, fontWeight, profiles, activeProfileIdx, switchProfile, renameProfile, createProfile, deleteProfile, newTabActive, nsFormat, defaultExactMatch, tagDbMirror, tagDbTtlDays, tagCountMirror, tagCountTtlDays, tagWikiMirror, tagWikiTtlDays, taggingEnhancerEnabled, type DblClickAction } from '@/services/store'
 import { loadTagDb } from '@/services/tagDb'
 import { loadTagCount } from '@/services/tagCount'
+import { loadTagWiki } from '@/services/tagWiki'
 import { useEhFormHost } from '@/composables/useEhFormHost'
 import { useEhGalleryHost } from '@/composables/useEhGalleryHost'
 
@@ -224,6 +225,8 @@ if (searchInput) {
 
 loadTagDb({ mirror: tagDbMirror.value, ttlDays: tagDbTtlDays.value })
 loadTagCount({ mirror: tagCountMirror.value, ttlDays: tagCountTtlDays.value })
+loadTagWiki({ mirror: tagWikiMirror.value, ttlDays: tagWikiTtlDays.value })
+  .catch((e) => console.error('[tagWiki] load failed:', e))
 
 onMounted(() => {
   applyFontVars()

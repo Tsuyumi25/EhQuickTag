@@ -9,16 +9,18 @@ import { t, locale, setLocale, type Locale } from '@/composables/useI18n'
 import { useToast } from 'vue-toastification'
 import { refreshTagDb, TAG_DB_MIRRORS, type TagDbMirror } from '@/services/tagDb'
 import { refreshTagCount, TAG_COUNT_MIRRORS, type TagCountMirror } from '@/services/tagCount'
+import { refreshTagWiki, TAG_WIKI_MIRRORS, type TagWikiMirror } from '@/services/tagWiki'
 import {
   profiles, activeProfileIdx, deletedProfiles, corruptedProfiles, type Profile,
   deleteProfile, restoreProfile, purgeProfile, purgeCorrupted, reorderProfiles, updateProfileLines,
   fontFamily, fontWeight, getDefaultLines, lines,
   dblClickLeft, dblClickRight, newTabActive, nsFormat, defaultExactMatch,
   tagDbMirror, tagDbTtlDays, tagCountMirror, tagCountTtlDays,
+  tagWikiMirror, tagWikiTtlDays,
   tagStylePreset, useAccentOnInclude, type DblClickAction,
   showSearchPanel, searchPanelLangMode, convertToTraditional, enableHistory,
-  taggingEnhancerEnabled, galleryDragSelectEnabled,
-  SEARCH_PANEL_LANG_MODES, CONVERT_TO_TRADITIONAL_MODES,
+  taggingEnhancerEnabled, galleryDragSelectEnabled, introPanelPrimaryLang,
+  SEARCH_PANEL_LANG_MODES, CONVERT_TO_TRADITIONAL_MODES, INTRO_PANEL_PRIMARY_LANGS,
 } from '@/services/store'
 import { TAG_STYLE_PRESETS, currentTagStyleClass } from '@/composables/useTagStyle'
 import ProfileListItem from '@/components/ProfileListItem.vue'
@@ -93,6 +95,7 @@ const toast = useToast()
 
 const mirrorOptions = Object.entries(TAG_DB_MIRRORS).map(([k, v]) => ({ value: k as TagDbMirror, label: v.label }))
 const tagCountMirrorOptions = Object.entries(TAG_COUNT_MIRRORS).map(([k, v]) => ({ value: k as TagCountMirror, label: v.label }))
+const tagWikiMirrorOptions = Object.entries(TAG_WIKI_MIRRORS).map(([k, v]) => ({ value: k as TagWikiMirror, label: v.label }))
 
 const refreshing = ref(false)
 async function onRefreshTagDb() {
@@ -119,6 +122,20 @@ async function onRefreshTagCount() {
     console.error('refreshTagCount failed', e)
   } finally {
     refreshingTagCount.value = false
+  }
+}
+
+const refreshingTagWiki = ref(false)
+async function onRefreshTagWiki() {
+  refreshingTagWiki.value = true
+  try {
+    await refreshTagWiki({ mirror: tagWikiMirror.value, ttlDays: tagWikiTtlDays.value })
+    toast.success(t('settings.tagWikiRefreshSuccess'))
+  } catch (e) {
+    toast.error(t('settings.tagWikiRefreshFailed'))
+    console.error('refreshTagWiki failed', e)
+  } finally {
+    refreshingTagWiki.value = false
   }
 }
 
@@ -316,18 +333,6 @@ function onEditorPurge() {
               >{{ t(m.labelKey) }}</button>
             </div>
 
-            <h4 class="eqt-settings__subtitle">{{ t('settings.convertToTraditional') }}</h4>
-            <div class="eqt-settings__locale-row">
-              <button
-                v-for="m in CONVERT_TO_TRADITIONAL_MODES"
-                :key="m.id"
-                type="button"
-                class="eqt-settings__locale-btn"
-                :class="{ 'eqt-settings__locale-btn--active': convertToTraditional === m.id }"
-                @click="convertToTraditional = m.id"
-              >{{ t(m.labelKey) }}</button>
-            </div>
-
           </div>
 
           <div v-show="activeTab === 'search'" class="eqt-settings__tab-content">
@@ -415,6 +420,21 @@ function onEditorPurge() {
             <p class="eqt-settings__hint">
               {{ t('settings.galleryDragSelectHint') }}
             </p>
+
+            <h4 class="eqt-settings__subtitle">{{ t('settings.introPanelPrimaryLang') }}</h4>
+            <div class="eqt-settings__locale-row">
+              <button
+                v-for="m in INTRO_PANEL_PRIMARY_LANGS"
+                :key="m.id"
+                type="button"
+                class="eqt-settings__locale-btn"
+                :class="{ 'eqt-settings__locale-btn--active': introPanelPrimaryLang === m.id }"
+                @click="introPanelPrimaryLang = m.id"
+              >{{ t(m.labelKey) }}</button>
+            </div>
+            <p class="eqt-settings__hint">
+              {{ t('settings.introPanelPrimaryLangHint') }}
+            </p>
           </div>
 
           <!-- 設定：資料 -->
@@ -440,6 +460,17 @@ function onEditorPurge() {
                 <RotateCcw :size="12" /> {{ refreshingTagCount ? t('settings.tagCountRefreshing') : t('settings.tagCountRefresh') }}
               </button>
             </div>
+
+            <h4 class="eqt-settings__subtitle">{{ t('settings.tagWikiSection') }}</h4>
+            <div class="eqt-settings__row">
+              <select class="eqt-settings__select" v-model="tagWikiMirror" :title="t('settings.tagWikiMirror')">
+                <option v-for="opt in tagWikiMirrorOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+              </select>
+              <input class="eqt-settings__input eqt-settings__input--short" type="number" min="1" max="30" v-model.number="tagWikiTtlDays" :title="t('settings.tagWikiTtlDays')" />
+              <button class="eqt-settings__refresh-btn" type="button" :disabled="refreshingTagWiki" @click="onRefreshTagWiki">
+                <RotateCcw :size="12" /> {{ refreshingTagWiki ? t('settings.tagWikiRefreshing') : t('settings.tagWikiRefresh') }}
+              </button>
+            </div>
           </div>
 
           <!-- 設定：外觀 -->
@@ -455,6 +486,24 @@ function onEditorPurge() {
                 @click="setLocale(opt.value)"
               >{{ opt.label }}</button>
             </div>
+            <p class="eqt-settings__hint">
+              {{ t('settings.languageHint') }}
+            </p>
+
+            <h4 class="eqt-settings__subtitle">{{ t('settings.convertToTraditional') }}</h4>
+            <div class="eqt-settings__locale-row">
+              <button
+                v-for="m in CONVERT_TO_TRADITIONAL_MODES"
+                :key="m.id"
+                type="button"
+                class="eqt-settings__locale-btn"
+                :class="{ 'eqt-settings__locale-btn--active': convertToTraditional === m.id }"
+                @click="convertToTraditional = m.id"
+              >{{ t(m.labelKey) }}</button>
+            </div>
+            <p class="eqt-settings__hint">
+              {{ t('settings.convertToTraditionalHint') }}
+            </p>
 
             <h4 class="eqt-settings__subtitle">{{ t('settings.tagStyle') }}</h4>
             <div class="eqt-settings__locale-row">

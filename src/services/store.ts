@@ -3,6 +3,7 @@ import { cacheGet, cacheSet } from '@/services/gmStorage'
 import type { Line, Button, ButtonLine, SeparatorLine, TagButton, UrlButton, TagMode } from '@/types'
 import { type TagDbMirror } from '@/services/tagDb'
 import { type TagCountMirror } from '@/services/tagCount'
+import { type TagWikiMirror } from '@/services/tagWiki'
 import { locale, setLocale, detectLocale, isCJKLocale, t, type Locale } from '@/composables/useI18n'
 import { PRESETS_BY_ID, type TagStylePresetId } from '@/composables/useTagStyle'
 
@@ -51,6 +52,13 @@ export const CONVERT_TO_TRADITIONAL_MODES = [
 ] as const
 export type ConvertToTraditional = typeof CONVERT_TO_TRADITIONAL_MODES[number]['id']
 
+export const INTRO_PANEL_PRIMARY_LANGS = [
+  { id: 'auto', labelKey: 'settings.introPanelPrimaryLangAuto' },
+  { id: 'zh',   labelKey: 'settings.introPanelPrimaryLangZh' },
+  { id: 'en',   labelKey: 'settings.introPanelPrimaryLangEn' },
+] as const
+export type IntroPanelPrimaryLang = typeof INTRO_PANEL_PRIMARY_LANGS[number]['id']
+
 // --- settings: single source of truth ---
 // 新增 setting 只要：① INITIAL_SETTINGS 加一欄 + ② 加一行 named export。
 // load / save / watch 自動掃描 refs。locale 走獨立處理（從 useI18n import）。
@@ -66,6 +74,8 @@ const INITIAL_SETTINGS = {
   tagDbTtlDays: 7,
   tagCountMirror: 'jsdelivr' as TagCountMirror,
   tagCountTtlDays: 7,
+  tagWikiMirror: 'jsdelivr' as TagWikiMirror,
+  tagWikiTtlDays: 7,
   tagStylePreset: 'flat' as TagStylePresetId,
   // on: include 狀態用 status 綠色（忽略自定義 line-color）；off: 沿用 line-color（預設沿用既有行為）
   useAccentOnInclude: false,
@@ -104,6 +114,10 @@ const INITIAL_SETTINGS = {
   // Gallery taglist 的 drag-select 是否啟用。關掉後 mousedown → mouseup 一律走
   // click 語意（用 Infinity threshold 讓 reducer 永遠不進 dragging state）
   galleryDragSelectEnabled: true,
+  // Intro panel 預設先顯示哪邊定義 (中文 trans db / 英文 wiki)，使用者一律可在
+  // panel 標題列 toggle 切換、選擇只在當下 panel session 有效，下次點 chip 又
+  // 回 primary。'auto' = locale 推 (CJK locale → zh, 其他 → en)
+  introPanelPrimaryLang: 'auto' as IntroPanelPrimaryLang,
 }
 
 type Settings = typeof INITIAL_SETTINGS
@@ -124,6 +138,8 @@ export const tagDbMirror       = refs.tagDbMirror
 export const tagDbTtlDays      = refs.tagDbTtlDays
 export const tagCountMirror    = refs.tagCountMirror
 export const tagCountTtlDays   = refs.tagCountTtlDays
+export const tagWikiMirror     = refs.tagWikiMirror
+export const tagWikiTtlDays    = refs.tagWikiTtlDays
 export const tagStylePreset    = refs.tagStylePreset
 export const useAccentOnInclude = refs.useAccentOnInclude
 export const searchPanelShowCJK = refs.searchPanelShowCJK
@@ -133,14 +149,16 @@ export const convertToTraditional = refs.convertToTraditional
 export const enableHistory      = refs.enableHistory
 export const taggingEnhancerEnabled = refs.taggingEnhancerEnabled
 export const galleryDragSelectEnabled = refs.galleryDragSelectEnabled
+export const introPanelPrimaryLang = refs.introPanelPrimaryLang
 
 // enum-shape setting 的合法 id 集合。壞值 silently fallback 到 INITIAL_SETTINGS 預設——
 // 沒這層守門 GM storage 被竄改塞個壞字串會直接灌進 ref，UI 永久卡在「無 active button、
 // 沒錯誤訊息」的灰態（三顆 tristate 按鈕沒一個 === 壞值 → 全部沒 highlight）。
 // 加新 enum-shape setting 時順手在這註冊一條，validation 自動接管。
 const SETTING_VALIDATORS: Partial<{ [K in SettingKey]: (v: unknown) => boolean }> = {
-  searchPanelLangMode:  v => SEARCH_PANEL_LANG_MODES.some(m => m.id === v),
-  convertToTraditional: v => CONVERT_TO_TRADITIONAL_MODES.some(m => m.id === v),
+  searchPanelLangMode:    v => SEARCH_PANEL_LANG_MODES.some(m => m.id === v),
+  convertToTraditional:   v => CONVERT_TO_TRADITIONAL_MODES.some(m => m.id === v),
+  introPanelPrimaryLang:  v => INTRO_PANEL_PRIMARY_LANGS.some(m => m.id === v),
 }
 
 function loadAllSettings(persisted: Partial<Settings>): void {

@@ -72,6 +72,40 @@
     &:hover { opacity: 1; }
   }
 
+  &__lang-toggle-btn {
+    flex: none;
+    background: transparent;
+    border: 1px solid currentColor;
+    border-radius: 3px;
+    cursor: pointer;
+    user-select: none;
+    color: inherit;
+    font-size: 10pt;
+    line-height: 1;
+    padding: 2px 6px;
+    margin: 0 4px 0 6px;
+    opacity: 0.7;
+
+    &:hover { opacity: 1; }
+  }
+
+  // toggle 字 ("EN" vs "中") 寬度不同, 兩字疊在同 grid cell 撐到較寬者
+  // 只顯示 active 那個——切換不會抖
+  &__lang-toggle-stack {
+    display: inline-grid;
+    grid-template-columns: 1fr;
+
+    > * {
+      grid-row: 1;
+      grid-column: 1;
+      visibility: hidden;
+      text-align: center;
+    }
+    > .is-visible {
+      visibility: visible;
+    }
+  }
+
   &__content {
     flex: auto;
     overflow: auto;
@@ -111,6 +145,74 @@
 
     &:empty { display: none; }
   }
+
+  &__wiki {
+    font-size: 9pt;
+    line-height: 1.4;
+  }
+
+  &__wiki-variant {
+    margin-bottom: 8px;
+    display: flex;
+    gap: 6px;
+  }
+
+  &__wiki-variant-num {
+    flex: none;
+    font-weight: bold;
+    font-size: 11pt;
+    color: #806769;
+  }
+
+  &__wiki-fields {
+    margin: 0;
+    flex: 1;
+
+    dt {
+      font-weight: bold;
+      color: #806769;
+      margin-top: 4px;
+
+      &:first-child { margin-top: 0; }
+    }
+    dd {
+      margin: 0 0 4px 0;
+    }
+  }
+
+  &__wiki-shared {
+    border-top: 1px dashed #b5a4a4;
+    padding-top: 4px;
+    margin-top: 4px;
+  }
+
+  &__wiki-source {
+    display: block;
+    margin-top: 6px;
+    font-size: 8pt;
+    color: #a0a0a0;
+    text-align: right;
+    text-decoration: none;
+
+    &:hover {
+      color: inherit;
+      text-decoration: underline;
+    }
+  }
+
+  &__wiki-images {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border: 0;
+    }
+  }
 }
 
 // 提權蓋過 EH 原生 `#gd5 img { width:5px; height:7px; margin-left:10px }`（給 mr.gif
@@ -127,8 +229,8 @@
 // 標題列的 emoji/icon 圖：inline 跟在中文名稱前面、跟字差不多大
 #gd5 .eqt-intro-panel__name-icon {
   display: inline;
-  width: 1em;
   height: 1em;
+  width: auto;
   margin: 0 4px 0 0;
   vertical-align: -2px;
   border: 0;
