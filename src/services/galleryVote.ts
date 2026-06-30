@@ -54,7 +54,9 @@ async function callApiVote(tagsField: string, vote: 1 | -1): Promise<VoteServerR
   if (!ctx) {
     return { error: 'vote context unavailable (apiuid/apikey/url mismatch)' }
   }
-  const apiHost = `api.${location.hostname}`
+  const apiHost = location.hostname === 'exhentai.org'
+    ? 's.exhentai.org'
+    : 'api.e-hentai.org'
   let res: Response
   try {
     res = await fetch(`https://${apiHost}/api.php`, {
