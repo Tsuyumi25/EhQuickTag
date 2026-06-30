@@ -64,13 +64,6 @@
 
 // === Chip ===
 // 三件套：[+] body [-]，整顆當一個視覺 unit。border 用 1px 對齊原生（蓋 --eqt-border-width 的 2px）
-//
-// 顏色直接抄 native（eh-g.css 第 356-358 行）：
-//   - gt   border-color #806769（深棕）、bg #F2EFDF（米色）
-//   - gtl  border-color #9a7c7e（淺棕）
-//   - gtw  同 gtl
-// 用 theme var 套不出這兩階差異——native 用兩種 border-color 區分權重 + border-style
-// 區分子類，是雙通道 encoding。exhentai 走 dark theme，theme var 接管色彩
 .eqt-gallery-chip {
   display: inline-flex;
   align-items: stretch;
@@ -88,15 +81,13 @@
 .eqt-gallery-chip--gtl { border-style: dashed; border-color: #9a7c7e; }
 .eqt-gallery-chip--gtw { border-style: dotted; border-color: #9a7c7e; }
 
-// exhentai dark mode：theme var 接管，三 tier 都用同色 border-color（差異仍由
-// border-style 傳達）。沒抓到 exhentai 的 native palette，先用我們 theme 暫代
 .eqt-dark .eqt-gallery-chip {
-  border-color: var(--eqt-border);
-  background: var(--eqt-bg-btn);
+  border-color: #989898;
+  background: #4f535b;
 }
 .eqt-dark .eqt-gallery-chip--gtl,
 .eqt-dark .eqt-gallery-chip--gtw {
-  border-color: var(--eqt-border);
+  border-color: #8c8c8c;
 }
 
 .eqt-gallery-chip__body {
@@ -114,8 +105,7 @@
 }
 
 // === Selection 著色（chip body bg）===
-// 不染 chip 整顆 border-color：避免吃掉 tier border-color 信號（native border 顏色
-// 也帶意義：gt 用 #806769 比 gtl/gtw 的 #9a7c7e 深）。改用 chip body bg overlay。
+// 不染 chip 整顆 border：避免吃掉 tier border 信號。改用 body bg overlay
 // positive (左鍵) = include / vote up 共用綠、negative (右鍵) = exclude / vote down 共用紅
 .eqt-gallery-chip--selected-positive .eqt-gallery-chip__body {
   background: color-mix(in srgb, var(--eqt-status-include) 55%, transparent);
@@ -130,15 +120,21 @@
 }
 
 // === Vote feedback ===
-// 對齊 native a.tup{color:green} / a.tdn{color:red}（eh-g.css 第 303-304 行）：
-// 染整顆 chip 的 body 文字，不單獨染 vote 按鈕——後者跟 native 沒對應、雙重著色
-// 也顯得太搶眼
+// 染整顆 chip body 文字，不單獨染 vote 按鈕——避免雙重著色太搶眼
 .eqt-gallery-chip--voted-up .eqt-gallery-chip__body {
   color: green;
 }
 
 .eqt-gallery-chip--voted-down .eqt-gallery-chip__body {
   color: red;
+}
+
+.eqt-dark .eqt-gallery-chip--voted-up .eqt-gallery-chip__body {
+  color: #00E639;
+}
+
+.eqt-dark .eqt-gallery-chip--voted-down .eqt-gallery-chip__body {
+  color: #FF3333;
 }
 
 // === Action 區 ===
