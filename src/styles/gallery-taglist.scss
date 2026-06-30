@@ -10,16 +10,16 @@
 // 走 .eqt-dark 那套
 @use 'buttons' as *;
 
-// 整個 #gd4 區域禁文字選取——drag select 滑鼠拖過 chip 不該意外把 chip 文字
-// 反白，也避免從 #gd4 內按下拖出去意外選到外面的文字
+// 繼承 #gmid 固定高 (330) 給 anchor 的 flex 分配用
 #gd4 {
+  height: 100%;
   user-select: none;
 }
 
-// anchor 用 display:contents 讓 taglist / actions 直接掛在 #gd4 下（不被包進
-// anchor 自己的 box）
 #eqt-gallery-anchor {
-  display: contents;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 // 原生 #taglist 保留在 DOM 給 native vote XHR callback 操作，但永久 hide
@@ -27,11 +27,9 @@
   display: none;
 }
 
-// 仿 native `#taglist { height:295px; overflow:auto }` 的招數：固定身高 + 內部
-// scroll，actions 自然落在下方、位置永遠在同一個 y，不需要 grid / flex / align
-// 那套。245 = #gmid 330 - actions ~72 - margin 緩衝 ~13，剛好塞進
 .eqt-gallery-taglist {
-  height: 245px;
+  flex: 1;
+  min-height: 0;
   overflow: auto;
   font-size: 9pt;
 }
@@ -142,6 +140,7 @@
 // 把誤觸代價較高的 vote 從 search 拉開。中間欄第 1 列 add（跨兩 col 撐滿）、
 // 第 2 列 clear + settings
 .eqt-gallery-actions {
+  flex: none;
   display: grid;
   grid-template-columns: 64px 1fr auto 64px;
   grid-template-rows: auto auto;
