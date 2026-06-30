@@ -62,6 +62,10 @@ function tierOf(cls: string): TagTier {
 let taglistObserver: MutationObserver | null = null
 onMounted(() => {
   taglistObserver = new MutationObserver(() => {
+    // batch vote 期間 skip：dispatchBatch 第一封 (ups) 回來會寫入 tagpaneHtml
+    // 觸發 mutation，此時 syncUserVotesFromTags 會把第二封 (downs) 的 optimistic
+    // 狀態抹掉，造成 UI 短暫閃爍。batch 結束後 finally 會手動補一次 sync
+    if (votePending.value) return
     currentTags.value = parseTaglistRoot(props.taglistEl)
     syncUserVotesFromTags()
   })
@@ -299,8 +303,17 @@ async function onSendBatchVotes(): Promise<void> {
   if (ups.length === 0 && downs.length === 0) return
 
   votePending.value = true
-  for (const tag of ups) userVotes.value[tag.nsRaw] = 'up'
-  for (const tag of downs) userVotes.value[tag.nsRaw] = 'down'
+  // EH 是 delta model：對已 down 的 tag 投 +1 是「撤銷 down」而非「變 up」，
+  // 對已 up 的 tag 投 -1 是「撤銷 up」。cross-direction 時 optimistic 設 null
+  // 等 server tagpaneHtml 回來再 sync 真實狀態
+  for (const tag of ups) {
+    const cur = userVotes.value[tag.nsRaw]
+    userVotes.value[tag.nsRaw] = cur === 'down' ? null : 'up'
+  }
+  for (const tag of downs) {
+    const cur = userVotes.value[tag.nsRaw]
+    userVotes.value[tag.nsRaw] = cur === 'up' ? null : 'down'
+  }
 
   // 記下這個 batch 涵蓋了哪些 addedTags placeholder：vote 成功後 EH server 會
   // 把新 tag 寫進 gallery taglist，回傳的 tagpaneHtml 一刷 currentTags 就會包含，
@@ -314,14 +327,20 @@ async function onSendBatchVotes(): Promise<void> {
     let allOk = true
     if (ups.length) allOk = (await dispatchBatch(ups, 1)) && allOk
     if (downs.length) allOk = (await dispatchBatch(downs, -1)) && allOk
-    if (allOk && votedAddedIds.length) {
-      const removed = new Set(votedAddedIds)
-      addedTags.value = addedTags.value.filter(t => !removed.has(t.nsRaw))
+    if (allOk) {
+      if (votedAddedIds.length) {
+        const removed = new Set(votedAddedIds)
+        addedTags.value = addedTags.value.filter(t => !removed.has(t.nsRaw))
+      }
+      // 成功才清 selection：失敗時保留讓使用者可以直接 retry
+      onClearSelection()
     }
   } finally {
     votePending.value = false
+    // batch 期間 MutationObserver 都 skip 了，補一次把 server 最終狀態收回來
+    currentTags.value = parseTaglistRoot(props.taglistEl)
+    syncUserVotesFromTags()
   }
-  onClearSelection()
 }
 
 async function dispatchBatch(tags: GalleryTag[], voteValue: 1 | -1): Promise<boolean> {
