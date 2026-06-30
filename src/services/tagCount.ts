@@ -5,7 +5,17 @@ import { hasGMXHR, cacheGet, cacheSet } from '@/services/gmStorage'
 // 資料源：URenko/e-hentai-db nightly SQLite，本 repo GHA 每週跑 distinct-root
 // group by。比 mokurin000 上游 CSV 對齊 EH search 真實 count（後者用 raw
 // gid_tid count，把 replaced 多版本算多次）
-const CSV_URL = 'https://cdn.jsdelivr.net/gh/Tsuyumi25/EhQuickTag@data/tag-count/tagname_count.csv.gz'
+
+export type TagCountMirror = 'jsdelivr' | 'fastly' | 'gcore' | 'github'
+
+const ASSET_PATH = 'Tsuyumi25/EhQuickTag@data/tag-count/tagname_count.csv.gz'
+
+export const TAG_COUNT_MIRRORS: Record<TagCountMirror, { label: string; url: string }> = {
+  jsdelivr: { label: 'jsDelivr', url: `https://cdn.jsdelivr.net/gh/${ASSET_PATH}` },
+  fastly:   { label: 'jsDelivr (Fastly)', url: `https://fastly.jsdelivr.net/gh/${ASSET_PATH}` },
+  gcore:    { label: 'jsDelivr (Gcore)', url: `https://gcore.jsdelivr.net/gh/${ASSET_PATH}` },
+  github:   { label: 'GitHub Raw', url: 'https://raw.githubusercontent.com/Tsuyumi25/EhQuickTag/data/tag-count/tagname_count.csv.gz' },
+}
 
 const CACHE_KEY = 'eqt_tag_count_v1'
 const CACHE_TS_KEY = 'eqt_tag_count_v1_ts'
@@ -24,6 +34,7 @@ export function getTagCount(ns: string, raw: string): number | undefined {
 }
 
 export interface LoadTagCountOptions {
+  mirror?: TagCountMirror
   ttlDays?: number
 }
 
@@ -41,7 +52,8 @@ export async function loadTagCount(opts: LoadTagCountOptions = {}): Promise<void
     }
   }
 
-  const csv = await fetchAndDecompress(CSV_URL)
+  const url = TAG_COUNT_MIRRORS[opts.mirror ?? 'jsdelivr'].url
+  const csv = await fetchAndDecompress(url)
   counts = parseCsv(csv)
   await cacheSet(CACHE_KEY, JSON.stringify(Object.fromEntries(counts)))
   await cacheSet(CACHE_TS_KEY, String(Date.now()))

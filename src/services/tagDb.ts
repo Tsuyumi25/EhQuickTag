@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { GM } from '$'
 import { isASCII, toCN, toJP } from '@/services/cjkDict'
-import { getTagCount, loadTagCount } from '@/services/tagCount'
+import { getTagCount } from '@/services/tagCount'
 import { hasGMXHR, cacheGet, cacheSet } from '@/services/gmStorage'
 
 export type TagDbMirror = 'jsdelivr' | 'fastly' | 'gcore' | 'github'
@@ -173,10 +173,6 @@ export interface LoadTagDbOptions {
 }
 
 export async function loadTagDb(opts: LoadTagDbOptions = {}): Promise<TagEntry[]> {
-  // 順便 warm tag-count（search ranking 用）。tagCount 失敗時 weight 退化為 0、
-  // 排序回到 nsTier + length——可接受，不擋 tagDb 載入
-  void loadTagCount({ ttlDays: opts.ttlDays }).catch(e => console.error('loadTagCount warm failed', e))
-
   if (entries) return entries
 
   const ttl = (opts.ttlDays ?? 7) * 24 * 60 * 60 * 1000

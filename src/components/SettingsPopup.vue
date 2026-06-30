@@ -6,13 +6,16 @@ import Draggable from 'vuedraggable'
 import { baseDragOptions } from '@/utils/drag'
 import type { Line } from '@/types'
 import { t, locale, setLocale, type Locale } from '@/composables/useI18n'
+import { useToast } from 'vue-toastification'
 import { refreshTagDb, TAG_DB_MIRRORS, type TagDbMirror } from '@/services/tagDb'
+import { refreshTagCount, TAG_COUNT_MIRRORS, type TagCountMirror } from '@/services/tagCount'
 import {
   profiles, activeProfileIdx, deletedProfiles, corruptedProfiles, type Profile,
   deleteProfile, restoreProfile, purgeProfile, purgeCorrupted, reorderProfiles, updateProfileLines,
   fontFamily, fontWeight, getDefaultLines, lines,
   dblClickLeft, dblClickRight, newTabActive, nsFormat, defaultExactMatch,
-  tagDbMirror, tagDbTtlDays, tagStylePreset, useAccentOnInclude, type DblClickAction,
+  tagDbMirror, tagDbTtlDays, tagCountMirror, tagCountTtlDays,
+  tagStylePreset, useAccentOnInclude, type DblClickAction,
   showSearchPanel, searchPanelLangMode, convertToTraditional, enableHistory,
   taggingEnhancerEnabled, galleryDragSelectEnabled,
   SEARCH_PANEL_LANG_MODES, CONVERT_TO_TRADITIONAL_MODES,
@@ -86,11 +89,37 @@ const deletedTagCounts = computed(() => deletedProfiles.map(p => tagCount(p.line
 const popupEl = ref<HTMLElement | null>(null)
 usePopupBehavior({ popupEl, onClose: () => emit('close') })
 
+const toast = useToast()
+
 const mirrorOptions = Object.entries(TAG_DB_MIRRORS).map(([k, v]) => ({ value: k as TagDbMirror, label: v.label }))
+const tagCountMirrorOptions = Object.entries(TAG_COUNT_MIRRORS).map(([k, v]) => ({ value: k as TagCountMirror, label: v.label }))
+
 const refreshing = ref(false)
 async function onRefreshTagDb() {
   refreshing.value = true
-  try { await refreshTagDb({ mirror: tagDbMirror.value }) } finally { refreshing.value = false }
+  try {
+    await refreshTagDb({ mirror: tagDbMirror.value, ttlDays: tagDbTtlDays.value })
+    toast.success(t('settings.tagDbRefreshSuccess'))
+  } catch (e) {
+    toast.error(t('settings.tagDbRefreshFailed'))
+    console.error('refreshTagDb failed', e)
+  } finally {
+    refreshing.value = false
+  }
+}
+
+const refreshingTagCount = ref(false)
+async function onRefreshTagCount() {
+  refreshingTagCount.value = true
+  try {
+    await refreshTagCount({ mirror: tagCountMirror.value, ttlDays: tagCountTtlDays.value })
+    toast.success(t('settings.tagCountRefreshSuccess'))
+  } catch (e) {
+    toast.error(t('settings.tagCountRefreshFailed'))
+    console.error('refreshTagCount failed', e)
+  } finally {
+    refreshingTagCount.value = false
+  }
 }
 
 // --- profile uid ---
@@ -390,18 +419,25 @@ function onEditorPurge() {
 
           <!-- 設定：資料 -->
           <div v-show="activeTab === 'data'" class="eqt-settings__tab-content">
-            <h4 class="eqt-settings__subtitle">{{ t('settings.tagDbMirror') }}</h4>
+            <h4 class="eqt-settings__subtitle">{{ t('settings.tagDbSection') }}</h4>
             <div class="eqt-settings__row">
-              <select class="eqt-settings__select" v-model="tagDbMirror">
+              <select class="eqt-settings__select" v-model="tagDbMirror" :title="t('settings.tagDbMirror')">
                 <option v-for="opt in mirrorOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
               </select>
-            </div>
-
-            <h4 class="eqt-settings__subtitle">{{ t('settings.tagDbTtlDays') }}</h4>
-            <div class="eqt-settings__row">
-              <input class="eqt-settings__input eqt-settings__input--short" type="number" min="1" max="30" v-model.number="tagDbTtlDays" />
+              <input class="eqt-settings__input eqt-settings__input--short" type="number" min="1" max="30" v-model.number="tagDbTtlDays" :title="t('settings.tagDbTtlDays')" />
               <button class="eqt-settings__refresh-btn" type="button" :disabled="refreshing" @click="onRefreshTagDb">
                 <RotateCcw :size="12" /> {{ refreshing ? t('settings.tagDbRefreshing') : t('settings.tagDbRefresh') }}
+              </button>
+            </div>
+
+            <h4 class="eqt-settings__subtitle">{{ t('settings.tagCountSection') }}</h4>
+            <div class="eqt-settings__row">
+              <select class="eqt-settings__select" v-model="tagCountMirror" :title="t('settings.tagCountMirror')">
+                <option v-for="opt in tagCountMirrorOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+              </select>
+              <input class="eqt-settings__input eqt-settings__input--short" type="number" min="1" max="30" v-model.number="tagCountTtlDays" :title="t('settings.tagCountTtlDays')" />
+              <button class="eqt-settings__refresh-btn" type="button" :disabled="refreshingTagCount" @click="onRefreshTagCount">
+                <RotateCcw :size="12" /> {{ refreshingTagCount ? t('settings.tagCountRefreshing') : t('settings.tagCountRefresh') }}
               </button>
             </div>
           </div>

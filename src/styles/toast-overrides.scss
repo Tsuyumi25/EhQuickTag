@@ -3,6 +3,8 @@
 .Vue-Toastification__container {
   padding: 8px;
   width: auto;
+  // 蓋過 --eqt-z-popover (100000)，避免被 settings backdrop / popover 擋住
+  z-index: 100001;
 }
 
 .Vue-Toastification__toast {

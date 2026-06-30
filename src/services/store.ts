@@ -2,6 +2,7 @@ import { reactive, ref, watch, nextTick, type Ref } from 'vue'
 import { cacheGet, cacheSet } from '@/services/gmStorage'
 import type { Line, Button, ButtonLine, SeparatorLine, TagButton, UrlButton, TagMode } from '@/types'
 import { type TagDbMirror } from '@/services/tagDb'
+import { type TagCountMirror } from '@/services/tagCount'
 import { locale, setLocale, detectLocale, isCJKLocale, t, type Locale } from '@/composables/useI18n'
 import { PRESETS_BY_ID, type TagStylePresetId } from '@/composables/useTagStyle'
 
@@ -63,6 +64,8 @@ const INITIAL_SETTINGS = {
   defaultExactMatch: true,
   tagDbMirror: 'jsdelivr' as TagDbMirror,
   tagDbTtlDays: 7,
+  tagCountMirror: 'jsdelivr' as TagCountMirror,
+  tagCountTtlDays: 7,
   tagStylePreset: 'flat' as TagStylePresetId,
   // on: include 狀態用 status 綠色（忽略自定義 line-color）；off: 沿用 line-color（預設沿用既有行為）
   useAccentOnInclude: false,
@@ -119,6 +122,8 @@ export const nsFormat          = refs.nsFormat
 export const defaultExactMatch = refs.defaultExactMatch
 export const tagDbMirror       = refs.tagDbMirror
 export const tagDbTtlDays      = refs.tagDbTtlDays
+export const tagCountMirror    = refs.tagCountMirror
+export const tagCountTtlDays   = refs.tagCountTtlDays
 export const tagStylePreset    = refs.tagStylePreset
 export const useAccentOnInclude = refs.useAccentOnInclude
 export const searchPanelShowCJK = refs.searchPanelShowCJK
