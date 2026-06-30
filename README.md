@@ -33,7 +33,7 @@ Adds a quick tag bar above the search box for one-click condition assembly. A co
 ### Tag database search
 
 - Integrates [EhTagTranslation](https://github.com/EhTagTranslation/Database) — search in Traditional/Simplified Chinese, Japanese, or English
-- **Popularity-weighted suggestions**: Tags ranked by global EH gallery count from [e-hentai-tag-count](https://github.com/mokurin000/e-hentai-tag-count) — covers every tag across all namespaces, refreshed hourly
+- **Popularity-weighted suggestions**: Tags ranked by global EH gallery count derived from the [URenko/e-hentai-db](https://github.com/URenko/e-hentai-db) nightly snapshot — covers every tag across all namespaces, refreshed weekly
 - **OpenCC Simplified-to-Traditional**: Choose Auto / Traditional / Simplified (DB original) for Chinese tag labels
 - **Namespace order & visibility**: Customize namespace ranking; hide categories you don't care about
 - **Database mirror & cache**: Choose a CDN mirror, adjust cache TTL, or refresh manually
@@ -89,17 +89,17 @@ pnpm build     # Output dist/eh-quick-tag.user.js
 ## Credits
 
 - [EhTagTranslation/Database](https://github.com/EhTagTranslation/Database) — Tag translation database (CC BY-NC-SA 3.0)
-- [EhSyringe](https://github.com/EhTagTranslation/EhSyringe) — Search ranking logic reference (MIT)
-- [OpenCC](https://github.com/BYVoid/OpenCC) — CJK character mapping data (Apache-2.0)
-- [e-hentai-tag-count](https://github.com/mokurin000/e-hentai-tag-count) — Hourly EH tag count CSV (search ranking weight)
-- [e-hentai-db](https://github.com/URenko/e-hentai-db) — Nightly EH metadata SQLite (upstream of tag-count)
+- [EhTagTranslation/EhSyringe](https://github.com/EhTagTranslation/EhSyringe) — Search ranking logic reference (MIT)
+- [BYVoid/OpenCC](https://github.com/BYVoid/OpenCC) — CJK character mapping data (Apache-2.0)
+- [URenko/e-hentai-db](https://github.com/URenko/e-hentai-db) — Nightly EH metadata SQLite (source for the tag count weight)
 
 ## Inspiration
 
 - [Add button on exhentai searchbox](https://sleazyfork.org/scripts/454282)
 - [ExAdvancedSearchMemo](https://sleazyfork.org/scripts/454209)
 - [Lolicon E-Hentai/ExHentai Enhancer](https://sleazyfork.org/scripts/516145)
-- [Exhentai-Enhancer](https://github.com/sk2589822/Exhentai-Enhancer) — Tech stack reference
+- [sk2589822/Exhentai-Enhancer](https://github.com/sk2589822/Exhentai-Enhancer) — Tech stack reference
+- [mokurin000/e-hentai-tag-count](https://github.com/mokurin000/e-hentai-tag-count)
 
 ## License
 

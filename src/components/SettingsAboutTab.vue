@@ -36,7 +36,10 @@ const appVersion = __APP_VERSION__
       <div class="eqt-about__section-title">{{ t('about.techRef') }}</div>
       <div class="eqt-about__items">
         <a class="eqt-about__item" href="https://github.com/sk2589822/Exhentai-Enhancer" target="_blank" rel="noopener">
-          <Code :size="12" /> Exhentai-Enhancer
+          <Code :size="12" /> sk2589822/Exhentai-Enhancer
+        </a>
+        <a class="eqt-about__item" href="https://github.com/mokurin000/e-hentai-tag-count" target="_blank" rel="noopener">
+          <Code :size="12" /> mokurin000/e-hentai-tag-count
         </a>
       </div>
     </div>
@@ -45,23 +48,19 @@ const appVersion = __APP_VERSION__
       <div class="eqt-about__section-title">{{ t('about.credits') }}</div>
       <div class="eqt-about__items">
         <a class="eqt-about__item" href="https://github.com/EhTagTranslation/Database" target="_blank" rel="noopener">
-          <Code :size="12" /> EhTagTranslation
+          <Code :size="12" /> EhTagTranslation/Database
           <span class="eqt-about__item-detail">{{ t('about.ehttDetail') }}</span>
         </a>
         <a class="eqt-about__item" href="https://github.com/EhTagTranslation/EhSyringe" target="_blank" rel="noopener">
-          <Code :size="12" /> EhSyringe
+          <Code :size="12" /> EhTagTranslation/EhSyringe
           <span class="eqt-about__item-detail">{{ t('about.ehsyringeDetail') }}</span>
         </a>
         <a class="eqt-about__item" href="https://github.com/BYVoid/OpenCC" target="_blank" rel="noopener">
-          <Code :size="12" /> OpenCC
+          <Code :size="12" /> BYVoid/OpenCC
           <span class="eqt-about__item-detail">{{ t('about.openccDetail') }}</span>
         </a>
-        <a class="eqt-about__item" href="https://github.com/mokurin000/e-hentai-tag-count" target="_blank" rel="noopener">
-          <Code :size="12" /> e-hentai-tag-count
-          <span class="eqt-about__item-detail">{{ t('about.tagCountDetail') }}</span>
-        </a>
         <a class="eqt-about__item" href="https://github.com/URenko/e-hentai-db" target="_blank" rel="noopener">
-          <Code :size="12" /> e-hentai-db
+          <Code :size="12" /> URenko/e-hentai-db
           <span class="eqt-about__item-detail">{{ t('about.urenkoDbDetail') }}</span>
         </a>
       </div>

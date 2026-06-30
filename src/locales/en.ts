@@ -195,8 +195,7 @@ export default {
   'about.ehttDetail': 'Tag translation database (CC BY-NC-SA 3.0)',
   'about.ehsyringeDetail': 'Search ranking logic reference (MIT)',
   'about.openccDetail': 'CJK character mapping data (Apache-2.0)',
-  'about.tagCountDetail': 'Hourly EH tag count CSV (search ranking weight)',
-  'about.urenkoDbDetail': 'EH metadata nightly SQLite (upstream of tag-count)',
+  'about.urenkoDbDetail': 'EH metadata nightly SQLite (source for the tag count weight)',
 
   // Default tag labels
   'default.chinese': 'Chinese',

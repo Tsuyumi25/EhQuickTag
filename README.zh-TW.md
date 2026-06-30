@@ -33,7 +33,7 @@ E-Hentai / ExHentai 搜尋快捷標籤列。
 ### 標籤資料庫搜尋
 
 - 整合 [EhTagTranslation](https://github.com/EhTagTranslation/Database)，支援中文（繁／簡）、日文、英文搜尋
-- **人氣權重排序**：依 EH 全站 gallery 數量排序，資料來自 [e-hentai-tag-count](https://github.com/mokurin000/e-hentai-tag-count) 每小時更新——涵蓋所有 namespace 的所有 tag
+- **人氣權重排序**：依 EH 全站 gallery 數量排序，從 [URenko/e-hentai-db](https://github.com/URenko/e-hentai-db) 的 nightly snapshot 算出——涵蓋所有 namespace 的所有 tag，每週更新
 - **OpenCC 繁簡轉換**：中文翻譯可選 自動 / 繁體 / 簡體（DB 原文）
 - **Namespace 順序與可見性**：自訂 namespace 排序權重，可隱藏不感興趣的類別
 - **資料庫鏡像與快取**：可選 CDN 鏡像、調整快取天數、手動立即更新
@@ -89,17 +89,17 @@ pnpm build     # 產出 dist/eh-quick-tag.user.js
 ## 致謝
 
 - [EhTagTranslation/Database](https://github.com/EhTagTranslation/Database) — 標籤中文翻譯資料庫（CC BY-NC-SA 3.0）
-- [EhSyringe](https://github.com/EhTagTranslation/EhSyringe) — 搜尋排序權重邏輯參考（MIT）
-- [OpenCC](https://github.com/BYVoid/OpenCC) — 繁簡轉換字表資料（Apache-2.0）
-- [e-hentai-tag-count](https://github.com/mokurin000/e-hentai-tag-count) — EH 全站 tag count CSV（搜尋排序權重來源、每小時更新）
-- [e-hentai-db](https://github.com/URenko/e-hentai-db) — EH metadata nightly SQLite（tag-count 的上游）
+- [EhTagTranslation/EhSyringe](https://github.com/EhTagTranslation/EhSyringe) — 搜尋排序權重邏輯參考（MIT）
+- [BYVoid/OpenCC](https://github.com/BYVoid/OpenCC) — 繁簡轉換字表資料（Apache-2.0）
+- [URenko/e-hentai-db](https://github.com/URenko/e-hentai-db) — EH metadata nightly SQLite（本 repo tag count 的資料源）
 
 ## 靈感來源
 
 - [Add button on exhentai searchbox](https://sleazyfork.org/scripts/454282)
 - [ExAdvancedSearchMemo](https://sleazyfork.org/scripts/454209)
 - [Lolicon E-Hentai/ExHentai Enhancer](https://sleazyfork.org/scripts/516145)
-- [Exhentai-Enhancer](https://github.com/sk2589822/Exhentai-Enhancer) — 技術棧參考
+- [sk2589822/Exhentai-Enhancer](https://github.com/sk2589822/Exhentai-Enhancer) — 技術棧參考
+- [mokurin000/e-hentai-tag-count](https://github.com/mokurin000/e-hentai-tag-count)
 
 ## 授權
 

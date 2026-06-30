@@ -195,8 +195,7 @@ export default {
   'about.ehttDetail': 'タグ翻訳データベース（CC BY-NC-SA 3.0）',
   'about.ehsyringeDetail': '検索ランキングロジック参考（MIT）',
   'about.openccDetail': 'CJK 文字マッピングデータ（Apache-2.0）',
-  'about.tagCountDetail': '時間ごとに更新される EH タグカウント CSV（検索ランキング用）',
-  'about.urenkoDbDetail': 'EH メタデータ nightly SQLite（tag-count の上流）',
+  'about.urenkoDbDetail': 'EH メタデータ nightly SQLite（タグカウント計算の元データ）',
 
   // Default tag labels
   'default.chinese': '中国語',
