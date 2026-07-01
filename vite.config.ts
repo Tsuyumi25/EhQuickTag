@@ -37,9 +37,9 @@ export default defineConfig(({ command }) => ({
           'zh-CN': 'EH 快捷标签',
         },
         description: {
-          '': 'Quick tag bar for E-Hentai / ExHentai search',
-          'zh-TW': 'E-Hentai / ExHentai 搜尋快捷標籤列',
-          'zh-CN': 'E-Hentai / ExHentai 搜索快捷标签栏',
+          '': 'Quick tag bar for E-Hentai / ExHentai search, with various tag-related enhancements',
+          'zh-TW': 'E-Hentai / ExHentai 搜尋快捷標籤列，各種標籤功能優化',
+          'zh-CN': 'E-Hentai / ExHentai 搜索快捷标签栏，各种标签功能优化',
         },
         author: 'tsuyumi',
         license: 'MIT',

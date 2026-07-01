@@ -6,7 +6,7 @@
 
 [tag-bar-and-search-panel.webm](https://github.com/user-attachments/assets/f3db2250-dc81-4e15-b50c-1555502debbb)
 
-A customizable quick tag bar for E-Hentai / ExHentai search.
+A customizable quick tag bar for E-Hentai / ExHentai search, with various tag-related enhancements.
 
 Adds a quick tag bar above the search box for one-click condition assembly. A companion search panel renders the current search terms as clickable buttons that can be dragged back into the tag bar, and keeps cross-page search history.
 

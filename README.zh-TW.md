@@ -6,7 +6,7 @@
 
 [tag-bar-and-search-panel.webm](https://github.com/user-attachments/assets/f3db2250-dc81-4e15-b50c-1555502debbb)
 
-E-Hentai / ExHentai 搜尋快捷標籤列。
+E-Hentai / ExHentai 搜尋快捷標籤列，各種標籤功能優化。
 
 在搜尋框上方加入可自訂的快捷標籤列，點擊就能組合搜尋條件；另附搜索欄面板，把當前搜尋條件呈現成可點按、可拖回標籤列的按鈕，並保留跨頁搜尋歷史。
 
