@@ -190,8 +190,20 @@ def cmd_incremental(existing_json: Path, out_path: Path, days: int) -> None:
     full re-build (run `all` + `extract-wiki-tags.py` then push) if needed."""
     try:
         existing = read_json_gz(existing_json)
-        entries: dict[str, dict] = existing.get('entries', {})
-        print(f'[read] existing entries: {len(entries)}', file=sys.stderr)
+        # Schema version guard——existing payload 是 v1/v2 shape (KV variants + shared
+        # dict) 時直接跟新 extract_one() 產的 v3 shape ({prelude, blocks[]} list) 混
+        # 寫進 payload 會靜默炸掉 client 端 (v-for(block in variant.blocks) 拿到
+        # undefined、wiki panel 對未 refresh 的 entry 全空白)。碰到就 raise 強制走
+        # `all` + extract-wiki-tags.py full rebuild path
+        version = existing.get('version', 1)
+        if version < 3:
+            raise SystemExit(
+                f'[fatal] existing payload is v{version}, incompatible with current v3 '
+                'extractor shape. Run `fetch-wiki-tags.py all` + `extract-wiki-tags.py` '
+                'to do a full rebuild first.'
+            )
+        entries: dict[str, list] = existing.get('entries', {})
+        print(f'[read] existing entries: {len(entries)} (payload v{version})', file=sys.stderr)
     except FileNotFoundError:
         print(f'[read] {existing_json} not found, starting empty', file=sys.stderr)
         entries = {}
@@ -233,7 +245,7 @@ def cmd_incremental(existing_json: Path, out_path: Path, days: int) -> None:
             entries.pop(key, None)
             popped += 1
         else:
-            data['category'] = cat
+            # entry is list[dict] — {prelude, blocks[]} per variant
             entries[key] = data
             refetched += 1
         time.sleep(DELAY_SEC)

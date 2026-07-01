@@ -26,6 +26,9 @@ jobs:
           ref: data
           path: data-branch
 
+      - name: Install Python deps
+        run: pip install lxml
+
       - name: Incremental fetch + extract
         run: |
           set -euo pipefail

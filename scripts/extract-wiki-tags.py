@@ -39,7 +39,7 @@ def main() -> None:
             if data is None:
                 skipped[cat] = skipped.get(cat, 0) + 1
                 continue
-            data['category'] = cat
+            # entry is list[dict] — {prelude, blocks[]} per variant
             out[f'{cat}/{f.stem}'] = data
             by_cat[cat] = by_cat.get(cat, 0) + 1
 
