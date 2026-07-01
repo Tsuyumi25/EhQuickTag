@@ -59,6 +59,23 @@ export const INTRO_PANEL_PRIMARY_LANGS = [
 ] as const
 export type IntroPanelPrimaryLang = typeof INTRO_PANEL_PRIMARY_LANGS[number]['id']
 
+// Gallery taglist 專屬 dblclick action。跟 tagbar 的 DblClickAction 分開——tagbar
+// 對 search 表單／編輯模式操作，gallery 對選取 chip 集合／vote／picker 操作，
+// 動作集合本質上不同（雖然 search / searchNewTab / none 名稱一致但實作路徑走
+// 完全不同的分派器）
+// vote / clearSelection / openAdd 直接引用 action bar 按鈕已有的 gallery.* label
+// key，避免 dropdown 選項跟按鈕本身翻譯不一致；search / searchNewTab / none 沿用
+// tagbar dblclick 已有的通用 key
+export const GALLERY_DBL_CLICK_ACTIONS = [
+  { id: 'search',         labelKey: 'settings.actionSearchCurrent' },
+  { id: 'searchNewTab',   labelKey: 'settings.actionSearchNewTab' },
+  { id: 'vote',           labelKey: 'gallery.vote' },
+  { id: 'clearSelection', labelKey: 'gallery.clearSelection' },
+  { id: 'openAdd',        labelKey: 'gallery.addTags' },
+  { id: 'none',           labelKey: 'settings.actionNone' },
+] as const
+export type GalleryDblClickAction = typeof GALLERY_DBL_CLICK_ACTIONS[number]['id']
+
 // --- settings: single source of truth ---
 // 新增 setting 只要：① INITIAL_SETTINGS 加一欄 + ② 加一行 named export。
 // load / save / watch 自動掃描 refs。locale 走獨立處理（從 useI18n import）。
@@ -118,6 +135,13 @@ const INITIAL_SETTINGS = {
   // panel 標題列 toggle 切換、選擇只在當下 panel session 有效，下次點 chip 又
   // 回 primary。'auto' = locale 推 (CJK locale → zh, 其他 → en)
   introPanelPrimaryLang: 'auto' as IntroPanelPrimaryLang,
+  // Gallery taglist 專屬雙擊動作。跟 tagbar 的 dblClickLeft/Right 分開持久化——
+  // gallery 是不同 UI context，使用者可能想在兩邊配不同 shortcut
+  galleryDblClickLeft: 'searchNewTab' as GalleryDblClickAction,
+  galleryDblClickRight: 'clearSelection' as GalleryDblClickAction,
+  // Gallery 搜尋開新分頁時是否切換過去。跟 tagbar 的 newTabActive 分離：兩邊的
+  // 搜尋語意不完全一樣，使用者可能希望 tagbar 搜尋前景、gallery 搜尋背景
+  galleryNewTabActive: true,
 }
 
 type Settings = typeof INITIAL_SETTINGS
@@ -150,6 +174,9 @@ export const enableHistory      = refs.enableHistory
 export const taggingEnhancerEnabled = refs.taggingEnhancerEnabled
 export const galleryDragSelectEnabled = refs.galleryDragSelectEnabled
 export const introPanelPrimaryLang = refs.introPanelPrimaryLang
+export const galleryDblClickLeft = refs.galleryDblClickLeft
+export const galleryDblClickRight = refs.galleryDblClickRight
+export const galleryNewTabActive = refs.galleryNewTabActive
 
 // enum-shape setting 的合法 id 集合。壞值 silently fallback 到 INITIAL_SETTINGS 預設——
 // 沒這層守門 GM storage 被竄改塞個壞字串會直接灌進 ref，UI 永久卡在「無 active button、
@@ -159,6 +186,8 @@ const SETTING_VALIDATORS: Partial<{ [K in SettingKey]: (v: unknown) => boolean }
   searchPanelLangMode:    v => SEARCH_PANEL_LANG_MODES.some(m => m.id === v),
   convertToTraditional:   v => CONVERT_TO_TRADITIONAL_MODES.some(m => m.id === v),
   introPanelPrimaryLang:  v => INTRO_PANEL_PRIMARY_LANGS.some(m => m.id === v),
+  galleryDblClickLeft:    v => GALLERY_DBL_CLICK_ACTIONS.some(a => a.id === v),
+  galleryDblClickRight:   v => GALLERY_DBL_CLICK_ACTIONS.some(a => a.id === v),
 }
 
 function loadAllSettings(persisted: Partial<Settings>): void {

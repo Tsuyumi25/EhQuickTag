@@ -253,6 +253,10 @@ export default {
   'settings.taggingEnhancerHint': '在 /g/ 詳情頁接管 taglist，提供 vote / search / picker 等強化功能。關閉後保持 EH 原生介面。需重新整理頁面生效。',
   'settings.galleryDragSelect': '啟用拖曳多選',
   'settings.galleryDragSelectHint': '關閉後僅能單擊選取，拖曳將不會觸發批次標記。',
+  'settings.galleryDblClickActions': 'Taglist 雙擊動作',
+  'settings.galleryDblClickLeft': '左鍵雙擊',
+  'settings.galleryDblClickRight': '右鍵雙擊',
+  'settings.galleryNewTabActive': '搜尋時切換到新分頁',
 
   // Intro panel
   'intro.close': '關閉',

@@ -13,7 +13,7 @@ import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { GM } from '$'
 import { serializeEntry } from '@/services/searchSyntax'
 import { findEntryByNsTag, DEFAULT_NS_ORDER, tagDbVersion } from '@/services/tagDb'
-import { nsFormat, defaultExactMatch, newTabActive, galleryDragSelectEnabled } from '@/services/store'
+import { nsFormat, defaultExactMatch, galleryNewTabActive, galleryDragSelectEnabled, galleryDblClickLeft, galleryDblClickRight, type GalleryDblClickAction } from '@/services/store'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
 import { t, isCJKLocale } from '@/composables/useI18n'
 import { batchVote, type VoteState } from '@/services/galleryVote'
@@ -284,8 +284,54 @@ const wikiUrl = computed(() =>
     : 'https://ehwiki.org/wiki/Gallery_Tagging'
 )
 
-function onSearch(): void {
-  if (selectedCount.value === 0) return
+// === Taglist 背景雙擊 action ===
+// 跟 TagBar / SearchPopup 同 pattern：@dblclick 走左鍵；右鍵沒有原生 dblclick
+// event，靠 contextmenu 500ms threshold 手動偵測
+let lastRightClickTime = 0
+
+// 排除 chip（保留 single-click cycle）跟 ns label（純視覺元素、不該當 target）
+function isInteractiveTaglist(e: MouseEvent): boolean {
+  return !!(e.target as HTMLElement).closest('.eqt-gallery-chip, .eqt-gallery-taglist__label')
+}
+
+function onTaglistDblClick(e: MouseEvent): void {
+  if (isInteractiveTaglist(e)) return
+  e.preventDefault()
+  window.getSelection()?.removeAllRanges()
+  execGalleryDblClickAction(galleryDblClickLeft.value)
+}
+
+function onTaglistContextMenu(e: MouseEvent): void {
+  // preventDefault 一律呼叫——gallery 對 chip 右鍵已有「negative select via drag
+  // machine」的設計，browser context menu 該全域擋掉才不會跟變紅的 chip 打架
+  // （跟原本 @contextmenu.prevent 同語意；不採 TagBar / SearchPopup 的 guard-first
+  // pattern，那兩個場景沒有 chip right-click 的既有語意）
+  e.preventDefault()
+  if (isInteractiveTaglist(e)) return
+  const now = Date.now()
+  if (now - lastRightClickTime < 500) {
+    execGalleryDblClickAction(galleryDblClickRight.value)
+    lastRightClickTime = 0
+  } else {
+    lastRightClickTime = now
+  }
+}
+
+function execGalleryDblClickAction(action: GalleryDblClickAction): void {
+  switch (action) {
+    case 'none': return
+    case 'search': onSearchCurrent(); return
+    case 'searchNewTab': onSearchNewTab(); return
+    case 'vote': onSendBatchVotes(); return
+    case 'clearSelection': onClearSelection(); return
+    case 'openAdd': showAddPopup.value = !showAddPopup.value; return
+  }
+}
+
+// 拆兩個 function（不用 mode 參數）避免 template `@click="onSearchNewTab"`
+// 意外把 MouseEvent 當 mode 傳進來——沒 arg 的 caller 也不會踩到預設值不 kick in 的坑
+function buildSearchUrl(): string | null {
+  if (selectedCount.value === 0) return null
   const tokens: string[] = []
   for (const group of groups.value) {
     for (const chip of group.chips) {
@@ -295,8 +341,21 @@ function onSearch(): void {
   }
   const url = new URL('/', window.location.href)
   url.searchParams.set('f_search', tokens.join(' '))
-  Promise.resolve(GM.openInTab(url.href, { active: newTabActive.value })).catch(() => {})
+  return url.href
+}
+
+function onSearchNewTab(): void {
+  const href = buildSearchUrl()
+  if (!href) return
+  Promise.resolve(GM.openInTab(href, { active: galleryNewTabActive.value })).catch(() => {})
   onClearSelection()
+}
+
+function onSearchCurrent(): void {
+  const href = buildSearchUrl()
+  if (!href) return
+  window.location.href = href
+  // navigation 觸發，component 即將卸載——不用 clearSelection
 }
 
 function tagsFor(target: Selection): GalleryTag[] {
@@ -379,7 +438,8 @@ watch(selection, () => {
   <div
     class="eqt-gallery-taglist"
     @mousedown="onAreaMouseDown"
-    @contextmenu.prevent
+    @dblclick="onTaglistDblClick"
+    @contextmenu="onTaglistContextMenu"
   >
     <div
       v-for="group in groups"
@@ -420,7 +480,7 @@ watch(selection, () => {
       type="button"
       class="eqt-gallery-actions__btn eqt-gallery-actions__btn--search"
       :disabled="selectedCount === 0"
-      @click="onSearch"
+      @click="onSearchNewTab"
     >
       <Search :size="20" />
       <span>{{ t('gallery.searchN', { n: String(selectedCount) }) }}</span>

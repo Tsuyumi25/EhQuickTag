@@ -20,7 +20,9 @@ import {
   tagStylePreset, useAccentOnInclude, type DblClickAction,
   showSearchPanel, searchPanelLangMode, convertToTraditional, enableHistory,
   taggingEnhancerEnabled, galleryDragSelectEnabled, introPanelPrimaryLang,
+  galleryDblClickLeft, galleryDblClickRight, galleryNewTabActive,
   SEARCH_PANEL_LANG_MODES, CONVERT_TO_TRADITIONAL_MODES, INTRO_PANEL_PRIMARY_LANGS,
+  GALLERY_DBL_CLICK_ACTIONS, type GalleryDblClickAction,
 } from '@/services/store'
 import { TAG_STYLE_PRESETS, currentTagStyleClass } from '@/composables/useTagStyle'
 import ProfileListItem from '@/components/ProfileListItem.vue'
@@ -68,6 +70,11 @@ const activeTab = ref<TabKey | null>(narrowTab(props.initialTab) ?? 'appearance'
 const dblClickOptions = [
   { labelKey: 'settings.dblClickLeft', ref: dblClickLeft },
   { labelKey: 'settings.dblClickRight', ref: dblClickRight },
+]
+
+const galleryDblClickOptions = [
+  { labelKey: 'settings.galleryDblClickLeft', ref: galleryDblClickLeft },
+  { labelKey: 'settings.galleryDblClickRight', ref: galleryDblClickRight },
 ]
 
 const localeOptions: { value: Locale; label: string }[] = [
@@ -420,6 +427,32 @@ function onEditorPurge() {
             <p class="eqt-settings__hint">
               {{ t('settings.galleryDragSelectHint') }}
             </p>
+
+            <h4 class="eqt-settings__subtitle">{{ t('settings.galleryDblClickActions') }}</h4>
+            <div
+              v-for="({ labelKey, ref: r }) in galleryDblClickOptions"
+              :key="labelKey"
+              class="eqt-settings__dblclick-row"
+            >
+              <label class="eqt-settings__dblclick-label">{{ t(labelKey) }}</label>
+              <select
+                class="eqt-settings__select"
+                :value="r.value"
+                :disabled="!taggingEnhancerEnabled"
+                @change="r.value = ($event.target as HTMLSelectElement).value as GalleryDblClickAction"
+              >
+                <option v-for="a in GALLERY_DBL_CLICK_ACTIONS" :key="a.id" :value="a.id">{{ t(a.labelKey) }}</option>
+              </select>
+            </div>
+            <label class="eqt-settings__row">
+              <input
+                type="checkbox"
+                :checked="galleryNewTabActive"
+                :disabled="!taggingEnhancerEnabled"
+                @change="galleryNewTabActive = ($event.target as HTMLInputElement).checked"
+              />
+              <span class="eqt-settings__label">{{ t('settings.galleryNewTabActive') }}</span>
+            </label>
 
             <h4 class="eqt-settings__subtitle">{{ t('settings.introPanelPrimaryLang') }}</h4>
             <div class="eqt-settings__locale-row">

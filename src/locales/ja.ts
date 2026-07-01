@@ -253,6 +253,10 @@ export default {
   'settings.taggingEnhancerHint': '/g/ 詳細ページの taglist を引き継ぎ、vote / search / picker などの強化機能を提供します。オフの場合はネイティブ UI のまま。ページを再読み込みすると反映されます。',
   'settings.galleryDragSelect': 'ドラッグ選択を有効化',
   'settings.galleryDragSelectHint': 'オフにするとクリックでのみ選択でき、ドラッグで一括切り替えはできません。',
+  'settings.galleryDblClickActions': 'Taglist ダブルクリック動作',
+  'settings.galleryDblClickLeft': '左ダブルクリック',
+  'settings.galleryDblClickRight': '右ダブルクリック',
+  'settings.galleryNewTabActive': '検索時に新しいタブへ切り替える',
 
   // Intro panel
   'intro.close': '閉じる',

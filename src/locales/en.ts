@@ -253,6 +253,10 @@ export default {
   'settings.taggingEnhancerHint': 'Takes over the taglist on /g/ detail pages with vote / search / picker affordances. When off, the native UI is preserved. Reload the page to apply.',
   'settings.galleryDragSelect': 'Enable drag-select',
   'settings.galleryDragSelectHint': 'When off, chips are click-only; dragging will not toggle multiple at once.',
+  'settings.galleryDblClickActions': 'Taglist double-click actions',
+  'settings.galleryDblClickLeft': 'Left double-click',
+  'settings.galleryDblClickRight': 'Right double-click',
+  'settings.galleryNewTabActive': 'Switch to new tab when searching',
 
   // Intro panel
   'intro.close': 'Close',
