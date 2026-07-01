@@ -207,6 +207,9 @@ function onPickFromAdd(entry: TagEntry, mode: 'positive' | 'negative'): void {
   const tag = existing ?? added
 
   if (tag) {
+    // 面板要在任何 click 都刷到當前 tag：即使 selection 沒變（已 positive 再左鍵、
+    // off 上右鍵）使用者仍然是「在看這個 tag」，面板該同步過去
+    setPanelTag(tag)
     // 左鍵 (+1)：cur ∈ {off, negative} → positive；cur = positive → no-op (cap=1)
     // 右鍵 (-1)：cur = positive → off；cur ∈ {off, negative} → no-op (picker min=0)
     const cur = selection.value.get(tag.nsRaw)
@@ -221,7 +224,6 @@ function onPickFromAdd(entry: TagEntry, mode: 'positive' | 'negative'): void {
       next.delete(tag.nsRaw)
       selection.value = next
     }
-    setPanelTag(tag)
     return
   }
 
