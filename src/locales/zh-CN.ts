@@ -107,6 +107,7 @@ export default {
   'settings.tagWikiRefreshing': '更新中…',
   'settings.tagWikiRefreshSuccess': 'Tag Wiki 已更新',
   'settings.tagWikiRefreshFailed': 'Tag Wiki 更新失败，请稍后再试',
+  'settings.tagWikiSchemaMismatch': 'Tag Wiki 数据格式不兼容——CDN 边缘可能还在 serve 旧版本。过几小时再试，或到 设置 → 数据 切换到 GitHub Raw mirror。',
   'settings.fontFamily': '自定义字体',
   'settings.fontFamilyPlaceholder': '留空则使用页面字体',
   'settings.fontFamilyHint': 'font-family 值示例：',

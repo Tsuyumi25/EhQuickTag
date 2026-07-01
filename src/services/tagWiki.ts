@@ -69,6 +69,24 @@ export interface LoadTagWikiOptions {
   ttlDays?: number
 }
 
+// 目前支援的 payload schema 版本。extract-wiki-tags.py 產出的 v3 shape：
+// entries[key] = list[{prelude, blocks[]}]
+const SCHEMA_VERSION = 3
+
+interface Payload {
+  version?: number
+  entries?: Record<string, WikiEntry>
+}
+
+// caller 用 instanceof 分辨這是 schema 錯 (可能是 CDN 遲滯，用戶切 mirror
+// 就能繞) 還是純網路 / decode 錯 (通用 refresh failed 訊息即可)
+export class WikiSchemaMismatchError extends Error {
+  constructor(readonly gotVersion: number | undefined) {
+    super(`Tag Wiki payload schema mismatch: expected v${SCHEMA_VERSION}, got v${gotVersion ?? '?'}`)
+    this.name = 'WikiSchemaMismatchError'
+  }
+}
+
 export async function loadTagWiki(opts: LoadTagWikiOptions = {}): Promise<void> {
   if (entries) return
 
@@ -77,18 +95,27 @@ export async function loadTagWiki(opts: LoadTagWikiOptions = {}): Promise<void> 
   if (Date.now() - cachedTs < ttl) {
     const cached = await cacheGet(CACHE_KEY)
     if (cached) {
-      const obj = JSON.parse(cached) as Record<string, WikiEntry>
-      entries = new Map(Object.entries(obj))
-      tagWikiVersion.value++
-      return
+      const parsed = JSON.parse(cached) as Payload
+      // cache 內含 payload.version——舊版本 fall through 到 refetch，避免 stale
+      // schema 靜默 render 空白（v-for on 錯 shape 拿到 undefined block 都不炸也不渲染）
+      if (parsed.version === SCHEMA_VERSION && parsed.entries) {
+        entries = new Map(Object.entries(parsed.entries))
+        tagWikiVersion.value++
+        return
+      }
     }
   }
 
   const url = TAG_WIKI_MIRRORS[opts.mirror ?? 'jsdelivr'].url
   const json = await fetchAndDecompress(url)
-  const payload = JSON.parse(json) as { entries: Record<string, WikiEntry> }
+  const payload = JSON.parse(json) as Payload
+  if (payload.version !== SCHEMA_VERSION || !payload.entries) {
+    // CDN edge 快取還沒失效時會拿到舊 schema (譬如剛 release 完 12h 內 jsdelivr
+    // POP 陸續 refetch)——loud throw 讓 caller 用 i18n toast 提示，比靜默空白清楚
+    throw new WikiSchemaMismatchError(payload.version)
+  }
   entries = new Map(Object.entries(payload.entries))
-  await cacheSet(CACHE_KEY, JSON.stringify(payload.entries))
+  await cacheSet(CACHE_KEY, JSON.stringify(payload))
   await cacheSet(CACHE_TS_KEY, String(Date.now()))
   tagWikiVersion.value++
 }

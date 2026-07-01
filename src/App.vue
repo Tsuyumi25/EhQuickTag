@@ -13,7 +13,9 @@ import { bindSearchBar } from '@/services/search/searchSession'
 import { lines, fontFamily, fontWeight, profiles, activeProfileIdx, switchProfile, renameProfile, createProfile, deleteProfile, newTabActive, nsFormat, defaultExactMatch, tagDbMirror, tagDbTtlDays, tagCountMirror, tagCountTtlDays, tagWikiMirror, tagWikiTtlDays, taggingEnhancerEnabled, type DblClickAction } from '@/services/store'
 import { loadTagDb } from '@/services/tagDb'
 import { loadTagCount } from '@/services/tagCount'
-import { loadTagWiki } from '@/services/tagWiki'
+import { loadTagWiki, WikiSchemaMismatchError } from '@/services/tagWiki'
+import { useToast } from 'vue-toastification'
+import { t } from '@/composables/useI18n'
 import { useEhFormHost } from '@/composables/useEhFormHost'
 import { useEhGalleryHost } from '@/composables/useEhGalleryHost'
 
@@ -224,10 +226,19 @@ if (searchInput) {
   })
 }
 
+const toast = useToast()
+
 loadTagDb({ mirror: tagDbMirror.value, ttlDays: tagDbTtlDays.value })
 loadTagCount({ mirror: tagCountMirror.value, ttlDays: tagCountTtlDays.value })
 loadTagWiki({ mirror: tagWikiMirror.value, ttlDays: tagWikiTtlDays.value })
-  .catch((e) => console.error('[tagWiki] load failed:', e))
+  .catch((e) => {
+    // 初次載入時失敗——schema 錯 (CDN 遲滯) 用專屬提示引導切 mirror；其他錯默默
+    // console 不打擾使用者 (單純網路瞬斷之類的下次載入自然重試)
+    if (e instanceof WikiSchemaMismatchError) {
+      toast.error(t('settings.tagWikiSchemaMismatch'))
+    }
+    console.error('[tagWiki] load failed:', e)
+  })
 
 onMounted(() => {
   applyFontVars()

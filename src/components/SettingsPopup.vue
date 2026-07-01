@@ -9,7 +9,7 @@ import { t, locale, setLocale, type Locale } from '@/composables/useI18n'
 import { useToast } from 'vue-toastification'
 import { refreshTagDb, TAG_DB_MIRRORS, type TagDbMirror } from '@/services/tagDb'
 import { refreshTagCount, TAG_COUNT_MIRRORS, type TagCountMirror } from '@/services/tagCount'
-import { refreshTagWiki, TAG_WIKI_MIRRORS, type TagWikiMirror } from '@/services/tagWiki'
+import { refreshTagWiki, TAG_WIKI_MIRRORS, WikiSchemaMismatchError, type TagWikiMirror } from '@/services/tagWiki'
 import {
   profiles, activeProfileIdx, deletedProfiles, corruptedProfiles, type Profile,
   deleteProfile, restoreProfile, purgeProfile, purgeCorrupted, reorderProfiles, updateProfileLines,
@@ -139,7 +139,13 @@ async function onRefreshTagWiki() {
     await refreshTagWiki({ mirror: tagWikiMirror.value, ttlDays: tagWikiTtlDays.value })
     toast.success(t('settings.tagWikiRefreshSuccess'))
   } catch (e) {
-    toast.error(t('settings.tagWikiRefreshFailed'))
+    // schema mismatch 通常是 CDN edge 遲滯，切 mirror 到 GitHub Raw 可以繞開；
+    // 純網路 / decode 錯就走通用訊息
+    if (e instanceof WikiSchemaMismatchError) {
+      toast.error(t('settings.tagWikiSchemaMismatch'))
+    } else {
+      toast.error(t('settings.tagWikiRefreshFailed'))
+    }
     console.error('refreshTagWiki failed', e)
   } finally {
     refreshingTagWiki.value = false
