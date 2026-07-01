@@ -245,6 +245,7 @@ export default {
   'gallery.addTags': '新增标签',
   'gallery.sessionExpired': '登录状态已过期，请刷新页面后重试。',
   'gallery.tagDbLoadFailed': '标签数据库加载失败，请稍后再试或检查网络。',
+  'gallery.wiki': 'Wiki',
 
   // Gallery settings tab
   'settings.tabGallery': '图库',

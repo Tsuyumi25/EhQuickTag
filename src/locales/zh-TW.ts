@@ -245,6 +245,7 @@ export default {
   'gallery.addTags': '新增標籤',
   'gallery.sessionExpired': '登入狀態已過期，請重新整理頁面後再試。',
   'gallery.tagDbLoadFailed': '標籤資料庫載入失敗，請稍後再試或檢查網路。',
+  'gallery.wiki': 'Wiki',
 
   // Gallery settings tab
   'settings.tabGallery': '畫廊',

@@ -245,6 +245,7 @@ export default {
   'gallery.addTags': 'タグを追加',
   'gallery.sessionExpired': 'セッションの有効期限が切れました。ページを再読み込みして再ログインしてください。',
   'gallery.tagDbLoadFailed': 'タグ DB の読み込みに失敗しました。後でリトライするかネットワークをご確認ください。',
+  'gallery.wiki': 'Wiki',
 
   // Gallery settings tab
   'settings.tabGallery': 'ギャラリー',

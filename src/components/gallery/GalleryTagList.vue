@@ -20,7 +20,7 @@ import { batchVote, type VoteState } from '@/services/galleryVote'
 import { useToast } from 'vue-toastification'
 import { parseTaglistRoot, type GalleryTag } from '@/composables/useEhGalleryHost'
 import { useIntroPanel } from '@/composables/useIntroPanel'
-import { Settings, Search } from '@lucide/vue'
+import { Settings, Search, BookOpen } from '@lucide/vue'
 import { useDragSelect } from '@/composables/useDragSelect'
 import type { ChipRef, TriState, Selection } from '@/services/gallery/dragSelectMachine'
 import GalleryAddInline from './GalleryAddInline.vue'
@@ -277,6 +277,13 @@ const { onAreaMouseDown } = useDragSelect({
   enabled: () => galleryDragSelectEnabled.value,
 })
 
+// Gallery Tagging guide：CJK locale 走 /Chinese 分頁、其他 locale 走英文 root
+const wikiUrl = computed(() =>
+  isCJKLocale()
+    ? 'https://ehwiki.org/wiki/Gallery_Tagging/Chinese'
+    : 'https://ehwiki.org/wiki/Gallery_Tagging/'
+)
+
 function onSearch(): void {
   if (selectedCount.value === 0) return
   const tokens: string[] = []
@@ -436,6 +443,17 @@ watch(selection, () => {
     >
       {{ t('gallery.clearSelection') }}
     </button>
+
+    <a
+      class="eqt-gallery-actions__btn eqt-gallery-actions__btn--wiki"
+      :href="wikiUrl"
+      target="_blank"
+      rel="noopener noreferrer"
+      :title="t('gallery.wiki')"
+    >
+      <BookOpen :size="14" />
+      <span>{{ t('gallery.wiki') }}</span>
+    </a>
 
     <button
       type="button"
