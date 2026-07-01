@@ -17,7 +17,7 @@ import { nsFormat, defaultExactMatch, galleryNewTabActive, galleryDragSelectEnab
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
 import { t, isCJKLocale } from '@/composables/useI18n'
 import { batchVote, type VoteState } from '@/services/galleryVote'
-import { useToast } from 'vue-toastification'
+import { useEqtToast } from '@/composables/useEqtToast'
 import { parseTaglistRoot, type GalleryTag } from '@/composables/useEhGalleryHost'
 import { useIntroPanel } from '@/composables/useIntroPanel'
 import { Settings, Search, BookOpen } from '@lucide/vue'
@@ -37,7 +37,7 @@ const emit = defineEmits<{
   'open-settings': []
 }>()
 
-const toast = useToast()
+const toast = useEqtToast()
 
 const currentTags = ref<GalleryTag[]>([...props.tags])
 const userVotes = ref<Record<string, VoteState>>({})

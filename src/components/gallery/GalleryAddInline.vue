@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { ref, shallowRef, watch, onMounted, onBeforeUnmount, computed } from 'vue'
 import { useEventListener } from '@vueuse/core'
-import { useToast } from 'vue-toastification'
+import { useEqtToast } from '@/composables/useEqtToast'
 import { loadTagDb, getFallbackEntries, DEFAULT_NS_ORDER, type TagEntry } from '@/services/tagDb'
 import { useTagSuggestions } from '@/composables/useTagSuggestions'
 import { t } from '@/composables/useI18n'
 import SuggestionList from '@/components/SuggestionList.vue'
 import { TagState } from '@/types'
 
-const toast = useToast()
+const toast = useEqtToast()
 
 // Gallery 「新增」picker 的 inline 變體：Teleport 到 .gm（gallery 外層容器），
 // absolute 覆蓋視覺左欄。座標 mount 時量 native rect：

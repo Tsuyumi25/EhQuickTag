@@ -14,7 +14,7 @@ import { lines, fontFamily, fontWeight, profiles, activeProfileIdx, switchProfil
 import { loadTagDb } from '@/services/tagDb'
 import { loadTagCount } from '@/services/tagCount'
 import { loadTagWiki, WikiSchemaMismatchError } from '@/services/tagWiki'
-import { useToast } from 'vue-toastification'
+import { useEqtToast } from '@/composables/useEqtToast'
 import { t } from '@/composables/useI18n'
 import { useEhFormHost } from '@/composables/useEhFormHost'
 import { useEhGalleryHost } from '@/composables/useEhGalleryHost'
@@ -226,7 +226,7 @@ if (searchInput) {
   })
 }
 
-const toast = useToast()
+const toast = useEqtToast()
 
 loadTagDb({ mirror: tagDbMirror.value, ttlDays: tagDbTtlDays.value })
 loadTagCount({ mirror: tagCountMirror.value, ttlDays: tagCountTtlDays.value })

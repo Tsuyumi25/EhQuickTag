@@ -6,7 +6,7 @@ import Draggable from 'vuedraggable'
 import { baseDragOptions } from '@/utils/drag'
 import type { Line } from '@/types'
 import { t, locale, setLocale, type Locale } from '@/composables/useI18n'
-import { useToast } from 'vue-toastification'
+import { useEqtToast } from '@/composables/useEqtToast'
 import { refreshTagDb, TAG_DB_MIRRORS, type TagDbMirror } from '@/services/tagDb'
 import { refreshTagCount, TAG_COUNT_MIRRORS, type TagCountMirror } from '@/services/tagCount'
 import { refreshTagWiki, TAG_WIKI_MIRRORS, WikiSchemaMismatchError, type TagWikiMirror } from '@/services/tagWiki'
@@ -98,7 +98,7 @@ const deletedTagCounts = computed(() => deletedProfiles.map(p => tagCount(p.line
 const popupEl = ref<HTMLElement | null>(null)
 usePopupBehavior({ popupEl, onClose: () => emit('close') })
 
-const toast = useToast()
+const toast = useEqtToast()
 
 const mirrorOptions = Object.entries(TAG_DB_MIRRORS).map(([k, v]) => ({ value: k as TagDbMirror, label: v.label }))
 const tagCountMirrorOptions = Object.entries(TAG_COUNT_MIRRORS).map(([k, v]) => ({ value: k as TagCountMirror, label: v.label }))
