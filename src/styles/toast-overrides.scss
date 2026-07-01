@@ -15,6 +15,7 @@
   padding: 8px 12px;
   border-radius: 4px;
   font-family: inherit;
+  align-items: center;
 }
 
 .Vue-Toastification__toast-body {
@@ -26,8 +27,7 @@
 .Vue-Toastification__icon {
   width: 16px;
   height: 16px;
-  margin: 0 8px 0 0;
-  align-self: flex-start;
+  margin: auto 8px auto 0;
   flex-shrink: 0;
 }
 

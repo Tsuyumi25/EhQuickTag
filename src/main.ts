@@ -17,8 +17,22 @@ import '@/styles/toast-overrides.scss'
   // 讀不同 GM key、無依賴，並行省一條 round-trip
   await Promise.all([loadStore(), loadSessionHistory()])
 
+  if (location.hostname === 'exhentai.org') {
+    document.documentElement.classList.add('eqt-dark')
+  }
+
+  const toastContainer = document.createElement('div')
+  toastContainer.id = 'eqt-toast'
+  document.body.append(toastContainer)
+
+  const appContainer = document.createElement('div')
+  appContainer.id = 'eqt-app'
+  appContainer.setAttribute('translate', 'no')
+  document.body.append(appContainer)
+
   const app = createApp(App)
   app.use(Toast, {
+    container: toastContainer,
     position: POSITION.TOP_RIGHT,
     timeout: 5000,
     closeOnClick: true,
@@ -26,18 +40,7 @@ import '@/styles/toast-overrides.scss'
     pauseOnHover: true,
     draggable: true,
   })
-  app.mount(
-    (() => {
-      if (location.hostname === 'exhentai.org') {
-        document.documentElement.classList.add('eqt-dark')
-      }
-      const container = document.createElement('div')
-      container.id = 'eqt-app'
-      container.setAttribute('translate', 'no')
-      document.body.append(container)
-      return container
-    })(),
-  )
+  app.mount(appContainer)
 
   startAutoSave()
 })()
