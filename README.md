@@ -4,7 +4,7 @@
 
 > ⚠️ Early development. Data formats (profiles, settings, etc.) may change in future versions and require reconfiguration.
 
-[Kooha-2026-06-22-21-23-13.webm](https://github.com/user-attachments/assets/f3db2250-dc81-4e15-b50c-1555502debbb)
+[tag-bar-and-search-panel.webm](https://github.com/user-attachments/assets/f3db2250-dc81-4e15-b50c-1555502debbb)
 
 A customizable quick tag bar for E-Hentai / ExHentai search.
 
@@ -36,7 +36,21 @@ Adds a quick tag bar above the search box for one-click condition assembly. A co
 - **Popularity-weighted suggestions**: Tags ranked by global EH gallery count derived from the [URenko/e-hentai-db](https://github.com/URenko/e-hentai-db) nightly snapshot — covers every tag across all namespaces, refreshed weekly
 - **OpenCC Simplified-to-Traditional**: Choose Auto / Traditional / Simplified (DB original) for Chinese tag labels
 - **Namespace order & visibility**: Customize namespace ranking; hide categories you don't care about
-- **Database mirror & cache**: Choose a CDN mirror, adjust cache TTL, or refresh manually
+- **Mirrors & cache**: Three assets (tag DB, tag count, tag wiki) each with 4-mirror CDN choice (jsDelivr / Fastly / gcore / GitHub raw), adjustable cache TTL, and manual refresh
+
+### Gallery detail page tagging
+
+[gallery-tagging.webm](https://github.com/user-attachments/assets/77448a48-2d9c-485c-aa8c-81d14e806e95)
+
+Takes over the native taglist on `/g/` detail pages with a chip-based selection UI:
+
+- **Batch vote / batch search**: Build a selection with left-click (+1 include / positive vote) and right-click (-1 exclude / negative vote), then send it as a single batched vote request or open the tokens as a search — one action, many tags
+- **Drag-select**: Sweep across chips to toggle groups at once (cohort model — drag only affects chips sharing the drag start's state)
+- **Definition panel**: Click any chip to show its definition — Chinese from EhTagTranslation, English scraped from ehwiki.org's 5 tag categories (~13k pages, weekly incremental refresh via RecentChanges API); primary language configurable, per-panel toggle in the panel header
+- **Add tags picker**: Search the tag database inline and add tags to the selection without touching the native tag input
+- **Configurable double-click actions**: Left / right double-click on the taglist can trigger Search (current / new tab), Vote, Clear selection, Add tags picker, or None — independent from the tag bar's own dblclick settings
+- **Wiki shortcut**: One-click access to the Gallery_Tagging guide (CJK locale routes to the `/Chinese` sub-page)
+- **Toggle-able**: Can be turned off entirely (settings → Gallery → Tagging Enhancer) to preserve the native EH UI
 
 ### Tag button configuration
 

@@ -4,7 +4,7 @@
 
 > ⚠️ 早期開發中，資料格式（標籤組、設定等）在未來版本可能不相容，屆時可能需要重新設定。
 
-![screenshot](docs/screenshot.png)
+[tag-bar-and-search-panel.webm](https://github.com/user-attachments/assets/f3db2250-dc81-4e15-b50c-1555502debbb)
 
 E-Hentai / ExHentai 搜尋快捷標籤列。
 
@@ -36,7 +36,21 @@ E-Hentai / ExHentai 搜尋快捷標籤列。
 - **人氣權重排序**：依 EH 全站 gallery 數量排序，從 [URenko/e-hentai-db](https://github.com/URenko/e-hentai-db) 的 nightly snapshot 算出——涵蓋所有 namespace 的所有 tag，每週更新
 - **OpenCC 繁簡轉換**：中文翻譯可選 自動 / 繁體 / 簡體（DB 原文）
 - **Namespace 順序與可見性**：自訂 namespace 排序權重，可隱藏不感興趣的類別
-- **資料庫鏡像與快取**：可選 CDN 鏡像、調整快取天數、手動立即更新
+- **鏡像與快取**：三份資產（tag DB、tag count、tag wiki）各自 4-mirror 可選（jsDelivr / Fastly / gcore / GitHub raw）、可調快取天數、可手動立即更新
+
+### Gallery 詳情頁標記
+
+[gallery-tagging.webm](https://github.com/user-attachments/assets/77448a48-2d9c-485c-aa8c-81d14e806e95)
+
+接管 `/g/` 詳情頁的原生 taglist，改成 chip 選取 UI：
+
+- **批次投票 / 批次搜尋**：左鍵（+1 include / positive vote）跟右鍵（-1 exclude / negative vote）建立選取集合，一次送 vote 或組成 search token 開新分頁——一個 request 送一堆 tag
+- **拖曳選取**：滑鼠掃過一整排 chip 同時 toggle（cohort 模型——drag 只影響跟起點同態的 chip）
+- **定義面板**：點 chip 顯示定義——中文來自 EhTagTranslation，英文抓 ehwiki.org 5 個 tag 分類（~13k 頁，週級 RecentChanges API 增量更新）；預設語言可設，面板 header 隨時可切換
+- **新增標籤 picker**：內嵌搜尋 tag DB 加進選取集合（不用碰原生 tag input）
+- **可配置雙擊動作**：taglist 上左 / 右鍵雙擊可觸發 搜尋（當前分頁 / 新分頁）、投票、清空選取、開啟新增 picker、或無動作——跟 tagbar 的 dblclick 設定獨立
+- **Wiki 快捷**：一鍵開啟 Gallery_Tagging 指南（CJK locale 走 `/Chinese` 分頁）
+- **可整個關閉**：settings → 畫廊 → Tagging Enhancer 關掉即回原生 EH UI
 
 ### 標籤按鈕設定
 
