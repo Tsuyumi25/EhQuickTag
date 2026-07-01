@@ -240,7 +240,7 @@ export default {
   // Gallery
   'gallery.searchN': 'Search {n}',
   'gallery.vote': 'Vote',
-  'gallery.added': 'Added',
+  'gallery.added': 'Add',
   'gallery.clearSelection': 'Clear selection',
   'gallery.addTags': 'Add tags',
   'gallery.sessionExpired': 'Your session has expired. Please refresh the page to log in again.',
