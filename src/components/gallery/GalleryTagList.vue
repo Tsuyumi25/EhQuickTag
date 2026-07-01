@@ -281,7 +281,7 @@ const { onAreaMouseDown } = useDragSelect({
 const wikiUrl = computed(() =>
   isCJKLocale()
     ? 'https://ehwiki.org/wiki/Gallery_Tagging/Chinese'
-    : 'https://ehwiki.org/wiki/Gallery_Tagging/'
+    : 'https://ehwiki.org/wiki/Gallery_Tagging'
 )
 
 function onSearch(): void {
