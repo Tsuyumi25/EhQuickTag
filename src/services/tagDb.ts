@@ -15,8 +15,8 @@ export const TAG_DB_MIRRORS: Record<TagDbMirror, { label: string; url: string }>
 
 // 抓 db.html.json：name 欄位含 <img> 取出當 iconUrl，intro/links 的 <abbr title="...">
 // cross-reference 由 buildIntroSearch 攤進 introSearch（textContent 拿不到屬性值）
-const CACHE_KEY = 'eqt_tag_db_v2'
-const CACHE_TS_KEY = 'eqt_tag_db_v2_ts'
+const CACHE_KEY = 'eqt_tag_db_v3'
+const CACHE_TS_KEY = 'eqt_tag_db_v3_ts'
 
 /** Fields persisted to cache. */
 interface StoredEntry {
