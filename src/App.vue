@@ -38,14 +38,15 @@ bindSearchBar({
   emitUpdate: (v) => { searchText.value = v },
 })
 
-// 自訂字體 var 設在兩個 mount 點上而非 documentElement：
-//   #eqt-bar-anchor → TagBar
-//   #eqt-app        → 所有 popup（含 SearchPopup、SettingsPopup 內 preview）
-// 兩處都 set 後，theme.scss 內既有的 `font-family/weight: var(... , inherit)`
+// 自訂字體 var 設在三個 mount 點上而非 documentElement：
+//   #eqt-bar-anchor     → TagBar
+//   #eqt-app            → 所有 popup（含 SearchPopup、SettingsPopup 內 preview）
+//   #eqt-gallery-anchor → Gallery 詳情頁的接管 taglist + intro panel + action bar
+// 三處都 set 後，theme.scss 內既有的 `font-family/weight: var(... , inherit)`
 // 規則自動消費，子元件不必各自 inline-style 重複實作。
-// scope 限定在這兩個容器（不汙染 documentElement），EH 全站樣式不受影響。
+// scope 限定在這三個容器（不汙染 documentElement），EH 全站樣式不受影響。
 function applyFontVars(): void {
-  const els = [ehFormHost?.anchor, document.getElementById('eqt-app')]
+  const els = [ehFormHost?.anchor, galleryHost?.anchor, document.getElementById('eqt-app')]
     .filter((el): el is HTMLElement => el !== null && el !== undefined)
   for (const el of els) {
     if (fontFamily.value) el.style.setProperty('--eqt-font-family', fontFamily.value)

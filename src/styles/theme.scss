@@ -1,4 +1,5 @@
-#eqt-bar-anchor {
+#eqt-bar-anchor,
+#eqt-gallery-anchor {
   font-family: var(--eqt-font-family, inherit);
   font-weight: var(--eqt-font-weight, inherit);
   line-height: 1.4;
@@ -11,15 +12,19 @@
   line-height: 1.4;
 }
 
-// 兩個 mount 點都要 reset：#eqt-app 是 SettingsPopup / TagConfigPopup 等的 root，
-// #eqt-bar-anchor 是 TagBar 的 Teleport 目標。漏掉後者會讓 TagBar 內 element
+// 三個 mount 點都要 reset：#eqt-app 是 SettingsPopup / TagConfigPopup 等的 root，
+// #eqt-bar-anchor 是 TagBar 的 Teleport 目標，#eqt-gallery-anchor 是詳情頁接管
+// taglist / intro panel / action bar 的 Teleport 目標。漏掉會讓內部 element
 // 繼承 EH 全站 content-box / checkbox 偏移。
 #eqt-app *,
 #eqt-app *::before,
 #eqt-app *::after,
 #eqt-bar-anchor *,
 #eqt-bar-anchor *::before,
-#eqt-bar-anchor *::after {
+#eqt-bar-anchor *::after,
+#eqt-gallery-anchor *,
+#eqt-gallery-anchor *::before,
+#eqt-gallery-anchor *::after {
   box-sizing: border-box;
 }
 
@@ -79,7 +84,9 @@
 #eqt-app button,
 #eqt-app a,
 #eqt-bar-anchor button,
-#eqt-bar-anchor a {
+#eqt-bar-anchor a,
+#eqt-gallery-anchor button,
+#eqt-gallery-anchor a {
   font-family: inherit;
   font-weight: inherit;
   line-height: inherit;

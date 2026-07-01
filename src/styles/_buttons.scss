@@ -17,6 +17,9 @@
   gap: 4px;
   border-radius: var(--eqt-radius-sm);
   font-family: inherit;
+  // <button> 是 form control 預設不繼承 font-weight (走 UA default 400)，顯式
+  // opt-in 才會吃到 mount 點 --eqt-font-weight cascade；<a> 天然繼承不受影響
+  font-weight: inherit;
   font-size: var(--eqt-fs-md);
   line-height: 1.4;
   cursor: pointer;
