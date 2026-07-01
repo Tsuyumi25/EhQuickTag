@@ -4,7 +4,7 @@ import { getTagWiki, tagWikiVersion, rawToSlug, type WikiEntry } from '@/service
 import type { GalleryTag } from '@/composables/useEhGalleryHost'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
 import { locale, isCJKLocale } from '@/composables/useI18n'
-import { introPanelPrimaryLang } from '@/services/store'
+import { introPanelPrimaryLang, wikiPreludeExpanded as wikiPreludeExpandedSetting } from '@/services/store'
 
 export type DisplayedLang = 'zh' | 'en'
 
@@ -28,6 +28,17 @@ watch(
   [openTag, introPanelPrimaryLang, locale],
   () => {
     if (openTag.value) displayedLang.value = resolvePrimaryLang()
+  },
+)
+
+// Wiki prelude 展開狀態——同 displayedLang 的 per-panel session pattern：
+// 切 chip / 改設定 / 切 UI locale 都 reset 回 wikiPreludeExpanded 設定值。
+// 使用者點展開只影響當下 panel session
+const preludeExpanded = ref<boolean>(wikiPreludeExpandedSetting.value)
+watch(
+  [openTag, wikiPreludeExpandedSetting, locale],
+  () => {
+    preludeExpanded.value = wikiPreludeExpandedSetting.value
   },
 )
 
@@ -106,8 +117,13 @@ export function useIntroPanel() {
     openTag.value = null
   }
 
+  function togglePrelude(): void {
+    preludeExpanded.value = !preludeExpanded.value
+  }
+
   return {
     openTag, entry, introHtml, linksHtml, iconUrl, wikiEntry, wikiUrl, extraImages,
     displayedLang, toggleLang, setPanelTag, close, cjkDisplay,
+    preludeExpanded, togglePrelude,
   }
 }

@@ -6,6 +6,7 @@ import { useIntroPanel } from '@/composables/useIntroPanel'
 const {
   openTag, entry, introHtml, linksHtml, iconUrl, wikiEntry, wikiUrl, extraImages,
   displayedLang, toggleLang, close, cjkDisplay,
+  preludeExpanded, togglePrelude,
 } = useIntroPanel()
 
 const contentEl = ref<HTMLElement | null>(null)
@@ -26,13 +27,18 @@ watch(introHtml, async () => {
       <div class="eqt-intro-panel__title">
         <div class="eqt-intro-panel__name">
           <template v-if="displayedLang === 'en'">
-            <span class="eqt-intro-panel__name-cn">
+            <a
+              class="eqt-intro-panel__name-display"
+              :href="wikiUrl ?? undefined"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <img v-if="iconUrl" :src="iconUrl" class="eqt-intro-panel__name-icon" alt="" referrerpolicy="no-referrer" />{{ openTag.raw }}
-            </span>
+            </a>
             <code class="eqt-intro-panel__name-key">{{ openTag.ns }}</code>
           </template>
           <template v-else>
-            <span v-if="entry" class="eqt-intro-panel__name-cn">
+            <span v-if="entry" class="eqt-intro-panel__name-display">
               <img v-if="iconUrl" :src="iconUrl" class="eqt-intro-panel__name-icon" alt="" referrerpolicy="no-referrer" />{{ cjkDisplay(entry.name) }}
             </span>
             <code class="eqt-intro-panel__name-key">{{ openTag.nsRaw }}</code>
@@ -65,34 +71,36 @@ watch(introHtml, async () => {
         <template v-else>
           <div v-if="wikiEntry" class="eqt-intro-panel__wiki">
             <div
-              v-for="(variant, i) in wikiEntry.variants"
+              v-for="(variant, i) in wikiEntry"
               :key="i"
               class="eqt-intro-panel__wiki-variant"
             >
-              <div class="eqt-intro-panel__wiki-variant-num" v-if="wikiEntry.variants.length > 1">{{ i + 1 }}</div>
-              <dl class="eqt-intro-panel__wiki-fields">
-                <template v-for="(val, key) in variant" :key="key">
-                  <dt>{{ key }}</dt>
-                  <dd>{{ val }}</dd>
+              <div class="eqt-intro-panel__wiki-variant-num" v-if="wikiEntry.length > 1">{{ i + 1 }}</div>
+              <div class="eqt-intro-panel__wiki-body">
+                <template v-if="variant.prelude">
+                  <button
+                    type="button"
+                    class="eqt-intro-panel__wiki-prelude-toggle"
+                    :title="t('intro.togglePrelude')"
+                    @click="togglePrelude"
+                  >
+                    <span class="eqt-intro-panel__wiki-prelude-caret" :class="{ 'is-expanded': preludeExpanded }">▸</span>
+                    <span>{{ t('intro.preludeLabel') }}</span>
+                  </button>
+                  <div
+                    v-show="preludeExpanded"
+                    class="eqt-intro-panel__wiki-prelude"
+                    v-html="variant.prelude"
+                  />
                 </template>
-              </dl>
+                <div
+                  v-for="(block, j) in variant.blocks"
+                  :key="j"
+                  class="eqt-intro-panel__wiki-block"
+                  v-html="block"
+                />
+              </div>
             </div>
-            <dl
-              v-if="Object.keys(wikiEntry.shared).length"
-              class="eqt-intro-panel__wiki-fields eqt-intro-panel__wiki-shared"
-            >
-              <template v-for="(val, key) in wikiEntry.shared" :key="key">
-                <dt>{{ key }}</dt>
-                <dd>{{ val }}</dd>
-              </template>
-            </dl>
-            <a
-              v-if="wikiUrl"
-              class="eqt-intro-panel__wiki-source"
-              :href="wikiUrl"
-              target="_blank"
-              rel="noopener noreferrer"
-            >via ehwiki.org</a>
           </div>
           <div v-else class="eqt-intro-panel__empty">{{ t('intro.empty') }}</div>
           <div v-if="extraImages.length" class="eqt-intro-panel__wiki-images">

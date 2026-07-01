@@ -142,6 +142,10 @@ const INITIAL_SETTINGS = {
   // Gallery 搜尋開新分頁時是否切換過去。跟 tagbar 的 newTabActive 分離：兩邊的
   // 搜尋語意不完全一樣，使用者可能希望 tagbar 搜尋前景、gallery 搜尋背景
   galleryNewTabActive: true,
+  // Wiki 側 prelude (警告 / Reminder / 前言) 預設是否展開。ehwiki 每頁幾乎都
+  // 有一段提醒且通常很長會擋住 90% 定義內容，預設收起 (false)；使用者仍可
+  // per-panel 點「▸ Notes」展開，切下個 chip 又回預設
+  wikiPreludeExpanded: false,
 }
 
 type Settings = typeof INITIAL_SETTINGS
@@ -177,6 +181,7 @@ export const introPanelPrimaryLang = refs.introPanelPrimaryLang
 export const galleryDblClickLeft = refs.galleryDblClickLeft
 export const galleryDblClickRight = refs.galleryDblClickRight
 export const galleryNewTabActive = refs.galleryNewTabActive
+export const wikiPreludeExpanded = refs.wikiPreludeExpanded
 
 // enum-shape setting 的合法 id 集合。壞值 silently fallback 到 INITIAL_SETTINGS 預設——
 // 沒這層守門 GM storage 被竄改塞個壞字串會直接灌進 ref，UI 永久卡在「無 active button、

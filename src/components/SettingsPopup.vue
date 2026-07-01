@@ -19,7 +19,7 @@ import {
   tagWikiMirror, tagWikiTtlDays,
   tagStylePreset, useAccentOnInclude, type DblClickAction,
   showSearchPanel, searchPanelLangMode, convertToTraditional, enableHistory,
-  taggingEnhancerEnabled, galleryDragSelectEnabled, introPanelPrimaryLang,
+  taggingEnhancerEnabled, galleryDragSelectEnabled, introPanelPrimaryLang, wikiPreludeExpanded,
   galleryDblClickLeft, galleryDblClickRight, galleryNewTabActive,
   SEARCH_PANEL_LANG_MODES, CONVERT_TO_TRADITIONAL_MODES, INTRO_PANEL_PRIMARY_LANGS,
   GALLERY_DBL_CLICK_ACTIONS, type GalleryDblClickAction,
@@ -467,6 +467,19 @@ function onEditorPurge() {
             </div>
             <p class="eqt-settings__hint">
               {{ t('settings.introPanelPrimaryLangHint') }}
+            </p>
+
+            <label class="eqt-settings__row">
+              <input
+                type="checkbox"
+                :checked="wikiPreludeExpanded"
+                :disabled="!taggingEnhancerEnabled"
+                @change="wikiPreludeExpanded = ($event.target as HTMLInputElement).checked"
+              />
+              <span class="eqt-settings__label">{{ t('settings.wikiPreludeExpanded') }}</span>
+            </label>
+            <p class="eqt-settings__hint">
+              {{ t('settings.wikiPreludeExpandedHint') }}
             </p>
           </div>
 

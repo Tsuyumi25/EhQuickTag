@@ -39,11 +39,22 @@
     flex-direction: column;
   }
 
-  &__name-cn {
+  // 顯示中的主要名稱——EN mode = openTag.raw (走 <a> 連 ehwiki 因為那就是資料源)，
+  // ZH mode = entry.name (走 <span> 因為 CJK 翻譯來自 EhTagTranslation DB 不是 ehwiki)。
+  // 兩種 element 共用同一 class 拿粗體 / 省略號視覺；只有 <a>（有 href）hover
+  // 才顯下劃線＋pointer cursor
+  &__name-display {
     font-weight: bold;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    color: inherit;
+    text-decoration: none;
+
+    &[href]:hover {
+      text-decoration: underline;
+      cursor: pointer;
+    }
   }
 
   &__name-key {
@@ -164,10 +175,28 @@
     color: #806769;
   }
 
-  &__wiki-fields {
-    margin: 0;
+  &__wiki-body {
     flex: 1;
+    min-width: 0;
+  }
 
+  // 共通 markup 樣式——套在 prelude + block 兩層底下的所有 HTML
+  &__wiki-prelude,
+  &__wiki-block {
+    ul {
+      margin: 4px 0;
+      padding-left: 1.4em;
+    }
+    li {
+      margin: 2px 0;
+    }
+    // 兩種 dl 場景：
+    //   1. 我們 extractor 把 <ul><li><b>K</b>: V</li> 改寫成的 <dl><dt>K</dt><dd>V</dd>
+    //      —— dt 標題 + dd 內容，跟 trans db 側同視覺
+    //   2. ehwiki 原生的縮排 <dl><dd> guidance（沒 dt，只有 dd）—— 純縮排條列
+    dl {
+      margin: 4px 0;
+    }
     dt {
       font-weight: bold;
       color: #806769;
@@ -176,28 +205,71 @@
       &:first-child { margin-top: 0; }
     }
     dd {
-      margin: 0 0 4px 0;
+      margin: 2px 0 2px 1.4em;
     }
-  }
-
-  &__wiki-shared {
-    border-top: 1px dashed #b5a4a4;
-    padding-top: 4px;
-    margin-top: 4px;
-  }
-
-  &__wiki-source {
-    display: block;
-    margin-top: 6px;
-    font-size: 8pt;
-    color: #a0a0a0;
-    text-align: right;
-    text-decoration: none;
-
-    &:hover {
-      color: inherit;
+    p {
+      margin: 4px 0;
+    }
+    // ehwiki 用 <b> 標示 field key
+    b {
+      color: #806769;
+    }
+    a {
+      color: var(--eqt-text);
       text-decoration: underline;
+      &:hover { color: inherit; }
     }
+    img {
+      max-width: 100%;
+      height: auto;
+      vertical-align: middle;
+    }
+    // 隱藏 File:xxx.png link 包裹的裝飾 icon（Point.png 紅點等）——原站當標題前綴用，
+    // 在 panel 內脫離語意脈絡，顯示反而干擾
+    a[href^="https://ehwiki.org/wiki/File:"] {
+      display: none;
+    }
+  }
+
+  // Prelude = 警告 / Reminder / 前言——是每頁 boilerplate 級別的東西，
+  // 用小字弱化不搶戲。inline 紅字 span 也一起縮小到跟 prelude 一致
+  &__wiki-block:first-of-type {
+    margin-top: 0;
+  }
+  &__wiki-prelude-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: var(--eqt-text-hint);
+    font-size: 8pt;
+    margin-bottom: 4px;
+
+    &:hover { color: var(--eqt-text); }
+  }
+  &__wiki-prelude-caret {
+    display: inline-block;
+    transition: transform 0.15s;
+
+    &.is-expanded { transform: rotate(90deg); }
+  }
+  &__wiki-prelude {
+    font-size: 8pt;
+    opacity: 0.75;
+    margin-bottom: 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px dashed #b5a4a4;
+
+    p { margin: 2px 0; }
+  }
+
+  &__wiki-block {
+    margin-top: 6px;
+
+    &:first-child { margin-top: 0; }
   }
 
   &__wiki-images {

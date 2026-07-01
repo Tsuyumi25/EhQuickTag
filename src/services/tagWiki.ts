@@ -18,21 +18,24 @@ export const TAG_WIKI_MIRRORS: Record<TagWikiMirror, { label: string; url: strin
   github:   { label: 'GitHub Raw', url: 'https://raw.githubusercontent.com/Tsuyumi25/EhQuickTag/data/tag-wiki/wiki.json.gz' },
 }
 
-const CACHE_KEY = 'eqt_tag_wiki_v1'
-const CACHE_TS_KEY = 'eqt_tag_wiki_v1_ts'
+const CACHE_KEY = 'eqt_tag_wiki_v3'
+const CACHE_TS_KEY = 'eqt_tag_wiki_v3_ts'
 
+// v3 schema (raw-HTML per variant, ul-anchored structure)：extractor 保留
+// mw-parser-output HTML，split by <hr/> 分 variant、split by <ul> 分成
+// prelude (警告/Reminder) + blocks (每個 ul 帶尾隨 dl/p 到下個 ul)。
+// Client 用 v-html 渲染，prelude CSS 小字弱化，任何 ehwiki 未來新增的
+// markup（dl/dd 條列、紅字警告、圖片等）都自動包含
 export interface WikiVariant {
-  [key: string]: string
+  prelude: string
+  blocks: string[]
 }
+export type WikiEntry = WikiVariant[]
 
-export interface WikiEntry {
-  category: 'tag' | 'character' | 'creator' | 'language' | 'series'
-  variants: WikiVariant[]
-  shared: WikiVariant
-}
+type WikiCategory = 'tag' | 'character' | 'creator' | 'language' | 'series'
 
 // EH namespace → wiki category 對應
-const NS_TO_CATEGORY: Record<string, WikiEntry['category']> = {
+const NS_TO_CATEGORY: Record<string, WikiCategory> = {
   parody: 'series',
   character: 'character',
   artist: 'creator',
@@ -42,7 +45,7 @@ const NS_TO_CATEGORY: Record<string, WikiEntry['category']> = {
   // 其餘 namespace (female/male/mixed/other/reclass/rows/location) → tag
 }
 
-function nsToCategory(ns: string): WikiEntry['category'] {
+function nsToCategory(ns: string): WikiCategory {
   return NS_TO_CATEGORY[ns] ?? 'tag'
 }
 
