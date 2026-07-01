@@ -3,7 +3,8 @@
 //   - chip: font-weight bold、padding 1px 4px、margin 0 2px 5px 2px、
 //     border-radius 5px、border-style {solid/dashed/dotted}
 //   - taglist: padding 2px 0 2px 3px、font-size 9pt
-//   - tc label: text-align right、padding-top 3px、verdana font
+//   - tc label: text-align right、padding-top 3px（font-family 走 inherit，
+//     native 用 verdana 拉太粗，特別是英語 label 對齊修好後更明顯）
 //
 // 顏色用我們的 theme var（e站 light 跟我們 light 配色已經接近：#F2EFDF 對應
 // --eqt-bg-btn=#edeada、#806769 對應 --eqt-border=#b5a4a4），exhentai dark 自動
@@ -27,24 +28,28 @@
   display: none;
 }
 
+// grid 定在 container 而非 row：per-row grid 會讓每列各自算 auto 寬度，
+// label 起始 x 不對齊；container grid + row 走 display:contents 讓所有
+// ns label 共享同一 auto column（取最寬那個），對齊 native <table> 的
+// td.tc 行為
 .eqt-gallery-taglist {
   flex: 1;
   min-height: 0;
   overflow: auto;
   font-size: 9pt;
-}
-
-// 一個 namespace 一 row，左 label 右 chips。grid 而非 native table 因為 grid
-// row label 對齊跟 cell wrap 都更精準
-.eqt-gallery-taglist__row {
   display: grid;
   grid-template-columns: minmax(48px, auto) 1fr;
   column-gap: 6px;
   align-items: start;
+  align-content: start;
+}
+
+.eqt-gallery-taglist__row {
+  display: contents;
 }
 
 .eqt-gallery-taglist__label {
-  font-family: verdana, sans-serif;
+  font-family: inherit;
   text-align: right;
   vertical-align: top;
   padding-top: 3px;
