@@ -300,7 +300,7 @@ function onEditorPurge() {
 
       <div class="eqt-settings__panel">
         <!-- 設定：搜尋欄顯示 -->
-        <div v-show="editingProfileIdx < 0">
+        <div v-show="editingProfileIdx < 0" class="eqt-settings__panel-inner">
           <div v-show="activeTab === 'searchBar'" class="eqt-settings__tab-content">
             <h4 class="eqt-settings__subtitle">{{ t('settings.searchBarVisibility') }}</h4>
             <label class="eqt-settings__row">
@@ -715,18 +715,19 @@ function onEditorPurge() {
   }
 }
 
+// scroll 跟 padding 分屬兩個 element (跟 Radix / shadcn / MUI dialog 同 pattern)：
+//   panel        只做 scroll container, 沒有 padding
+//   panel-inner  自然高度容器, 帶 padding, 給一般 tab mode 用
+//   json-editor  editor mode 撐滿 panel 全高
+// 混在同個 element 上會踩 flex-stretch + overflow + padding-bottom 三者互相干擾
+// 的 spec corner case (scroll-to-end 時 padding-bottom 被 overflow content 蓋掉)
 .eqt-settings__panel {
   flex: 1;
   min-width: 0;
-  padding: 1.25rem;
   overflow-y: auto;
+  overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
-
-  > :first-child {
-    flex: 1;
-    min-height: 0;
-  }
 
   .eqt-json-editor {
     flex: 1;
@@ -734,6 +735,10 @@ function onEditorPurge() {
     display: flex;
     flex-direction: column;
   }
+}
+
+.eqt-settings__panel-inner {
+  padding: 1.25rem;
 }
 
 .eqt-settings__profiles {

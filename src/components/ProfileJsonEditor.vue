@@ -127,6 +127,8 @@ function onEditorExport() {
 @use '../styles/buttons' as *;
 
 .eqt-json-editor {
+  padding: 1.25rem;
+
   &__header {
     display: flex;
     align-items: center;
