@@ -51,6 +51,7 @@ $eqt-gallery-height: 330px;
   min-height: 0;
   overflow: auto;
   font-size: 9pt;
+  padding: 2px 0 2px 3px;
   display: grid;
   grid-template-columns: minmax(48px, auto) 1fr;
   column-gap: 6px;
@@ -72,7 +73,8 @@ $eqt-gallery-height: 330px;
   font-family: inherit;
   text-align: right;
   vertical-align: top;
-  padding-top: 3px;
+  // top 3 = 原生 td.tc；右/下/左 1 = 原生 td 的 UA 預設 padding，div 沒有得補
+  padding: 3px 1px 1px;
   white-space: nowrap;
   user-select: none;
   color: var(--eqt-text);
