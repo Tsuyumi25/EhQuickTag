@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch, nextTick, onBeforeUnmount } from 'vue'
 import { t } from '@/composables/useI18n'
 import { useIntroPanel } from '@/composables/useIntroPanel'
 
@@ -10,15 +10,46 @@ const {
 } = useIntroPanel()
 
 const contentEl = ref<HTMLElement | null>(null)
+// __content 真的溢出可滾時才 true → 只有這時給它 overscroll-behavior:contain（見 scss）。
+// 短內容時不 contain，wheel 才能正常冒泡去滾頁面（否則 cursor 停在 panel 上頁面卡死）。
+const contentScrollable = ref(false)
 
-// 跟 EhSyringe 對齊：referrerPolicy='no-referrer' 避免 EH 端 referrer 觸發 hot-link 防護
-watch(introHtml, async () => {
-  await nextTick()
-  if (!contentEl.value) return
-  for (const img of contentEl.value.querySelectorAll<HTMLImageElement>('img')) {
-    img.referrerPolicy = 'no-referrer'
+function measureScrollable(): void {
+  const el = contentEl.value
+  contentScrollable.value = !!el && el.scrollHeight - el.clientHeight > 1
+}
+
+// 內容變動（換 tag / 換語言 / prelude 展開）都可能改高度 → 重量。順帶跟 EhSyringe 對齊，
+// 對 v-html 內的圖補 referrerPolicy='no-referrer'（避免 EH referrer 觸發 hot-link 防護），
+// 圖片載入後高度會變、載完再量一次。
+watch(
+  [openTag, introHtml, wikiEntry, extraImages, displayedLang, preludeExpanded],
+  async () => {
+    await nextTick()
+    const el = contentEl.value
+    if (!el) {
+      contentScrollable.value = false
+      return
+    }
+    for (const img of el.querySelectorAll<HTMLImageElement>('img')) {
+      img.referrerPolicy = 'no-referrer'
+      if (!img.complete) img.addEventListener('load', measureScrollable, { once: true })
+    }
+    measureScrollable()
+  },
+  { immediate: true },
+)
+
+// panel 尺寸變動（視窗 / gd5 resize）→ clientHeight 變 → 重量
+let ro: ResizeObserver | undefined
+watch(contentEl, (el) => {
+  ro?.disconnect()
+  if (el) {
+    ro = new ResizeObserver(measureScrollable)
+    ro.observe(el)
   }
 })
+onBeforeUnmount(() => ro?.disconnect())
 </script>
 
 <template>
@@ -63,7 +94,7 @@ watch(introHtml, async () => {
         >×</button>
       </div>
 
-      <div ref="contentEl" class="eqt-intro-panel__content">
+      <div ref="contentEl" class="eqt-intro-panel__content" :class="{ 'is-scrollable': contentScrollable }">
         <template v-if="displayedLang === 'zh'">
           <div v-if="introHtml" v-html="introHtml" />
           <div v-else class="eqt-intro-panel__empty">{{ t('intro.empty') }}</div>

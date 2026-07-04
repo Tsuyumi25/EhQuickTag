@@ -134,6 +134,11 @@
     &::-webkit-scrollbar { width: 4px; height: 4px; }
     &::-webkit-scrollbar-thumb { background: #5c0d12; }
 
+    // is-scrollable 由 JS 量高度後 toggle；只有真的可滾才截斷 scroll chain（why 見 GalleryIntroPanel.vue）
+    &.is-scrollable {
+      overscroll-behavior: contain;
+    }
+
     // 把 abbr 的 title 屬性露出來變成尾隨「(title)」灰小字
     abbr[title] {
       padding: 0 1px;
