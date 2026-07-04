@@ -11,16 +11,13 @@
 // 走 .eqt-dark 那套
 @use 'buttons' as *;
 
-// 繼承 #gmid 固定高 (330) 給 anchor 的 flex 分配用
-#gd4 {
-  height: 100%;
-  user-select: none;
-}
-
+// 自釘高，不用 height:100% 跟 #gmid 借——那條鏈被外部腳本切斷（如 ExResurrect 設
+// #gmid height:unset）就塌回內容高。330 = 原生 meta 區高。
 #eqt-gallery-anchor {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: 330px;
+  user-select: none;
 }
 
 // 原生 #taglist 保留在 DOM 給 native vote XHR callback 操作，但永久 hide

@@ -8,6 +8,12 @@
   position: relative;
 }
 
+// 補回 float：外部腳本用 div#gd5{float:unset;width:auto} 把 gd5 拆成滿版 block 蓋住
+// taglist；2 ids 蓋過它，gd5 縮回窄側欄，panel(inset:0) 也跟著對齊。
+#gmid #gd5 {
+  float: left;
+}
+
 .eqt-intro-panel {
   position: absolute;
   inset: 0 -5px 0 0;
