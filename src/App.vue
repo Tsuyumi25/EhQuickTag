@@ -10,7 +10,7 @@ import GalleryIntroPanel from '@/components/gallery/GalleryIntroPanel.vue'
 import { GM } from '$'
 import type { Button, TagButton, UrlButton } from '@/types'
 import { bindSearchBar } from '@/services/search/searchSession'
-import { lines, fontFamily, fontWeight, profiles, activeProfileIdx, switchProfile, renameProfile, createProfile, deleteProfile, newTabActive, nsFormat, defaultExactMatch, tagDbMirror, tagDbTtlDays, tagCountMirror, tagCountTtlDays, tagWikiMirror, tagWikiTtlDays, taggingEnhancerEnabled, type DblClickAction } from '@/services/store'
+import { lines, fontFamily, fontWeight, profiles, activeProfileIdx, switchProfile, renameProfile, createProfile, deleteProfile, newTabActive, nsFormat, defaultExactMatch, tagDbMirror, tagDbTtlDays, tagCountMirror, tagCountTtlDays, tagWikiMirror, tagWikiTtlDays, taggingEnhancerEnabled, galleryTaglistExpand, galleryTaglistHeight, type DblClickAction } from '@/services/store'
 import { loadTagDb } from '@/services/tagDb'
 import { loadTagCount } from '@/services/tagCount'
 import { loadTagWiki, WikiSchemaMismatchError } from '@/services/tagWiki'
@@ -59,6 +59,23 @@ function applyFontVars(): void {
 }
 
 watch([fontFamily, fontWeight], applyFontVars)
+
+// --eqt-gallery-height 設在 #gmid（anchor 的祖先）而非 anchor：custom property 只向下
+// 繼承，gmid 自己也要讀這值才能跟著長高，anchor 是它後代一併繼承。
+function applyGalleryLayout(): void {
+  const anchor = galleryHost?.anchor
+  if (!anchor) return
+  anchor.classList.toggle('is-expand', galleryTaglistExpand.value)
+  const gmid = anchor.closest<HTMLElement>('#gmid')
+  // 展開模式不寫 var → CSS 各處 fallback 到 330 當地板；固定模式才寫使用者設定的高度。
+  if (galleryTaglistExpand.value) {
+    gmid?.style.removeProperty('--eqt-gallery-height')
+  } else {
+    gmid?.style.setProperty('--eqt-gallery-height', `${galleryTaglistHeight.value}px`)
+  }
+}
+
+watch([galleryTaglistExpand, galleryTaglistHeight], applyGalleryLayout)
 
 const prevProfileName = computed(() => {
   const idx = activeProfileIdx.value - 1
@@ -242,6 +259,7 @@ loadTagWiki({ mirror: tagWikiMirror.value, ttlDays: tagWikiTtlDays.value })
 
 onMounted(() => {
   applyFontVars()
+  applyGalleryLayout()
 })
 
 // 純轉接層：template @controls-width 沒辦法直接綁 ehFormHost?.setControlsWidth

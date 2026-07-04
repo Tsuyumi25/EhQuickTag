@@ -19,7 +19,7 @@ import {
   tagWikiMirror, tagWikiTtlDays,
   tagStylePreset, useAccentOnInclude, type DblClickAction,
   showSearchPanel, searchPanelLangMode, convertToTraditional, enableHistory,
-  taggingEnhancerEnabled, galleryDragSelectEnabled, introPanelPrimaryLang, wikiPreludeExpanded,
+  taggingEnhancerEnabled, galleryDragSelectEnabled, galleryTaglistExpand, galleryTaglistHeight, introPanelPrimaryLang, wikiPreludeExpanded,
   galleryDblClickLeft, galleryDblClickRight, galleryNewTabActive,
   SEARCH_PANEL_LANG_MODES, CONVERT_TO_TRADITIONAL_MODES, INTRO_PANEL_PRIMARY_LANGS,
   GALLERY_DBL_CLICK_ACTIONS, type GalleryDblClickAction,
@@ -432,6 +432,50 @@ function onEditorPurge() {
             </label>
             <p class="eqt-settings__hint">
               {{ t('settings.galleryDragSelectHint') }}
+            </p>
+
+            <h4 class="eqt-settings__subtitle">{{ t('settings.galleryTaglistHeightMode') }}</h4>
+            <div class="eqt-settings__row">
+              <div class="eqt-settings__locale-row">
+                <button
+                  type="button"
+                  class="eqt-settings__locale-btn"
+                  :class="{ 'eqt-settings__locale-btn--active': galleryTaglistExpand }"
+                  :disabled="!taggingEnhancerEnabled"
+                  @click="galleryTaglistExpand = true"
+                >{{ t('settings.galleryTaglistExpand') }}</button>
+                <button
+                  type="button"
+                  class="eqt-settings__locale-btn"
+                  :class="{ 'eqt-settings__locale-btn--active': !galleryTaglistExpand }"
+                  :disabled="!taggingEnhancerEnabled"
+                  @click="galleryTaglistExpand = false"
+                >{{ t('settings.galleryTaglistHeight') }}</button>
+              </div>
+              <input
+                class="eqt-settings__input eqt-settings__input--short"
+                type="number"
+                min="200"
+                max="1000"
+                step="10"
+                :disabled="!taggingEnhancerEnabled || galleryTaglistExpand"
+                v-model.number="galleryTaglistHeight"
+                :title="t('settings.galleryTaglistHeight')"
+              />
+              <span class="eqt-settings__label">px</span>
+            </div>
+            <p class="eqt-settings__hint">
+              {{ t('settings.galleryTaglistExpandHint') }}
+            </p>
+            <p class="eqt-settings__hint">
+              {{ t('settings.galleryTaglistHeightTipBefore')
+              }}<a
+                href="https://e-hentai.org/g/760051/e601ae7b84/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >{{ t('settings.galleryTaglistHeightTipLink') }}</a>{{
+                t('settings.galleryTaglistHeightTipAfter')
+              }}
             </p>
 
             <h4 class="eqt-settings__subtitle">{{ t('settings.galleryDblClickActions') }}</h4>
@@ -885,6 +929,12 @@ function onEditorPurge() {
     font-size: 11px;
     color: var(--eqt-text-hint);
     line-height: 1.4;
+
+    a {
+      color: var(--eqt-text);
+      text-decoration: underline;
+      &:hover { color: inherit; }
+    }
   }
 
 
@@ -920,6 +970,11 @@ function onEditorPurge() {
 
     .eqt-dark & {
       background: var(--eqt-bg-elevated);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
   }
 

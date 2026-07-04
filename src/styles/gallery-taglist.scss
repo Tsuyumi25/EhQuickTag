@@ -11,13 +11,30 @@
 // 走 .eqt-dark 那套
 @use 'buttons' as *;
 
-// 自釘高，不用 height:100% 跟 #gmid 借——那條鏈被外部腳本切斷（如 ExResurrect 設
-// #gmid height:unset）就塌回內容高。330 = 原生 meta 區高。
+// 基準高 330 = 原生 meta 區高，是 fallback 的單一來源；實際高由 App.vue 依
+// galleryTaglistHeight 設定寫的 --eqt-gallery-height 決定。
+$eqt-gallery-height: 330px;
+
+// 自釘高，不從 #gmid 借 height:100%——那條鏈被外部腳本切斷（如 ExResurrect 設
+// #gmid height:unset）就塌回內容高。
 #eqt-gallery-anchor {
   display: flex;
   flex-direction: column;
-  height: 330px;
+  height: var(--eqt-gallery-height, #{$eqt-gallery-height});
   user-select: none;
+
+  // 展開模式：至少基準高、超過就往下長，taglist 不捲。
+  &.is-expand {
+    height: auto;
+    min-height: var(--eqt-gallery-height, #{$eqt-gallery-height});
+  }
+}
+
+// root 超過原生 #gmid 的固定 330 時（自訂高 > 330 或展開），放開 gmid 高度跟著長，
+// 否則 root 溢出蓋到下方留言區。
+#gmid:has(#eqt-gallery-anchor) {
+  height: auto;
+  min-height: var(--eqt-gallery-height, #{$eqt-gallery-height});
 }
 
 // 原生 #taglist 保留在 DOM 給 native vote XHR callback 操作，但永久 hide
@@ -39,6 +56,12 @@
   column-gap: 6px;
   align-items: start;
   align-content: start;
+}
+
+// 展開模式：taglist 以內容高為基準、不縮不捲，root 才能隨內容往下長。
+.is-expand .eqt-gallery-taglist {
+  flex: 1 0 auto;
+  overflow: visible;
 }
 
 .eqt-gallery-taglist__row {

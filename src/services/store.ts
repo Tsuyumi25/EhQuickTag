@@ -131,6 +131,10 @@ const INITIAL_SETTINGS = {
   // Gallery taglist 的 drag-select 是否啟用。關掉後 mousedown → mouseup 一律走
   // click 語意（用 Infinity threshold 讓 reducer 永遠不進 dragging state）
   galleryDragSelectEnabled: true,
+  // false = 固定基準高、超過捲動；true = 隨 tag 展開往下長、不留捲軸。
+  galleryTaglistExpand: false,
+  // taglist 基準高 (px)。預設 330 = 原生 EH meta 區高。
+  galleryTaglistHeight: 330,
   // Intro panel 預設先顯示哪邊定義 (中文 trans db / 英文 wiki)，使用者一律可在
   // panel 標題列 toggle 切換、選擇只在當下 panel session 有效，下次點 chip 又
   // 回 primary。'auto' = locale 推 (CJK locale → zh, 其他 → en)
@@ -177,6 +181,8 @@ export const convertToTraditional = refs.convertToTraditional
 export const enableHistory      = refs.enableHistory
 export const taggingEnhancerEnabled = refs.taggingEnhancerEnabled
 export const galleryDragSelectEnabled = refs.galleryDragSelectEnabled
+export const galleryTaglistExpand = refs.galleryTaglistExpand
+export const galleryTaglistHeight = refs.galleryTaglistHeight
 export const introPanelPrimaryLang = refs.introPanelPrimaryLang
 export const galleryDblClickLeft = refs.galleryDblClickLeft
 export const galleryDblClickRight = refs.galleryDblClickRight
@@ -193,6 +199,7 @@ const SETTING_VALIDATORS: Partial<{ [K in SettingKey]: (v: unknown) => boolean }
   introPanelPrimaryLang:  v => INTRO_PANEL_PRIMARY_LANGS.some(m => m.id === v),
   galleryDblClickLeft:    v => GALLERY_DBL_CLICK_ACTIONS.some(a => a.id === v),
   galleryDblClickRight:   v => GALLERY_DBL_CLICK_ACTIONS.some(a => a.id === v),
+  galleryTaglistHeight:   v => typeof v === 'number' && Number.isFinite(v) && v > 0,
 }
 
 function loadAllSettings(persisted: Partial<Settings>): void {
