@@ -164,7 +164,7 @@ describe('reduce: drag past threshold', () => {
     ])
   })
 
-  it('capped: start 1 + left → cohort 0 → initial chip NOT applied, but 0 chips ARE', () => {
+  it('capped fall-through: start 1 + left → cohort 0 → 起點封頂不 apply，但 panel 跟；0 chip 被 apply', () => {
     const start = chip('a', 1)
     const zero = chip('b', 0)
     const { allEffects } = runSequence([
@@ -172,8 +172,50 @@ describe('reduce: drag past threshold', () => {
       { kind: 'mousemove', x: 10, y: 0, chip: zero },
     ])
     expect(allEffects).toEqual([
+      // 起點 a(1) 是 startState tier → panel 跟過去，但封頂（1≠cohort 0）不 apply
+      { kind: 'panelTag', id: 'a' },
       { kind: 'apply', id: 'b', mode: 'positive' },
       { kind: 'panelTag', id: 'b' },
+    ])
+  })
+
+  it('panel 跟起點 tier：add 模式(起點 +1 按左)下同 tier 的 chip 也跟、對面 tier 不跟', () => {
+    const a = chip('a', 1) // 起點 +1 → cohort 0（add 模式），startState 1
+    const b = chip('b', 0) // cohort 內 → apply + panel
+    const c = chip('c', 1) // 同起點 tier(+1) → panel 跟，但不 apply
+    const d = chip('d', -1) // 對面 tier → 什麼都不做
+    const { allEffects } = runSequence([
+      { kind: 'mousedown', button: 0, x: 0, y: 0, chip: a },
+      { kind: 'mousemove', x: 10, y: 0, chip: a }, // threshold：panel a（起點 tier，不 apply）
+      { kind: 'mousemove', x: 20, y: 0, chip: b }, // apply + panel b
+      { kind: 'mousemove', x: 30, y: 0, chip: c }, // panel c（同 tier，不 apply）
+      { kind: 'mousemove', x: 40, y: 0, chip: d }, // 對面 tier → skip
+    ])
+    expect(allEffects).toEqual([
+      { kind: 'panelTag', id: 'a' },
+      { kind: 'apply', id: 'b', mode: 'positive' },
+      { kind: 'panelTag', id: 'b' },
+      { kind: 'panelTag', id: 'c' },
+    ])
+  })
+
+  it('空白起點 fall-through：第一個進入的 chip 定義起點 tier，該 tier 也跟手', () => {
+    const c1 = chip('a', 1) // 空白起手 + 正拖，第一個碰到 +1 → cohort 0(add)，startState 定為 1
+    const c2 = chip('b', 0) // cohort 內 → apply + panel
+    const c3 = chip('c', 1) // 同起點 tier(+1) → panel 跟，不 apply
+    const c4 = chip('d', -1) // 對面 tier → skip
+    const { allEffects } = runSequence([
+      { kind: 'mousedown', button: 0, x: 0, y: 0, chip: null }, // 空白起點，cohort 暫不定
+      { kind: 'mousemove', x: 10, y: 0, chip: c1 }, // 過 threshold：定 cohort 0 + startState 1，panel a
+      { kind: 'mousemove', x: 20, y: 0, chip: c2 }, // apply + panel b
+      { kind: 'mousemove', x: 30, y: 0, chip: c3 }, // panel c（同 tier）
+      { kind: 'mousemove', x: 40, y: 0, chip: c4 }, // 對面 tier → skip
+    ])
+    expect(allEffects).toEqual([
+      { kind: 'panelTag', id: 'a' },
+      { kind: 'apply', id: 'b', mode: 'positive' },
+      { kind: 'panelTag', id: 'b' },
+      { kind: 'panelTag', id: 'c' },
     ])
   })
 
@@ -203,6 +245,40 @@ describe('reduce: drag past threshold', () => {
     expect(finalState).toEqual(IDLE)
     expect(allEffects.filter(e => e.kind === 'apply').map(e => (e as { id: string }).id))
       .toEqual(['a'])
+  })
+
+  it('panel 跟游標：drag 回頭掃到已 toggle 的 chip（state 已變）仍換 panel，但不 re-apply', () => {
+    const a0 = chip('a', 0)
+    const b0 = chip('b', 0)
+    // a 被 toggle 後，chipFromPoint 從 selection 讀到的 state 變 1，不再等於 cohort 0——
+    // 靠 toggled 認出它仍是「這次 drag 動過的」，panel 才會跟回去
+    const a1 = chip('a', 1)
+    const { allEffects } = runSequence([
+      { kind: 'mousedown', button: 0, x: 0, y: 0, chip: a0 },
+      { kind: 'mousemove', x: 10, y: 0, chip: a0 }, // threshold：apply + panel a
+      { kind: 'mousemove', x: 20, y: 0, chip: b0 }, // apply + panel b
+      { kind: 'mousemove', x: 10, y: 0, chip: a1 }, // 回到 a（state 已變 1）：只換 panel
+    ])
+    expect(allEffects).toEqual([
+      { kind: 'apply', id: 'a', mode: 'positive' },
+      { kind: 'panelTag', id: 'a' },
+      { kind: 'apply', id: 'b', mode: 'positive' },
+      { kind: 'panelTag', id: 'b' },
+      { kind: 'panelTag', id: 'a' },
+    ])
+  })
+
+  it('panel 不重複：同一 chip 連續 mousemove 只 emit 一次 panelTag', () => {
+    const c = chip('a', 0)
+    const { allEffects } = runSequence([
+      { kind: 'mousedown', button: 0, x: 0, y: 0, chip: c },
+      { kind: 'mousemove', x: 10, y: 0, chip: c },
+      { kind: 'mousemove', x: 11, y: 0, chip: c },
+      { kind: 'mousemove', x: 12, y: 0, chip: c },
+    ])
+    expect(allEffects.filter(e => e.kind === 'panelTag')).toEqual([
+      { kind: 'panelTag', id: 'a' },
+    ])
   })
 })
 

@@ -23,6 +23,11 @@
 //
 // Click semantic（pressed → mouseup，未過 threshold）：直接套 delta 到 initialChip，
 // 不走 cohort filter（單一 chip 不需要 group constraint，clamp 自然處理）。
+//
+// Panel 跟游標：聚光燈跟隨集 = {cohort, 起點 tier(startState)} ∪ 已碰過(toggled)。游標進入
+// 其中之一就 setPanelTag，跟 apply 的一次性 dedupe 脫鉤。fall-through 的 add 模式（起點已
+// 封頂 → cohort 0）靠 startState 讓起點那 tier 也跟手；對面 tier 不在集合裡、不換。toggle
+// 後 chip state 會變，靠 toggled 仍認得出。panelId 記當前面板 chip，只在換 chip 時才 emit。
 
 export type Selection = 'positive' | 'negative'
 export type TriState = -1 | 0 | 1
@@ -48,6 +53,8 @@ export type DragSelectState =
       mode: Selection
       cohort: Cohort | null
       toggled: ReadonlySet<string>
+      startState: TriState | null // 起點 chip 的 tier；panel 跟隨集含這個 tier（空白起點 = null）
+      panelId: string | null // 當前 panel 顯示的 chip，只在游標換 chip 時才重新 emit
     }
 
 export type DragSelectEvent =
@@ -79,6 +86,37 @@ export function computeCohort(startState: TriState, mode: Selection): Cohort {
   const delta = mode === 'positive' ? 1 : -1
   const startNew = clamp(startState + delta)
   return startNew === startState ? 0 : startState
+}
+
+/**
+ * 解析 cohort / startState：已定就原樣回傳；還沒定（空白起點的第一個 chip）就用這個 chip
+ * 同時定義兩者——兩者綁在一起，少設 startState 會讓 fall-through 起點 tier 不跟手。
+ */
+function resolveCohort(
+  cohort: Cohort | null,
+  startState: TriState | null,
+  chipState: TriState,
+  mode: Selection,
+): { cohort: Cohort; startState: TriState } {
+  if (cohort !== null && startState !== null) return { cohort, startState }
+  return { cohort: computeCohort(chipState, mode), startState: chipState }
+}
+
+/**
+ * 單一 chip 的命中判定——整個檔案唯一一份規則，pressed / dragging 都呼叫。
+ * toggle 後 chip.state 會變、不再等於 cohort，靠 toggled 認出仍是「這趟動過的」。
+ * 不變式：apply ⟹ follow。
+ */
+function decideChip(
+  chip: ChipRef,
+  ctx: { cohort: Cohort; startState: TriState; toggled: ReadonlySet<string> },
+): { apply: boolean; follow: boolean } {
+  const inCohort = chip.state === ctx.cohort
+  const alreadyToggled = ctx.toggled.has(chip.id)
+  return {
+    apply: inCohort && !alreadyToggled,
+    follow: inCohort || chip.state === ctx.startState || alreadyToggled,
+  }
 }
 
 function clamp(n: number): TriState {
@@ -161,25 +199,27 @@ function reducePressed(
     return { state, effects: [] }
   }
 
-  // 過 threshold → 進 dragging
+  // 過 threshold → 進 dragging。initial chip（按下處）+ event.chip（游標處）依序過同一條
+  // decideChip；同一顆 chip 時第二圈用 panelId 擋掉、只跑一次。
   const toggled = new Set<string>()
   const effects: DragSelectEffect[] = []
   let cohort = state.cohort
+  let startState = state.initialChip?.state ?? null
+  let panelId: string | null = null
 
-  // 處理 initial chip：如果 cohort 已定且 initial chip state 跟 cohort 同 → 套用
-  if (state.initialChip && cohort !== null && state.initialChip.state === cohort) {
-    effects.push({ kind: 'apply', id: state.initialChip.id, mode: state.mode })
-    effects.push({ kind: 'panelTag', id: state.initialChip.id })
-    toggled.add(state.initialChip.id)
-  }
-
-  // 處理當前 chip：可能跟 initial 同 chip、可能新 chip、可能空白
-  if (event.chip && !toggled.has(event.chip.id)) {
-    if (cohort === null) cohort = computeCohort(event.chip.state, state.mode)
-    if (event.chip.state === cohort) {
-      effects.push({ kind: 'apply', id: event.chip.id, mode: state.mode })
-      effects.push({ kind: 'panelTag', id: event.chip.id })
-      toggled.add(event.chip.id)
+  for (const chip of [state.initialChip, event.chip]) {
+    if (!chip || chip.id === panelId) continue
+    const resolved = resolveCohort(cohort, startState, chip.state, state.mode)
+    cohort = resolved.cohort
+    startState = resolved.startState
+    const { apply, follow } = decideChip(chip, { cohort, startState, toggled })
+    if (apply) {
+      effects.push({ kind: 'apply', id: chip.id, mode: state.mode })
+      toggled.add(chip.id)
+    }
+    if (follow) {
+      effects.push({ kind: 'panelTag', id: chip.id })
+      panelId = chip.id
     }
   }
 
@@ -189,6 +229,8 @@ function reducePressed(
       mode: state.mode,
       cohort,
       toggled,
+      startState,
+      panelId,
     },
     effects,
   }
@@ -201,29 +243,38 @@ function reduceDragging(
   if (event.kind === 'mouseup') return { state: IDLE, effects: [] }
   if (event.kind !== 'mousemove') return { state, effects: [] }
   if (!event.chip) return { state, effects: [] }
-  if (state.toggled.has(event.chip.id)) return { state, effects: [] }
 
-  let cohort = state.cohort
-  if (cohort === null) cohort = computeCohort(event.chip.state, state.mode)
+  const { cohort, startState } = resolveCohort(state.cohort, state.startState, event.chip.state, state.mode)
+  const { apply, follow } = decideChip(event.chip, { cohort, startState, toggled: state.toggled })
 
-  if (event.chip.state !== cohort) {
-    // cohort 已定但 chip 不同態 → 跳過、不入 toggled（之後 state 改變還能處理）
-    return { state: { ...state, cohort }, effects: [] }
+  // 既不選、也不跟 → 對面 tier，真正的 skip。（cohort/startState 可能剛被 resolve，要留住）
+  if (!apply && !follow) {
+    return { state: { ...state, cohort, startState }, effects: [] }
   }
 
-  const toggled = new Set(state.toggled)
-  toggled.add(event.chip.id)
+  const effects: DragSelectEffect[] = []
+
+  let toggled = state.toggled
+  if (apply) {
+    toggled = new Set(state.toggled).add(event.chip.id)
+    effects.push({ kind: 'apply', id: event.chip.id, mode: state.mode })
+  }
+
+  // 過了 skip 就必定 follow（apply ⟹ follow）；只在換到不同於當前面板的 chip 才 emit
+  if (event.chip.id !== state.panelId) {
+    effects.push({ kind: 'panelTag', id: event.chip.id })
+  }
+
   return {
     state: {
       kind: 'dragging',
       mode: state.mode,
       cohort,
       toggled,
+      startState,
+      panelId: event.chip.id,
     },
-    effects: [
-      { kind: 'apply', id: event.chip.id, mode: state.mode },
-      { kind: 'panelTag', id: event.chip.id },
-    ],
+    effects,
   }
 }
 
