@@ -35,11 +35,13 @@ export default defineConfig(({ command }) => ({
           '': 'EH Quick Tag',
           'zh-TW': 'EH 快捷標籤',
           'zh-CN': 'EH 快捷标签',
+          'ko': 'EH 퀵 태그',
         },
         description: {
           '': 'Quick tag bar for E-Hentai / ExHentai search, with various tag-related enhancements',
           'zh-TW': 'E-Hentai / ExHentai 搜尋快捷標籤列，各種標籤功能優化',
           'zh-CN': 'E-Hentai / ExHentai 搜索快捷标签栏，各种标签功能优化',
+          'ko': 'E-Hentai / ExHentai 검색용 퀵 태그 바, 다양한 태그 기능 개선 포함',
         },
         author: 'tsuyumi',
         license: 'MIT',

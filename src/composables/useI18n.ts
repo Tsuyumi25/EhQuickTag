@@ -3,20 +3,23 @@ import zhTW from '@/locales/zh-TW'
 import zhCN from '@/locales/zh-CN'
 import en from '@/locales/en'
 import ja from '@/locales/ja'
+import ko from '@/locales/ko'
 
-export type Locale = 'zh-TW' | 'zh-CN' | 'en' | 'ja'
+export type Locale = 'zh-TW' | 'zh-CN' | 'en' | 'ja' | 'ko'
 
 const MESSAGES: Record<Locale, Record<string, string>> = {
   'zh-TW': zhTW,
   'zh-CN': zhCN,
   'en': en,
   'ja': ja,
+  'ko': ko,
 }
 
 const LOCALE_MATCH: Record<string, Locale> = {
   'zh-TW': 'zh-TW', 'zh-Hant': 'zh-TW', 'zh-HK': 'zh-TW',
   'zh-CN': 'zh-CN', 'zh-Hans': 'zh-CN', 'zh-SG': 'zh-CN', 'zh': 'zh-CN',
   'ja': 'ja',
+  'ko': 'ko',
   'en': 'en',
 }
 
