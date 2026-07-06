@@ -15,7 +15,7 @@ import { serializeEntry } from '@/services/searchSyntax'
 import { findEntryByNsTag, DEFAULT_NS_ORDER, tagDbVersion } from '@/services/tagDb'
 import { nsFormat, defaultExactMatch, galleryNewTabActive, galleryDragSelectEnabled, galleryDblClickLeft, galleryDblClickRight, type GalleryDblClickAction } from '@/services/store'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
-import { t, isCJKLocale } from '@/composables/useI18n'
+import { t, isCJKLocale, locale } from '@/composables/useI18n'
 import { batchVote, type VoteState } from '@/services/galleryVote'
 import { useEqtToast } from '@/composables/useEqtToast'
 import { parseTaglistRoot, type GalleryTag } from '@/composables/useEhGalleryHost'
@@ -277,12 +277,13 @@ const { onAreaMouseDown } = useDragSelect({
   enabled: () => galleryDragSelectEnabled.value,
 })
 
-// Gallery Tagging guide：CJK locale 走 /Chinese 分頁、其他 locale 走英文 root
-const wikiUrl = computed(() =>
-  isCJKLocale()
-    ? 'https://ehwiki.org/wiki/Gallery_Tagging/Chinese'
-    : 'https://ehwiki.org/wiki/Gallery_Tagging'
-)
+// Gallery Tagging guide：CJK locale 走 /Chinese 分頁、韓文走 /Korean、其他走英文 root
+// （ehwiki 沒有 /Japanese，所以日文也落英文 root）
+const wikiUrl = computed(() => {
+  if (isCJKLocale()) return 'https://ehwiki.org/wiki/Gallery_Tagging/Chinese'
+  if (locale.value === 'ko') return 'https://ehwiki.org/wiki/Gallery_Tagging/Korean'
+  return 'https://ehwiki.org/wiki/Gallery_Tagging'
+})
 
 // === Taglist 背景雙擊 action ===
 // 跟 TagBar / SearchPopup 同 pattern：@dblclick 走左鍵；右鍵沒有原生 dblclick

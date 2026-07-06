@@ -78,7 +78,7 @@ Takes over the native taglist on `/g/` detail pages with a chip-based selection 
 ### Sites & languages
 
 - Supports both **e-hentai.org** and **exhentai.org**
-- UI languages: **Traditional Chinese, Simplified Chinese, English, Japanese**
+- UI languages: **Traditional Chinese, Simplified Chinese, English, Japanese, Korean**
 
 ## Install
 
