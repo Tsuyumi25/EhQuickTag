@@ -1,9 +1,9 @@
 import { reactive, ref, watch, nextTick, type Ref } from 'vue'
 import { cacheGet, cacheSet } from '@/services/gmStorage'
 import type { Line, Button, ButtonLine, SeparatorLine, TagButton, UrlButton, TagMode } from '@/types'
-import { type TagDbMirror } from '@/services/tagDb'
-import { type TagCountMirror } from '@/services/tagCount'
-import { type TagWikiMirror } from '@/services/tagWiki'
+import { TAG_DB_MIRRORS, type TagDbMirror } from '@/services/tagDb'
+import { TAG_COUNT_MIRRORS, type TagCountMirror } from '@/services/tagCount'
+import { TAG_WIKI_MIRRORS, type TagWikiMirror } from '@/services/tagWiki'
 import { locale, setLocale, detectLocale, isCJKLocale, t, type Locale } from '@/composables/useI18n'
 import { PRESETS_BY_ID, type TagStylePresetId } from '@/composables/useTagStyle'
 
@@ -200,6 +200,9 @@ const SETTING_VALIDATORS: Partial<{ [K in SettingKey]: (v: unknown) => boolean }
   galleryDblClickLeft:    v => GALLERY_DBL_CLICK_ACTIONS.some(a => a.id === v),
   galleryDblClickRight:   v => GALLERY_DBL_CLICK_ACTIONS.some(a => a.id === v),
   galleryTaglistHeight:   v => typeof v === 'number' && Number.isFinite(v) && v > 0,
+  tagDbMirror:            v => typeof v === 'string' && v in TAG_DB_MIRRORS,
+  tagCountMirror:         v => typeof v === 'string' && v in TAG_COUNT_MIRRORS,
+  tagWikiMirror:          v => typeof v === 'string' && v in TAG_WIKI_MIRRORS,
 }
 
 function loadAllSettings(persisted: Partial<Settings>): void {
