@@ -58,7 +58,7 @@ export default {
   'settings.searchBarVisibility': '元件顯示',
   'settings.showSearchPanel': '顯示 EhQuickTag 搜尋面板',
   'settings.enableHistory': '記錄搜尋歷史',
-  'settings.searchPanelLang': '面板顯示語言',
+  'settings.searchPanelLang': '搜尋面板按鈕語言',
   'settings.searchPanelLangAuto': '自動',
   'settings.searchPanelLangToggle': '中／英可切換',
   'settings.searchPanelLangEnglishOnly': '純英文',

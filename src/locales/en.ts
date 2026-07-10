@@ -58,7 +58,7 @@ export default {
   'settings.searchBarVisibility': 'Component Visibility',
   'settings.showSearchPanel': 'Show EhQuickTag search panel',
   'settings.enableHistory': 'Record search history',
-  'settings.searchPanelLang': 'Panel display language',
+  'settings.searchPanelLang': 'Search panel button language',
   'settings.searchPanelLangAuto': 'Auto',
   'settings.searchPanelLangToggle': 'CJK / English togglable',
   'settings.searchPanelLangEnglishOnly': 'English only',
