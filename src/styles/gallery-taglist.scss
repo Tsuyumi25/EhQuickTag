@@ -23,7 +23,7 @@ $eqt-gallery-height: 330px;
   height: var(--eqt-gallery-height, #{$eqt-gallery-height});
   user-select: none;
 
-  // 展開模式：至少基準高、超過就往下長，taglist 不捲。
+  // 展開模式：至少設定高度（同一個 var，展開時當最低高）、超過就往下長，taglist 不捲。
   &.is-expand {
     height: auto;
     min-height: var(--eqt-gallery-height, #{$eqt-gallery-height});

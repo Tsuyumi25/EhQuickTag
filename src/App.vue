@@ -67,12 +67,9 @@ function applyGalleryLayout(): void {
   if (!anchor) return
   anchor.classList.toggle('is-expand', galleryTaglistExpand.value)
   const gmid = anchor.closest<HTMLElement>('#gmid')
-  // 展開模式不寫 var → CSS 各處 fallback 到 330 當地板；固定模式才寫使用者設定的高度。
-  if (galleryTaglistExpand.value) {
-    gmid?.style.removeProperty('--eqt-gallery-height')
-  } else {
-    gmid?.style.setProperty('--eqt-gallery-height', `${galleryTaglistHeight.value}px`)
-  }
+  // 高度 var 永遠寫入：固定模式當精確高、展開模式當最低高（.is-expand 的
+  // min-height 消費同一個 var）——兩個設定互補而非互斥
+  gmid?.style.setProperty('--eqt-gallery-height', `${galleryTaglistHeight.value}px`)
 }
 
 watch([galleryTaglistExpand, galleryTaglistHeight], applyGalleryLayout)

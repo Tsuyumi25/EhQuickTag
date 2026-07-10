@@ -497,38 +497,29 @@ function onEditorPurge() {
 
             <section class="eqt-settings__section">
               <h4 class="eqt-settings__subtitle"><UnfoldVertical :size="14" /> {{ t('settings.galleryTaglistHeightMode') }}</h4>
-              <div class="eqt-settings__row">
-                <div class="eqt-settings__locale-row">
-                  <button
-                    type="button"
-                    class="eqt-settings__locale-btn"
-                    :class="{ 'eqt-settings__locale-btn--active': galleryTaglistExpand }"
-                    :disabled="!taggingEnhancerEnabled"
-                    @click="galleryTaglistExpand = true"
-                  >{{ t('settings.galleryTaglistExpand') }}</button>
-                  <button
-                    type="button"
-                    class="eqt-settings__locale-btn"
-                    :class="{ 'eqt-settings__locale-btn--active': !galleryTaglistExpand }"
-                    :disabled="!taggingEnhancerEnabled"
-                    @click="galleryTaglistExpand = false"
-                  >{{ t('settings.galleryTaglistHeight') }}</button>
-                </div>
+              <label class="eqt-settings__row">
+                <input
+                  type="checkbox"
+                  :checked="galleryTaglistExpand"
+                  :disabled="!taggingEnhancerEnabled"
+                  @change="galleryTaglistExpand = ($event.target as HTMLInputElement).checked"
+                />
+                <span class="eqt-settings__label">{{ t('settings.galleryTaglistExpand') }}</span>
+              </label>
+              <div class="eqt-settings__field-row">
+                <label class="eqt-settings__field-label">{{ t('settings.galleryTaglistHeight') }}</label>
                 <input
                   class="eqt-settings__input eqt-settings__input--short"
                   type="number"
                   min="200"
                   max="1000"
                   step="10"
-                  :disabled="!taggingEnhancerEnabled || galleryTaglistExpand"
+                  :disabled="!taggingEnhancerEnabled"
                   v-model.number="galleryTaglistHeight"
                   :title="t('settings.galleryTaglistHeight')"
                 />
                 <span class="eqt-settings__label">px</span>
               </div>
-              <p class="eqt-settings__hint">
-                {{ t('settings.galleryTaglistExpandHint') }}
-              </p>
               <p class="eqt-settings__hint">
                 {{ t('settings.galleryTaglistHeightTipBefore')
                 }}<a
