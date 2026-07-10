@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, toRaw } from 'vue'
 import { usePopupBehavior } from '@/composables/usePopupBehavior'
-import { RotateCcw } from '@lucide/vue'
+import {
+  RotateCcw, Languages, Replace, Type, Eye, LayoutPanelTop, Tag,
+  MousePointerClick, Palette, ToggleLeft, UnfoldVertical, Info,
+  Database, ChartColumn, BookOpen,
+} from '@lucide/vue'
 import Draggable from 'vuedraggable'
 import { baseDragOptions } from '@/utils/drag'
 import type { Line } from '@/types'
@@ -320,7 +324,7 @@ function onEditorPurge() {
         <div v-show="editingProfileIdx < 0" class="eqt-settings__panel-inner">
           <div v-show="activeTab === 'tagbar'" class="eqt-settings__tab-content">
             <section class="eqt-settings__section">
-              <h4 class="eqt-settings__subtitle">{{ t('settings.searchBarVisibility') }}</h4>
+              <h4 class="eqt-settings__subtitle"><LayoutPanelTop :size="14" /> {{ t('settings.searchBarVisibility') }}</h4>
               <label class="eqt-settings__row">
                 <input
                   type="checkbox"
@@ -341,7 +345,7 @@ function onEditorPurge() {
             </section>
 
             <section class="eqt-settings__section">
-              <h4 class="eqt-settings__subtitle">{{ t('settings.searchPanelLang') }}</h4>
+              <h4 class="eqt-settings__subtitle"><Languages :size="14" /> {{ t('settings.searchPanelLang') }}</h4>
               <div class="eqt-settings__locale-row">
                 <button
                   v-for="m in SEARCH_PANEL_LANG_MODES"
@@ -355,7 +359,7 @@ function onEditorPurge() {
             </section>
 
             <section class="eqt-settings__section">
-              <h4 class="eqt-settings__subtitle">{{ t('settings.sectionTagFormat') }}</h4>
+              <h4 class="eqt-settings__subtitle"><Tag :size="14" /> {{ t('settings.sectionTagFormat') }}</h4>
               <div class="eqt-settings__field-row">
                 <label class="eqt-settings__field-label">{{ t('settings.nsFormat') }}</label>
                 <div class="eqt-settings__locale-row">
@@ -388,7 +392,7 @@ function onEditorPurge() {
             </section>
 
             <section class="eqt-settings__section">
-              <h4 class="eqt-settings__subtitle">{{ t('settings.dblClickActions') }}</h4>
+              <h4 class="eqt-settings__subtitle"><MousePointerClick :size="14" /> {{ t('settings.dblClickActions') }}</h4>
               <div
                 v-for="({ labelKey, ref: r }) in dblClickOptions"
                 :key="labelKey"
@@ -419,7 +423,7 @@ function onEditorPurge() {
             </section>
 
             <section class="eqt-settings__section">
-              <h4 class="eqt-settings__subtitle">{{ t('settings.tagStyle') }}</h4>
+              <h4 class="eqt-settings__subtitle"><Palette :size="14" /> {{ t('settings.tagStyle') }}</h4>
               <div class="eqt-settings__locale-row">
                 <button
                   v-for="preset in TAG_STYLE_PRESETS"
@@ -445,7 +449,7 @@ function onEditorPurge() {
             </section>
 
             <section class="eqt-settings__section">
-              <h4 class="eqt-settings__subtitle">{{ t('settings.preview') }}</h4>
+              <h4 class="eqt-settings__subtitle"><Eye :size="14" /> {{ t('settings.preview') }}</h4>
               <div class="eqt-settings__font-preview" :class="currentTagStyleClass">
                 <template v-for="(line, li) in previewLines" :key="li">
                   <div v-if="line.kind === 'buttons' && line.buttons.length" class="eqt-settings__preview-line">
@@ -464,7 +468,7 @@ function onEditorPurge() {
           <!-- 設定：畫廊 -->
           <div v-show="activeTab === 'gallery'" class="eqt-settings__tab-content">
             <section class="eqt-settings__section">
-              <h4 class="eqt-settings__subtitle">{{ t('settings.sectionGalleryToggles') }}</h4>
+              <h4 class="eqt-settings__subtitle"><ToggleLeft :size="14" /> {{ t('settings.sectionGalleryToggles') }}</h4>
               <label class="eqt-settings__row">
                 <input
                   type="checkbox"
@@ -492,7 +496,7 @@ function onEditorPurge() {
             </section>
 
             <section class="eqt-settings__section">
-              <h4 class="eqt-settings__subtitle">{{ t('settings.galleryTaglistHeightMode') }}</h4>
+              <h4 class="eqt-settings__subtitle"><UnfoldVertical :size="14" /> {{ t('settings.galleryTaglistHeightMode') }}</h4>
               <div class="eqt-settings__row">
                 <div class="eqt-settings__locale-row">
                   <button
@@ -538,7 +542,7 @@ function onEditorPurge() {
             </section>
 
             <section class="eqt-settings__section">
-              <h4 class="eqt-settings__subtitle">{{ t('settings.galleryDblClickActions') }}</h4>
+              <h4 class="eqt-settings__subtitle"><MousePointerClick :size="14" /> {{ t('settings.galleryDblClickActions') }}</h4>
               <div
                 v-for="({ labelKey, ref: r }) in galleryDblClickOptions"
                 :key="labelKey"
@@ -566,7 +570,7 @@ function onEditorPurge() {
             </section>
 
             <section class="eqt-settings__section">
-              <h4 class="eqt-settings__subtitle">{{ t('settings.sectionIntroPanel') }}</h4>
+              <h4 class="eqt-settings__subtitle"><Info :size="14" /> {{ t('settings.sectionIntroPanel') }}</h4>
               <div class="eqt-settings__field-row">
                 <label class="eqt-settings__field-label">{{ t('settings.introPanelPrimaryLang') }}</label>
                 <div class="eqt-settings__locale-row">
@@ -602,7 +606,7 @@ function onEditorPurge() {
           <!-- 設定：資料 -->
           <div v-show="activeTab === 'data'" class="eqt-settings__tab-content">
             <section class="eqt-settings__section">
-              <h4 class="eqt-settings__subtitle">{{ t('settings.tagDbSection') }}</h4>
+              <h4 class="eqt-settings__subtitle"><Database :size="14" /> {{ t('settings.tagDbSection') }}</h4>
               <div class="eqt-settings__row">
                 <select class="eqt-settings__select" v-model="tagDbMirror" :title="t('settings.tagDbMirror')">
                   <option v-for="opt in mirrorOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
@@ -615,7 +619,7 @@ function onEditorPurge() {
             </section>
 
             <section class="eqt-settings__section">
-              <h4 class="eqt-settings__subtitle">{{ t('settings.tagCountSection') }}</h4>
+              <h4 class="eqt-settings__subtitle"><ChartColumn :size="14" /> {{ t('settings.tagCountSection') }}</h4>
               <div class="eqt-settings__row">
                 <select class="eqt-settings__select" v-model="tagCountMirror" :title="t('settings.tagCountMirror')">
                   <option v-for="opt in tagCountMirrorOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
@@ -628,7 +632,7 @@ function onEditorPurge() {
             </section>
 
             <section class="eqt-settings__section">
-              <h4 class="eqt-settings__subtitle">{{ t('settings.tagWikiSection') }}</h4>
+              <h4 class="eqt-settings__subtitle"><BookOpen :size="14" /> {{ t('settings.tagWikiSection') }}</h4>
               <div class="eqt-settings__row">
                 <select class="eqt-settings__select" v-model="tagWikiMirror" :title="t('settings.tagWikiMirror')">
                   <option v-for="opt in tagWikiMirrorOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
@@ -644,7 +648,7 @@ function onEditorPurge() {
           <!-- 設定：通用（跨 scope 的真全域）-->
           <div v-show="activeTab === 'general'" class="eqt-settings__tab-content">
             <section class="eqt-settings__section">
-              <h4 class="eqt-settings__subtitle">{{ t('settings.language') }}</h4>
+              <h4 class="eqt-settings__subtitle"><Languages :size="14" /> {{ t('settings.language') }}</h4>
               <div class="eqt-settings__locale-row">
                 <button
                   v-for="opt in localeOptions"
@@ -661,7 +665,7 @@ function onEditorPurge() {
             </section>
 
             <section class="eqt-settings__section">
-              <h4 class="eqt-settings__subtitle">{{ t('settings.convertToTraditional') }}</h4>
+              <h4 class="eqt-settings__subtitle"><Replace :size="14" /> {{ t('settings.convertToTraditional') }}</h4>
               <div class="eqt-settings__locale-row">
                 <button
                   v-for="m in CONVERT_TO_TRADITIONAL_MODES"
@@ -678,7 +682,7 @@ function onEditorPurge() {
             </section>
 
             <section class="eqt-settings__section">
-              <h4 class="eqt-settings__subtitle">{{ t('settings.fontFamily') }}</h4>
+              <h4 class="eqt-settings__subtitle"><Type :size="14" /> {{ t('settings.fontFamily') }}</h4>
               <div class="eqt-settings__font-row">
                 <input
                   :value="fontFamily"
@@ -707,7 +711,7 @@ function onEditorPurge() {
             </section>
 
             <section class="eqt-settings__section">
-              <h4 class="eqt-settings__subtitle">{{ t('settings.preview') }}</h4>
+              <h4 class="eqt-settings__subtitle"><Eye :size="14" /> {{ t('settings.preview') }}</h4>
               <div class="eqt-settings__font-preview" :class="currentTagStyleClass">
                 <template v-for="(line, li) in previewLines" :key="li">
                   <div v-if="line.kind === 'buttons' && line.buttons.length" class="eqt-settings__preview-line">
@@ -1027,6 +1031,13 @@ function onEditorPurge() {
     display: flex;
     align-items: center;
     gap: 6px;
+
+    // icon 用 hint 色退居輔助，粗體字維持視覺主導；跨 tab 同概念共用
+    // 同一顆 icon（語言/雙擊/預覽），當認知錨點不當裝飾
+    > svg {
+      color: var(--eqt-text-hint);
+      flex-shrink: 0;
+    }
   }
 
   &__reset-btn {
