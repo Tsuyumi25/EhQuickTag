@@ -84,7 +84,9 @@ const INITIAL_SETTINGS = {
   fontWeight: '',
   dblClickLeft: 'search' as DblClickAction,
   dblClickRight: 'searchNewTab' as DblClickAction,
-  newTabActive: true,
+  // 左右雙擊各自的「新分頁搜尋時切換過去」開關——同為 searchNewTab 也可各自配
+  dblClickLeftNewTabActive: true,
+  dblClickRightNewTabActive: true,
   nsFormat: 'short' as 'long' | 'short',
   defaultExactMatch: true,
   tagDbMirror: 'jsdelivr' as TagDbMirror,
@@ -143,9 +145,10 @@ const INITIAL_SETTINGS = {
   // gallery 是不同 UI context，使用者可能想在兩邊配不同 shortcut
   galleryDblClickLeft: 'searchNewTab' as GalleryDblClickAction,
   galleryDblClickRight: 'clearSelection' as GalleryDblClickAction,
-  // Gallery 搜尋開新分頁時是否切換過去。跟 tagbar 的 newTabActive 分離：兩邊的
-  // 搜尋語意不完全一樣，使用者可能希望 tagbar 搜尋前景、gallery 搜尋背景
-  galleryNewTabActive: true,
+  // Gallery 左右雙擊各自的切換開關。跟 tagbar 那組分離：兩邊的搜尋語意不完全
+  // 一樣，使用者可能希望 tagbar 搜尋前景、gallery 搜尋背景
+  galleryDblClickLeftNewTabActive: true,
+  galleryDblClickRightNewTabActive: true,
   // Wiki 側 prelude (警告 / Reminder / 前言) 預設是否展開。ehwiki 每頁幾乎都
   // 有一段提醒且通常很長會擋住 90% 定義內容，預設收起 (false)；使用者仍可
   // per-panel 點「▸ Notes」展開，切下個 chip 又回預設
@@ -163,7 +166,8 @@ export const fontFamily        = refs.fontFamily
 export const fontWeight        = refs.fontWeight
 export const dblClickLeft      = refs.dblClickLeft
 export const dblClickRight     = refs.dblClickRight
-export const newTabActive      = refs.newTabActive
+export const dblClickLeftNewTabActive  = refs.dblClickLeftNewTabActive
+export const dblClickRightNewTabActive = refs.dblClickRightNewTabActive
 export const nsFormat          = refs.nsFormat
 export const defaultExactMatch = refs.defaultExactMatch
 export const tagDbMirror       = refs.tagDbMirror
@@ -186,7 +190,8 @@ export const galleryTaglistHeight = refs.galleryTaglistHeight
 export const introPanelPrimaryLang = refs.introPanelPrimaryLang
 export const galleryDblClickLeft = refs.galleryDblClickLeft
 export const galleryDblClickRight = refs.galleryDblClickRight
-export const galleryNewTabActive = refs.galleryNewTabActive
+export const galleryDblClickLeftNewTabActive  = refs.galleryDblClickLeftNewTabActive
+export const galleryDblClickRightNewTabActive = refs.galleryDblClickRightNewTabActive
 export const wikiPreludeExpanded = refs.wikiPreludeExpanded
 
 // enum-shape setting 的合法 id 集合。壞值 silently fallback 到 INITIAL_SETTINGS 預設——
@@ -475,6 +480,17 @@ export async function loadStore(): Promise<void> {
   // settings
   const parsed = savedSettings ? JSON.parse(savedSettings) as Partial<Settings & { locale?: Locale | '' }> : {}
   loadAllSettings(parsed)
+  // legacy migration：舊版單一 newTabActive / galleryNewTabActive 拆成左右各自
+  // 的開關。首次以新版載入時把舊值播種到同 scope 兩側；新 key 一旦被存過就不再看舊值
+  const legacy = parsed as { newTabActive?: unknown; galleryNewTabActive?: unknown }
+  if (typeof legacy.newTabActive === 'boolean' && !('dblClickLeftNewTabActive' in parsed)) {
+    refs.dblClickLeftNewTabActive.value = legacy.newTabActive
+    refs.dblClickRightNewTabActive.value = legacy.newTabActive
+  }
+  if (typeof legacy.galleryNewTabActive === 'boolean' && !('galleryDblClickLeftNewTabActive' in parsed)) {
+    refs.galleryDblClickLeftNewTabActive.value = legacy.galleryNewTabActive
+    refs.galleryDblClickRightNewTabActive.value = legacy.galleryNewTabActive
+  }
   // tagStylePreset 需要對「不認得的 preset id」做 fallback（其他 setting 走 strict additive）
   if (!PRESETS_BY_ID.has(tagStylePreset.value)) tagStylePreset.value = 'flat'
   setLocale(parsed.locale ? parsed.locale as Locale : detectLocale())

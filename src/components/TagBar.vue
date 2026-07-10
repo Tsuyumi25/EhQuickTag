@@ -9,7 +9,7 @@ import SeparatorSettingsPopup from '@/components/SeparatorSettingsPopup.vue'
 import SearchPanel from '@/components/search/SearchPanel.vue'
 import { TagState, type Line, type Button, type TagButton } from '@/types'
 import { tokenize, buildIdentityIndex, getState as _getState, setTagState, getNextRightClickState } from '@/services/tagState'
-import { lines, dblClickLeft, dblClickRight, useAccentOnInclude, showSearchPanel, type DblClickAction } from '@/services/store'
+import { lines, dblClickLeft, dblClickRight, dblClickLeftNewTabActive, dblClickRightNewTabActive, useAccentOnInclude, showSearchPanel, type DblClickAction } from '@/services/store'
 import { baseDragOptions, EQT_TAGS_GROUP } from '@/utils/drag'
 import { dismissTerms, recordSubmitAndFlush } from '@/services/search/searchSession'
 import { t } from '@/composables/useI18n'
@@ -55,7 +55,9 @@ const emit = defineEmits<{
   'renameProfile': [name: string]
   'createProfile': [name: string]
   'deleteProfile': []
-  'search': [action: DblClickAction]
+  // newTabActive 只在 action === 'searchNewTab' 有意義：雙擊路徑帶觸發側的
+  // 「切換過去」開關，非雙擊 caller 不帶（App 端 fallback 為切換）
+  'search': [action: DblClickAction, newTabActive?: boolean]
   // 量到的 line-controls 寬度——App.vue 拿來在 EH form 父層設 --eqt-controls-w，
   // 讓原生 search row 的 wrapper 跟 __lines 用同一條置中縮窄公式
   'controlsWidth': [width: number]
@@ -86,7 +88,7 @@ function onBarDblClick(e: MouseEvent) {
   e.preventDefault()
   e.stopPropagation()
   window.getSelection()?.removeAllRanges()
-  execDblClickAction(action)
+  execDblClickAction(action, dblClickLeftNewTabActive.value)
 }
 
 function onBarContextMenu(e: MouseEvent) {
@@ -96,14 +98,14 @@ function onBarContextMenu(e: MouseEvent) {
   e.preventDefault()
   const now = Date.now()
   if (now - lastRightClickTime < 500) {
-    execDblClickAction(action)
+    execDblClickAction(action, dblClickRightNewTabActive.value)
     lastRightClickTime = 0
   } else {
     lastRightClickTime = now
   }
 }
 
-async function execDblClickAction(action: DblClickAction) {
+async function execDblClickAction(action: DblClickAction, newTabActive?: boolean) {
   if (action === 'none') return
   if (action === 'toggleEdit') {
     editing.value = !editing.value
@@ -120,7 +122,9 @@ async function execDblClickAction(action: DblClickAction) {
     // 跟 SearchPanel.onSearchClick 同邏輯：先 recordSubmit + flush 再 emit。
     // await flush 確保 navigate 前 GM_setValue resolve（finding #3）
     await recordSubmitAndFlush()
-    emit('search', action)
+    // 旗標只跟 searchNewTab 走：其他 action 不帶，避免隱藏的側設定值漏進
+    // App 端 fallback（那裡收不到旗標時走寫死的切換）
+    emit('search', action, action === 'searchNewTab' ? newTabActive : undefined)
   }
 }
 

@@ -18,13 +18,13 @@ import {
   profiles, activeProfileIdx, deletedProfiles, corruptedProfiles, type Profile,
   deleteProfile, restoreProfile, purgeProfile, purgeCorrupted, reorderProfiles, updateProfileLines,
   fontFamily, fontWeight, getDefaultLines, lines,
-  dblClickLeft, dblClickRight, newTabActive, nsFormat, defaultExactMatch,
+  dblClickLeft, dblClickRight, dblClickLeftNewTabActive, dblClickRightNewTabActive, nsFormat, defaultExactMatch,
   tagDbMirror, tagDbTtlDays, tagCountMirror, tagCountTtlDays,
   tagWikiMirror, tagWikiTtlDays,
   tagStylePreset, useAccentOnInclude, type DblClickAction,
   showSearchPanel, searchPanelLangMode, convertToTraditional, enableHistory,
   taggingEnhancerEnabled, galleryDragSelectEnabled, galleryTaglistExpand, galleryTaglistHeight, introPanelPrimaryLang, wikiPreludeExpanded,
-  galleryDblClickLeft, galleryDblClickRight, galleryNewTabActive,
+  galleryDblClickLeft, galleryDblClickRight, galleryDblClickLeftNewTabActive, galleryDblClickRightNewTabActive,
   SEARCH_PANEL_LANG_MODES, CONVERT_TO_TRADITIONAL_MODES, INTRO_PANEL_PRIMARY_LANGS,
   GALLERY_DBL_CLICK_ACTIONS, type GalleryDblClickAction,
 } from '@/services/store'
@@ -75,13 +75,13 @@ function narrowTab(s: string | null | undefined): TabKey | null {
 const activeTab = ref<TabKey | null>(narrowTab(props.initialTab) ?? 'general')
 
 const dblClickOptions = [
-  { labelKey: 'settings.dblClickLeft', ref: dblClickLeft },
-  { labelKey: 'settings.dblClickRight', ref: dblClickRight },
+  { labelKey: 'settings.dblClickLeft', ref: dblClickLeft, newTabRef: dblClickLeftNewTabActive },
+  { labelKey: 'settings.dblClickRight', ref: dblClickRight, newTabRef: dblClickRightNewTabActive },
 ]
 
 const galleryDblClickOptions = [
-  { labelKey: 'settings.galleryDblClickLeft', ref: galleryDblClickLeft },
-  { labelKey: 'settings.galleryDblClickRight', ref: galleryDblClickRight },
+  { labelKey: 'settings.galleryDblClickLeft', ref: galleryDblClickLeft, newTabRef: galleryDblClickLeftNewTabActive },
+  { labelKey: 'settings.galleryDblClickRight', ref: galleryDblClickRight, newTabRef: galleryDblClickRightNewTabActive },
 ]
 
 const localeOptions: { value: Locale; label: string }[] = [
@@ -400,7 +400,7 @@ function onEditorPurge() {
             <section class="eqt-settings__section">
               <h4 class="eqt-settings__subtitle"><MousePointerClick :size="14" /> {{ t('settings.dblClickActions') }}</h4>
               <div
-                v-for="({ labelKey, ref: r }) in dblClickOptions"
+                v-for="({ labelKey, ref: r, newTabRef }) in dblClickOptions"
                 :key="labelKey"
                 class="eqt-settings__field-row"
               >
@@ -420,8 +420,8 @@ function onEditorPurge() {
                 <label v-if="r.value === 'searchNewTab'" class="eqt-settings__row">
                   <input
                     type="checkbox"
-                    :checked="newTabActive"
-                    @change="newTabActive = ($event.target as HTMLInputElement).checked"
+                    :checked="newTabRef.value"
+                    @change="newTabRef.value = ($event.target as HTMLInputElement).checked"
                   />
                   <span class="eqt-settings__label">{{ t('settings.newTabActivate') }}</span>
                 </label>
@@ -541,7 +541,7 @@ function onEditorPurge() {
             <section class="eqt-settings__section">
               <h4 class="eqt-settings__subtitle"><MousePointerClick :size="14" /> {{ t('settings.galleryDblClickActions') }}</h4>
               <div
-                v-for="({ labelKey, ref: r }) in galleryDblClickOptions"
+                v-for="({ labelKey, ref: r, newTabRef }) in galleryDblClickOptions"
                 :key="labelKey"
                 class="eqt-settings__field-row"
               >
@@ -557,9 +557,9 @@ function onEditorPurge() {
                 <label v-if="r.value === 'searchNewTab'" class="eqt-settings__row">
                   <input
                     type="checkbox"
-                    :checked="galleryNewTabActive"
+                    :checked="newTabRef.value"
                     :disabled="!taggingEnhancerEnabled"
-                    @change="galleryNewTabActive = ($event.target as HTMLInputElement).checked"
+                    @change="newTabRef.value = ($event.target as HTMLInputElement).checked"
                   />
                   <span class="eqt-settings__label">{{ t('settings.newTabActivate') }}</span>
                 </label>

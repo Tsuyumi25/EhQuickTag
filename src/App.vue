@@ -10,7 +10,7 @@ import GalleryIntroPanel from '@/components/gallery/GalleryIntroPanel.vue'
 import { GM } from '$'
 import type { Button, TagButton, UrlButton } from '@/types'
 import { bindSearchBar } from '@/services/search/searchSession'
-import { lines, fontFamily, fontWeight, profiles, activeProfileIdx, switchProfile, renameProfile, createProfile, deleteProfile, newTabActive, nsFormat, defaultExactMatch, tagDbMirror, tagDbTtlDays, tagCountMirror, tagCountTtlDays, tagWikiMirror, tagWikiTtlDays, taggingEnhancerEnabled, galleryTaglistExpand, galleryTaglistHeight, type DblClickAction } from '@/services/store'
+import { lines, fontFamily, fontWeight, profiles, activeProfileIdx, switchProfile, renameProfile, createProfile, deleteProfile, nsFormat, defaultExactMatch, tagDbMirror, tagDbTtlDays, tagCountMirror, tagCountTtlDays, tagWikiMirror, tagWikiTtlDays, taggingEnhancerEnabled, galleryTaglistExpand, galleryTaglistHeight, type DblClickAction } from '@/services/store'
 import { loadTagDb } from '@/services/tagDb'
 import { loadTagCount } from '@/services/tagCount'
 import { loadTagWiki, WikiSchemaMismatchError } from '@/services/tagWiki'
@@ -207,14 +207,16 @@ function onAddToSearch() {
   showSearchPopup.value = true
 }
 
-function onSearch(action: DblClickAction) {
+// newTabActive 由雙擊路徑帶進來（觸發側的「切換過去」開關）；非雙擊 caller
+// （SearchControls 搜尋鈕、gallery fallback）沒有這個設定，一律切換過去
+function onSearch(action: DblClickAction, newTabActive?: boolean) {
   if (searchInput?.form) {
     if (action === 'searchNewTab') {
       const url = new URL(searchInput.form.action || window.location.href)
       new FormData(searchInput.form).forEach((v, k) => url.searchParams.set(k, v as string))
       // fire-and-forget；GM.openInTab 視 manager 實作回 control 物件或 Promise，
       // Promise.resolve 收齊兩種、`.catch` 兜底避免 unhandled rejection 噴 console
-      Promise.resolve(GM.openInTab(url.href, { active: newTabActive.value })).catch(() => {})
+      Promise.resolve(GM.openInTab(url.href, { active: newTabActive ?? true })).catch(() => {})
     } else {
       searchInput.form.submit()
     }
@@ -224,7 +226,7 @@ function onSearch(action: DblClickAction) {
   // URL，永遠 open new tab 避免 navigate 走當前頁
   const url = new URL('/', window.location.href)
   url.searchParams.set('f_search', searchText.value)
-  Promise.resolve(GM.openInTab(url.href, { active: newTabActive.value })).catch(() => {})
+  Promise.resolve(GM.openInTab(url.href, { active: newTabActive ?? true })).catch(() => {})
 }
 
 // --- search box sync ---

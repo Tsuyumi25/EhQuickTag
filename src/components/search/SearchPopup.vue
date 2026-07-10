@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, shallowRef, watch, onMounted, computed } from 'vue'
 import { loadTagDb, getFallbackEntries, DEFAULT_NS_ORDER, type TagEntry } from '@/services/tagDb'
-import { nsFormat, defaultExactMatch, dblClickLeft, dblClickRight, type DblClickAction } from '@/services/store'
+import { nsFormat, defaultExactMatch, dblClickLeft, dblClickRight, dblClickLeftNewTabActive, dblClickRightNewTabActive, type DblClickAction } from '@/services/store'
 import { useTagSuggestions } from '@/composables/useTagSuggestions'
 import { usePopupBehavior } from '@/composables/usePopupBehavior'
 import { parseTerm, serializeEntry } from '@/services/searchSyntax'
@@ -31,8 +31,9 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:modelValue': [value: string]
   // 帶 action payload：背景雙擊路徑要區分 search / searchNewTab，App.onSearch
-  // 才能走對 branch。SearchControls submit 永遠送 'search'
-  search: [action: DblClickAction]
+  // 才能走對 branch。SearchControls submit 永遠送 'search'。
+  // newTabActive 只在 searchNewTab 有意義：帶觸發側的「切換過去」開關
+  search: [action: DblClickAction, newTabActive?: boolean]
   close: []
 }>()
 
@@ -166,13 +167,14 @@ function isInteractive(e: MouseEvent): boolean {
 // async 因為 search / searchNewTab 路徑要先 await recordSubmitAndFlush——
 // 跟 TagBar.execDblClickAction / SearchControls.onSearchClick 同邏輯，避免
 // form.submit() navigate 跑在 GM_setValue 100ms debounce 寫入前面
-async function execBgDblClick(action: DblClickAction): Promise<void> {
+async function execBgDblClick(action: DblClickAction, newTabActive?: boolean): Promise<void> {
   if (!BG_DBL_ALLOWED.has(action)) return
   if (action === 'clearSearch') {
     emit('update:modelValue', '')
   } else {
     await recordSubmitAndFlush()
-    emit('search', action)
+    // 同 TagBar：旗標只跟 searchNewTab 走，其他 action 不帶
+    emit('search', action, action === 'searchNewTab' ? newTabActive : undefined)
   }
 }
 
@@ -180,7 +182,7 @@ function onBgDblClick(e: MouseEvent): void {
   if (isInteractive(e)) return
   e.preventDefault()
   window.getSelection()?.removeAllRanges()
-  execBgDblClick(dblClickLeft.value)
+  execBgDblClick(dblClickLeft.value, dblClickLeftNewTabActive.value)
 }
 
 let lastRightClickTime = 0
@@ -193,7 +195,7 @@ function onBgContextMenu(e: MouseEvent): void {
   if (!BG_DBL_ALLOWED.has(action)) return
   const now = Date.now()
   if (now - lastRightClickTime < 500) {
-    execBgDblClick(action)
+    execBgDblClick(action, dblClickRightNewTabActive.value)
     lastRightClickTime = 0
   } else {
     lastRightClickTime = now

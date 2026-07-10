@@ -13,7 +13,7 @@ import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { GM } from '$'
 import { serializeEntry } from '@/services/searchSyntax'
 import { findEntryByNsTag, DEFAULT_NS_ORDER, tagDbVersion } from '@/services/tagDb'
-import { nsFormat, defaultExactMatch, galleryNewTabActive, galleryDragSelectEnabled, galleryDblClickLeft, galleryDblClickRight, type GalleryDblClickAction } from '@/services/store'
+import { nsFormat, defaultExactMatch, galleryDragSelectEnabled, galleryDblClickLeft, galleryDblClickRight, galleryDblClickLeftNewTabActive, galleryDblClickRightNewTabActive, type GalleryDblClickAction } from '@/services/store'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
 import { t, isCJKLocale, locale } from '@/composables/useI18n'
 import { batchVote, type VoteState } from '@/services/galleryVote'
@@ -299,7 +299,7 @@ function onTaglistDblClick(e: MouseEvent): void {
   if (isInteractiveTaglist(e)) return
   e.preventDefault()
   window.getSelection()?.removeAllRanges()
-  execGalleryDblClickAction(galleryDblClickLeft.value)
+  execGalleryDblClickAction(galleryDblClickLeft.value, galleryDblClickLeftNewTabActive.value)
 }
 
 function onTaglistContextMenu(e: MouseEvent): void {
@@ -311,18 +311,18 @@ function onTaglistContextMenu(e: MouseEvent): void {
   if (isInteractiveTaglist(e)) return
   const now = Date.now()
   if (now - lastRightClickTime < 500) {
-    execGalleryDblClickAction(galleryDblClickRight.value)
+    execGalleryDblClickAction(galleryDblClickRight.value, galleryDblClickRightNewTabActive.value)
     lastRightClickTime = 0
   } else {
     lastRightClickTime = now
   }
 }
 
-function execGalleryDblClickAction(action: GalleryDblClickAction): void {
+function execGalleryDblClickAction(action: GalleryDblClickAction, newTabActive: boolean): void {
   switch (action) {
     case 'none': return
     case 'search': onSearchCurrent(); return
-    case 'searchNewTab': onSearchNewTab(); return
+    case 'searchNewTab': doSearchNewTab(newTabActive); return
     case 'vote': onSendBatchVotes(); return
     case 'clearSelection': onClearSelection(); return
     case 'openAdd': showAddPopup.value = !showAddPopup.value; return
@@ -345,11 +345,16 @@ function buildSearchUrl(): string | null {
   return url.href
 }
 
-function onSearchNewTab(): void {
+function doSearchNewTab(activate: boolean): void {
   const href = buildSearchUrl()
   if (!href) return
-  Promise.resolve(GM.openInTab(href, { active: galleryNewTabActive.value })).catch(() => {})
+  Promise.resolve(GM.openInTab(href, { active: activate })).catch(() => {})
   onClearSelection()
+}
+
+// action bar 的 Search 按鈕沒有對應的「切換過去」設定，一律切換
+function onSearchNewTab(): void {
+  doSearchNewTab(true)
 }
 
 function onSearchCurrent(): void {
