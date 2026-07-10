@@ -101,7 +101,7 @@ const INITIAL_SETTINGS = {
   // 持久化：跨頁／重開瀏覽器後維持上次選擇，不再回退到 browser locale
   searchPanelShowCJK: isCJKLocale(),
   // SearchPanel 進階面板（legend-style 卡片）顯示開關，對應 SettingsPopup
-  // 'searchBar' tab 的 checkbox。故意不做「整個 TagBar 隱藏」的 toggle——
+  // 'tagbar' tab 的 checkbox。故意不做「整個 TagBar 隱藏」的 toggle——
   // 關掉就 lock out 自己（設定打不開）
   showSearchPanel: true,
   // SearchPanel chip 顯示語言模式：

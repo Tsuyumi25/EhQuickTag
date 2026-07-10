@@ -51,9 +51,8 @@ export default {
   // Settings
   'settings.title': 'Settings',
   'settings.close': 'Close',
-  'settings.tabSearch': 'Search',
-  'settings.tabSearchBar': 'Search Bar',
-  'settings.tabAppearance': 'Appearance',
+  'settings.tabGeneral': 'General',
+  'settings.tabTagBar': 'Tag Bar',
   'settings.tabData': 'Data',
   'settings.tabAbout': 'About',
   'settings.searchBarVisibility': 'Component Visibility',

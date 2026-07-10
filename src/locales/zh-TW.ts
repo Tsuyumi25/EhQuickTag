@@ -51,9 +51,8 @@ export default {
   // Settings
   'settings.title': '設定',
   'settings.close': '關閉',
-  'settings.tabSearch': '搜尋',
-  'settings.tabSearchBar': '搜尋欄',
-  'settings.tabAppearance': '外觀',
+  'settings.tabGeneral': '通用',
+  'settings.tabTagBar': '標籤列',
   'settings.tabData': '資料',
   'settings.tabAbout': '關於',
   'settings.searchBarVisibility': '元件顯示',

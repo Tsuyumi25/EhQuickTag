@@ -51,9 +51,8 @@ export default {
   // Settings
   'settings.title': '설정',
   'settings.close': '닫기',
-  'settings.tabSearch': '검색',
-  'settings.tabSearchBar': '검색 바',
-  'settings.tabAppearance': '외관',
+  'settings.tabGeneral': '일반',
+  'settings.tabTagBar': '태그 바',
   'settings.tabData': '데이터',
   'settings.tabAbout': 'About',
   'settings.searchBarVisibility': '컴포넌트 표시',

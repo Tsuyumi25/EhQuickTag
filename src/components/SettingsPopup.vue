@@ -41,13 +41,16 @@ const dragOptions = {
 
 // --- tabs ---
 
-const tabKeys = ['appearance', 'searchBar', 'search', 'gallery', 'data', 'about'] as const
+// tab 依 scope 組織：general 收「兩個 scope 都作用」的真全域（介面語言、
+// OpenCC、字體），tagbar / gallery 各對應 userscript 住在頁面上的兩個實體，
+// data 是共用基礎設施。per-scope 的偏好（面板語言、定義面板語言）留在各自
+// scope tab，不集中——集中就變回兩套分類軸混用
+const tabKeys = ['general', 'tagbar', 'gallery', 'data', 'about'] as const
 type TabKey = typeof tabKeys[number]
 
 const tabLabelKeys: Record<TabKey, string> = {
-  searchBar: 'settings.tabSearchBar',
-  search: 'settings.tabSearch',
-  appearance: 'settings.tabAppearance',
+  general: 'settings.tabGeneral',
+  tagbar: 'settings.tabTagBar',
   gallery: 'settings.tabGallery',
   data: 'settings.tabData',
   about: 'settings.tabAbout',
@@ -65,7 +68,7 @@ function narrowTab(s: string | null | undefined): TabKey | null {
   return s && (tabKeys as readonly string[]).includes(s) ? (s as TabKey) : null
 }
 
-const activeTab = ref<TabKey | null>(narrowTab(props.initialTab) ?? 'appearance')
+const activeTab = ref<TabKey | null>(narrowTab(props.initialTab) ?? 'general')
 
 const dblClickOptions = [
   { labelKey: 'settings.dblClickLeft', ref: dblClickLeft },
@@ -313,9 +316,9 @@ function onEditorPurge() {
       </nav>
 
       <div class="eqt-settings__panel">
-        <!-- 設定：搜尋欄顯示 -->
+        <!-- 設定：標籤列（搜尋頁 scope）-->
         <div v-show="editingProfileIdx < 0" class="eqt-settings__panel-inner">
-          <div v-show="activeTab === 'searchBar'" class="eqt-settings__tab-content">
+          <div v-show="activeTab === 'tagbar'" class="eqt-settings__tab-content">
             <h4 class="eqt-settings__subtitle">{{ t('settings.searchBarVisibility') }}</h4>
             <label class="eqt-settings__row">
               <input
@@ -347,9 +350,6 @@ function onEditorPurge() {
               >{{ t(m.labelKey) }}</button>
             </div>
 
-          </div>
-
-          <div v-show="activeTab === 'search'" class="eqt-settings__tab-content">
             <h4 class="eqt-settings__subtitle">{{ t('settings.nsFormat') }}</h4>
             <div class="eqt-settings__locale-row">
               <button
@@ -406,6 +406,44 @@ function onEditorPurge() {
               />
               <span class="eqt-settings__label">{{ t('settings.newTabActivate') }}</span>
             </label>
+
+            <h4 class="eqt-settings__subtitle">{{ t('settings.tagStyle') }}</h4>
+            <div class="eqt-settings__locale-row">
+              <button
+                v-for="preset in TAG_STYLE_PRESETS"
+                :key="preset.id"
+                type="button"
+                class="eqt-settings__locale-btn"
+                :class="{ 'eqt-settings__locale-btn--active': tagStylePreset === preset.id }"
+                @click="tagStylePreset = preset.id"
+              >{{ t(preset.labelKey) }}</button>
+            </div>
+
+            <label class="eqt-settings__row">
+              <input
+                type="checkbox"
+                :checked="useAccentOnInclude"
+                @change="useAccentOnInclude = ($event.target as HTMLInputElement).checked"
+              />
+              <span class="eqt-settings__label">{{ t('settings.useAccentOnInclude') }}</span>
+            </label>
+            <p class="eqt-settings__hint">
+              {{ t('settings.useAccentOnIncludeHint') }}
+            </p>
+
+            <h4 class="eqt-settings__subtitle">{{ t('settings.preview') }}</h4>
+            <div class="eqt-settings__font-preview" :class="currentTagStyleClass">
+              <template v-for="(line, li) in previewLines" :key="li">
+                <div v-if="line.kind === 'buttons' && line.buttons.length" class="eqt-settings__preview-line">
+                  <span
+                    v-for="(b, ti) in line.buttons"
+                    :key="ti"
+                    class="eqt-settings__preview-tag"
+                    :class="{ 'eqt-settings__preview-tag--url': b.kind === 'url' }"
+                  >{{ b.label || (b.kind === 'tag' ? b.tags.join(', ') : b.url) }}</span>
+                </div>
+              </template>
+            </div>
           </div>
 
           <!-- 設定：畫廊 -->
@@ -570,8 +608,8 @@ function onEditorPurge() {
             </div>
           </div>
 
-          <!-- 設定：外觀 -->
-          <div v-show="activeTab === 'appearance'" class="eqt-settings__tab-content">
+          <!-- 設定：通用（跨 scope 的真全域）-->
+          <div v-show="activeTab === 'general'" class="eqt-settings__tab-content">
             <h4 class="eqt-settings__subtitle">{{ t('settings.language') }}</h4>
             <div class="eqt-settings__locale-row">
               <button
@@ -600,30 +638,6 @@ function onEditorPurge() {
             </div>
             <p class="eqt-settings__hint">
               {{ t('settings.convertToTraditionalHint') }}
-            </p>
-
-            <h4 class="eqt-settings__subtitle">{{ t('settings.tagStyle') }}</h4>
-            <div class="eqt-settings__locale-row">
-              <button
-                v-for="preset in TAG_STYLE_PRESETS"
-                :key="preset.id"
-                type="button"
-                class="eqt-settings__locale-btn"
-                :class="{ 'eqt-settings__locale-btn--active': tagStylePreset === preset.id }"
-                @click="tagStylePreset = preset.id"
-              >{{ t(preset.labelKey) }}</button>
-            </div>
-
-            <label class="eqt-settings__row">
-              <input
-                type="checkbox"
-                :checked="useAccentOnInclude"
-                @change="useAccentOnInclude = ($event.target as HTMLInputElement).checked"
-              />
-              <span class="eqt-settings__label">{{ t('settings.useAccentOnInclude') }}</span>
-            </label>
-            <p class="eqt-settings__hint">
-              {{ t('settings.useAccentOnIncludeHint') }}
             </p>
 
             <h4 class="eqt-settings__subtitle">{{ t('settings.fontFamily') }}</h4>

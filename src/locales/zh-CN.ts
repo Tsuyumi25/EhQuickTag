@@ -51,9 +51,8 @@ export default {
   // Settings
   'settings.title': '设置',
   'settings.close': '关闭',
-  'settings.tabSearch': '搜索',
-  'settings.tabSearchBar': '搜索栏',
-  'settings.tabAppearance': '外观',
+  'settings.tabGeneral': '通用',
+  'settings.tabTagBar': '标签列',
   'settings.tabData': '数据',
   'settings.tabAbout': '关于',
   'settings.searchBarVisibility': '组件显示',

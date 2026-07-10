@@ -198,7 +198,7 @@ const editingLineColor = computed(() => {
 
 const showSettings = ref(false)
 // 開設定時可以指定預設打開的 tab，由 caller (TagBar / GalleryTagList 等) 提供
-// 對應 context。null 走 SettingsPopup 自己的 'appearance' 預設
+// 對應 context。null 走 SettingsPopup 自己的 'general' 預設
 const initialSettingsTab = ref<string | null>(null)
 function openSettings(tab: string | null = null) {
   initialSettingsTab.value = tab

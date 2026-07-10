@@ -51,9 +51,8 @@ export default {
   // Settings
   'settings.title': '設定',
   'settings.close': '閉じる',
-  'settings.tabSearch': '検索',
-  'settings.tabSearchBar': '検索バー',
-  'settings.tabAppearance': '外観',
+  'settings.tabGeneral': '一般',
+  'settings.tabTagBar': 'タグバー',
   'settings.tabData': 'データ',
   'settings.tabAbout': 'About',
   'settings.searchBarVisibility': 'コンポーネント表示',
