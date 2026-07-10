@@ -13,7 +13,7 @@ import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { GM } from '$'
 import { serializeEntry } from '@/services/searchSyntax'
 import { findEntryByNsTag, DEFAULT_NS_ORDER, tagDbVersion } from '@/services/tagDb'
-import { nsFormat, defaultExactMatch, galleryDragSelectEnabled, galleryDblClickLeft, galleryDblClickRight, galleryDblClickLeftNewTabActive, galleryDblClickRightNewTabActive, type GalleryDblClickAction } from '@/services/store'
+import { nsFormat, defaultExactMatch, galleryDragSelectEnabled, galleryDblClickLeft, galleryDblClickRight, galleryDblClickLeftNewTabActive, galleryDblClickRightNewTabActive, galleryTaglistZoom, type GalleryDblClickAction } from '@/services/store'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
 import { t, isZhLocale, locale } from '@/composables/useI18n'
 import { batchVote, type VoteState } from '@/services/galleryVote'
@@ -443,6 +443,7 @@ watch(selection, () => {
 <template>
   <div
     class="eqt-gallery-taglist"
+    :style="{ zoom: galleryTaglistZoom / 100 }"
     @mousedown="onAreaMouseDown"
     @dblclick="onTaglistDblClick"
     @contextmenu="onTaglistContextMenu"

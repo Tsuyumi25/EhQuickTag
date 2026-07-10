@@ -137,6 +137,10 @@ const INITIAL_SETTINGS = {
   galleryTaglistExpand: false,
   // taglist 基準高 (px)。預設 330 = 原生 EH meta 區高。
   galleryTaglistHeight: 330,
+  // taglist 內容縮放 (%)。用 CSS zoom 縮放 chips 區——zoom 參與 layout（transform
+  // 不參與），chip 的 client rect 跟滑鼠座標同步縮放，elementFromPoint hit-test
+  // 不需要換算。基準高與縮放正交：高度管盒子、zoom 管內容。
+  galleryTaglistZoom: 100,
   // Intro panel 預設先顯示哪邊定義 (中文 trans db / 英文 wiki)，使用者一律可在
   // panel 標題列 toggle 切換、選擇只在當下 panel session 有效，下次點 chip 又
   // 回 primary。'auto' = locale 推 (中文 locale → zh, 其他 → en)
@@ -187,6 +191,7 @@ export const taggingEnhancerEnabled = refs.taggingEnhancerEnabled
 export const galleryDragSelectEnabled = refs.galleryDragSelectEnabled
 export const galleryTaglistExpand = refs.galleryTaglistExpand
 export const galleryTaglistHeight = refs.galleryTaglistHeight
+export const galleryTaglistZoom = refs.galleryTaglistZoom
 export const introPanelPrimaryLang = refs.introPanelPrimaryLang
 export const galleryDblClickLeft = refs.galleryDblClickLeft
 export const galleryDblClickRight = refs.galleryDblClickRight
@@ -205,6 +210,7 @@ const SETTING_VALIDATORS: Partial<{ [K in SettingKey]: (v: unknown) => boolean }
   galleryDblClickLeft:    v => GALLERY_DBL_CLICK_ACTIONS.some(a => a.id === v),
   galleryDblClickRight:   v => GALLERY_DBL_CLICK_ACTIONS.some(a => a.id === v),
   galleryTaglistHeight:   v => typeof v === 'number' && Number.isFinite(v) && v > 0,
+  galleryTaglistZoom:     v => typeof v === 'number' && Number.isFinite(v) && v >= 50 && v <= 200,
   tagDbMirror:            v => typeof v === 'string' && v in TAG_DB_MIRRORS,
   tagCountMirror:         v => typeof v === 'string' && v in TAG_COUNT_MIRRORS,
   tagWikiMirror:          v => typeof v === 'string' && v in TAG_WIKI_MIRRORS,

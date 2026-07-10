@@ -23,7 +23,7 @@ import {
   tagWikiMirror, tagWikiTtlDays,
   tagStylePreset, useAccentOnInclude, type DblClickAction,
   showSearchPanel, searchPanelLangMode, convertToTraditional, enableHistory,
-  taggingEnhancerEnabled, galleryDragSelectEnabled, galleryTaglistExpand, galleryTaglistHeight, introPanelPrimaryLang, wikiPreludeExpanded,
+  taggingEnhancerEnabled, galleryDragSelectEnabled, galleryTaglistExpand, galleryTaglistHeight, galleryTaglistZoom, introPanelPrimaryLang, wikiPreludeExpanded,
   galleryDblClickLeft, galleryDblClickRight, galleryDblClickLeftNewTabActive, galleryDblClickRightNewTabActive,
   SEARCH_PANEL_LANG_MODES, CONVERT_TO_TRADITIONAL_MODES, INTRO_PANEL_PRIMARY_LANGS,
   GALLERY_DBL_CLICK_ACTIONS, type GalleryDblClickAction,
@@ -503,7 +503,7 @@ function onEditorPurge() {
             </section>
 
             <section class="eqt-settings__section">
-              <h4 class="eqt-settings__subtitle"><UnfoldVertical :size="14" /> {{ t('settings.galleryTaglistHeightMode') }}</h4>
+              <h4 class="eqt-settings__subtitle"><UnfoldVertical :size="14" /> {{ t('settings.sectionGallerySize') }}</h4>
               <div class="eqt-settings__field-row">
                 <label class="eqt-settings__field-label">{{ t('settings.galleryTaglistHeight') }}</label>
                 <input
@@ -537,6 +537,38 @@ function onEditorPurge() {
                   t('settings.galleryTaglistHeightTipAfter')
                 }}
               </p>
+              <div class="eqt-settings__field-row">
+                <label class="eqt-settings__field-label">{{ t('settings.galleryTaglistZoom') }}</label>
+                <input
+                  class="eqt-settings__range"
+                  type="range"
+                  min="50"
+                  max="200"
+                  step="5"
+                  :disabled="!taggingEnhancerEnabled"
+                  v-model.number="galleryTaglistZoom"
+                  :title="t('settings.galleryTaglistZoom')"
+                />
+                <span class="eqt-settings__label">{{ galleryTaglistZoom }}%</span>
+              </div>
+              <div class="eqt-settings__gallery-preview">
+                <div class="eqt-gallery-taglist" :style="{ zoom: galleryTaglistZoom / 100 }">
+                  <div class="eqt-gallery-taglist__row">
+                    <div class="eqt-gallery-taglist__label">language:</div>
+                    <div class="eqt-gallery-taglist__cells">
+                      <div class="eqt-gallery-chip eqt-gallery-chip--gt"><span class="eqt-gallery-chip__body">chinese</span></div>
+                      <div class="eqt-gallery-chip eqt-gallery-chip--gt"><span class="eqt-gallery-chip__body">translated</span></div>
+                    </div>
+                  </div>
+                  <div class="eqt-gallery-taglist__row">
+                    <div class="eqt-gallery-taglist__label">other:</div>
+                    <div class="eqt-gallery-taglist__cells">
+                      <div class="eqt-gallery-chip eqt-gallery-chip--gtl"><span class="eqt-gallery-chip__body">full color</span></div>
+                      <div class="eqt-gallery-chip eqt-gallery-chip--gtw"><span class="eqt-gallery-chip__body">story arc</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </section>
 
             <section class="eqt-settings__section">
@@ -1041,6 +1073,28 @@ function onEditorPurge() {
     .eqt-dark & {
       background: var(--eqt-bg-elevated);
     }
+  }
+
+  &__range {
+    width: 160px;
+    height: var(--eqt-ctrl-h);
+    margin: 0;
+    accent-color: var(--eqt-border);
+
+    &:disabled {
+      opacity: 0.5;
+    }
+  }
+
+  // 迷你 taglist 預覽：直接複用 gallery-taglist.scss 的 chip/grid class，
+  // 跟實際 gallery 同一套樣式源，不另維護一份「長得像」的複製品。
+  // pointer-events 關掉——純展示，不讓 chip :hover 假裝可點
+  &__gallery-preview {
+    pointer-events: none;
+    border: 1px dashed var(--eqt-border);
+    border-radius: 4px;
+    padding: 4px 6px;
+    overflow: hidden;
   }
 
   &__hint {
