@@ -819,6 +819,10 @@ function onEditorPurge() {
   width: clamp(44rem, 94vw, 88rem);
   min-height: 94vh;
   max-height: 94vh;
+  // 面板內所有表單控制項的統一高度。25px 對齊原設計的中心值：全域自繪
+  // checkbox 是 25px（--eqt-checkbox-size）、locale-btn 原本 padding 撐出
+  // ~25px，其餘控制項向這個基準收斂
+  --eqt-ctrl-h: 25px;
 }
 
 .eqt-settings__sidebar {
@@ -958,6 +962,7 @@ function onEditorPurge() {
     display: flex;
     align-items: center;
     gap: 8px;
+    min-height: var(--eqt-ctrl-h);
 
     // 整個 row 區域可點 → checkbox toggle。@at-root 跳出 nesting，避免被
     // 編成 `.eqt-settings__row label.eqt-settings__row` (descendant chain)；
@@ -978,6 +983,7 @@ function onEditorPurge() {
     align-items: center;
     gap: 8px;
     font-size: 13px;
+    min-height: var(--eqt-ctrl-h);
   }
 
   &__field-label {
@@ -998,7 +1004,8 @@ function onEditorPurge() {
 
   &__locale-btn {
     @include btn-toned;
-    padding: 3px 10px;
+    height: var(--eqt-ctrl-h);
+    padding: 0 10px;
 
     &--active {
       background: var(--eqt-bg-active);
@@ -1007,7 +1014,16 @@ function onEditorPurge() {
   }
 
   &__select {
-    padding: 3px 6px;
+    // EH g.css 對 bare `select` 全站塞 min-height:27px、margin:0 1px 1px、
+    // font-weight:bold——min-height 會蓋過 height、margin 讓對齊歪 1px、
+    // bold 比旁邊控制項粗一截，全部歸零奪回控制權（class (0,1,0) 贏
+    // element (0,0,1)）
+    min-height: 0;
+    margin: 0;
+    font-weight: inherit;
+    height: var(--eqt-ctrl-h);
+    padding: 0 6px;
+    box-sizing: border-box;
     border: var(--eqt-border-width) solid var(--eqt-border);
     border-radius: 3px;
     // light 用 page bg（#fff 太刺），dark 走 elevated (#34353b) 對齊 EH form
@@ -1066,7 +1082,9 @@ function onEditorPurge() {
 
   &__input--short {
     width: 5em;
-    padding: 4px 6px;
+    height: var(--eqt-ctrl-h);
+    padding: 0 6px;
+    box-sizing: border-box;
     border: var(--eqt-border-width) solid var(--eqt-border);
     border-radius: 3px;
     background: var(--eqt-bg);
@@ -1085,7 +1103,8 @@ function onEditorPurge() {
 
   &__refresh-btn {
     @include btn-toned;
-    padding: 4px 8px;
+    height: var(--eqt-ctrl-h);
+    padding: 0 8px;
 
     &:disabled {
       opacity: 0.5;
@@ -1146,7 +1165,8 @@ function onEditorPurge() {
 
   // 通用單行文字輸入：字體 family 輸入、資料 mirror 網址（readonly）共用
   &__text-input {
-    padding: 4px 6px;
+    height: var(--eqt-ctrl-h);
+    padding: 0 6px;
     border: var(--eqt-border-width) solid var(--eqt-border);
     border-radius: 3px;
     font-size: 12px;
