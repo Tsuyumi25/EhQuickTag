@@ -80,6 +80,7 @@ export default {
   'settings.newTabActivate': 'Switch to new tab when searching',
   'settings.reset': 'Reset',
   'settings.resetTitle': 'Reset to default',
+  'settings.sectionTagFormat': 'Tag Format',
   'settings.nsFormat': 'Namespace format',
   'settings.nsFormatLong': 'Long (female)',
   'settings.nsFormatShort': 'Short (f)',
@@ -249,6 +250,7 @@ export default {
 
   // Gallery settings tab
   'settings.tabGallery': 'Gallery',
+  'settings.sectionGalleryToggles': 'Features',
   'settings.taggingEnhancer': 'Enable Tagging Enhancer',
   'settings.taggingEnhancerHint': 'Takes over the taglist on /g/ detail pages with vote / search / picker affordances. When off, the native UI is preserved. Reload the page to apply.',
   'settings.galleryDragSelect': 'Enable drag-select',
@@ -273,7 +275,8 @@ export default {
   'intro.togglePrelude': 'Toggle notes',
   'settings.wikiPreludeExpanded': 'Expand wiki notes by default',
   'settings.wikiPreludeExpandedHint': 'Wiki notes (Reminder / warnings / cross-refs) fold up by default to save panel space. Turn on to expand automatically each time a chip opens.',
-  'settings.introPanelPrimaryLang': 'Definition panel primary language',
+  'settings.sectionIntroPanel': 'Definition Panel',
+  'settings.introPanelPrimaryLang': 'Primary language',
   'settings.introPanelPrimaryLangHint': 'Which side shows first. Toggle button on the panel always lets you switch.',
   'settings.introPanelPrimaryLangAuto': 'Auto',
   'settings.introPanelPrimaryLangZh': '中文',

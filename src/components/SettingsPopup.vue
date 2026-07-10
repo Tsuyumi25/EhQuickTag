@@ -319,367 +319,408 @@ function onEditorPurge() {
         <!-- 設定：標籤列（搜尋頁 scope）-->
         <div v-show="editingProfileIdx < 0" class="eqt-settings__panel-inner">
           <div v-show="activeTab === 'tagbar'" class="eqt-settings__tab-content">
-            <h4 class="eqt-settings__subtitle">{{ t('settings.searchBarVisibility') }}</h4>
-            <label class="eqt-settings__row">
-              <input
-                type="checkbox"
-                :checked="showSearchPanel"
-                @change="showSearchPanel = ($event.target as HTMLInputElement).checked"
-              />
-              <span class="eqt-settings__label">{{ t('settings.showSearchPanel') }}</span>
-            </label>
+            <section class="eqt-settings__section">
+              <h4 class="eqt-settings__subtitle">{{ t('settings.searchBarVisibility') }}</h4>
+              <label class="eqt-settings__row">
+                <input
+                  type="checkbox"
+                  :checked="showSearchPanel"
+                  @change="showSearchPanel = ($event.target as HTMLInputElement).checked"
+                />
+                <span class="eqt-settings__label">{{ t('settings.showSearchPanel') }}</span>
+              </label>
 
-            <label class="eqt-settings__row">
-              <input
-                type="checkbox"
-                :checked="enableHistory"
-                @change="enableHistory = ($event.target as HTMLInputElement).checked"
-              />
-              <span class="eqt-settings__label">{{ t('settings.enableHistory') }}</span>
-            </label>
+              <label class="eqt-settings__row">
+                <input
+                  type="checkbox"
+                  :checked="enableHistory"
+                  @change="enableHistory = ($event.target as HTMLInputElement).checked"
+                />
+                <span class="eqt-settings__label">{{ t('settings.enableHistory') }}</span>
+              </label>
+            </section>
 
-            <h4 class="eqt-settings__subtitle">{{ t('settings.searchPanelLang') }}</h4>
-            <div class="eqt-settings__locale-row">
-              <button
-                v-for="m in SEARCH_PANEL_LANG_MODES"
-                :key="m.id"
-                type="button"
-                class="eqt-settings__locale-btn"
-                :class="{ 'eqt-settings__locale-btn--active': searchPanelLangMode === m.id }"
-                @click="searchPanelLangMode = m.id"
-              >{{ t(m.labelKey) }}</button>
-            </div>
+            <section class="eqt-settings__section">
+              <h4 class="eqt-settings__subtitle">{{ t('settings.searchPanelLang') }}</h4>
+              <div class="eqt-settings__locale-row">
+                <button
+                  v-for="m in SEARCH_PANEL_LANG_MODES"
+                  :key="m.id"
+                  type="button"
+                  class="eqt-settings__locale-btn"
+                  :class="{ 'eqt-settings__locale-btn--active': searchPanelLangMode === m.id }"
+                  @click="searchPanelLangMode = m.id"
+                >{{ t(m.labelKey) }}</button>
+              </div>
+            </section>
 
-            <h4 class="eqt-settings__subtitle">{{ t('settings.nsFormat') }}</h4>
-            <div class="eqt-settings__locale-row">
-              <button
-                type="button"
-                class="eqt-settings__locale-btn"
-                :class="{ 'eqt-settings__locale-btn--active': nsFormat === 'long' }"
-                @click="nsFormat = 'long'"
-              >{{ t('settings.nsFormatLong') }}</button>
-              <button
-                type="button"
-                class="eqt-settings__locale-btn"
-                :class="{ 'eqt-settings__locale-btn--active': nsFormat === 'short' }"
-                @click="nsFormat = 'short'"
-              >{{ t('settings.nsFormatShort') }}</button>
-            </div>
-
-            <label class="eqt-settings__row">
-              <input
-                type="checkbox"
-                :checked="defaultExactMatch"
-                @change="defaultExactMatch = ($event.target as HTMLInputElement).checked"
-              />
-              <span class="eqt-settings__label">{{ t('settings.defaultExactMatch') }}</span>
-            </label>
-            <p class="eqt-settings__hint">
-              {{ t('settings.defaultExactMatchHint') }}
-            </p>
-
-            <h4 class="eqt-settings__subtitle">{{ t('settings.dblClickActions') }}</h4>
-            <div
-              v-for="({ labelKey, ref: r }) in dblClickOptions"
-              :key="labelKey"
-              class="eqt-settings__dblclick-row"
-            >
-              <label class="eqt-settings__dblclick-label">{{ t(labelKey) }}</label>
-              <select
-                class="eqt-settings__select"
-                :value="r.value"
-                @change="r.value = ($event.target as HTMLSelectElement).value as DblClickAction"
-              >
-                <option value="search">{{ t('settings.actionSearchCurrent') }}</option>
-                <option value="searchNewTab">{{ t('settings.actionSearchNewTab') }}</option>
-                <option value="clearSearch">{{ t('settings.actionClear') }}</option>
-                <option value="toggleEdit">{{ t('settings.actionToggleEdit') }}</option>
-                <option value="openSearchPopup">{{ t('settings.actionOpenSearchPopup') }}</option>
-                <option value="none">{{ t('settings.actionNone') }}</option>
-              </select>
-            </div>
-            <label class="eqt-settings__row">
-              <input
-                type="checkbox"
-                :checked="newTabActive"
-                @change="newTabActive = ($event.target as HTMLInputElement).checked"
-              />
-              <span class="eqt-settings__label">{{ t('settings.newTabActivate') }}</span>
-            </label>
-
-            <h4 class="eqt-settings__subtitle">{{ t('settings.tagStyle') }}</h4>
-            <div class="eqt-settings__locale-row">
-              <button
-                v-for="preset in TAG_STYLE_PRESETS"
-                :key="preset.id"
-                type="button"
-                class="eqt-settings__locale-btn"
-                :class="{ 'eqt-settings__locale-btn--active': tagStylePreset === preset.id }"
-                @click="tagStylePreset = preset.id"
-              >{{ t(preset.labelKey) }}</button>
-            </div>
-
-            <label class="eqt-settings__row">
-              <input
-                type="checkbox"
-                :checked="useAccentOnInclude"
-                @change="useAccentOnInclude = ($event.target as HTMLInputElement).checked"
-              />
-              <span class="eqt-settings__label">{{ t('settings.useAccentOnInclude') }}</span>
-            </label>
-            <p class="eqt-settings__hint">
-              {{ t('settings.useAccentOnIncludeHint') }}
-            </p>
-
-            <h4 class="eqt-settings__subtitle">{{ t('settings.preview') }}</h4>
-            <div class="eqt-settings__font-preview" :class="currentTagStyleClass">
-              <template v-for="(line, li) in previewLines" :key="li">
-                <div v-if="line.kind === 'buttons' && line.buttons.length" class="eqt-settings__preview-line">
-                  <span
-                    v-for="(b, ti) in line.buttons"
-                    :key="ti"
-                    class="eqt-settings__preview-tag"
-                    :class="{ 'eqt-settings__preview-tag--url': b.kind === 'url' }"
-                  >{{ b.label || (b.kind === 'tag' ? b.tags.join(', ') : b.url) }}</span>
+            <section class="eqt-settings__section">
+              <h4 class="eqt-settings__subtitle">{{ t('settings.sectionTagFormat') }}</h4>
+              <div class="eqt-settings__field-row">
+                <label class="eqt-settings__field-label">{{ t('settings.nsFormat') }}</label>
+                <div class="eqt-settings__locale-row">
+                  <button
+                    type="button"
+                    class="eqt-settings__locale-btn"
+                    :class="{ 'eqt-settings__locale-btn--active': nsFormat === 'long' }"
+                    @click="nsFormat = 'long'"
+                  >{{ t('settings.nsFormatLong') }}</button>
+                  <button
+                    type="button"
+                    class="eqt-settings__locale-btn"
+                    :class="{ 'eqt-settings__locale-btn--active': nsFormat === 'short' }"
+                    @click="nsFormat = 'short'"
+                  >{{ t('settings.nsFormatShort') }}</button>
                 </div>
-              </template>
-            </div>
+              </div>
+
+              <label class="eqt-settings__row">
+                <input
+                  type="checkbox"
+                  :checked="defaultExactMatch"
+                  @change="defaultExactMatch = ($event.target as HTMLInputElement).checked"
+                />
+                <span class="eqt-settings__label">{{ t('settings.defaultExactMatch') }}</span>
+              </label>
+              <p class="eqt-settings__hint">
+                {{ t('settings.defaultExactMatchHint') }}
+              </p>
+            </section>
+
+            <section class="eqt-settings__section">
+              <h4 class="eqt-settings__subtitle">{{ t('settings.dblClickActions') }}</h4>
+              <div
+                v-for="({ labelKey, ref: r }) in dblClickOptions"
+                :key="labelKey"
+                class="eqt-settings__field-row"
+              >
+                <label class="eqt-settings__field-label">{{ t(labelKey) }}</label>
+                <select
+                  class="eqt-settings__select"
+                  :value="r.value"
+                  @change="r.value = ($event.target as HTMLSelectElement).value as DblClickAction"
+                >
+                  <option value="search">{{ t('settings.actionSearchCurrent') }}</option>
+                  <option value="searchNewTab">{{ t('settings.actionSearchNewTab') }}</option>
+                  <option value="clearSearch">{{ t('settings.actionClear') }}</option>
+                  <option value="toggleEdit">{{ t('settings.actionToggleEdit') }}</option>
+                  <option value="openSearchPopup">{{ t('settings.actionOpenSearchPopup') }}</option>
+                  <option value="none">{{ t('settings.actionNone') }}</option>
+                </select>
+              </div>
+              <label class="eqt-settings__row">
+                <input
+                  type="checkbox"
+                  :checked="newTabActive"
+                  @change="newTabActive = ($event.target as HTMLInputElement).checked"
+                />
+                <span class="eqt-settings__label">{{ t('settings.newTabActivate') }}</span>
+              </label>
+            </section>
+
+            <section class="eqt-settings__section">
+              <h4 class="eqt-settings__subtitle">{{ t('settings.tagStyle') }}</h4>
+              <div class="eqt-settings__locale-row">
+                <button
+                  v-for="preset in TAG_STYLE_PRESETS"
+                  :key="preset.id"
+                  type="button"
+                  class="eqt-settings__locale-btn"
+                  :class="{ 'eqt-settings__locale-btn--active': tagStylePreset === preset.id }"
+                  @click="tagStylePreset = preset.id"
+                >{{ t(preset.labelKey) }}</button>
+              </div>
+
+              <label class="eqt-settings__row">
+                <input
+                  type="checkbox"
+                  :checked="useAccentOnInclude"
+                  @change="useAccentOnInclude = ($event.target as HTMLInputElement).checked"
+                />
+                <span class="eqt-settings__label">{{ t('settings.useAccentOnInclude') }}</span>
+              </label>
+              <p class="eqt-settings__hint">
+                {{ t('settings.useAccentOnIncludeHint') }}
+              </p>
+            </section>
+
+            <section class="eqt-settings__section">
+              <h4 class="eqt-settings__subtitle">{{ t('settings.preview') }}</h4>
+              <div class="eqt-settings__font-preview" :class="currentTagStyleClass">
+                <template v-for="(line, li) in previewLines" :key="li">
+                  <div v-if="line.kind === 'buttons' && line.buttons.length" class="eqt-settings__preview-line">
+                    <span
+                      v-for="(b, ti) in line.buttons"
+                      :key="ti"
+                      class="eqt-settings__preview-tag"
+                      :class="{ 'eqt-settings__preview-tag--url': b.kind === 'url' }"
+                    >{{ b.label || (b.kind === 'tag' ? b.tags.join(', ') : b.url) }}</span>
+                  </div>
+                </template>
+              </div>
+            </section>
           </div>
 
           <!-- 設定：畫廊 -->
           <div v-show="activeTab === 'gallery'" class="eqt-settings__tab-content">
-            <label class="eqt-settings__row">
-              <input
-                type="checkbox"
-                :checked="taggingEnhancerEnabled"
-                @change="taggingEnhancerEnabled = ($event.target as HTMLInputElement).checked"
-              />
-              <span class="eqt-settings__label">{{ t('settings.taggingEnhancer') }}</span>
-            </label>
-            <p class="eqt-settings__hint">
-              {{ t('settings.taggingEnhancerHint') }}
-            </p>
+            <section class="eqt-settings__section">
+              <h4 class="eqt-settings__subtitle">{{ t('settings.sectionGalleryToggles') }}</h4>
+              <label class="eqt-settings__row">
+                <input
+                  type="checkbox"
+                  :checked="taggingEnhancerEnabled"
+                  @change="taggingEnhancerEnabled = ($event.target as HTMLInputElement).checked"
+                />
+                <span class="eqt-settings__label">{{ t('settings.taggingEnhancer') }}</span>
+              </label>
+              <p class="eqt-settings__hint">
+                {{ t('settings.taggingEnhancerHint') }}
+              </p>
 
-            <label class="eqt-settings__row">
-              <input
-                type="checkbox"
-                :checked="galleryDragSelectEnabled"
-                :disabled="!taggingEnhancerEnabled"
-                @change="galleryDragSelectEnabled = ($event.target as HTMLInputElement).checked"
-              />
-              <span class="eqt-settings__label">{{ t('settings.galleryDragSelect') }}</span>
-            </label>
-            <p class="eqt-settings__hint">
-              {{ t('settings.galleryDragSelectHint') }}
-            </p>
+              <label class="eqt-settings__row">
+                <input
+                  type="checkbox"
+                  :checked="galleryDragSelectEnabled"
+                  :disabled="!taggingEnhancerEnabled"
+                  @change="galleryDragSelectEnabled = ($event.target as HTMLInputElement).checked"
+                />
+                <span class="eqt-settings__label">{{ t('settings.galleryDragSelect') }}</span>
+              </label>
+              <p class="eqt-settings__hint">
+                {{ t('settings.galleryDragSelectHint') }}
+              </p>
+            </section>
 
-            <h4 class="eqt-settings__subtitle">{{ t('settings.galleryTaglistHeightMode') }}</h4>
-            <div class="eqt-settings__row">
-              <div class="eqt-settings__locale-row">
-                <button
-                  type="button"
-                  class="eqt-settings__locale-btn"
-                  :class="{ 'eqt-settings__locale-btn--active': galleryTaglistExpand }"
-                  :disabled="!taggingEnhancerEnabled"
-                  @click="galleryTaglistExpand = true"
-                >{{ t('settings.galleryTaglistExpand') }}</button>
-                <button
-                  type="button"
-                  class="eqt-settings__locale-btn"
-                  :class="{ 'eqt-settings__locale-btn--active': !galleryTaglistExpand }"
-                  :disabled="!taggingEnhancerEnabled"
-                  @click="galleryTaglistExpand = false"
-                >{{ t('settings.galleryTaglistHeight') }}</button>
+            <section class="eqt-settings__section">
+              <h4 class="eqt-settings__subtitle">{{ t('settings.galleryTaglistHeightMode') }}</h4>
+              <div class="eqt-settings__row">
+                <div class="eqt-settings__locale-row">
+                  <button
+                    type="button"
+                    class="eqt-settings__locale-btn"
+                    :class="{ 'eqt-settings__locale-btn--active': galleryTaglistExpand }"
+                    :disabled="!taggingEnhancerEnabled"
+                    @click="galleryTaglistExpand = true"
+                  >{{ t('settings.galleryTaglistExpand') }}</button>
+                  <button
+                    type="button"
+                    class="eqt-settings__locale-btn"
+                    :class="{ 'eqt-settings__locale-btn--active': !galleryTaglistExpand }"
+                    :disabled="!taggingEnhancerEnabled"
+                    @click="galleryTaglistExpand = false"
+                  >{{ t('settings.galleryTaglistHeight') }}</button>
+                </div>
+                <input
+                  class="eqt-settings__input eqt-settings__input--short"
+                  type="number"
+                  min="200"
+                  max="1000"
+                  step="10"
+                  :disabled="!taggingEnhancerEnabled || galleryTaglistExpand"
+                  v-model.number="galleryTaglistHeight"
+                  :title="t('settings.galleryTaglistHeight')"
+                />
+                <span class="eqt-settings__label">px</span>
               </div>
-              <input
-                class="eqt-settings__input eqt-settings__input--short"
-                type="number"
-                min="200"
-                max="1000"
-                step="10"
-                :disabled="!taggingEnhancerEnabled || galleryTaglistExpand"
-                v-model.number="galleryTaglistHeight"
-                :title="t('settings.galleryTaglistHeight')"
-              />
-              <span class="eqt-settings__label">px</span>
-            </div>
-            <p class="eqt-settings__hint">
-              {{ t('settings.galleryTaglistExpandHint') }}
-            </p>
-            <p class="eqt-settings__hint">
-              {{ t('settings.galleryTaglistHeightTipBefore')
-              }}<a
-                href="https://e-hentai.org/g/760051/e601ae7b84/"
-                target="_blank"
-                rel="noopener noreferrer"
-              >{{ t('settings.galleryTaglistHeightTipLink') }}</a>{{
-                t('settings.galleryTaglistHeightTipAfter')
-              }}
-            </p>
+              <p class="eqt-settings__hint">
+                {{ t('settings.galleryTaglistExpandHint') }}
+              </p>
+              <p class="eqt-settings__hint">
+                {{ t('settings.galleryTaglistHeightTipBefore')
+                }}<a
+                  href="https://e-hentai.org/g/760051/e601ae7b84/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >{{ t('settings.galleryTaglistHeightTipLink') }}</a>{{
+                  t('settings.galleryTaglistHeightTipAfter')
+                }}
+              </p>
+            </section>
 
-            <h4 class="eqt-settings__subtitle">{{ t('settings.galleryDblClickActions') }}</h4>
-            <div
-              v-for="({ labelKey, ref: r }) in galleryDblClickOptions"
-              :key="labelKey"
-              class="eqt-settings__dblclick-row"
-            >
-              <label class="eqt-settings__dblclick-label">{{ t(labelKey) }}</label>
-              <select
-                class="eqt-settings__select"
-                :value="r.value"
-                :disabled="!taggingEnhancerEnabled"
-                @change="r.value = ($event.target as HTMLSelectElement).value as GalleryDblClickAction"
+            <section class="eqt-settings__section">
+              <h4 class="eqt-settings__subtitle">{{ t('settings.galleryDblClickActions') }}</h4>
+              <div
+                v-for="({ labelKey, ref: r }) in galleryDblClickOptions"
+                :key="labelKey"
+                class="eqt-settings__field-row"
               >
-                <option v-for="a in GALLERY_DBL_CLICK_ACTIONS" :key="a.id" :value="a.id">{{ t(a.labelKey) }}</option>
-              </select>
-            </div>
-            <label class="eqt-settings__row">
-              <input
-                type="checkbox"
-                :checked="galleryNewTabActive"
-                :disabled="!taggingEnhancerEnabled"
-                @change="galleryNewTabActive = ($event.target as HTMLInputElement).checked"
-              />
-              <span class="eqt-settings__label">{{ t('settings.galleryNewTabActive') }}</span>
-            </label>
+                <label class="eqt-settings__field-label">{{ t(labelKey) }}</label>
+                <select
+                  class="eqt-settings__select"
+                  :value="r.value"
+                  :disabled="!taggingEnhancerEnabled"
+                  @change="r.value = ($event.target as HTMLSelectElement).value as GalleryDblClickAction"
+                >
+                  <option v-for="a in GALLERY_DBL_CLICK_ACTIONS" :key="a.id" :value="a.id">{{ t(a.labelKey) }}</option>
+                </select>
+              </div>
+              <label class="eqt-settings__row">
+                <input
+                  type="checkbox"
+                  :checked="galleryNewTabActive"
+                  :disabled="!taggingEnhancerEnabled"
+                  @change="galleryNewTabActive = ($event.target as HTMLInputElement).checked"
+                />
+                <span class="eqt-settings__label">{{ t('settings.galleryNewTabActive') }}</span>
+              </label>
+            </section>
 
-            <h4 class="eqt-settings__subtitle">{{ t('settings.introPanelPrimaryLang') }}</h4>
-            <div class="eqt-settings__locale-row">
-              <button
-                v-for="m in INTRO_PANEL_PRIMARY_LANGS"
-                :key="m.id"
-                type="button"
-                class="eqt-settings__locale-btn"
-                :class="{ 'eqt-settings__locale-btn--active': introPanelPrimaryLang === m.id }"
-                @click="introPanelPrimaryLang = m.id"
-              >{{ t(m.labelKey) }}</button>
-            </div>
-            <p class="eqt-settings__hint">
-              {{ t('settings.introPanelPrimaryLangHint') }}
-            </p>
+            <section class="eqt-settings__section">
+              <h4 class="eqt-settings__subtitle">{{ t('settings.sectionIntroPanel') }}</h4>
+              <div class="eqt-settings__field-row">
+                <label class="eqt-settings__field-label">{{ t('settings.introPanelPrimaryLang') }}</label>
+                <div class="eqt-settings__locale-row">
+                  <button
+                    v-for="m in INTRO_PANEL_PRIMARY_LANGS"
+                    :key="m.id"
+                    type="button"
+                    class="eqt-settings__locale-btn"
+                    :class="{ 'eqt-settings__locale-btn--active': introPanelPrimaryLang === m.id }"
+                    @click="introPanelPrimaryLang = m.id"
+                  >{{ t(m.labelKey) }}</button>
+                </div>
+              </div>
+              <p class="eqt-settings__hint">
+                {{ t('settings.introPanelPrimaryLangHint') }}
+              </p>
 
-            <label class="eqt-settings__row">
-              <input
-                type="checkbox"
-                :checked="wikiPreludeExpanded"
-                :disabled="!taggingEnhancerEnabled"
-                @change="wikiPreludeExpanded = ($event.target as HTMLInputElement).checked"
-              />
-              <span class="eqt-settings__label">{{ t('settings.wikiPreludeExpanded') }}</span>
-            </label>
-            <p class="eqt-settings__hint">
-              {{ t('settings.wikiPreludeExpandedHint') }}
-            </p>
+              <label class="eqt-settings__row">
+                <input
+                  type="checkbox"
+                  :checked="wikiPreludeExpanded"
+                  :disabled="!taggingEnhancerEnabled"
+                  @change="wikiPreludeExpanded = ($event.target as HTMLInputElement).checked"
+                />
+                <span class="eqt-settings__label">{{ t('settings.wikiPreludeExpanded') }}</span>
+              </label>
+              <p class="eqt-settings__hint">
+                {{ t('settings.wikiPreludeExpandedHint') }}
+              </p>
+            </section>
           </div>
 
           <!-- 設定：資料 -->
           <div v-show="activeTab === 'data'" class="eqt-settings__tab-content">
-            <h4 class="eqt-settings__subtitle">{{ t('settings.tagDbSection') }}</h4>
-            <div class="eqt-settings__row">
-              <select class="eqt-settings__select" v-model="tagDbMirror" :title="t('settings.tagDbMirror')">
-                <option v-for="opt in mirrorOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-              </select>
-              <input class="eqt-settings__input eqt-settings__input--short" type="number" min="1" max="30" v-model.number="tagDbTtlDays" :title="t('settings.tagDbTtlDays')" />
-              <button class="eqt-settings__refresh-btn" type="button" :disabled="refreshing" @click="onRefreshTagDb">
-                <RotateCcw :size="12" /> {{ refreshing ? t('settings.tagDbRefreshing') : t('settings.tagDbRefresh') }}
-              </button>
-            </div>
+            <section class="eqt-settings__section">
+              <h4 class="eqt-settings__subtitle">{{ t('settings.tagDbSection') }}</h4>
+              <div class="eqt-settings__row">
+                <select class="eqt-settings__select" v-model="tagDbMirror" :title="t('settings.tagDbMirror')">
+                  <option v-for="opt in mirrorOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                </select>
+                <input class="eqt-settings__input eqt-settings__input--short" type="number" min="1" max="30" v-model.number="tagDbTtlDays" :title="t('settings.tagDbTtlDays')" />
+                <button class="eqt-settings__refresh-btn" type="button" :disabled="refreshing" @click="onRefreshTagDb">
+                  <RotateCcw :size="12" /> {{ refreshing ? t('settings.tagDbRefreshing') : t('settings.tagDbRefresh') }}
+                </button>
+              </div>
+            </section>
 
-            <h4 class="eqt-settings__subtitle">{{ t('settings.tagCountSection') }}</h4>
-            <div class="eqt-settings__row">
-              <select class="eqt-settings__select" v-model="tagCountMirror" :title="t('settings.tagCountMirror')">
-                <option v-for="opt in tagCountMirrorOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-              </select>
-              <input class="eqt-settings__input eqt-settings__input--short" type="number" min="1" max="30" v-model.number="tagCountTtlDays" :title="t('settings.tagCountTtlDays')" />
-              <button class="eqt-settings__refresh-btn" type="button" :disabled="refreshingTagCount" @click="onRefreshTagCount">
-                <RotateCcw :size="12" /> {{ refreshingTagCount ? t('settings.tagCountRefreshing') : t('settings.tagCountRefresh') }}
-              </button>
-            </div>
+            <section class="eqt-settings__section">
+              <h4 class="eqt-settings__subtitle">{{ t('settings.tagCountSection') }}</h4>
+              <div class="eqt-settings__row">
+                <select class="eqt-settings__select" v-model="tagCountMirror" :title="t('settings.tagCountMirror')">
+                  <option v-for="opt in tagCountMirrorOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                </select>
+                <input class="eqt-settings__input eqt-settings__input--short" type="number" min="1" max="30" v-model.number="tagCountTtlDays" :title="t('settings.tagCountTtlDays')" />
+                <button class="eqt-settings__refresh-btn" type="button" :disabled="refreshingTagCount" @click="onRefreshTagCount">
+                  <RotateCcw :size="12" /> {{ refreshingTagCount ? t('settings.tagCountRefreshing') : t('settings.tagCountRefresh') }}
+                </button>
+              </div>
+            </section>
 
-            <h4 class="eqt-settings__subtitle">{{ t('settings.tagWikiSection') }}</h4>
-            <div class="eqt-settings__row">
-              <select class="eqt-settings__select" v-model="tagWikiMirror" :title="t('settings.tagWikiMirror')">
-                <option v-for="opt in tagWikiMirrorOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-              </select>
-              <input class="eqt-settings__input eqt-settings__input--short" type="number" min="1" max="30" v-model.number="tagWikiTtlDays" :title="t('settings.tagWikiTtlDays')" />
-              <button class="eqt-settings__refresh-btn" type="button" :disabled="refreshingTagWiki" @click="onRefreshTagWiki">
-                <RotateCcw :size="12" /> {{ refreshingTagWiki ? t('settings.tagWikiRefreshing') : t('settings.tagWikiRefresh') }}
-              </button>
-            </div>
+            <section class="eqt-settings__section">
+              <h4 class="eqt-settings__subtitle">{{ t('settings.tagWikiSection') }}</h4>
+              <div class="eqt-settings__row">
+                <select class="eqt-settings__select" v-model="tagWikiMirror" :title="t('settings.tagWikiMirror')">
+                  <option v-for="opt in tagWikiMirrorOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                </select>
+                <input class="eqt-settings__input eqt-settings__input--short" type="number" min="1" max="30" v-model.number="tagWikiTtlDays" :title="t('settings.tagWikiTtlDays')" />
+                <button class="eqt-settings__refresh-btn" type="button" :disabled="refreshingTagWiki" @click="onRefreshTagWiki">
+                  <RotateCcw :size="12" /> {{ refreshingTagWiki ? t('settings.tagWikiRefreshing') : t('settings.tagWikiRefresh') }}
+                </button>
+              </div>
+            </section>
           </div>
 
           <!-- 設定：通用（跨 scope 的真全域）-->
           <div v-show="activeTab === 'general'" class="eqt-settings__tab-content">
-            <h4 class="eqt-settings__subtitle">{{ t('settings.language') }}</h4>
-            <div class="eqt-settings__locale-row">
-              <button
-                v-for="opt in localeOptions"
-                :key="opt.value"
-                type="button"
-                class="eqt-settings__locale-btn"
-                :class="{ 'eqt-settings__locale-btn--active': locale === opt.value }"
-                @click="setLocale(opt.value)"
-              >{{ opt.label }}</button>
-            </div>
-            <p class="eqt-settings__hint">
-              {{ t('settings.languageHint') }}
-            </p>
+            <section class="eqt-settings__section">
+              <h4 class="eqt-settings__subtitle">{{ t('settings.language') }}</h4>
+              <div class="eqt-settings__locale-row">
+                <button
+                  v-for="opt in localeOptions"
+                  :key="opt.value"
+                  type="button"
+                  class="eqt-settings__locale-btn"
+                  :class="{ 'eqt-settings__locale-btn--active': locale === opt.value }"
+                  @click="setLocale(opt.value)"
+                >{{ opt.label }}</button>
+              </div>
+              <p class="eqt-settings__hint">
+                {{ t('settings.languageHint') }}
+              </p>
+            </section>
 
-            <h4 class="eqt-settings__subtitle">{{ t('settings.convertToTraditional') }}</h4>
-            <div class="eqt-settings__locale-row">
-              <button
-                v-for="m in CONVERT_TO_TRADITIONAL_MODES"
-                :key="m.id"
-                type="button"
-                class="eqt-settings__locale-btn"
-                :class="{ 'eqt-settings__locale-btn--active': convertToTraditional === m.id }"
-                @click="convertToTraditional = m.id"
-              >{{ t(m.labelKey) }}</button>
-            </div>
-            <p class="eqt-settings__hint">
-              {{ t('settings.convertToTraditionalHint') }}
-            </p>
+            <section class="eqt-settings__section">
+              <h4 class="eqt-settings__subtitle">{{ t('settings.convertToTraditional') }}</h4>
+              <div class="eqt-settings__locale-row">
+                <button
+                  v-for="m in CONVERT_TO_TRADITIONAL_MODES"
+                  :key="m.id"
+                  type="button"
+                  class="eqt-settings__locale-btn"
+                  :class="{ 'eqt-settings__locale-btn--active': convertToTraditional === m.id }"
+                  @click="convertToTraditional = m.id"
+                >{{ t(m.labelKey) }}</button>
+              </div>
+              <p class="eqt-settings__hint">
+                {{ t('settings.convertToTraditionalHint') }}
+              </p>
+            </section>
 
-            <h4 class="eqt-settings__subtitle">{{ t('settings.fontFamily') }}</h4>
-            <div class="eqt-settings__font-row">
-              <input
-                :value="fontFamily"
-                class="eqt-settings__font-input eqt-settings__font-input--full"
-                :placeholder="t('settings.fontFamilyPlaceholder')"
-                @input="fontFamily = ($event.target as HTMLInputElement).value"
-              />
-            </div>
-            <p class="eqt-settings__hint">
-              {{ t('settings.fontFamilyHint') }}<code>"Noto Sans TC", sans-serif</code>
-            </p>
+            <section class="eqt-settings__section">
+              <h4 class="eqt-settings__subtitle">{{ t('settings.fontFamily') }}</h4>
+              <div class="eqt-settings__font-row">
+                <input
+                  :value="fontFamily"
+                  class="eqt-settings__font-input eqt-settings__font-input--full"
+                  :placeholder="t('settings.fontFamilyPlaceholder')"
+                  @input="fontFamily = ($event.target as HTMLInputElement).value"
+                />
+              </div>
+              <p class="eqt-settings__hint">
+                {{ t('settings.fontFamilyHint') }}<code>"Noto Sans TC", sans-serif</code>
+              </p>
 
-            <h4 class="eqt-settings__subtitle">{{ t('settings.fontWeight') }}</h4>
-            <div class="eqt-settings__weight-row">
-              <input
-                type="range"
-                min="100"
-                max="900"
-                step="100"
-                :value="fontWeight || '400'"
-                class="eqt-settings__weight-slider"
-                @input="fontWeight = ($event.target as HTMLInputElement).value"
-              />
-              <span class="eqt-settings__weight-value">{{ fontWeight || '400' }}</span>
-            </div>
+              <div class="eqt-settings__field-row">
+                <label class="eqt-settings__field-label">{{ t('settings.fontWeight') }}</label>
+                <input
+                  type="range"
+                  min="100"
+                  max="900"
+                  step="100"
+                  :value="fontWeight || '400'"
+                  class="eqt-settings__weight-slider"
+                  @input="fontWeight = ($event.target as HTMLInputElement).value"
+                />
+                <span class="eqt-settings__weight-value">{{ fontWeight || '400' }}</span>
+              </div>
+            </section>
 
-            <h4 class="eqt-settings__subtitle">{{ t('settings.preview') }}</h4>
-            <div class="eqt-settings__font-preview" :class="currentTagStyleClass">
-              <template v-for="(line, li) in previewLines" :key="li">
-                <div v-if="line.kind === 'buttons' && line.buttons.length" class="eqt-settings__preview-line">
-                  <span
-                    v-for="(b, ti) in line.buttons"
-                    :key="ti"
-                    class="eqt-settings__preview-tag"
-                    :class="{ 'eqt-settings__preview-tag--url': b.kind === 'url' }"
-                  >{{ b.label || (b.kind === 'tag' ? b.tags.join(', ') : b.url) }}</span>
-                </div>
-              </template>
-            </div>
+            <section class="eqt-settings__section">
+              <h4 class="eqt-settings__subtitle">{{ t('settings.preview') }}</h4>
+              <div class="eqt-settings__font-preview" :class="currentTagStyleClass">
+                <template v-for="(line, li) in previewLines" :key="li">
+                  <div v-if="line.kind === 'buttons' && line.buttons.length" class="eqt-settings__preview-line">
+                    <span
+                      v-for="(b, ti) in line.buttons"
+                      :key="ti"
+                      class="eqt-settings__preview-tag"
+                      :class="{ 'eqt-settings__preview-tag--url': b.kind === 'url' }"
+                    >{{ b.label || (b.kind === 'tag' ? b.tags.join(', ') : b.url) }}</span>
+                  </div>
+                </template>
+              </div>
+            </section>
           </div>
 
           <!-- 設定：關於 -->
@@ -860,21 +901,43 @@ function onEditorPurge() {
   overflow-y: auto;
 }
 
-// 統一垂直 rhythm：每個 tab 內容區跟右欄 profile sidebar 都是垂直 stack，
-// 用 flex column + gap 給容器層級的均等間距。比 owl selector (`> * + *`) 更
-// 現代——gap 屬性把間距語意歸給容器本身，子元素不負責 margin。
+// 層級規則（統一制）：每個控制項必屬於一個 section、每個 section 必有
+// subtitle。層級感靠三者疊加——14px bold 標題、section 間 hairline 分隔線、
+// 間距尺度差（section 間 28px vs 行間 6px）——不再只靠字重單打。
 //
 // about tab 走自己的 spacing system（about__hero/about__section 用 margin-bottom
 // 串接），所以用 :not(.eqt-settings__about) 排除。
-.eqt-settings__tab-content:not(.eqt-settings__about),
+.eqt-settings__tab-content:not(.eqt-settings__about) {
+  display: flex;
+  flex-direction: column;
+}
+
+.eqt-settings__section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 0;
+
+  &:first-child {
+    padding-top: 0;
+  }
+
+  &:last-child {
+    padding-bottom: 0;
+  }
+
+  & + & {
+    border-top: var(--eqt-border-width) solid var(--eqt-border);
+  }
+}
+
+// 右欄 profile sidebar 維持輕量節奏：無分隔線，subtitle 上方推 8px 當
+// visual break（6px gap + 8px margin = 14px）
 .eqt-settings__profiles {
   display: flex;
   flex-direction: column;
   gap: 6px;
 
-  // subtitle 是 section heading，上方要更大的 visual break。
-  // margin-top 跟 gap 疊加：6px gap + 8px margin = 14px 視覺間距。
-  // :not(:first-child) 避免「tab 內第一個 element 是 subtitle」時被多推 8px。
   > .eqt-settings__subtitle:not(:first-child) {
     margin-top: 8px;
   }
@@ -898,14 +961,16 @@ function onEditorPurge() {
     user-select: none;
   }
 
-  &__dblclick-row {
+  // 「行內標籤 + 控制項」的通用橫排：雙擊動作 select、ns 格式、字重 slider、
+  // 定義面板語言都用這個。label 5em 對齊出隱性的兩欄
+  &__field-row {
     display: flex;
     align-items: center;
     gap: 8px;
     font-size: 13px;
   }
 
-  &__dblclick-label {
+  &__field-label {
     min-width: 5em;
     flex-shrink: 0;
   }
@@ -953,9 +1018,11 @@ function onEditorPurge() {
   }
 
 
+  // 14px：比 13px 內文大一級、比 15px popup title 小一級，配合 section
+  // 分隔線撐起層級（原本 13px bold 跟內文只差字重，扁平）
   &__subtitle {
-    margin: 0 0 4px;
-    font-size: 13px;
+    margin: 0;
+    font-size: 14px;
     font-weight: bold;
     display: flex;
     align-items: center;
@@ -1074,12 +1141,6 @@ function onEditorPurge() {
     &--full {
       width: 100%;
     }
-  }
-
-  &__weight-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
   }
 
   &__weight-slider {

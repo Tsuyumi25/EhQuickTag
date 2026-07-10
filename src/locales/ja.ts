@@ -80,6 +80,7 @@ export default {
   'settings.newTabActivate': '新しいタブで検索時にそのタブへ切り替える',
   'settings.reset': 'リセット',
   'settings.resetTitle': 'デフォルトにリセット',
+  'settings.sectionTagFormat': 'タグ書式',
   'settings.nsFormat': 'Namespace 形式',
   'settings.nsFormatLong': '完全（female）',
   'settings.nsFormatShort': '省略（f）',
@@ -249,6 +250,7 @@ export default {
 
   // Gallery settings tab
   'settings.tabGallery': 'ギャラリー',
+  'settings.sectionGalleryToggles': '機能',
   'settings.taggingEnhancer': 'Tagging Enhancer を有効化',
   'settings.taggingEnhancerHint': '/g/ 詳細ページの taglist を引き継ぎ、vote / search / picker などの強化機能を提供します。オフの場合はネイティブ UI のまま。ページを再読み込みすると反映されます。',
   'settings.galleryDragSelect': 'ドラッグ選択を有効化',
@@ -273,7 +275,8 @@ export default {
   'intro.togglePrelude': 'ノートを開閉',
   'settings.wikiPreludeExpanded': 'Wiki ノート / 警告をデフォルトで展開',
   'settings.wikiPreludeExpandedHint': 'Wiki 冒頭の Reminder / 警告 / 相互参照は長いのでデフォルトは折りたたみ。オンにすると chip を開くたび自動展開。',
-  'settings.introPanelPrimaryLang': '定義パネルの既定言語',
+  'settings.sectionIntroPanel': '定義パネル',
+  'settings.introPanelPrimaryLang': '既定言語',
   'settings.introPanelPrimaryLangHint': 'どちらを先に表示するか。パネルのトグルボタンでいつでも切り替え可能。',
   'settings.introPanelPrimaryLangAuto': '自動',
   'settings.introPanelPrimaryLangZh': '中文',

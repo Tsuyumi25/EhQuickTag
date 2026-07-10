@@ -80,6 +80,7 @@ export default {
   'settings.newTabActivate': '검색 시 새 탭으로 전환',
   'settings.reset': '초기화',
   'settings.resetTitle': '기본값으로 초기화',
+  'settings.sectionTagFormat': '태그 형식',
   'settings.nsFormat': 'Namespace 형식',
   'settings.nsFormatLong': '전체 (female)',
   'settings.nsFormatShort': '축약 (f)',
@@ -249,6 +250,7 @@ export default {
 
   // Gallery settings tab
   'settings.tabGallery': '갤러리',
+  'settings.sectionGalleryToggles': '기능',
   'settings.taggingEnhancer': 'Tagging Enhancer 활성화',
   'settings.taggingEnhancerHint': '/g/ 상세 페이지의 taglist를 대체하여 vote / search / picker 기능을 제공합니다. 끄면 기본 UI가 유지됩니다. 페이지를 새로고침하면 적용됩니다.',
   'settings.galleryDragSelect': '드래그 선택 활성화',
@@ -273,7 +275,8 @@ export default {
   'intro.togglePrelude': '노트 펼치기/접기',
   'settings.wikiPreludeExpanded': 'Wiki 노트를 기본으로 펼치기',
   'settings.wikiPreludeExpandedHint': 'Wiki 노트(Reminder / 경고 / 상호 참조)는 패널 공간 절약을 위해 기본적으로 접혀 있습니다. 켜면 chip을 열 때마다 자동으로 펼쳐집니다.',
-  'settings.introPanelPrimaryLang': '정의 패널 기본 언어',
+  'settings.sectionIntroPanel': '정의 패널',
+  'settings.introPanelPrimaryLang': '기본 언어',
   'settings.introPanelPrimaryLangHint': '어느 쪽을 먼저 표시할지. 패널의 전환 버튼으로 언제든 바꿀 수 있습니다.',
   'settings.introPanelPrimaryLangAuto': '자동',
   'settings.introPanelPrimaryLangZh': '中文',

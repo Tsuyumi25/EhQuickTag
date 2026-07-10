@@ -80,6 +80,7 @@ export default {
   'settings.newTabActivate': '新分頁搜尋時切換到該分頁',
   'settings.reset': '重置',
   'settings.resetTitle': '重置為預設',
+  'settings.sectionTagFormat': '標籤格式',
   'settings.nsFormat': 'Namespace 格式',
   'settings.nsFormatLong': '完整（female）',
   'settings.nsFormatShort': '縮寫（f）',
@@ -249,6 +250,7 @@ export default {
 
   // Gallery settings tab
   'settings.tabGallery': '畫廊',
+  'settings.sectionGalleryToggles': '功能開關',
   'settings.taggingEnhancer': '啟用標籤強化（Tagging Enhancer）',
   'settings.taggingEnhancerHint': '在 /g/ 詳情頁接管 taglist，提供 vote / search / picker 等強化功能。關閉後保持 EH 原生介面。需重新整理頁面生效。',
   'settings.galleryDragSelect': '啟用拖曳多選',
@@ -273,7 +275,8 @@ export default {
   'intro.togglePrelude': '展開 / 收起提醒',
   'settings.wikiPreludeExpanded': '預設展開 wiki 提醒 / 警告',
   'settings.wikiPreludeExpandedHint': 'Wiki 前段的 Reminder / 警告 / 交叉參照通常很長，預設收起省空間；開啟後每次點 chip 都自動展開。',
-  'settings.introPanelPrimaryLang': '定義面板預設語言',
+  'settings.sectionIntroPanel': '定義面板',
+  'settings.introPanelPrimaryLang': '預設語言',
   'settings.introPanelPrimaryLangHint': '預設先顯示哪一邊。面板上的切換按鈕隨時可換另一邊。',
   'settings.introPanelPrimaryLangAuto': '自動',
   'settings.introPanelPrimaryLangZh': '中文',
