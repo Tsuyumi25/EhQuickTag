@@ -112,6 +112,12 @@ const mirrorOptions = Object.entries(TAG_DB_MIRRORS).map(([k, v]) => ({ value: k
 const tagCountMirrorOptions = Object.entries(TAG_COUNT_MIRRORS).map(([k, v]) => ({ value: k as TagCountMirror, label: v.label }))
 const tagWikiMirrorOptions = Object.entries(TAG_WIKI_MIRRORS).map(([k, v]) => ({ value: k as TagWikiMirror, label: v.label }))
 
+// 各 section 第二行顯示的來源網址：跟著選中的 mirror 連動，唯讀給使用者
+// 核對實際抓哪裡
+const tagDbUrl = computed(() => TAG_DB_MIRRORS[tagDbMirror.value].url)
+const tagCountUrl = computed(() => TAG_COUNT_MIRRORS[tagCountMirror.value].url)
+const tagWikiUrl = computed(() => TAG_WIKI_MIRRORS[tagWikiMirror.value].url)
+
 const refreshing = ref(false)
 async function onRefreshTagDb() {
   refreshing.value = true
@@ -607,6 +613,9 @@ function onEditorPurge() {
                   <RotateCcw :size="12" /> {{ refreshing ? t('settings.tagDbRefreshing') : t('settings.tagDbRefresh') }}
                 </button>
               </div>
+              <div class="eqt-settings__row">
+                <input class="eqt-settings__text-input eqt-settings__text-input--full" :value="tagDbUrl" readonly />
+              </div>
             </section>
 
             <section class="eqt-settings__section">
@@ -620,6 +629,9 @@ function onEditorPurge() {
                   <RotateCcw :size="12" /> {{ refreshingTagCount ? t('settings.tagCountRefreshing') : t('settings.tagCountRefresh') }}
                 </button>
               </div>
+              <div class="eqt-settings__row">
+                <input class="eqt-settings__text-input eqt-settings__text-input--full" :value="tagCountUrl" readonly />
+              </div>
             </section>
 
             <section class="eqt-settings__section">
@@ -632,6 +644,9 @@ function onEditorPurge() {
                 <button class="eqt-settings__refresh-btn" type="button" :disabled="refreshingTagWiki" @click="onRefreshTagWiki">
                   <RotateCcw :size="12" /> {{ refreshingTagWiki ? t('settings.tagWikiRefreshing') : t('settings.tagWikiRefresh') }}
                 </button>
+              </div>
+              <div class="eqt-settings__row">
+                <input class="eqt-settings__text-input eqt-settings__text-input--full" :value="tagWikiUrl" readonly />
               </div>
             </section>
           </div>
@@ -677,7 +692,7 @@ function onEditorPurge() {
               <div class="eqt-settings__font-row">
                 <input
                   :value="fontFamily"
-                  class="eqt-settings__font-input eqt-settings__font-input--full"
+                  class="eqt-settings__text-input eqt-settings__text-input--full"
                   :placeholder="t('settings.fontFamilyPlaceholder')"
                   @input="fontFamily = ($event.target as HTMLInputElement).value"
                 />
@@ -1129,11 +1144,12 @@ function onEditorPurge() {
     display: flex;
   }
 
-  &__font-input {
+  // 通用單行文字輸入：字體 family 輸入、資料 mirror 網址（readonly）共用
+  &__text-input {
     padding: 4px 6px;
     border: var(--eqt-border-width) solid var(--eqt-border);
     border-radius: 3px;
-    font-size: 13px;
+    font-size: 12px;
     background: var(--eqt-bg);
     color: var(--eqt-text);
     box-sizing: border-box;
@@ -1148,6 +1164,11 @@ function onEditorPurge() {
 
     &--full {
       width: 100%;
+    }
+
+    // 唯讀（純展示）：hint 色 + 免 focus 框，看起來就不像可編輯
+    &[readonly] {
+      color: var(--eqt-text-hint);
     }
   }
 
