@@ -77,7 +77,7 @@ export default {
   'settings.actionToggleEdit': '編輯（On/Off）',
   'settings.actionOpenSearchPopup': '瀏覽標籤',
   'settings.actionNone': '無',
-  'settings.newTabActivate': '新分頁搜尋時切換到該分頁',
+  'settings.newTabActivate': '切換到新分頁',
   'settings.reset': '重置',
   'settings.resetTitle': '重置為預設',
   'settings.sectionTagFormat': '標籤格式',
@@ -265,7 +265,6 @@ export default {
   'settings.galleryDblClickActions': 'Taglist 雙擊動作',
   'settings.galleryDblClickLeft': '左鍵雙擊',
   'settings.galleryDblClickRight': '右鍵雙擊',
-  'settings.galleryNewTabActive': '搜尋時切換到新分頁',
 
   // Intro panel
   'intro.close': '關閉',

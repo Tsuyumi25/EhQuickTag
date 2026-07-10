@@ -77,7 +77,7 @@ export default {
   'settings.actionToggleEdit': 'Edit (On/Off)',
   'settings.actionOpenSearchPopup': 'Browse tags',
   'settings.actionNone': 'None',
-  'settings.newTabActivate': 'Switch to new tab when searching',
+  'settings.newTabActivate': 'Switch to new tab',
   'settings.reset': 'Reset',
   'settings.resetTitle': 'Reset to default',
   'settings.sectionTagFormat': 'Tag Format',
@@ -265,7 +265,6 @@ export default {
   'settings.galleryDblClickActions': 'Taglist double-click actions',
   'settings.galleryDblClickLeft': 'Left double-click',
   'settings.galleryDblClickRight': 'Right double-click',
-  'settings.galleryNewTabActive': 'Switch to new tab when searching',
 
   // Intro panel
   'intro.close': 'Close',

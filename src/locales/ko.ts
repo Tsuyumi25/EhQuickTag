@@ -77,7 +77,7 @@ export default {
   'settings.actionToggleEdit': '편집 (On/Off)',
   'settings.actionOpenSearchPopup': '태그 둘러보기',
   'settings.actionNone': '없음',
-  'settings.newTabActivate': '검색 시 새 탭으로 전환',
+  'settings.newTabActivate': '새 탭으로 전환',
   'settings.reset': '초기화',
   'settings.resetTitle': '기본값으로 초기화',
   'settings.sectionTagFormat': '태그 형식',
@@ -265,7 +265,6 @@ export default {
   'settings.galleryDblClickActions': 'Taglist 더블클릭 동작',
   'settings.galleryDblClickLeft': '왼쪽 더블클릭',
   'settings.galleryDblClickRight': '오른쪽 더블클릭',
-  'settings.galleryNewTabActive': '검색 시 새 탭으로 전환',
 
   // Intro panel
   'intro.close': '닫기',

@@ -77,7 +77,7 @@ export default {
   'settings.actionToggleEdit': '编辑（On/Off）',
   'settings.actionOpenSearchPopup': '浏览标签',
   'settings.actionNone': '无',
-  'settings.newTabActivate': '新标签页搜索时切换到该标签页',
+  'settings.newTabActivate': '切换到新标签页',
   'settings.reset': '重置',
   'settings.resetTitle': '重置为默认',
   'settings.sectionTagFormat': '标签格式',
@@ -265,7 +265,6 @@ export default {
   'settings.galleryDblClickActions': 'Taglist 双击动作',
   'settings.galleryDblClickLeft': '左键双击',
   'settings.galleryDblClickRight': '右键双击',
-  'settings.galleryNewTabActive': '搜索时切换到新分页',
 
   // Intro panel
   'intro.close': '关闭',

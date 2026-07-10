@@ -77,7 +77,7 @@ export default {
   'settings.actionToggleEdit': '編集（On/Off）',
   'settings.actionOpenSearchPopup': 'タグを閲覧',
   'settings.actionNone': 'なし',
-  'settings.newTabActivate': '新しいタブで検索時にそのタブへ切り替える',
+  'settings.newTabActivate': '新しいタブへ切り替え',
   'settings.reset': 'リセット',
   'settings.resetTitle': 'デフォルトにリセット',
   'settings.sectionTagFormat': 'タグ書式',
@@ -265,7 +265,6 @@ export default {
   'settings.galleryDblClickActions': 'Taglist ダブルクリック動作',
   'settings.galleryDblClickLeft': '左ダブルクリック',
   'settings.galleryDblClickRight': '右ダブルクリック',
-  'settings.galleryNewTabActive': '検索時に新しいタブへ切り替える',
 
   // Intro panel
   'intro.close': '閉じる',

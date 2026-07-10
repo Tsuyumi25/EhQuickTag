@@ -411,15 +411,15 @@ function onEditorPurge() {
                   <option value="openSearchPopup">{{ t('settings.actionOpenSearchPopup') }}</option>
                   <option value="none">{{ t('settings.actionNone') }}</option>
                 </select>
+                <label v-if="r.value === 'searchNewTab'" class="eqt-settings__row">
+                  <input
+                    type="checkbox"
+                    :checked="newTabActive"
+                    @change="newTabActive = ($event.target as HTMLInputElement).checked"
+                  />
+                  <span class="eqt-settings__label">{{ t('settings.newTabActivate') }}</span>
+                </label>
               </div>
-              <label class="eqt-settings__row">
-                <input
-                  type="checkbox"
-                  :checked="newTabActive"
-                  @change="newTabActive = ($event.target as HTMLInputElement).checked"
-                />
-                <span class="eqt-settings__label">{{ t('settings.newTabActivate') }}</span>
-              </label>
             </section>
 
             <section class="eqt-settings__section">
@@ -557,16 +557,16 @@ function onEditorPurge() {
                 >
                   <option v-for="a in GALLERY_DBL_CLICK_ACTIONS" :key="a.id" :value="a.id">{{ t(a.labelKey) }}</option>
                 </select>
+                <label v-if="r.value === 'searchNewTab'" class="eqt-settings__row">
+                  <input
+                    type="checkbox"
+                    :checked="galleryNewTabActive"
+                    :disabled="!taggingEnhancerEnabled"
+                    @change="galleryNewTabActive = ($event.target as HTMLInputElement).checked"
+                  />
+                  <span class="eqt-settings__label">{{ t('settings.newTabActivate') }}</span>
+                </label>
               </div>
-              <label class="eqt-settings__row">
-                <input
-                  type="checkbox"
-                  :checked="galleryNewTabActive"
-                  :disabled="!taggingEnhancerEnabled"
-                  @change="galleryNewTabActive = ($event.target as HTMLInputElement).checked"
-                />
-                <span class="eqt-settings__label">{{ t('settings.galleryNewTabActive') }}</span>
-              </label>
             </section>
 
             <section class="eqt-settings__section">
