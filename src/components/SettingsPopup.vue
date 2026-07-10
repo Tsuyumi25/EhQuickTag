@@ -340,6 +340,21 @@ function onEditorPurge() {
                 <span class="eqt-settings__label">{{ t('settings.showSearchPanel') }}</span>
               </label>
 
+              <div class="eqt-settings__field-row eqt-settings__field-row--sub">
+                <label class="eqt-settings__field-label">{{ t('settings.searchPanelLang') }}</label>
+                <div class="eqt-settings__locale-row">
+                  <button
+                    v-for="m in SEARCH_PANEL_LANG_MODES"
+                    :key="m.id"
+                    type="button"
+                    class="eqt-settings__locale-btn"
+                    :class="{ 'eqt-settings__locale-btn--active': searchPanelLangMode === m.id }"
+                    :disabled="!showSearchPanel"
+                    @click="searchPanelLangMode = m.id"
+                  >{{ t(m.labelKey) }}</button>
+                </div>
+              </div>
+
               <label class="eqt-settings__row">
                 <input
                   type="checkbox"
@@ -348,20 +363,6 @@ function onEditorPurge() {
                 />
                 <span class="eqt-settings__label">{{ t('settings.enableHistory') }}</span>
               </label>
-            </section>
-
-            <section class="eqt-settings__section">
-              <h4 class="eqt-settings__subtitle"><Languages :size="14" /> {{ t('settings.searchPanelLang') }}</h4>
-              <div class="eqt-settings__locale-row">
-                <button
-                  v-for="m in SEARCH_PANEL_LANG_MODES"
-                  :key="m.id"
-                  type="button"
-                  class="eqt-settings__locale-btn"
-                  :class="{ 'eqt-settings__locale-btn--active': searchPanelLangMode === m.id }"
-                  @click="searchPanelLangMode = m.id"
-                >{{ t(m.labelKey) }}</button>
-              </div>
             </section>
 
             <section class="eqt-settings__section">
@@ -984,6 +985,12 @@ function onEditorPurge() {
     gap: 8px;
     font-size: 13px;
     min-height: var(--eqt-ctrl-h);
+  }
+
+  // 二級設定：縮排對齊父 checkbox 的 label 起點（checkbox 25px + gap 8px），
+  // 視覺上表達從屬關係
+  &__field-row--sub {
+    padding-left: calc(var(--eqt-ctrl-h) + 8px);
   }
 
   &__field-label {

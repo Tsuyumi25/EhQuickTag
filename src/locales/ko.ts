@@ -58,7 +58,7 @@ export default {
   'settings.searchBarVisibility': '컴포넌트 표시',
   'settings.showSearchPanel': 'EhQuickTag 검색 패널 표시',
   'settings.enableHistory': '검색 기록 저장',
-  'settings.searchPanelLang': '검색 패널 버튼 언어',
+  'settings.searchPanelLang': '버튼 언어',
   'settings.searchPanelLangAuto': '자동',
   'settings.searchPanelLangToggle': 'CJK / 영어 전환 가능',
   'settings.searchPanelLangEnglishOnly': '영어만',
