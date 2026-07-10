@@ -398,7 +398,7 @@ function onEditorPurge() {
                 :key="labelKey"
                 class="eqt-settings__field-row"
               >
-                <label class="eqt-settings__field-label">{{ t(labelKey) }}</label>
+                <label class="eqt-settings__field-label eqt-settings__field-label--aligned">{{ t(labelKey) }}</label>
                 <select
                   class="eqt-settings__select"
                   :value="r.value"
@@ -497,15 +497,6 @@ function onEditorPurge() {
 
             <section class="eqt-settings__section">
               <h4 class="eqt-settings__subtitle"><UnfoldVertical :size="14" /> {{ t('settings.galleryTaglistHeightMode') }}</h4>
-              <label class="eqt-settings__row">
-                <input
-                  type="checkbox"
-                  :checked="galleryTaglistExpand"
-                  :disabled="!taggingEnhancerEnabled"
-                  @change="galleryTaglistExpand = ($event.target as HTMLInputElement).checked"
-                />
-                <span class="eqt-settings__label">{{ t('settings.galleryTaglistExpand') }}</span>
-              </label>
               <div class="eqt-settings__field-row">
                 <label class="eqt-settings__field-label">{{ t('settings.galleryTaglistHeight') }}</label>
                 <input
@@ -520,6 +511,15 @@ function onEditorPurge() {
                 />
                 <span class="eqt-settings__label">px</span>
               </div>
+              <label class="eqt-settings__row">
+                <input
+                  type="checkbox"
+                  :checked="galleryTaglistExpand"
+                  :disabled="!taggingEnhancerEnabled"
+                  @change="galleryTaglistExpand = ($event.target as HTMLInputElement).checked"
+                />
+                <span class="eqt-settings__label">{{ t('settings.galleryTaglistExpand') }}</span>
+              </label>
               <p class="eqt-settings__hint">
                 {{ t('settings.galleryTaglistHeightTipBefore')
                 }}<a
@@ -539,7 +539,7 @@ function onEditorPurge() {
                 :key="labelKey"
                 class="eqt-settings__field-row"
               >
-                <label class="eqt-settings__field-label">{{ t(labelKey) }}</label>
+                <label class="eqt-settings__field-label eqt-settings__field-label--aligned">{{ t(labelKey) }}</label>
                 <select
                   class="eqt-settings__select"
                   :value="r.value"
@@ -957,7 +957,7 @@ function onEditorPurge() {
   }
 
   // 「行內標籤 + 控制項」的通用橫排：雙擊動作 select、ns 格式、字重 slider、
-  // 定義面板語言都用這個。label 5em 對齊出隱性的兩欄
+  // 定義面板語言、標籤列高度都用這個
   &__field-row {
     display: flex;
     align-items: center;
@@ -966,8 +966,14 @@ function onEditorPurge() {
   }
 
   &__field-label {
-    min-width: 5em;
     flex-shrink: 0;
+
+    // 對齊寬度只給「成對出現」的 rows（左鍵／右鍵雙擊），讓兩行控制項
+    // 起始 x 對齊出隱性兩欄；單獨 row 的短 label（高度、字重）不需要，
+    // 統一撐寬反而拖出空洞
+    &--aligned {
+      min-width: 5em;
+    }
   }
 
   &__locale-row {
