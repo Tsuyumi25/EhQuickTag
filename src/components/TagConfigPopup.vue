@@ -8,7 +8,7 @@ import { currentTagStyleClass } from '@/composables/useTagStyle'
 import { usePopupBehavior } from '@/composables/usePopupBehavior'
 import { makeRow, type RowState } from '@/composables/useSearchTerm'
 import { TagState, type TagButton, type TagMode } from '@/types'
-import { t, isCJKLocale } from '@/composables/useI18n'
+import { t, isZhLocale } from '@/composables/useI18n'
 import { loadTagDb } from '@/services/tagDb'
 import { getButtonShape, isStateShapeAllowed, getEffectiveModifiers, addTag } from '@/services/tagState'
 
@@ -123,9 +123,9 @@ function onSave(): void {
 
 // --- syntax help link ---
 
-const isCJK = computed(isCJKLocale)
+const isZh = computed(isZhLocale)
 const syntaxHelpUrl = computed(() =>
-  isCJK.value
+  isZh.value
     ? 'https://ehwiki.org/wiki/Gallery_Searching/Chinese'
     : 'https://ehwiki.org/wiki/Gallery_Searching',
 )

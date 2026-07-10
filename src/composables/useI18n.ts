@@ -48,7 +48,7 @@ export function t(key: string, params?: Record<string, string | number>): string
   return msg.replace(/\{(\w+)\}/g, (_, k) => String(params[k] ?? ''))
 }
 
-export function isCJKLocale(): boolean {
+export function isZhLocale(): boolean {
   return locale.value === 'zh-TW' || locale.value === 'zh-CN'
 }
 

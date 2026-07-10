@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { searchPanelShowCJK as showCJK, enableHistory } from '@/services/store'
+import { searchPanelShowZh as showZh, enableHistory } from '@/services/store'
 import { clearSearch, clearHistory, recordSubmitAndFlush } from '@/services/search/searchSession'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
 import { t } from '@/composables/useI18n'
@@ -25,7 +25,7 @@ const emit = defineEmits<{
 // toggle 動作可做，只在 user 明確 opt-in 'toggle' mode 時才出現按鈕
 const { resolvedMode } = useDisplayConfig()
 
-function toggleLang(): void { showCJK.value = !showCJK.value }
+function toggleLang(): void { showZh.value = !showZh.value }
 
 // 送出前先把當前 A 推進 H + sync flush GM storage：
 //   - navigate 走後新頁面 mount 也會在 loadHistory 補一次，但若不 await flush，
@@ -47,7 +47,7 @@ async function onSearchClick(): Promise<void> {
         type="button"
         :title="t('tagbar.toggleLang')"
         @click="toggleLang"
-      ><span :class="{ 'eqt-search-controls__lang-hidden': !showCJK }">中文</span><span :class="{ 'eqt-search-controls__lang-hidden': showCJK }">EN</span></button>
+      ><span :class="{ 'eqt-search-controls__lang-hidden': !showZh }">中文</span><span :class="{ 'eqt-search-controls__lang-hidden': showZh }">EN</span></button>
       <button
         v-if="showClearHistory && enableHistory"
         class="eqt-search-controls__text-btn"

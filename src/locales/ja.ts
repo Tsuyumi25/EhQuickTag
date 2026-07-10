@@ -43,7 +43,7 @@ export default {
   'tagbar.searchPanel': 'EhQuickTag 検索パネル',
   'tagbar.history': '履歴',
   'tagbar.clearHistory': '履歴をクリア',
-  'tagbar.toggleLang': 'CJK / 英語表示の切り替え',
+  'tagbar.toggleLang': '中国語 / 英語表示の切り替え',
   'tagbar.done': '完了',
   'tagbar.edit': '編集',
   'tagbar.settings': '設定',
@@ -60,7 +60,7 @@ export default {
   'settings.enableHistory': '検索履歴を記録',
   'settings.searchPanelLang': 'ボタン言語',
   'settings.searchPanelLangAuto': '自動',
-  'settings.searchPanelLangToggle': 'CJK／英語 切替可',
+  'settings.searchPanelLangToggle': '中国語／英語 切替可',
   'settings.searchPanelLangEnglishOnly': '英語のみ',
   'settings.convertToTraditional': '中国語タグを繁体字化（OpenCC）',
   'settings.convertToTraditionalAuto': '自動',
@@ -214,7 +214,7 @@ export default {
   'about.credits': 'クレジット',
   'about.ehttDetail': 'タグ翻訳データベース（CC BY-NC-SA 3.0）',
   'about.ehsyringeDetail': '検索ランキングロジック参考（MIT）',
-  'about.openccDetail': 'CJK 文字マッピングデータ（Apache-2.0）',
+  'about.openccDetail': '簡体字・繁体字変換データ（Apache-2.0）',
   'about.urenkoDbDetail': 'EH メタデータ nightly SQLite（タグカウント計算の元データ）',
 
   // Default tag labels

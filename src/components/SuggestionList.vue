@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { DEFAULT_NS_ORDER, type TagEntry } from '@/services/tagDb'
-import { isCJKLocale, locale, t } from '@/composables/useI18n'
+import { isZhLocale, locale, t } from '@/composables/useI18n'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
 import { useTextMeasure } from '@/composables/useTextMeasure'
 import { TagState } from '@/types'
@@ -146,12 +146,12 @@ watch(() => props.selectedIdx, () => {
   }
 })
 
-const isCJK = computed(isCJKLocale)
+const isZh = computed(isZhLocale)
 
-// cjkDisplay 跟 SearchPanel 共用 useDisplayConfig 的繁化邏輯（'auto' = zh-TW on、
-// 其他 off）。SuggestionList 不參考 SearchPanel 的 showCJK toggle——下拉建議純由
-// UI locale 決定要不要顯示 CJK 翻譯（isCJK 那條），與 chip 顯示語言獨立
-const { cjkDisplay } = useDisplayConfig()
+// zhDisplay 跟 SearchPanel 共用 useDisplayConfig 的繁化邏輯（'auto' = zh-TW on、
+// 其他 off）。SuggestionList 不參考 SearchPanel 的 showZh toggle——下拉建議純由
+// UI locale 決定要不要顯示中文翻譯（isZh 那條），與 chip 顯示語言獨立
+const { zhDisplay } = useDisplayConfig()
 </script>
 
 <template>
@@ -176,7 +176,7 @@ const { cjkDisplay } = useDisplayConfig()
         @mouseenter="onItemMouseenter(si)"
       >
         <span class="eqt-popup__suggestion-ns">{{ t('ns.' + entry.ns) }}：</span>
-        <span class="eqt-popup__suggestion-name"><img v-if="entry.iconUrl" :src="entry.iconUrl" class="eqt-tag-icon" alt="" />{{ isCJK ? cjkDisplay(entry.name) : entry.raw }}</span>
+        <span class="eqt-popup__suggestion-name"><img v-if="entry.iconUrl" :src="entry.iconUrl" class="eqt-tag-icon" alt="" />{{ isZh ? zhDisplay(entry.name) : entry.raw }}</span>
         <span class="eqt-popup__suggestion-tag">{{ entry.fullTag }}</span>
       </div>
     </div>

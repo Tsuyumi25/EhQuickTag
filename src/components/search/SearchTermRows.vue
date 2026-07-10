@@ -45,14 +45,14 @@ const emit = defineEmits<{
 // 強迫每個 consumer 顯式 handle 而不是被「e站新增名為 __misc__ 的 namespace」偷襲
 const MISC_KEY = null
 
-const { effectiveShowCJK, cjkDisplay } = useDisplayConfig()
+const { effectiveShowZh, zhDisplay } = useDisplayConfig()
 
 const identityIndex = computed(() => props.identityIndex ?? buildIdentityIndex(tokenize(props.modelValue)))
 
 interface TermInfo {
   positive: string
   state: TagState
-  displayShort: string  // namespace row 用：CJK = 翻譯名稱（無 ns）、English = 原生 token literal
+  displayShort: string  // namespace row 用：中文 = 翻譯名稱（無 ns）、English = 原生 token literal
   displayFull: string   // misc row 用：原生 token literal（state prefix + tag + suffix）
   literal: string       // raw search-syntax token，給 drag-clone 用
   cloneLabel: string    // chip 當前顯示文字
@@ -96,7 +96,7 @@ function stateOf(positive: string): TagState {
 const groups = computed<TermGroup[]>(() => {
   // tagDbVersion 是 async loadTagDb 完成的 reactive signal——沒這條的話，URL 帶
   // ?f_search 進頁面時 findEntryByNsTag 第一輪回 undefined，DB 載完後 computed
-  // 因為沒有依賴變動不會重算，CJK 名定格在英文 raw
+  // 因為沒有依賴變動不會重算，中文名定格在英文 raw
   void tagDbVersion.value
 
   const buckets = new Map<string | null, TermInfo[]>()
@@ -108,12 +108,12 @@ const groups = computed<TermGroup[]>(() => {
     const prefixStr = prefix ?? ''
     const literal = serializeTerm({ ...parsed, prefix })
 
-    const cjkEntry = parsed.namespace
+    const zhEntry = parsed.namespace
       ? findEntryByNsTag(parsed.namespace, parsed.tag)
       : undefined
-    const zhText = cjkEntry ? prefixStr + cjkDisplay(cjkEntry.name) : prefixStr + parsed.tag
+    const zhText = zhEntry ? prefixStr + zhDisplay(zhEntry.name) : prefixStr + parsed.tag
     const enText = literal
-    const displayShort = effectiveShowCJK.value ? zhText : enText
+    const displayShort = effectiveShowZh.value ? zhText : enText
     const displayFull = literal
 
     const isMisc = groupKey === MISC_KEY

@@ -3,7 +3,7 @@ import { findEntryByNsTag, tagDbVersion } from '@/services/tagDb'
 import { getTagWiki, tagWikiVersion, rawToSlug, type WikiEntry } from '@/services/tagWiki'
 import type { GalleryTag } from '@/composables/useEhGalleryHost'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
-import { locale, isCJKLocale } from '@/composables/useI18n'
+import { locale, isZhLocale } from '@/composables/useI18n'
 import { introPanelPrimaryLang, wikiPreludeExpanded as wikiPreludeExpandedSetting } from '@/services/store'
 
 export type DisplayedLang = 'zh' | 'en'
@@ -11,12 +11,12 @@ export type DisplayedLang = 'zh' | 'en'
 // 全域 singleton：panel 只有一個，多個 chip 共用同一 panel state
 const openTag = ref<GalleryTag | null>(null)
 
-// 'auto' 模式由 locale 決定 primary：CJK locale 預設中文、其他預設英文
+// 'auto' 模式由 locale 決定 primary：中文 locale 預設中文、其他預設英文
 function resolvePrimaryLang(): DisplayedLang {
   const setting = introPanelPrimaryLang.value
   if (setting === 'zh') return 'zh'
   if (setting === 'en') return 'en'
-  return isCJKLocale() ? 'zh' : 'en'
+  return isZhLocale() ? 'zh' : 'en'
 }
 
 const displayedLang = ref<DisplayedLang>(resolvePrimaryLang())
@@ -56,7 +56,7 @@ function translateHtml(html: string, translate: (s: string) => string): string {
 }
 
 export function useIntroPanel() {
-  const { cjkDisplay } = useDisplayConfig()
+  const { zhDisplay } = useDisplayConfig()
 
   const entry = computed(() => {
     void tagDbVersion.value
@@ -68,12 +68,12 @@ export function useIntroPanel() {
   const introHtml = computed<string | null>(() => {
     if (displayedLang.value !== 'zh') return null
     const raw = entry.value?.introHtml
-    return raw ? translateHtml(raw, cjkDisplay) : null
+    return raw ? translateHtml(raw, zhDisplay) : null
   })
   const linksHtml = computed<string | null>(() => {
     if (displayedLang.value !== 'zh') return null
     const raw = entry.value?.linksHtml
-    return raw ? translateHtml(raw, cjkDisplay) : null
+    return raw ? translateHtml(raw, zhDisplay) : null
   })
 
   const iconUrl = computed<string | null>(() => entry.value?.iconUrl ?? null)
@@ -123,7 +123,7 @@ export function useIntroPanel() {
 
   return {
     openTag, entry, introHtml, linksHtml, iconUrl, wikiEntry, wikiUrl, extraImages,
-    displayedLang, toggleLang, setPanelTag, close, cjkDisplay,
+    displayedLang, toggleLang, setPanelTag, close, zhDisplay,
     preludeExpanded, togglePrelude,
   }
 }

@@ -5,7 +5,7 @@ import { useIntroPanel } from '@/composables/useIntroPanel'
 
 const {
   openTag, entry, introHtml, linksHtml, iconUrl, wikiEntry, wikiUrl, extraImages,
-  displayedLang, toggleLang, close, cjkDisplay,
+  displayedLang, toggleLang, close, zhDisplay,
   preludeExpanded, togglePrelude,
 } = useIntroPanel()
 
@@ -70,7 +70,7 @@ onBeforeUnmount(() => ro?.disconnect())
           </template>
           <template v-else>
             <span v-if="entry" class="eqt-intro-panel__name-display">
-              <img v-if="iconUrl" :src="iconUrl" class="eqt-intro-panel__name-icon" alt="" referrerpolicy="no-referrer" />{{ cjkDisplay(entry.name) }}
+              <img v-if="iconUrl" :src="iconUrl" class="eqt-intro-panel__name-icon" alt="" referrerpolicy="no-referrer" />{{ zhDisplay(entry.name) }}
             </span>
             <code class="eqt-intro-panel__name-key">{{ openTag.nsRaw }}</code>
           </template>

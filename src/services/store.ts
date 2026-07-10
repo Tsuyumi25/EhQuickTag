@@ -4,7 +4,7 @@ import type { Line, Button, ButtonLine, SeparatorLine, TagButton, UrlButton, Tag
 import { TAG_DB_MIRRORS, type TagDbMirror } from '@/services/tagDb'
 import { TAG_COUNT_MIRRORS, type TagCountMirror } from '@/services/tagCount'
 import { TAG_WIKI_MIRRORS, type TagWikiMirror } from '@/services/tagWiki'
-import { locale, setLocale, detectLocale, isCJKLocale, t, type Locale } from '@/composables/useI18n'
+import { locale, setLocale, detectLocale, isZhLocale, t, type Locale } from '@/composables/useI18n'
 import { PRESETS_BY_ID, type TagStylePresetId } from '@/composables/useTagStyle'
 
 const KEYS = {
@@ -98,21 +98,21 @@ const INITIAL_SETTINGS = {
   tagStylePreset: 'flat' as TagStylePresetId,
   // on: include 狀態用 status 綠色（忽略自定義 line-color）；off: 沿用 line-color（預設沿用既有行為）
   useAccentOnInclude: false,
-  // SearchPanel chip 顯示語言（true = CJK 翻譯名稱、false = 原生英文 token literal）。
+  // SearchPanel chip 顯示語言（true = 中文翻譯名稱、false = 原生英文 token literal）。
   // 預設跟著 browser locale 走，使用者用 controls-row 的「中文/EN」toggle 覆蓋。
   // 持久化：跨頁／重開瀏覽器後維持上次選擇，不再回退到 browser locale
-  searchPanelShowCJK: isCJKLocale(),
+  searchPanelShowZh: isZhLocale(),
   // SearchPanel 進階面板（legend-style 卡片）顯示開關，對應 SettingsPopup
   // 'tagbar' tab 的 checkbox。故意不做「整個 TagBar 隱藏」的 toggle——
   // 關掉就 lock out 自己（設定打不開）
   showSearchPanel: true,
   // SearchPanel chip 顯示語言模式：
-  //   'auto'         → 跟著 UI locale 走（CJK → toggle、其他 → english-only）
-  //   'toggle'       → 顯示中/EN 切換按鈕，使用者用 searchPanelShowCJK 控制當下選項
+  //   'auto'         → 跟著 UI locale 走（中文 → toggle、其他 → english-only）
+  //   'toggle'       → 顯示中/EN 切換按鈕，使用者用 searchPanelShowZh 控制當下選項
   //   'english-only' → 隱藏切換按鈕，chip 一律顯示英文 token literal
   // 預設 'auto'：使用者切 UI 語言時自動跟著變、不需要再去這邊手動調
   searchPanelLangMode: 'auto' as SearchPanelLangMode,
-  // CJK 標籤名稱是否經 OpenCC 簡轉繁。EhTagTranslation DB 原文是簡體中文，繁體
+  // 中文標籤名稱是否經 OpenCC 簡轉繁。EhTagTranslation DB 原文是簡體中文，繁體
   // 使用者讀起來有點怪——開啟後過 cjkDict.toTW 字面繁化（一對多取第一個、
   // 沒考慮地區慣用詞，譬如「软件」→「軟件」而非「軟體」）
   //   'auto' → zh-TW locale = on、其他 = off
@@ -139,7 +139,7 @@ const INITIAL_SETTINGS = {
   galleryTaglistHeight: 330,
   // Intro panel 預設先顯示哪邊定義 (中文 trans db / 英文 wiki)，使用者一律可在
   // panel 標題列 toggle 切換、選擇只在當下 panel session 有效，下次點 chip 又
-  // 回 primary。'auto' = locale 推 (CJK locale → zh, 其他 → en)
+  // 回 primary。'auto' = locale 推 (中文 locale → zh, 其他 → en)
   introPanelPrimaryLang: 'auto' as IntroPanelPrimaryLang,
   // Gallery taglist 專屬雙擊動作。跟 tagbar 的 dblClickLeft/Right 分開持久化——
   // gallery 是不同 UI context，使用者可能想在兩邊配不同 shortcut
@@ -178,7 +178,7 @@ export const tagWikiMirror     = refs.tagWikiMirror
 export const tagWikiTtlDays    = refs.tagWikiTtlDays
 export const tagStylePreset    = refs.tagStylePreset
 export const useAccentOnInclude = refs.useAccentOnInclude
-export const searchPanelShowCJK = refs.searchPanelShowCJK
+export const searchPanelShowZh = refs.searchPanelShowZh
 export const showSearchPanel    = refs.showSearchPanel
 export const searchPanelLangMode = refs.searchPanelLangMode
 export const convertToTraditional = refs.convertToTraditional
@@ -482,7 +482,10 @@ export async function loadStore(): Promise<void> {
   loadAllSettings(parsed)
   // legacy migration：舊版單一 newTabActive / galleryNewTabActive 拆成左右各自
   // 的開關。首次以新版載入時把舊值播種到同 scope 兩側；新 key 一旦被存過就不再看舊值
-  const legacy = parsed as { newTabActive?: unknown; galleryNewTabActive?: unknown }
+  const legacy = parsed as { newTabActive?: unknown; galleryNewTabActive?: unknown; searchPanelShowCJK?: unknown }
+  if (typeof legacy.searchPanelShowCJK === 'boolean' && !('searchPanelShowZh' in parsed)) {
+    refs.searchPanelShowZh.value = legacy.searchPanelShowCJK
+  }
   if (typeof legacy.newTabActive === 'boolean' && !('dblClickLeftNewTabActive' in parsed)) {
     refs.dblClickLeftNewTabActive.value = legacy.newTabActive
     refs.dblClickRightNewTabActive.value = legacy.newTabActive

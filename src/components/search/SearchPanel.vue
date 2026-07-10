@@ -32,8 +32,8 @@ const emit = defineEmits<{
   'drag-end': []
 }>()
 
-// effectiveShowCJK 跟 SuggestionList / SearchTermRows 共用一份解析邏輯（useDisplayConfig）
-const { effectiveShowCJK, cjkDisplay } = useDisplayConfig()
+// effectiveShowZh 跟 SuggestionList / SearchTermRows 共用一份解析邏輯（useDisplayConfig）
+const { effectiveShowZh, zhDisplay } = useDisplayConfig()
 
 // loadTagDb 不在這呼叫——App.vue 已經 setup 階段觸發。historyDisplays computed
 // 用 tagDb.tagDbVersion 當 reactive signal，DB ready 時自動 recompute
@@ -70,11 +70,11 @@ const visibleHistory = computed(() => {
   })
 })
 
-// 解析 history positive → 兩語言版本（display 跟著 showCJK 切換）。
+// 解析 history positive → 兩語言版本（display 跟著 showZh 切換）。
 // 無條件算兩種文字：display 給 v-render，zh/en 給 chunkByMaxWidth 量測對齊
 //
 // English 模式 = literal（保 suffix）徹底復現原生搜索欄字面。
-// CJK 模式 = `ns_label:cjk_name`（無 suffix）給 CJK 使用者讀的友善形式。
+// 中文模式 = `ns_label:zh_name`（無 suffix）給中文使用者讀的友善形式。
 // literal 額外存著給 drag-clone 用
 function historyEntryTexts(positive: string): { display: string; zh: string; en: string; literal: string } {
   const parsed = parseTerm(positive)
@@ -85,12 +85,12 @@ function historyEntryTexts(positive: string): { display: string; zh: string; en:
   if (!parsed.namespace) {
     return { display: literal, zh: literal, en: literal, literal }
   }
-  const cjkEntry = findEntryByNsTag(parsed.namespace, parsed.tag)
+  const zhEntry = findEntryByNsTag(parsed.namespace, parsed.tag)
   const enText = literal
-  const zhText = cjkEntry
-    ? `${t(`ns.${parsed.namespace}`)}:${cjkDisplay(cjkEntry.name)}`
+  const zhText = zhEntry
+    ? `${t(`ns.${parsed.namespace}`)}:${zhDisplay(zhEntry.name)}`
     : enText
-  const display = effectiveShowCJK.value ? zhText : enText
+  const display = effectiveShowZh.value ? zhText : enText
   return {
     display,
     zh: zhText,
@@ -101,12 +101,12 @@ function historyEntryTexts(positive: string): { display: string; zh: string; en:
 
 interface HistoryTerm { positive: string; display: string; zh: string; en: string; literal: string; cloneLabel: string }
 
-// computed memoize history display——visibleHistory / showCJK 不變就直接拿快取，
+// computed memoize history display——visibleHistory / showZh 不變就直接拿快取，
 // 不在 v-for 內逐項重跑 parseTerm + findEntryByNsTag。
 // 跟 da4ae79（identityIndex 從 N 顆按鈕收成 1 張共用 Map）同形式
 //
 // dbReady 依賴：tagDb 未載入時 findEntryByNsTag 回 undefined → historyEntryTexts
-// fallback 到英文。dbReady 翻 true 後要重算才能切到 CJK 翻譯，不然要使用者點
+// fallback 到英文。dbReady 翻 true 後要重算才能切到中文翻譯，不然要使用者點
 // 兩次 toggle 才會變中文（第一次切走、第二次切回時 tagDb 已載入）
 const historyDisplays = computed<HistoryTerm[]>(() => {
   void tagDbVersion.value

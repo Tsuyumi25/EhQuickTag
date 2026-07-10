@@ -15,7 +15,7 @@ import { serializeEntry } from '@/services/searchSyntax'
 import { findEntryByNsTag, DEFAULT_NS_ORDER, tagDbVersion } from '@/services/tagDb'
 import { nsFormat, defaultExactMatch, galleryDragSelectEnabled, galleryDblClickLeft, galleryDblClickRight, galleryDblClickLeftNewTabActive, galleryDblClickRightNewTabActive, type GalleryDblClickAction } from '@/services/store'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
-import { t, isCJKLocale, locale } from '@/composables/useI18n'
+import { t, isZhLocale, locale } from '@/composables/useI18n'
 import { batchVote, type VoteState } from '@/services/galleryVote'
 import { useEqtToast } from '@/composables/useEqtToast'
 import { parseTaglistRoot, type GalleryTag } from '@/composables/useEhGalleryHost'
@@ -80,7 +80,7 @@ onBeforeUnmount(() => {
   taglistObserver?.disconnect()
 })
 
-const { cjkDisplay } = useDisplayConfig()
+const { zhDisplay } = useDisplayConfig()
 const { setPanelTag, close: closePanel } = useIntroPanel()
 
 const selection = ref<Map<string, Selection>>(new Map())
@@ -115,7 +115,7 @@ function buildChipView(tag: GalleryTag, showNs = false): ChipView {
     { nsFormat: nsFormat.value, exactMatch: defaultExactMatch.value },
   )
   const entry = findEntryByNsTag(tag.ns, tag.raw)
-  const baseDisplay = isCJKLocale() && entry ? cjkDisplay(entry.name) : tag.raw
+  const baseDisplay = isZhLocale() && entry ? zhDisplay(entry.name) : tag.raw
   // 「新增」row 混 ns、沒有單一 ns label 可掛在 row 開頭，每個 chip 自帶 ns 前綴
   // 才能辨識（譬如「女:yuri」「畫師:foo」）。原生 row 跟 ns label row 不重複標
   const nsLabel = KNOWN_NS_SET.has(tag.ns) ? t(`ns.${tag.ns}`) : tag.ns
@@ -277,10 +277,10 @@ const { onAreaMouseDown } = useDragSelect({
   enabled: () => galleryDragSelectEnabled.value,
 })
 
-// Gallery Tagging guide：CJK locale 走 /Chinese 分頁、韓文走 /Korean、其他走英文 root
+// Gallery Tagging guide：中文 locale 走 /Chinese 分頁、韓文走 /Korean、其他走英文 root
 // （ehwiki 沒有 /Japanese，所以日文也落英文 root）
 const wikiUrl = computed(() => {
-  if (isCJKLocale()) return 'https://ehwiki.org/wiki/Gallery_Tagging/Chinese'
+  if (isZhLocale()) return 'https://ehwiki.org/wiki/Gallery_Tagging/Chinese'
   if (locale.value === 'ko') return 'https://ehwiki.org/wiki/Gallery_Tagging/Korean'
   return 'https://ehwiki.org/wiki/Gallery_Tagging'
 })

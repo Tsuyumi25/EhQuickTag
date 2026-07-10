@@ -63,7 +63,7 @@ let entries: TagEntry[] | null = null
  * 用途：findEntryByNsTag 純函數沒 reactive signal，當 tagDb async 載入完，
  * 依賴它輸出的 computed 不會自動 invalidate（典型症狀：URL 帶 ?f_search 進
  * 頁面時 chip 顯示英文 raw，等了一秒 DB 載完 chip 還是英文，要 user 動別的
- * 東西才會翻成 CJK）。caller 在 computed 內 `void tagDbVersion.value`
+ * 東西才會翻成中文）。caller 在 computed 內 `void tagDbVersion.value`
  * 建立依賴，DB ready 時自然重算
  */
 export const tagDbVersion = ref(0)
@@ -213,7 +213,7 @@ export async function refreshTagDb(opts: LoadTagDbOptions = {}): Promise<void> {
 }
 
 /**
- * 用 (namespace, tag raw) 查回 TagEntry。給 SearchPanel 在 CJK locale 下把
+ * 用 (namespace, tag raw) 查回 TagEntry。給 SearchPanel 在中文 locale 下把
  * button 文字從英文 raw 換成 entry.name（本地化翻譯）。
  *
  * Index lazy build：首次呼叫時掃 entries 建 Map<ns:rawLow, entry>，後續 O(1)。
@@ -264,7 +264,7 @@ function getMatchTier(entry: TagEntry, search: string, searchIsAscii: boolean): 
       if (word.startsWith(search)) return MatchTier.WordStart
     }
   }
-  // CJK name substring: CJK has no word boundaries, so includes is needed
+  // 中文 name substring: CJK 文字無 word boundaries, so includes is needed
   if (!searchIsAscii && entry.nameLow.includes(search)) return MatchTier.WordStart
 
   // intro substring：EhTagTranslation intro 通常含 cross-reference（例如 thigh high
