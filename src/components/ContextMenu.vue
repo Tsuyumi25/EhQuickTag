@@ -1,22 +1,3 @@
-<script lang="ts">
-import type { Component } from 'vue'
-
-export interface ContextMenuItem {
-  kind: 'item'
-  key: string
-  label: string
-  icon?: Component
-  disabled?: boolean
-  danger?: boolean
-}
-
-export interface ContextMenuSeparator {
-  kind: 'separator'
-}
-
-export type ContextMenuEntry = ContextMenuItem | ContextMenuSeparator
-</script>
-
 <script setup lang="ts">
 import { ref, computed, inject, provide, watch, nextTick } from 'vue'
 import { onClickOutside, useEventListener } from '@vueuse/core'
@@ -29,7 +10,6 @@ const props = defineProps<{
   y: number
   anchorWidth?: number
   anchorHeight?: number
-  entries: ContextMenuEntry[]
   placement?: Placement
   ignore?: Array<HTMLElement | null>
   autoFocus?: boolean
@@ -39,7 +19,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
-  select: [key: string]
 }>()
 
 const menuEl = ref<HTMLElement | null>(null)
@@ -68,12 +47,6 @@ function close(): void {
   emit('update:open', false)
 }
 
-function selectItem(item: ContextMenuItem): void {
-  if (item.disabled) return
-  emit('select', item.key)
-  close()
-}
-
 const childIgnoreList = ref<HTMLElement[]>([])
 provide<PopupIgnoreRegister>(POPUP_IGNORE_KEY, (el) => {
   childIgnoreList.value = [...childIgnoreList.value, el]
@@ -87,63 +60,20 @@ const outsideIgnoreList = computed(() => [
 ])
 onClickOutside(menuEl, close, { ignore: outsideIgnoreList })
 
-// --- 鍵盤導覽 ---
-
-const activeIdx = ref(-1)
-
-const isEnabled = (e: ContextMenuEntry) => e.kind === 'item' && !e.disabled
-
-// 開啟（或座標變動 = 在別處重開）時重置高亮；dialog 模式把焦點
-// 主動送進 popup，讓鍵盤使用者不必從觸發器一路 Tab 到 Teleport 尾端。
+// 開啟（或座標變動 = 在別處重開）時，dialog 模式把焦點主動送進 popup，
+// 讓鍵盤使用者不必從觸發器一路 Tab 到 Teleport 尾端。
 watch(() => [props.open, props.x, props.y] as const, async ([open]) => {
-  activeIdx.value = -1
   if (!open || !props.autoFocus) return
   await nextTick()
   menuEl.value?.querySelector<HTMLElement>('button:not(:disabled), input:not(:disabled), [tabindex]:not([tabindex="-1"])')?.focus()
 }, { immediate: true })
 
-function move(dir: 1 | -1): void {
-  const n = props.entries.length
-  if (!props.entries.some(isEnabled)) return
-  let i = activeIdx.value
-  for (let step = 0; step < n; step++) {
-    i = (i + dir + n) % n
-    if (isEnabled(props.entries[i])) { activeIdx.value = i; return }
-  }
-}
-
-function moveEdge(dir: 1 | -1): void {
-  activeIdx.value = dir === 1 ? -1 : props.entries.length
-  move(dir)
-}
-
 // capture + stopPropagation：外層 popup（usePopupBehavior）也在 document 聽
 // keydown，Escape 若走到那邊會連 parent popup 一起關。capture phase 在
 // document 的 bubble 訪問之前，stopPropagation 能整段擋下
 useEventListener(document, 'keydown', (e: KeyboardEvent) => {
-  if (!props.open) return
-  // 嵌入內容（slot 裡的 color picker、輸入框等）拿著 focus 時，Enter/Space/
-  // 方向鍵都是它的——選單導覽只在 focus 不在嵌入 widget 上時接手。Escape
-  // 永遠歸選單（任何狀態都能關）。shadow DOM 內的事件 target 會 retarget
-  // 到 host element，contains 照常成立
-  const target = e.target as HTMLElement | null
-  const inEmbedded = !!target && !!menuEl.value?.contains(target)
-    && !target.hasAttribute('data-eqt-context-menu-entry')
-  if (inEmbedded && e.key !== 'Escape') return
-  switch (e.key) {
-    case 'Escape': close(); break
-    case 'ArrowDown': move(1); break
-    case 'ArrowUp': move(-1); break
-    case 'Home': moveEdge(1); break
-    case 'End': moveEdge(-1); break
-    case 'Enter':
-    case ' ': {
-      const entry = props.entries[activeIdx.value]
-      if (entry?.kind === 'item') selectItem(entry)
-      break
-    }
-    default: return
-  }
+  if (!props.open || e.key !== 'Escape') return
+  close()
   e.preventDefault()
   e.stopPropagation()
 }, { capture: true })
@@ -168,27 +98,7 @@ watch(menuEl, (el) => {
       :role="ariaRole ?? 'menu'"
       :aria-label="ariaLabel"
       @contextmenu.prevent
-      @mouseleave="activeIdx = -1"
     >
-      <template v-for="(entry, i) in entries" :key="i">
-        <div v-if="entry.kind === 'separator'" class="eqt-context-menu__separator" />
-        <button
-          v-else
-          type="button"
-          class="eqt-context-menu__item"
-          data-eqt-context-menu-entry
-          :class="{
-            'eqt-context-menu__item--active': i === activeIdx,
-            'eqt-context-menu__item--danger': entry.danger,
-          }"
-          :disabled="entry.disabled"
-          @mouseenter="activeIdx = i"
-          @click="selectItem(entry)"
-        >
-          <component :is="entry.icon" v-if="entry.icon" :size="14" class="eqt-context-menu__icon" />
-          <span class="eqt-context-menu__label">{{ entry.label }}</span>
-        </button>
-      </template>
       <slot />
     </div>
   </Teleport>
@@ -222,16 +132,9 @@ watch(menuEl, (el) => {
     text-align: left;
     cursor: pointer;
 
-    // 高亮走 --active class 而非 :hover——鍵盤導覽和滑鼠 hover 共用同一個
-    // activeIdx 來源，不會出現「hover 一項 + 鍵盤高亮另一項」的雙高亮
-    &--active {
-      background: var(--eqt-bg-btn-hover);
-    }
-
     &--danger {
       color: var(--eqt-danger);
 
-      &.eqt-context-menu__item--active,
       &:hover:not(:disabled) {
         background: var(--eqt-danger-bg-hover);
       }

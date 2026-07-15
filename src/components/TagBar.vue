@@ -678,7 +678,6 @@ function onRightClick(event: MouseEvent, b: TagButton) {
               :y="lineMenuY"
               :anchor-width="lineMenuAnchorWidth"
               :anchor-height="lineMenuAnchorHeight"
-              :entries="[]"
               :ignore="[lineMenuTrigger]"
               auto-focus
               aria-role="dialog"
@@ -740,7 +739,6 @@ function onRightClick(event: MouseEvent, b: TagButton) {
         v-model:open="tagMenuOpen"
         :x="tagMenuX"
         :y="tagMenuY"
-        :entries="[]"
         auto-focus
         aria-role="dialog"
         :aria-label="t('tagbar.tagActions')"
