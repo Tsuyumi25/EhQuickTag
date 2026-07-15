@@ -20,7 +20,6 @@ export default {
   'tagbar.duplicateTag': '建立副本',
   'tagbar.moveLine': '移動到 Profile',
   'tagbar.duplicateLine': '建立副本',
-  'tagbar.moveLineToProfile': '移動到 {profile}',
   'tagbar.layout': '排版',
   'tagbar.lineAlign': '行內容對齊',
   'tagbar.lineAlignGlobal': '依全域（{align}）',

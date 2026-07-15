@@ -20,7 +20,6 @@ export default {
   'tagbar.duplicateTag': '복제',
   'tagbar.moveLine': '프로필로 이동',
   'tagbar.duplicateLine': '복제',
-  'tagbar.moveLineToProfile': '{profile}(으)로 이동',
   'tagbar.layout': '레이아웃',
   'tagbar.lineAlign': '행 콘텐츠 정렬',
   'tagbar.lineAlignGlobal': '전역 설정 사용 ({align})',
