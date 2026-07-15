@@ -3,7 +3,6 @@ import { ref, watch, computed, onScopeDispose } from 'vue'
 import { GM } from '$'
 import { hasGMXHR } from '@/services/gmStorage'
 import ContentEditable from 'vue-contenteditable'
-import LineColorSwatch from '@/components/LineColorSwatch.vue'
 import { currentTagStyleClass } from '@/composables/useTagStyle'
 import { usePopupBehavior } from '@/composables/usePopupBehavior'
 import type { UrlButton } from '@/types'
@@ -22,6 +21,7 @@ const emit = defineEmits<{
 }>()
 
 const label = ref('')
+// 顏色改由 button context menu 編輯；popup 仍保留既有值，避免儲存其他欄位時清掉。
 const color = ref<string | undefined>(undefined)
 const effectiveColor = computed(() => color.value ?? props.lineColor)
 
@@ -116,10 +116,6 @@ function onSave() {
             :style="effectiveColor ? { '--line-color': effectiveColor } : undefined"
             no-nl
           />
-          <LineColorSwatch
-            v-model="color"
-            :title="t('common.itemColor')"
-          />
         </div>
       </div>
 
@@ -166,4 +162,3 @@ function onSave() {
     </div>
   </div>
 </template>
-

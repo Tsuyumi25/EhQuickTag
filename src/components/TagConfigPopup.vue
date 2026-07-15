@@ -2,7 +2,6 @@
 import { reactive, ref, watch, onMounted, nextTick, computed } from 'vue'
 import { ExternalLink, ChevronRight, Lock, MousePointerClick } from '@lucide/vue'
 import ContentEditable from 'vue-contenteditable'
-import LineColorSwatch from '@/components/LineColorSwatch.vue'
 import SearchTermEditor from '@/components/SearchTermEditor.vue'
 import { currentTagStyleClass } from '@/composables/useTagStyle'
 import { usePopupBehavior } from '@/composables/usePopupBehavior'
@@ -26,7 +25,7 @@ const emit = defineEmits<{
   'close': []
 }>()
 
-// --- name + color ---
+// 顏色改由 button context menu 編輯；popup 仍保留既有值，避免儲存其他欄位時清掉。
 
 const label = ref('')
 const color = ref<string | undefined>(undefined)
@@ -217,7 +216,7 @@ const simOutput = computed(() => {
   <div class="eqt-popup-overlay">
     <div ref="popupEl" class="eqt-popup">
       <div class="eqt-popup__body">
-      <!-- name + color -->
+      <!-- name -->
       <div class="eqt-popup__field">
         <label class="eqt-popup__label">{{ t('tagConfig.displayName') }}</label>
         <div class="eqt-popup__field-row" :class="currentTagStyleClass">
@@ -231,10 +230,6 @@ const simOutput = computed(() => {
             :data-placeholder="t('tagConfig.displayNameHint')"
             :style="effectiveColor ? { '--line-color': effectiveColor } : undefined"
             no-nl
-          />
-          <LineColorSwatch
-            v-model="color"
-            :title="t('common.itemColor')"
           />
         </div>
       </div>

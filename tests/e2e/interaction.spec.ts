@@ -98,6 +98,21 @@ test('編輯 → + 標籤 → 填寫 → 儲存 → TagBar 多一顆按鈕', asy
   await expect(allBtns).toHaveCount(countBefore + 1)
 })
 
+test('tag 與 URL button 的左鍵編輯 popup 不顯示調色盤', async ({ page }) => {
+  await injectUserscript(page)
+  await page.locator('.eqt-tag-bar__ctrl--toggle').click()
+
+  await page.getByRole('button', { name: '中文', exact: true }).click()
+  const popup = page.locator('.eqt-popup-overlay')
+  await expect(popup).toBeVisible()
+  await expect(popup.locator('.eqt-line-color__trigger')).toHaveCount(0)
+  await page.keyboard.press('Escape')
+
+  await page.locator('.eqt-tag-bar__ctrl-split-btn').nth(1).click()
+  await expect(popup).toBeVisible()
+  await expect(popup.locator('.eqt-line-color__trigger')).toHaveCount(0)
+})
+
 // === Tier 1 / ⑤：Search history 跨 reload 存活 ===
 test('history 跨 reload 還留在 SearchPanel', async ({ page }) => {
   await injectUserscript(page)
