@@ -66,6 +66,9 @@ const emit = defineEmits<{
 
 const editing = ref(false)
 
+const barEl = ref<HTMLElement | null>(null)
+const editToggleEl = ref<HTMLButtonElement | null>(null)
+
 const controlsEl = ref<HTMLElement | null>(null)
 useResizeObserver(controlsEl, ([entry]) => {
   emit('controlsWidth', entry.contentRect.width)
@@ -275,10 +278,21 @@ function returnToLineMenu(): void {
   nextTick(() => lineMenuDrillTrigger.value?.focus())
 }
 
+// 選單裡的刪除 / 移動會把觸發鈕從 DOM 拆掉，對脫離的節點 focus 是
+// 靜默 no-op、focus 掉回 body。觸發鈕還在就照常還 focus；被拆掉才聚焦
+// 補位元素。trigger 為 null 代表換目標重開，交給新選單的 autoFocus。
+function focusLineMenuTriggerOrFallback(trigger: HTMLButtonElement | null): void {
+  if (!trigger) return
+  if (trigger.isConnected) { trigger.focus(); return }
+  const actions = barEl.value?.querySelectorAll<HTMLElement>('.eqt-tag-bar__line-actions') ?? []
+  ;(actions[Math.min(lineMenuIdx.value, actions.length - 1)] ?? editToggleEl.value)?.focus()
+}
+
 watch(lineMenuOpen, (open) => {
   if (open) return
+  const trigger = lineMenuTrigger.value
   lineMenuView.value = 'menu'
-  nextTick(() => lineMenuTrigger.value?.focus())
+  nextTick(() => focusLineMenuTriggerOrFallback(trigger))
 })
 
 function moveLine(li: number, profileIdx: number): void {
@@ -393,13 +407,26 @@ watch(editing, (enabled) => {
   tagMenuOpen.value = false
 })
 
+// 同 focusLineMenuTriggerOrFallback：按鈕被刪掉 / 移走時聚焦同行補位
+// 按鈕，整行清空則退到行操作鈕，最後退到編輯切換鈕
+function focusTagMenuTriggerOrFallback(trigger: HTMLButtonElement | null): void {
+  if (!trigger) return
+  if (trigger.isConnected) { trigger.focus(); return }
+  const wrap = barEl.value?.querySelectorAll('.eqt-tag-bar__line-wrap')[tagMenuLineIdx.value]
+  const buttons = wrap?.querySelectorAll<HTMLElement>('.eqt-tag-bar__btn') ?? []
+  const fallback = buttons[Math.min(tagMenuButtonIdx.value, buttons.length - 1)]
+    ?? wrap?.querySelector<HTMLElement>('.eqt-tag-bar__line-actions')
+    ?? editToggleEl.value
+  fallback?.focus()
+}
+
 watch(tagMenuOpen, (open) => {
   if (open) return
   const trigger = tagMenuTrigger.value
   const restoreFocus = tagMenuRestoreFocus.value
   tagMenuRestoreFocus.value = false
   tagMenuView.value = 'menu'
-  if (restoreFocus) nextTick(() => trigger?.focus())
+  if (restoreFocus) nextTick(() => focusTagMenuTriggerOrFallback(trigger))
 })
 
 function onConfigure(li: number, ti: number) {
@@ -486,6 +513,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
 
 <template>
   <div
+    ref="barEl"
     class="eqt-tag-bar"
     :class="[currentTagStyleClass, { 'eqt-tag-bar--accent-on-include': useAccentOnInclude }]"
     @dblclick="onBarDblClick"
@@ -796,6 +824,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
           </div>
 
           <button
+            ref="editToggleEl"
             class="eqt-tag-bar__ctrl eqt-tag-bar__ctrl--toggle"
             :class="{ 'is-active': editing }"
             type="button"
