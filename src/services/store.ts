@@ -444,8 +444,10 @@ export const lines = reactive<Line[]>([])
 // 舊版 default line definitions 會把 separator 的視覺預設 `textAlign: left`
 // 寫進 profile。新增全域 separator 對齊後，這個顯式值會遮住 fallback。
 // isDefault profile 尚未被使用者修改，可安全移除舊內建值；其他 style 保留。
+// deletedProfiles 也要跑：被刪除的 default profile 復原時直接 push 回
+// profiles、不會再經過這裡，舊值會一路殘留。
 function normalizeDefaultProfileLineAlignment(): void {
-  for (const profile of profiles) {
+  for (const profile of [...profiles, ...deletedProfiles]) {
     if (!profile.isDefault) continue
     for (const line of profile.lines) {
       if (line.kind !== 'separator' || line.style?.textAlign === undefined) continue
@@ -653,7 +655,7 @@ function saveProfiles() {
   cacheSet(KEYS.profiles, JSON.stringify({
     active: activeProfileIdx.value,
     profiles: profiles.map(p => ({ name: p.name, lines: p.lines, ...(p.isDefault ? { isDefault: true } : {}) })),
-    deleted: deletedProfiles.map(p => ({ name: p.name, lines: p.lines })),
+    deleted: deletedProfiles.map(p => ({ name: p.name, lines: p.lines, ...(p.isDefault ? { isDefault: true } : {}) })),
   }))
 }
 
