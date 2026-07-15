@@ -216,6 +216,109 @@ test('行操作支援鍵盤開啟、drill-in 與 Escape 返回 trigger', async (
   await expect(trigger).toBeFocused()
 })
 
+test('編輯模式的 tag context menu 支援相鄰副本、顏色與刪除', async ({ page }) => {
+  await injectUserscript(page)
+  await page.locator('.eqt-tag-bar__ctrl--toggle').click()
+
+  const row = page.locator('.eqt-tag-bar__line-wrap').filter({ has: page.getByRole('button', { name: '中文', exact: true }) })
+  const rowButtons = row.locator('.eqt-tag-bar__btn')
+  const countBefore = await rowButtons.count()
+  const chinese = row.getByRole('button', { name: '中文', exact: true })
+  const english = row.getByRole('button', { name: '英文', exact: true })
+
+  await chinese.click({ button: 'right' })
+  const menu = page.locator('.eqt-context-menu')
+  await expect(menu).toBeVisible()
+  await english.click({ button: 'right' })
+  await expect(menu).toBeVisible()
+  await expect(english).not.toHaveClass(/eqt-tag-bar__btn--actions-active/)
+  await expect(english).not.toBeFocused()
+  await menu.getByRole('button', { name: '建立副本' }).click()
+  await expect(rowButtons).toHaveCount(countBefore + 1)
+
+  const copies = row.getByRole('button', { name: '英文', exact: true })
+  await expect(copies).toHaveCount(2)
+  await copies.nth(1).click({ button: 'right' })
+  await menu.getByRole('button', { name: '按鈕顏色' }).click()
+  const hex = menu.locator('.eqt-color-picker__input').first()
+  await hex.fill('#00ff00')
+  await hex.press('Enter')
+  await expect(copies.nth(1)).toHaveAttribute('style', /#00ff00ff/)
+
+  await page.keyboard.press('Escape')
+  await copies.nth(1).click({ button: 'right' })
+  await menu.getByRole('button', { name: '刪除' }).click()
+  await expect(rowButtons).toHaveCount(countBefore)
+})
+
+test('編輯模式的 URL button 共用 context menu', async ({ page }) => {
+  await injectUserscript(page)
+  await page.locator('.eqt-tag-bar__ctrl--toggle').click()
+
+  const row = page.locator('.eqt-tag-bar__line-wrap').filter({ has: page.getByRole('button', { name: '教學', exact: true }) })
+  const rowButtons = row.locator('.eqt-tag-bar__btn')
+  const countBefore = await rowButtons.count()
+  const howTo = row.getByRole('button', { name: '教學', exact: true })
+
+  await howTo.click({ button: 'right' })
+  const menu = page.locator('.eqt-context-menu')
+  await expect(menu).toBeVisible()
+  await expect(howTo).not.toHaveClass(/eqt-tag-bar__btn--actions-active/)
+  await expect(howTo).not.toBeFocused()
+  await menu.getByRole('button', { name: '建立副本' }).click()
+  await expect(rowButtons).toHaveCount(countBefore + 1)
+  const copies = row.getByRole('button', { name: '教學', exact: true })
+  await expect(copies).toHaveCount(2)
+
+  await copies.nth(1).click({ button: 'right' })
+  await menu.getByRole('button', { name: '按鈕顏色' }).click()
+  const hex = menu.locator('.eqt-color-picker__input').first()
+  await hex.fill('#00ff00')
+  await hex.press('Enter')
+  await expect(copies.nth(1)).toHaveAttribute('style', /#00ff00ff/)
+
+  await page.keyboard.press('Escape')
+  await copies.nth(1).click({ button: 'right' })
+  await menu.getByRole('button', { name: '刪除' }).click()
+  await expect(rowButtons).toHaveCount(countBefore)
+})
+
+test('編輯模式會阻止 tag 與背景冒出瀏覽器原生 context menu', async ({ page }) => {
+  await injectUserscript(page)
+  await page.locator('.eqt-tag-bar__ctrl--toggle').click()
+
+  const dispatchContextMenu = (el: Element) => {
+    const event = new MouseEvent('contextmenu', { bubbles: true, cancelable: true, button: 2 })
+    el.dispatchEvent(event)
+    return event.defaultPrevented
+  }
+  await expect.poll(() => page.locator('.eqt-tag-bar').evaluate(dispatchContextMenu)).toBe(true)
+  await expect.poll(() => page.getByRole('button', { name: '中文', exact: true }).evaluate(dispatchContextMenu)).toBe(true)
+  await expect.poll(() => page.getByRole('button', { name: '教學', exact: true }).evaluate(dispatchContextMenu)).toBe(true)
+})
+
+test('tag 可從 context menu 移動到另一個 Profile 的最後普通行', async ({ page }) => {
+  await injectUserscript(page)
+
+  await page.locator('.eqt-tag-bar__profile-nav--next').click()
+  await page.locator('.eqt-tag-bar__profile-split-name').click()
+  const profileInput = page.locator('.eqt-tag-bar__profile-input')
+  await profileInput.fill('Target')
+  await profileInput.press('Enter')
+  await page.locator('.eqt-tag-bar__profile-nav--prev').click()
+
+  await page.locator('.eqt-tag-bar__ctrl--toggle').click()
+  const chinese = page.getByRole('button', { name: '中文', exact: true })
+  await chinese.click({ button: 'right' })
+  const menu = page.locator('.eqt-context-menu')
+  await menu.getByRole('button', { name: '移動到 Profile' }).click()
+  await menu.getByRole('button', { name: 'Target', exact: true }).click()
+  await expect(chinese).toHaveCount(0)
+
+  await page.locator('.eqt-tag-bar__profile-nav--next').click()
+  await expect(page.getByRole('button', { name: '中文', exact: true })).toBeVisible()
+})
+
 test('全域普通行對齊套用到未覆寫的行', async ({ page }) => {
   await injectUserscript(page)
   await page.locator('.eqt-tag-bar__ctrl', { hasText: '設定' }).click()

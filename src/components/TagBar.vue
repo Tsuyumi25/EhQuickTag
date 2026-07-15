@@ -2,7 +2,7 @@
 import { ref, computed, nextTick, watch } from 'vue'
 import { useResizeObserver } from '@vueuse/core'
 import Draggable from 'vuedraggable'
-import { ArrowLeft, ChevronLeft, ChevronRight, ExternalLink, GripVertical, Trash2, Pencil, Check, Settings, Plus, Info, Ellipsis, Palette, SquareDashedMousePointer } from '@lucide/vue'
+import { ArrowLeft, ChevronLeft, ChevronRight, CopyPlus, ExternalLink, GripVertical, Trash2, Pencil, Check, Settings, Plus, Info, Ellipsis, Palette, SquareDashedMousePointer } from '@lucide/vue'
 import ContentEditable from 'vue-contenteditable'
 import LineColorSwatch from '@/components/LineColorSwatch.vue'
 import SeparatorSettingsPopup from '@/components/SeparatorSettingsPopup.vue'
@@ -10,7 +10,7 @@ import ContextMenu from '@/components/ContextMenu.vue'
 import SearchPanel from '@/components/search/SearchPanel.vue'
 import { TagState, type Line, type Button, type TagButton } from '@/types'
 import { tokenize, buildIdentityIndex, getState as _getState, setTagState, getNextRightClickState } from '@/services/tagState'
-import { lines, profiles, activeProfileIdx, moveLineToProfile, buttonLineTextAlign, separatorLineTextAlign, dblClickLeft, dblClickRight, dblClickLeftNewTabActive, dblClickRightNewTabActive, useAccentOnInclude, showSearchPanel, type DblClickAction } from '@/services/store'
+import { lines, profiles, activeProfileIdx, moveLineToProfile, moveButtonToProfile, buttonLineTextAlign, separatorLineTextAlign, dblClickLeft, dblClickRight, dblClickLeftNewTabActive, dblClickRightNewTabActive, useAccentOnInclude, showSearchPanel, type DblClickAction } from '@/services/store'
 import { baseDragOptions, EQT_TAGS_GROUP } from '@/utils/drag'
 import { dismissTerms, recordSubmitAndFlush } from '@/services/search/searchSession'
 import { t } from '@/composables/useI18n'
@@ -104,6 +104,12 @@ function onBarContextMenu(e: MouseEvent) {
   } else {
     lastRightClickTime = now
   }
+}
+
+// 編輯模式的整個 TagBar 都是自訂操作面：capture phase 先封住瀏覽器原生
+// context menu，但不阻止事件往子層走，tag 仍可接手開啟自己的 ContextMenu。
+function preventNativeContextMenuWhileEditing(e: MouseEvent): void {
+  if (editing.value) e.preventDefault()
 }
 
 async function execDblClickAction(action: DblClickAction, newTabActive?: boolean) {
@@ -228,6 +234,8 @@ const lineMenuBack = ref<HTMLButtonElement | null>(null)
 const lineMenuDrillTrigger = ref<HTMLButtonElement | null>(null)
 
 function toggleLineMenu(e: MouseEvent, li: number): void {
+  tagMenuTrigger.value = null
+  tagMenuOpen.value = false
   const trigger = e.currentTarget as HTMLButtonElement
   if (lineMenuOpen.value && lineMenuIdx.value === li) {
     lineMenuOpen.value = false
@@ -271,6 +279,110 @@ function deleteLineFromMenu(li: number): void {
   onDeleteLine(li)
   lineMenuOpen.value = false
 }
+
+// --- button actions ---
+
+const tagMenuOpen = ref(false)
+const tagMenuLineIdx = ref(-1)
+const tagMenuButtonIdx = ref(-1)
+const tagMenuX = ref(0)
+const tagMenuY = ref(0)
+const tagMenuView = ref<'menu' | 'move' | 'color'>('menu')
+const tagMenuTrigger = ref<HTMLButtonElement | null>(null)
+const tagMenuRestoreFocus = ref(false)
+const tagMenuBack = ref<HTMLButtonElement | null>(null)
+const tagMenuDrillTrigger = ref<HTMLButtonElement | null>(null)
+
+const tagMenuButton = computed<Button | null>(() => {
+  const line = lines[tagMenuLineIdx.value]
+  if (!line || line.kind !== 'buttons') return null
+  return line.buttons[tagMenuButtonIdx.value] ?? null
+})
+
+async function openTagMenu(e: MouseEvent, li: number, ti: number): Promise<void> {
+  const line = lines[li]
+  if (!editing.value || !line || line.kind !== 'buttons' || !line.buttons[ti]) return
+  const trigger = e.currentTarget as HTMLButtonElement
+  const openedFromKeyboard = e.clientX === 0 && e.clientY === 0
+  if (tagMenuOpen.value && tagMenuLineIdx.value === li && tagMenuButtonIdx.value === ti) {
+    tagMenuOpen.value = false
+    return
+  }
+
+  // 右鍵不保證會產生 click，不能依賴 onClickOutside 先關掉舊 menu。
+  // 換目標時明確 unmount 舊 Teleport，再於下一個 tick 綁定新 anchor。
+  if (tagMenuOpen.value) {
+    tagMenuTrigger.value = null
+    tagMenuOpen.value = false
+    await nextTick()
+  }
+
+  lineMenuTrigger.value = null
+  lineMenuOpen.value = false
+  const rect = trigger.getBoundingClientRect()
+  tagMenuLineIdx.value = li
+  tagMenuButtonIdx.value = ti
+  tagMenuX.value = openedFromKeyboard ? rect.left : e.clientX
+  tagMenuY.value = openedFromKeyboard ? rect.bottom : e.clientY
+  tagMenuView.value = 'menu'
+  tagMenuTrigger.value = trigger
+  tagMenuRestoreFocus.value = openedFromKeyboard
+  tagMenuDrillTrigger.value = null
+  if (!openedFromKeyboard) trigger.blur()
+  tagMenuOpen.value = true
+}
+
+function openTagMenuView(view: 'move' | 'color', e: MouseEvent): void {
+  tagMenuDrillTrigger.value = e.currentTarget as HTMLButtonElement
+  tagMenuView.value = view
+  nextTick(() => tagMenuBack.value?.focus())
+}
+
+function returnToTagMenu(): void {
+  tagMenuView.value = 'menu'
+  nextTick(() => tagMenuDrillTrigger.value?.focus())
+}
+
+function duplicateTag(li: number, ti: number): void {
+  const line = lines[li]
+  if (!line || line.kind !== 'buttons') return
+  const button = line.buttons[ti]
+  if (!button) return
+  line.buttons.splice(ti + 1, 0, JSON.parse(JSON.stringify(button)) as Button)
+  tagMenuOpen.value = false
+}
+
+function deleteTag(li: number, ti: number): void {
+  const line = lines[li]
+  if (!line || line.kind !== 'buttons' || !line.buttons[ti]) return
+  line.buttons.splice(ti, 1)
+  tagMenuOpen.value = false
+}
+
+function moveTag(li: number, ti: number, profileIdx: number): void {
+  moveButtonToProfile(li, ti, profileIdx)
+  tagMenuOpen.value = false
+}
+
+function updateTagColor(value: string | undefined): void {
+  const button = tagMenuButton.value
+  if (button) button.color = value
+}
+
+watch(editing, (enabled) => {
+  if (enabled) return
+  lineMenuOpen.value = false
+  tagMenuOpen.value = false
+})
+
+watch(tagMenuOpen, (open) => {
+  if (open) return
+  const trigger = tagMenuTrigger.value
+  const restoreFocus = tagMenuRestoreFocus.value
+  tagMenuRestoreFocus.value = false
+  tagMenuView.value = 'menu'
+  if (restoreFocus) nextTick(() => trigger?.focus())
+})
 
 function onConfigure(li: number, ti: number) {
   if (tagDragging) return
@@ -355,7 +467,13 @@ function onRightClick(event: MouseEvent, b: TagButton) {
 </script>
 
 <template>
-  <div class="eqt-tag-bar" :class="[currentTagStyleClass, { 'eqt-tag-bar--accent-on-include': useAccentOnInclude }]" @dblclick="onBarDblClick" @contextmenu="onBarContextMenu">
+  <div
+    class="eqt-tag-bar"
+    :class="[currentTagStyleClass, { 'eqt-tag-bar--accent-on-include': useAccentOnInclude }]"
+    @dblclick="onBarDblClick"
+    @contextmenu.capture="preventNativeContextMenuWhileEditing"
+    @contextmenu="onBarContextMenu"
+  >
     <!-- info hover 觸發的覆蓋層，樣式定義在 .eqt-tag-bar__overlay -->
     <div class="eqt-tag-bar__overlay"></div>
     <div class="eqt-tag-bar__lines">
@@ -482,6 +600,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
                   type="button"
                   :style="b.color ? { '--line-color': b.color } : undefined"
                   @click="onConfigure(li, ti)"
+                  @contextmenu.prevent.stop="openTagMenu($event, li, ti)"
                 ><ExternalLink :size="12" /> {{ b.label || b.url }}</button>
 
                 <button
@@ -491,7 +610,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
                   type="button"
                   :style="b.color ? { '--line-color': b.color } : undefined"
                   @click="editing ? onConfigure(li, ti) : onLeftClick(b)"
-                  @contextmenu.prevent="!editing && onRightClick($event, b)"
+                  @contextmenu.prevent.stop="editing ? openTagMenu($event, li, ti) : onRightClick($event, b)"
                 >{{ b.label || b.tags.join(', ') }}</button>
               </template>
             </Draggable>
@@ -567,6 +686,54 @@ function onRightClick(event: MouseEvent, b: TagButton) {
           </div>
         </template>
       </Draggable>
+      <ContextMenu
+        v-model:open="tagMenuOpen"
+        :x="tagMenuX"
+        :y="tagMenuY"
+        :entries="[]"
+        auto-focus
+        aria-role="dialog"
+        :aria-label="t('tagbar.tagActions')"
+        placement="bottom-start"
+      >
+        <template v-if="tagMenuView === 'menu'">
+          <button v-if="profiles.length > 1" type="button" class="eqt-context-menu__item" @click="openTagMenuView('move', $event)">
+            <SquareDashedMousePointer :size="14" class="eqt-context-menu__icon" /><span class="eqt-context-menu__label">{{ t('tagbar.moveTag') }}</span>
+          </button>
+          <button type="button" class="eqt-context-menu__item" @click="duplicateTag(tagMenuLineIdx, tagMenuButtonIdx)">
+            <CopyPlus :size="14" class="eqt-context-menu__icon" /><span class="eqt-context-menu__label">{{ t('tagbar.duplicateTag') }}</span>
+          </button>
+          <button type="button" class="eqt-context-menu__item" @click="openTagMenuView('color', $event)">
+            <Palette :size="14" class="eqt-context-menu__icon" /><span class="eqt-context-menu__label">{{ t('common.itemColor') }}</span>
+          </button>
+          <div class="eqt-context-menu__separator" />
+          <button type="button" class="eqt-context-menu__item eqt-context-menu__item--danger" @click="deleteTag(tagMenuLineIdx, tagMenuButtonIdx)">
+            <Trash2 :size="14" class="eqt-context-menu__icon" /><span class="eqt-context-menu__label">{{ t('tagConfig.delete') }}</span>
+          </button>
+        </template>
+        <template v-else>
+          <button ref="tagMenuBack" type="button" class="eqt-tag-bar__line-menu-back" @click="returnToTagMenu">
+            <ArrowLeft :size="14" /> {{ t('common.back') }}
+          </button>
+          <div class="eqt-context-menu__separator" />
+          <template v-if="tagMenuView === 'move'">
+            <button
+              v-for="(profile, pi) in profiles"
+              v-show="pi !== activeProfileIdx"
+              :key="pi"
+              type="button"
+              class="eqt-context-menu__item"
+              @click="moveTag(tagMenuLineIdx, tagMenuButtonIdx, pi)"
+            ><span class="eqt-context-menu__label">{{ profile.name }}</span></button>
+          </template>
+          <LineColorSwatch
+            v-else-if="tagMenuView === 'color' && tagMenuButton"
+            embedded
+            :model-value="tagMenuButton.color"
+            @update:model-value="updateTagColor"
+          />
+        </template>
+      </ContextMenu>
       <div v-if="showSearchPanel" class="eqt-tag-bar__search-area">
         <span class="eqt-tag-bar__search-area-label">{{ t('tagbar.searchPanel') }}</span>
         <SearchPanel

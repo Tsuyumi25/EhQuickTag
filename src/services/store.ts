@@ -620,6 +620,32 @@ export function moveLineToProfile(lineIdx: number, targetProfileIdx: number): vo
   saveProfiles()
 }
 
+export function moveButtonToProfile(lineIdx: number, buttonIdx: number, targetProfileIdx: number): void {
+  const sourceLine = lines[lineIdx]
+  if (!sourceLine || sourceLine.kind !== 'buttons' || buttonIdx < 0 || buttonIdx >= sourceLine.buttons.length) return
+  if (targetProfileIdx < 0 || targetProfileIdx >= profiles.length || targetProfileIdx === activeProfileIdx.value) return
+
+  const [moved] = sourceLine.buttons.splice(buttonIdx, 1)
+  const targetProfile = profiles[targetProfileIdx]
+  // Profile 是目標層級，沒有要求使用者再選一次 row：追加到最後一個普通行；
+  // 若目標只有 separator，就建立一個普通行承接。
+  let targetLine: ButtonLine | undefined
+  for (let i = targetProfile.lines.length - 1; i >= 0; i--) {
+    const candidate = targetProfile.lines[i]
+    if (candidate.kind === 'buttons') {
+      targetLine = candidate
+      break
+    }
+  }
+  if (!targetLine) {
+    targetLine = { kind: 'buttons', buttons: [] }
+    targetProfile.lines.push(targetLine)
+  }
+  targetLine.buttons.push(JSON.parse(JSON.stringify(moved)) as Button)
+  if (targetProfile.isDefault) targetProfile.isDefault = false
+  saveProfiles()
+}
+
 // --- auto-save on change ---
 
 function saveProfiles() {
