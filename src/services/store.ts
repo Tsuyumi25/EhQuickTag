@@ -1,6 +1,6 @@
 import { reactive, ref, watch, nextTick, type Ref } from 'vue'
 import { cacheGet, cacheSet } from '@/services/gmStorage'
-import type { Line, Button, ButtonLine, SeparatorLine, TagButton, UrlButton, TagMode } from '@/types'
+import type { Line, Button, ButtonLine, SeparatorLine, TagButton, UrlButton, TagMode, LineTextAlign } from '@/types'
 import { TAG_DB_MIRRORS, type TagDbMirror } from '@/services/tagDb'
 import { TAG_COUNT_MIRRORS, type TagCountMirror } from '@/services/tagCount'
 import { TAG_WIKI_MIRRORS, type TagWikiMirror } from '@/services/tagWiki'
@@ -96,6 +96,8 @@ const INITIAL_SETTINGS = {
   tagWikiMirror: 'jsdelivr' as TagWikiMirror,
   tagWikiTtlDays: 7,
   tagStylePreset: 'flat' as TagStylePresetId,
+  buttonLineTextAlign: 'left' as LineTextAlign,
+  separatorLineTextAlign: 'left' as LineTextAlign,
   // on: include 狀態用 status 綠色（忽略自定義 line-color）；off: 沿用 line-color（預設沿用既有行為）
   useAccentOnInclude: false,
   // SearchPanel chip 顯示語言（true = 中文翻譯名稱、false = 原生英文 token literal）。
@@ -181,6 +183,8 @@ export const tagCountTtlDays   = refs.tagCountTtlDays
 export const tagWikiMirror     = refs.tagWikiMirror
 export const tagWikiTtlDays    = refs.tagWikiTtlDays
 export const tagStylePreset    = refs.tagStylePreset
+export const buttonLineTextAlign = refs.buttonLineTextAlign
+export const separatorLineTextAlign = refs.separatorLineTextAlign
 export const useAccentOnInclude = refs.useAccentOnInclude
 export const searchPanelShowZh = refs.searchPanelShowZh
 export const showSearchPanel    = refs.showSearchPanel
@@ -211,6 +215,8 @@ const SETTING_VALIDATORS: Partial<{ [K in SettingKey]: (v: unknown) => boolean }
   galleryDblClickRight:   v => GALLERY_DBL_CLICK_ACTIONS.some(a => a.id === v),
   galleryTaglistHeight:   v => typeof v === 'number' && Number.isFinite(v) && v > 0,
   galleryTaglistZoom:     v => typeof v === 'number' && Number.isFinite(v) && v >= 50 && v <= 200,
+  buttonLineTextAlign:    v => v === 'left' || v === 'center' || v === 'right',
+  separatorLineTextAlign: v => v === 'left' || v === 'center' || v === 'right',
   tagDbMirror:            v => typeof v === 'string' && v in TAG_DB_MIRRORS,
   tagCountMirror:         v => typeof v === 'string' && v in TAG_COUNT_MIRRORS,
   tagWikiMirror:          v => typeof v === 'string' && v in TAG_WIKI_MIRRORS,
@@ -243,7 +249,7 @@ type DefaultLineDef =
   | { kind: 'buttons'; buttons: DefaultButtonDef[] }
 
 const DEFAULT_LINE_DEFS: DefaultLineDef[] = [
-  { kind: 'separator', labelKey: 'default.general', style: { textAlign: 'left' } },
+  { kind: 'separator', labelKey: 'default.general' },
   { kind: 'buttons', buttons: [
     { kind: 'tag', tags: ['l:chinese$'], labelKey: 'default.chinese' },
     { kind: 'tag', tags: ['l:english$'], labelKey: 'default.english' },
@@ -274,7 +280,7 @@ const DEFAULT_LINE_DEFS: DefaultLineDef[] = [
     { kind: 'url', url: '?f_cats=1019&f_search=o%3Atankoubon%24', labelKey: 'default.tankoubon' },
     { kind: 'url', url: '?f_cats=1019&f_search=o%3Aanthology%24', labelKey: 'default.anthology' },
   ] },
-  { kind: 'separator', style: { textAlign: 'left' } },
+  { kind: 'separator' },
   { kind: 'buttons', buttons: [] },
 ]
 
@@ -435,6 +441,21 @@ export const corruptedProfiles = reactive<CorruptedProfile[]>([])
 export const activeProfileIdx = ref(0)
 export const lines = reactive<Line[]>([])
 
+// 舊版 default line definitions 會把 separator 的視覺預設 `textAlign: left`
+// 寫進 profile。新增全域 separator 對齊後，這個顯式值會遮住 fallback。
+// isDefault profile 尚未被使用者修改，可安全移除舊內建值；其他 style 保留。
+function normalizeDefaultProfileLineAlignment(): void {
+  for (const profile of profiles) {
+    if (!profile.isDefault) continue
+    for (const line of profile.lines) {
+      if (line.kind !== 'separator' || line.style?.textAlign === undefined) continue
+      const style = { ...line.style }
+      delete style.textAlign
+      line.style = Object.keys(style).length ? style : undefined
+    }
+  }
+}
+
 // --- load from GM ---
 
 export async function loadStore(): Promise<void> {
@@ -480,6 +501,8 @@ export async function loadStore(): Promise<void> {
     profiles.splice(0, profiles.length, { name: t('default.profileName'), lines: getDefaultLines(), isDefault: true })
     activeProfileIdx.value = 0
   }
+
+  normalizeDefaultProfileLineAlignment()
 
   lines.splice(0, lines.length, ...profiles[activeProfileIdx.value].lines)
 

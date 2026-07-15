@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import { useClipboard, useTimeoutFn } from '@vueuse/core'
 import { Copy, Download, Check } from '@lucide/vue'
 import type { Line } from '@/types'
-import { isValidLine } from '@/services/store'
+import { buttonLineTextAlign, isValidLine } from '@/services/store'
 import { t } from '@/composables/useI18n'
 import { currentTagStyleClass } from '@/composables/useTagStyle'
 
@@ -87,7 +87,11 @@ function onEditorExport() {
       :class="currentTagStyleClass"
     >
       <template v-for="(line, li) in editorPreview" :key="li">
-        <div v-if="line.kind === 'buttons' && line.buttons.length" class="eqt-settings__preview-line">
+        <div
+          v-if="line.kind === 'buttons' && line.buttons.length"
+          class="eqt-settings__preview-line"
+          :style="{ justifyContent: (line.style?.textAlign ?? buttonLineTextAlign) === 'right' ? 'flex-end' : (line.style?.textAlign ?? buttonLineTextAlign) === 'center' ? 'center' : 'flex-start' }"
+        >
           <span
             v-for="(b, ti) in line.buttons"
             :key="ti"

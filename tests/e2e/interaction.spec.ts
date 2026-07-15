@@ -158,6 +158,38 @@ test('__lines 寬度 = bar 寬 − 2 × line-controls 寬', async ({ page }) => 
   expect(Math.abs(actionsBox!.width - controlsBox!.width)).toBeLessThanOrEqual(2)
 })
 
+test('普通 tag 行可從行操作設定左中右排版', async ({ page }) => {
+  await injectUserscript(page)
+  await page.locator('.eqt-tag-bar__ctrl--toggle').click()
+
+  const row = page.locator('.eqt-tag-bar__line-wrap').filter({ has: page.locator('.eqt-tag-bar__btn') }).first()
+  await row.locator('.eqt-tag-bar__line-actions').hover()
+  await page.locator('.eqt-context-menu__item', { hasText: '排版' }).click()
+  await page.locator('.eqt-line-sep__option', { hasText: '置中' }).click()
+
+  await expect(row.locator('.eqt-tag-bar__line')).toHaveClass(/eqt-tag-bar__line--buttons-align-center/)
+
+  await page.getByRole('button', { name: '重置' }).click()
+  await expect(row.locator('.eqt-tag-bar__line')).toHaveClass(/eqt-tag-bar__line--buttons-align-left/)
+})
+
+test('全域普通行對齊套用到未覆寫的行', async ({ page }) => {
+  await injectUserscript(page)
+  await page.locator('.eqt-tag-bar__ctrl', { hasText: '設定' }).click()
+  await page.locator('.eqt-settings__tab', { hasText: '標籤列' }).click()
+
+  const field = page.locator('.eqt-settings__field-row', { hasText: '普通行' })
+  await field.locator('.eqt-settings__locale-btn', { hasText: '置中' }).click()
+  const separatorField = page.locator('.eqt-settings__field-row', { hasText: '分隔線' })
+  await separatorField.locator('.eqt-settings__locale-btn', { hasText: '靠右' }).click()
+  await page.locator('.eqt-settings__close-btn').click()
+
+  const lines = page.locator('.eqt-tag-bar__line--buttons-align-center')
+  await expect(lines.first()).toBeVisible()
+  await expect(lines).toHaveCount(4)
+  await expect(page.locator('.eqt-tag-bar__line--separator-align-right')).toHaveCount(2)
+})
+
 // === Tier 1.5 / 新行為：「直接從 URL 進到帶 f_search 的頁面」mount initial 視同 submit ===
 // 使用者點某個 EH tag link 直接跳到 ?f_search=foo、不需 off 也不需點搜尋按鈕。
 // loadHistory 完那刻 recordSubmit 把當前 A 推進 H。回主頁（reload 但 f_search 變空）

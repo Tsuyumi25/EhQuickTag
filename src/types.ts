@@ -28,6 +28,8 @@ export interface UrlButton {
 
 export type Button = TagButton | UrlButton
 
+export type LineTextAlign = 'left' | 'center' | 'right'
+
 // --- Line = ButtonLine | SeparatorLine ---
 // 用 discriminated union 表達「按鈕列 vs 分隔線」xor，取代舊版用
 // `separator?` 的存在與否判斷的 runtime 約定。
@@ -35,7 +37,12 @@ export type Button = TagButton | UrlButton
 export interface ButtonLine {
   kind: 'buttons'
   buttons: Button[]
+  style?: ButtonLineStyle                  // 行內按鈕群排版；未設時由 CSS 預設靠左
   color?: string                       // 行主色（fallback 給沒指定色的 button）
+}
+
+export interface ButtonLineStyle {
+  textAlign?: LineTextAlign
 }
 
 export interface SeparatorLine {
@@ -48,7 +55,7 @@ export interface SeparatorLine {
 export interface SeparatorStyle {
   line?: 'solid' | 'dashed' | 'none'
   linePosition?: 'top' | 'middle' | 'bottom'  // 線在 label 的上 / 中 / 下；middle 模式線會避開 label
-  textAlign?: 'left' | 'center' | 'right'
+  textAlign?: LineTextAlign
   textSize?: number
   lineThickness?: number
   lineLength?: number  // 1-100 (%)，預設 100；依 textAlign 從對應端內縮

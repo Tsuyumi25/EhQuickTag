@@ -10,7 +10,7 @@ import ContextMenu from '@/components/ContextMenu.vue'
 import SearchPanel from '@/components/search/SearchPanel.vue'
 import { TagState, type Line, type Button, type TagButton } from '@/types'
 import { tokenize, buildIdentityIndex, getState as _getState, setTagState, getNextRightClickState } from '@/services/tagState'
-import { lines, profiles, activeProfileIdx, moveLineToProfile, dblClickLeft, dblClickRight, dblClickLeftNewTabActive, dblClickRightNewTabActive, useAccentOnInclude, showSearchPanel, type DblClickAction } from '@/services/store'
+import { lines, profiles, activeProfileIdx, moveLineToProfile, buttonLineTextAlign, separatorLineTextAlign, dblClickLeft, dblClickRight, dblClickLeftNewTabActive, dblClickRightNewTabActive, useAccentOnInclude, showSearchPanel, type DblClickAction } from '@/services/store'
 import { baseDragOptions, EQT_TAGS_GROUP } from '@/utils/drag'
 import { dismissTerms, recordSubmitAndFlush } from '@/services/search/searchSession'
 import { t } from '@/composables/useI18n'
@@ -206,7 +206,7 @@ function onAddSeparatorLine() { lines.push({ kind: 'separator' }) }
 // 空行可以直接刪（誤按零損失）；有內容才彈 confirm：
 //   ButtonLine 有 button、SeparatorLine 有 label 或調過 style 視為「有內容」
 function isLineEmpty(line: Line): boolean {
-  if (line.kind === 'buttons') return line.buttons.length === 0
+  if (line.kind === 'buttons') return line.buttons.length === 0 && (!line.style || Object.keys(line.style).length === 0)
   return !line.label && (!line.style || Object.keys(line.style).length === 0)
 }
 function onDeleteLine(li: number) {
@@ -431,7 +431,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
               :class="[
                 `eqt-tag-bar__line--separator-${line.style?.line ?? 'solid'}`,
                 `eqt-tag-bar__line--separator-pos-${line.style?.linePosition ?? 'middle'}`,
-                `eqt-tag-bar__line--separator-align-${line.style?.textAlign ?? 'left'}`,
+                `eqt-tag-bar__line--separator-align-${line.style?.textAlign ?? separatorLineTextAlign}`,
               ]"
               :style="{
                 ...(line.color ? { '--line-color': line.color } : {}),
@@ -462,6 +462,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
               :disabled="!editing"
               tag="div"
               class="eqt-tag-bar__line"
+              :class="`eqt-tag-bar__line--buttons-align-${line.style?.textAlign ?? buttonLineTextAlign}`"
               :style="line.color ? { '--line-color': line.color } : undefined"
               @change="onTagChange(li, $event)"
               @start="onTagStart"
@@ -519,7 +520,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
                 <button v-if="profiles.length > 1" type="button" class="eqt-context-menu__item" @click="lineMenuView = 'move'">
                   <SquareDashedMousePointer :size="14" class="eqt-context-menu__icon" /><span class="eqt-context-menu__label">{{ t('tagbar.moveLine') }}</span>
                 </button>
-                <button v-if="line.kind === 'separator'" type="button" class="eqt-context-menu__item" @click="lineMenuView = 'layout'">
+                <button type="button" class="eqt-context-menu__item" @click="lineMenuView = 'layout'">
                   <Settings :size="14" class="eqt-context-menu__icon" /><span class="eqt-context-menu__label">{{ t('tagbar.layout') }}</span>
                 </button>
                 <button type="button" class="eqt-context-menu__item" @click="lineMenuView = 'color'">
@@ -546,9 +547,10 @@ function onRightClick(event: MouseEvent, b: TagButton) {
                   ><span class="eqt-context-menu__label">{{ profile.name }}</span></button>
                 </template>
                 <SeparatorSettingsPopup
-                  v-else-if="lineMenuView === 'layout' && line.kind === 'separator'"
+                  v-else-if="lineMenuView === 'layout'"
                   embedded
                   :line="line"
+                  :default-text-align="line.kind === 'buttons' ? buttonLineTextAlign : separatorLineTextAlign"
                   @update:line="onUpdateLine(li, $event)"
                 />
                 <LineColorSwatch
@@ -882,6 +884,14 @@ function onRightClick(event: MouseEvent, b: TagButton) {
     flex-wrap: wrap;
     gap: 4px;
     min-height: var(--eqt-row-h);
+
+    &--buttons-align-center {
+      justify-content: center;
+    }
+
+    &--buttons-align-right {
+      justify-content: flex-end;
+    }
   }
 
   // Separator line：base 預設為 middle layout（左線 + label + 右線）。

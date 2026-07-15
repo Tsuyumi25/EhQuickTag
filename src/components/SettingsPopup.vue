@@ -8,7 +8,7 @@ import {
 } from '@lucide/vue'
 import Draggable from 'vuedraggable'
 import { baseDragOptions } from '@/utils/drag'
-import type { Line } from '@/types'
+import type { Line, LineTextAlign } from '@/types'
 import { t, locale, setLocale, type Locale } from '@/composables/useI18n'
 import { useEqtToast } from '@/composables/useEqtToast'
 import { refreshTagDb, TAG_DB_MIRRORS, type TagDbMirror } from '@/services/tagDb'
@@ -21,7 +21,7 @@ import {
   dblClickLeft, dblClickRight, dblClickLeftNewTabActive, dblClickRightNewTabActive, nsFormat, defaultExactMatch,
   tagDbMirror, tagDbTtlDays, tagCountMirror, tagCountTtlDays,
   tagWikiMirror, tagWikiTtlDays,
-  tagStylePreset, useAccentOnInclude, type DblClickAction,
+  tagStylePreset, buttonLineTextAlign, separatorLineTextAlign, useAccentOnInclude, type DblClickAction,
   showSearchPanel, searchPanelLangMode, convertToTraditional, enableHistory,
   taggingEnhancerEnabled, galleryDragSelectEnabled, galleryTaglistExpand, galleryTaglistHeight, galleryTaglistZoom, introPanelPrimaryLang, wikiPreludeExpanded,
   galleryDblClickLeft, galleryDblClickRight, galleryDblClickLeftNewTabActive, galleryDblClickRightNewTabActive,
@@ -82,6 +82,11 @@ const dblClickOptions = [
 const galleryDblClickOptions = [
   { labelKey: 'settings.galleryDblClickLeft', ref: galleryDblClickLeft, newTabRef: galleryDblClickLeftNewTabActive },
   { labelKey: 'settings.galleryDblClickRight', ref: galleryDblClickRight, newTabRef: galleryDblClickRightNewTabActive },
+]
+
+const lineAlignSettings = [
+  { labelKey: 'settings.buttonLineTextAlign', ref: buttonLineTextAlign },
+  { labelKey: 'settings.separatorLineTextAlign', ref: separatorLineTextAlign },
 ]
 
 const localeOptions: { value: Locale; label: string }[] = [
@@ -304,6 +309,7 @@ function onEditorPurge() {
   if (editingCorrupted.value) onPurgeCorrupted(editingProfileIdx.value)
   else onPurge(editingProfileIdx.value)
 }
+
 </script>
 
 <template>
@@ -456,10 +462,35 @@ function onEditorPurge() {
             </section>
 
             <section class="eqt-settings__section">
+              <h4 class="eqt-settings__subtitle"><LayoutPanelTop :size="14" /> {{ t('settings.sectionLineAlignment') }}</h4>
+              <div
+                v-for="row in lineAlignSettings"
+                :key="row.labelKey"
+                class="eqt-settings__field-row"
+              >
+                <label class="eqt-settings__field-label">{{ t(row.labelKey) }}</label>
+                <div class="eqt-settings__locale-row">
+                  <button
+                    v-for="align in (['left', 'center', 'right'] as LineTextAlign[])"
+                    :key="align"
+                    type="button"
+                    class="eqt-settings__locale-btn"
+                    :class="{ 'eqt-settings__locale-btn--active': row.ref.value === align }"
+                    @click="row.ref.value = align"
+                  >{{ t(`tagbar.separatorTextAlign_${align}`) }}</button>
+                </div>
+              </div>
+            </section>
+
+            <section class="eqt-settings__section">
               <h4 class="eqt-settings__subtitle"><Eye :size="14" /> {{ t('settings.preview') }}</h4>
               <div class="eqt-settings__font-preview" :class="currentTagStyleClass">
                 <template v-for="(line, li) in previewLines" :key="li">
-                  <div v-if="line.kind === 'buttons' && line.buttons.length" class="eqt-settings__preview-line">
+                  <div
+                    v-if="line.kind === 'buttons' && line.buttons.length"
+                    class="eqt-settings__preview-line"
+                    :style="{ justifyContent: (line.style?.textAlign ?? buttonLineTextAlign) === 'right' ? 'flex-end' : (line.style?.textAlign ?? buttonLineTextAlign) === 'center' ? 'center' : 'flex-start' }"
+                  >
                     <span
                       v-for="(b, ti) in line.buttons"
                       :key="ti"
@@ -753,7 +784,11 @@ function onEditorPurge() {
               <h4 class="eqt-settings__subtitle"><Eye :size="14" /> {{ t('settings.preview') }}</h4>
               <div class="eqt-settings__font-preview" :class="currentTagStyleClass">
                 <template v-for="(line, li) in previewLines" :key="li">
-                  <div v-if="line.kind === 'buttons' && line.buttons.length" class="eqt-settings__preview-line">
+                  <div
+                    v-if="line.kind === 'buttons' && line.buttons.length"
+                    class="eqt-settings__preview-line"
+                    :style="{ justifyContent: (line.style?.textAlign ?? buttonLineTextAlign) === 'right' ? 'flex-end' : (line.style?.textAlign ?? buttonLineTextAlign) === 'center' ? 'center' : 'flex-start' }"
+                  >
                     <span
                       v-for="(b, ti) in line.buttons"
                       :key="ti"
