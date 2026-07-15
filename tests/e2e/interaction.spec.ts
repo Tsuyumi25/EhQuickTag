@@ -163,7 +163,7 @@ test('普通 tag 行可從行操作設定左中右排版', async ({ page }) => {
   await page.locator('.eqt-tag-bar__ctrl--toggle').click()
 
   const row = page.locator('.eqt-tag-bar__line-wrap').filter({ has: page.locator('.eqt-tag-bar__btn') }).first()
-  await row.locator('.eqt-tag-bar__line-actions').hover()
+  await row.locator('.eqt-tag-bar__line-actions').click()
   await page.locator('.eqt-context-menu__item', { hasText: '排版' }).click()
   await page.locator('.eqt-line-sep__option', { hasText: '置中' }).click()
 
@@ -171,6 +171,49 @@ test('普通 tag 行可從行操作設定左中右排版', async ({ page }) => {
 
   await page.getByRole('button', { name: '重置' }).click()
   await expect(row.locator('.eqt-tag-bar__line')).toHaveClass(/eqt-tag-bar__line--buttons-align-left/)
+})
+
+test('行操作以 click toggle，並可從二級頁直接切換目標 row', async ({ page }) => {
+  await injectUserscript(page)
+  await page.locator('.eqt-tag-bar__ctrl--toggle').click()
+
+  const actions = page.locator('.eqt-tag-bar__line-actions')
+  const menu = page.locator('.eqt-context-menu')
+  await actions.first().hover()
+  await expect(menu).toBeHidden()
+
+  await actions.first().click()
+  await expect(menu).toBeVisible()
+  await expect(actions.first()).toHaveAttribute('aria-expanded', 'true')
+  await page.locator('.eqt-context-menu__item', { hasText: '排版' }).click()
+  await expect(page.getByRole('button', { name: '返回' })).toBeFocused()
+
+  await actions.nth(1).click()
+  await expect(menu).toBeVisible()
+  await expect(actions.first()).toHaveAttribute('aria-expanded', 'false')
+  await expect(actions.nth(1)).toHaveAttribute('aria-expanded', 'true')
+  await expect(page.getByRole('button', { name: '返回' })).toHaveCount(0)
+
+  await actions.nth(1).click()
+  await expect(menu).toBeHidden()
+  await expect(actions.nth(1)).toHaveAttribute('aria-expanded', 'false')
+})
+
+test('行操作支援鍵盤開啟、drill-in 與 Escape 返回 trigger', async ({ page }) => {
+  await injectUserscript(page)
+  await page.locator('.eqt-tag-bar__ctrl--toggle').click()
+
+  const trigger = page.locator('.eqt-tag-bar__line-actions').first()
+  await trigger.focus()
+  await page.keyboard.press('Enter')
+  const layout = page.locator('.eqt-context-menu__item', { hasText: '排版' })
+  await expect(layout).toBeFocused()
+
+  await page.keyboard.press('Enter')
+  await expect(page.getByRole('button', { name: '返回' })).toBeFocused()
+  await page.keyboard.press('Escape')
+  await expect(page.locator('.eqt-context-menu')).toBeHidden()
+  await expect(trigger).toBeFocused()
 })
 
 test('全域普通行對齊套用到未覆寫的行', async ({ page }) => {

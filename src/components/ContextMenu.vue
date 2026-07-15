@@ -18,7 +18,7 @@ export type ContextMenuEntry = ContextMenuItem | ContextMenuSeparator
 </script>
 
 <script setup lang="ts">
-import { ref, computed, inject, provide, watch } from 'vue'
+import { ref, computed, inject, provide, watch, nextTick } from 'vue'
 import { onClickOutside, useEventListener } from '@vueuse/core'
 import { useFloating, autoUpdate, flip, shift, offset, type Placement, type VirtualElement } from '@floating-ui/vue'
 import { POPUP_IGNORE_KEY, type PopupIgnoreRegister } from '@/composables/usePopupBehavior'
@@ -31,13 +31,15 @@ const props = defineProps<{
   anchorHeight?: number
   entries: ContextMenuEntry[]
   placement?: Placement
+  ignore?: Array<HTMLElement | null>
+  autoFocus?: boolean
+  ariaRole?: 'menu' | 'dialog'
+  ariaLabel?: string
 }>()
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
   select: [key: string]
-  enter: []
-  leave: []
 }>()
 
 const menuEl = ref<HTMLElement | null>(null)
@@ -72,15 +74,18 @@ function selectItem(item: ContextMenuItem): void {
   close()
 }
 
-const childIgnoreList: HTMLElement[] = []
+const childIgnoreList = ref<HTMLElement[]>([])
 provide<PopupIgnoreRegister>(POPUP_IGNORE_KEY, (el) => {
-  childIgnoreList.push(el)
+  childIgnoreList.value = [...childIgnoreList.value, el]
   return () => {
-    const idx = childIgnoreList.indexOf(el)
-    if (idx >= 0) childIgnoreList.splice(idx, 1)
+    childIgnoreList.value = childIgnoreList.value.filter(item => item !== el)
   }
 })
-onClickOutside(menuEl, close, { ignore: childIgnoreList })
+const outsideIgnoreList = computed(() => [
+  ...childIgnoreList.value,
+  ...(props.ignore ?? []).filter((el): el is HTMLElement => el !== null),
+])
+onClickOutside(menuEl, close, { ignore: outsideIgnoreList })
 
 // --- 鍵盤導覽 ---
 
@@ -88,8 +93,14 @@ const activeIdx = ref(-1)
 
 const isEnabled = (e: ContextMenuEntry) => e.kind === 'item' && !e.disabled
 
-// 開啟（或座標變動 = 在別處重開）時重置高亮
-watch(() => [props.open, props.x, props.y], () => { activeIdx.value = -1 })
+// 開啟（或座標變動 = 在別處重開）時重置高亮；dialog 模式把焦點
+// 主動送進 popup，讓鍵盤使用者不必從觸發器一路 Tab 到 Teleport 尾端。
+watch(() => [props.open, props.x, props.y] as const, async ([open]) => {
+  activeIdx.value = -1
+  if (!open || !props.autoFocus) return
+  await nextTick()
+  menuEl.value?.querySelector<HTMLElement>('button:not(:disabled), input:not(:disabled), [tabindex]:not([tabindex="-1"])')?.focus()
+}, { immediate: true })
 
 function move(dir: 1 | -1): void {
   const n = props.entries.length
@@ -117,7 +128,7 @@ useEventListener(document, 'keydown', (e: KeyboardEvent) => {
   // 到 host element，contains 照常成立
   const target = e.target as HTMLElement | null
   const inEmbedded = !!target && !!menuEl.value?.contains(target)
-    && !target.classList?.contains('eqt-context-menu__item')
+    && !target.hasAttribute('data-eqt-context-menu-entry')
   if (inEmbedded && e.key !== 'Escape') return
   switch (e.key) {
     case 'Escape': close(); break
@@ -154,9 +165,10 @@ watch(menuEl, (el) => {
       ref="menuEl"
       :style="floatingStyles"
       class="eqt-context-menu"
+      :role="ariaRole ?? 'menu'"
+      :aria-label="ariaLabel"
       @contextmenu.prevent
-      @mouseenter="emit('enter')"
-      @mouseleave="emit('leave'); activeIdx = -1"
+      @mouseleave="activeIdx = -1"
     >
       <template v-for="(entry, i) in entries" :key="i">
         <div v-if="entry.kind === 'separator'" class="eqt-context-menu__separator" />
@@ -164,6 +176,7 @@ watch(menuEl, (el) => {
           v-else
           type="button"
           class="eqt-context-menu__item"
+          data-eqt-context-menu-entry
           :class="{
             'eqt-context-menu__item--active': i === activeIdx,
             'eqt-context-menu__item--danger': entry.danger,

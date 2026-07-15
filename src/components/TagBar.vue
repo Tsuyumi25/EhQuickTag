@@ -224,27 +224,15 @@ const lineMenuAnchorWidth = ref(0)
 const lineMenuAnchorHeight = ref(0)
 const lineMenuView = ref<'menu' | 'move' | 'layout' | 'color'>('menu')
 const lineMenuTrigger = ref<HTMLButtonElement | null>(null)
-let lineMenuCloseTimer: ReturnType<typeof setTimeout> | undefined
+const lineMenuBack = ref<HTMLButtonElement | null>(null)
+const lineMenuDrillTrigger = ref<HTMLButtonElement | null>(null)
 
-function cancelLineMenuClose(): void {
-  if (lineMenuCloseTimer !== undefined) clearTimeout(lineMenuCloseTimer)
-  lineMenuCloseTimer = undefined
-}
-
-function scheduleLineMenuClose(): void {
-  cancelLineMenuClose()
-  if (lineMenuView.value !== 'menu') return
-  lineMenuCloseTimer = setTimeout(() => {
-    lineMenuCloseTimer = undefined
-    if (lineMenuView.value !== 'menu') return
-    lineMenuOpen.value = false
-  }, 150)
-}
-
-function openLineMenu(e: MouseEvent, li: number): void {
-  if (lineMenuOpen.value && lineMenuView.value !== 'menu') return
-  cancelLineMenuClose()
+function toggleLineMenu(e: MouseEvent, li: number): void {
   const trigger = e.currentTarget as HTMLButtonElement
+  if (lineMenuOpen.value && lineMenuIdx.value === li) {
+    lineMenuOpen.value = false
+    return
+  }
   const rect = trigger.getBoundingClientRect()
   lineMenuIdx.value = li
   lineMenuX.value = rect.left
@@ -253,7 +241,19 @@ function openLineMenu(e: MouseEvent, li: number): void {
   lineMenuAnchorHeight.value = rect.height
   lineMenuView.value = 'menu'
   lineMenuTrigger.value = trigger
+  lineMenuDrillTrigger.value = null
   lineMenuOpen.value = true
+}
+
+function openLineMenuView(view: 'move' | 'layout' | 'color', e: MouseEvent): void {
+  lineMenuDrillTrigger.value = e.currentTarget as HTMLButtonElement
+  lineMenuView.value = view
+  nextTick(() => lineMenuBack.value?.focus())
+}
+
+function returnToLineMenu(): void {
+  lineMenuView.value = 'menu'
+  nextTick(() => lineMenuDrillTrigger.value?.focus())
 }
 
 watch(lineMenuOpen, (open) => {
@@ -501,8 +501,9 @@ function onRightClick(event: MouseEvent, b: TagButton) {
               class="eqt-tag-bar__line-actions"
               type="button"
               :title="t('tagbar.lineActions')"
-              @mouseenter="openLineMenu($event, li)"
-              @mouseleave="scheduleLineMenuClose"
+              aria-haspopup="dialog"
+              :aria-expanded="lineMenuOpen && lineMenuIdx === li"
+              @click="toggleLineMenu($event, li)"
             ><Ellipsis :size="14" /></button>
             <ContextMenu
               v-if="lineMenuIdx === li"
@@ -512,18 +513,20 @@ function onRightClick(event: MouseEvent, b: TagButton) {
               :anchor-width="lineMenuAnchorWidth"
               :anchor-height="lineMenuAnchorHeight"
               :entries="[]"
+              :ignore="[lineMenuTrigger]"
+              auto-focus
+              aria-role="dialog"
+              :aria-label="t('tagbar.lineActions')"
               placement="right-start"
-              @enter="cancelLineMenuClose"
-              @leave="scheduleLineMenuClose"
             >
               <template v-if="lineMenuView === 'menu'">
-                <button v-if="profiles.length > 1" type="button" class="eqt-context-menu__item" @click="lineMenuView = 'move'">
+                <button v-if="profiles.length > 1" type="button" class="eqt-context-menu__item" @click="openLineMenuView('move', $event)">
                   <SquareDashedMousePointer :size="14" class="eqt-context-menu__icon" /><span class="eqt-context-menu__label">{{ t('tagbar.moveLine') }}</span>
                 </button>
-                <button type="button" class="eqt-context-menu__item" @click="lineMenuView = 'layout'">
+                <button type="button" class="eqt-context-menu__item" @click="openLineMenuView('layout', $event)">
                   <Settings :size="14" class="eqt-context-menu__icon" /><span class="eqt-context-menu__label">{{ t('tagbar.layout') }}</span>
                 </button>
-                <button type="button" class="eqt-context-menu__item" @click="lineMenuView = 'color'">
+                <button type="button" class="eqt-context-menu__item" @click="openLineMenuView('color', $event)">
                   <Palette :size="14" class="eqt-context-menu__icon" /><span class="eqt-context-menu__label">{{ t('tagbar.lineColor') }}</span>
                 </button>
                 <div class="eqt-context-menu__separator" />
@@ -532,7 +535,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
                 </button>
               </template>
               <template v-else>
-                <button type="button" class="eqt-tag-bar__line-menu-back" @click="lineMenuView = 'menu'">
+                <button ref="lineMenuBack" type="button" class="eqt-tag-bar__line-menu-back" @click="returnToLineMenu">
                   <ArrowLeft :size="14" /> {{ t('common.back') }}
                 </button>
                 <div class="eqt-context-menu__separator" />
