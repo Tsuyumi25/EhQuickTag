@@ -19,6 +19,7 @@ export default {
   'tagbar.moveTag': '移动到 Profile',
   'tagbar.duplicateTag': '创建副本',
   'tagbar.moveLine': '移动到 Profile',
+  'tagbar.duplicateLine': '创建副本',
   'tagbar.moveLineToProfile': '移动到 {profile}',
   'tagbar.layout': '排版',
   'tagbar.lineAlign': '行内容对齐',

@@ -188,6 +188,22 @@ test('普通 tag 行可從行操作設定左中右排版', async ({ page }) => {
   await expect(row.locator('.eqt-tag-bar__line')).toHaveClass(/eqt-tag-bar__line--buttons-align-left/)
 })
 
+test('行操作可在原行下方建立完整副本', async ({ page }) => {
+  await injectUserscript(page)
+  await page.locator('.eqt-tag-bar__ctrl--toggle').click()
+
+  const rows = page.locator('.eqt-tag-bar__line-wrap')
+  const countBefore = await rows.count()
+  const source = rows.filter({ has: page.getByRole('button', { name: '中文', exact: true }) }).first()
+  const sourceIndex = await source.evaluate((row) => Array.from(row.parentElement!.children).indexOf(row))
+
+  await source.locator('.eqt-tag-bar__line-actions').click()
+  await page.getByRole('button', { name: '建立副本', exact: true }).click()
+
+  await expect(rows).toHaveCount(countBefore + 1)
+  await expect(rows.nth(sourceIndex + 1).getByRole('button', { name: '中文', exact: true })).toBeVisible()
+})
+
 test('行操作以 click toggle，並可從二級頁直接切換目標 row', async ({ page }) => {
   await injectUserscript(page)
   await page.locator('.eqt-tag-bar__ctrl--toggle').click()

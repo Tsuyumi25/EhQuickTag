@@ -19,6 +19,7 @@ export default {
   'tagbar.moveTag': 'プロファイルに移動',
   'tagbar.duplicateTag': '複製',
   'tagbar.moveLine': 'プロファイルに移動',
+  'tagbar.duplicateLine': '複製',
   'tagbar.moveLineToProfile': '{profile} に移動',
   'tagbar.layout': 'レイアウト',
   'tagbar.lineAlign': '行コンテンツの配置',

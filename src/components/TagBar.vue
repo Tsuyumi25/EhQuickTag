@@ -275,6 +275,13 @@ function moveLine(li: number, profileIdx: number): void {
   lineMenuOpen.value = false
 }
 
+function duplicateLine(li: number): void {
+  const line = lines[li]
+  if (!line) return
+  lines.splice(li + 1, 0, JSON.parse(JSON.stringify(line)) as Line)
+  lineMenuOpen.value = false
+}
+
 function deleteLineFromMenu(li: number): void {
   onDeleteLine(li)
   lineMenuOpen.value = false
@@ -641,6 +648,9 @@ function onRightClick(event: MouseEvent, b: TagButton) {
               <template v-if="lineMenuView === 'menu'">
                 <button v-if="profiles.length > 1" type="button" class="eqt-context-menu__item" @click="openLineMenuView('move', $event)">
                   <SquareDashedMousePointer :size="14" class="eqt-context-menu__icon" /><span class="eqt-context-menu__label">{{ t('tagbar.moveLine') }}</span>
+                </button>
+                <button type="button" class="eqt-context-menu__item" @click="duplicateLine(li)">
+                  <CopyPlus :size="14" class="eqt-context-menu__icon" /><span class="eqt-context-menu__label">{{ t('tagbar.duplicateLine') }}</span>
                 </button>
                 <button type="button" class="eqt-context-menu__item" @click="openLineMenuView('layout', $event)">
                   <Settings :size="14" class="eqt-context-menu__icon" /><span class="eqt-context-menu__label">{{ t('tagbar.layout') }}</span>

@@ -19,6 +19,7 @@ export default {
   'tagbar.moveTag': 'Move to profile',
   'tagbar.duplicateTag': 'Duplicate',
   'tagbar.moveLine': 'Move to profile',
+  'tagbar.duplicateLine': 'Duplicate',
   'tagbar.moveLineToProfile': 'Move to {profile}',
   'tagbar.layout': 'Layout',
   'tagbar.lineAlign': 'Row content alignment',
