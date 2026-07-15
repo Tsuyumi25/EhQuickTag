@@ -8,6 +8,7 @@ import {
 } from '@lucide/vue'
 import Draggable from 'vuedraggable'
 import { baseDragOptions } from '@/utils/drag'
+import { textAlignToJustify } from '@/utils/align'
 import type { Line, LineTextAlign } from '@/types'
 import { t, locale, setLocale, type Locale } from '@/composables/useI18n'
 import { useEqtToast } from '@/composables/useEqtToast'
@@ -489,7 +490,7 @@ function onEditorPurge() {
                   <div
                     v-if="line.kind === 'buttons' && line.buttons.length"
                     class="eqt-settings__preview-line"
-                    :style="{ justifyContent: (line.style?.textAlign ?? buttonLineTextAlign) === 'right' ? 'flex-end' : (line.style?.textAlign ?? buttonLineTextAlign) === 'center' ? 'center' : 'flex-start' }"
+                    :style="{ justifyContent: textAlignToJustify(line.style?.textAlign ?? buttonLineTextAlign) }"
                   >
                     <span
                       v-for="(b, ti) in line.buttons"
@@ -787,7 +788,7 @@ function onEditorPurge() {
                   <div
                     v-if="line.kind === 'buttons' && line.buttons.length"
                     class="eqt-settings__preview-line"
-                    :style="{ justifyContent: (line.style?.textAlign ?? buttonLineTextAlign) === 'right' ? 'flex-end' : (line.style?.textAlign ?? buttonLineTextAlign) === 'center' ? 'center' : 'flex-start' }"
+                    :style="{ justifyContent: textAlignToJustify(line.style?.textAlign ?? buttonLineTextAlign) }"
                   >
                     <span
                       v-for="(b, ti) in line.buttons"
