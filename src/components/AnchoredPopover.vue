@@ -55,7 +55,9 @@ watch(popupEl, (el) => {
 
 <template>
   <Teleport to="body">
-    <div v-if="open" ref="popupEl" :style="floatingStyles" class="eqt-anchored-popover">
+    <!-- teleport 到 body 後脫離 #eqt-app 的 translate=no 保護圈，要自己補，
+         否則 popup 文字會被外部翻譯插件改寫 -->
+    <div v-if="open" ref="popupEl" :style="floatingStyles" class="eqt-anchored-popover" translate="no">
       <slot />
     </div>
   </Teleport>

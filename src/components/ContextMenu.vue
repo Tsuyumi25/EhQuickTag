@@ -90,11 +90,14 @@ watch(menuEl, (el) => {
 
 <template>
   <Teleport to="body">
+    <!-- teleport 到 body 後脫離 #eqt-app 的 translate=no 保護圈，要自己補，
+         否則選單文字會被外部翻譯插件改寫 -->
     <div
       v-if="open"
       ref="menuEl"
       :style="floatingStyles"
       class="eqt-context-menu"
+      translate="no"
       :role="ariaRole ?? 'menu'"
       :aria-label="ariaLabel"
       @contextmenu.prevent
