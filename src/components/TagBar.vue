@@ -207,7 +207,14 @@ function onTagChange(lineIdx: number, evt: any) {
   }
 }
 
-function onTagStart() { tagDragging = true }
+// 選單開著時拖曳重排會讓選單捕捉的 (li, ti) 索引指到別顆按鈕——
+// 拖曳一開始就把兩個選單關掉，過期索引沒有機會被套用
+function closeActionMenus() {
+  lineMenuOpen.value = false
+  tagMenuOpen.value = false
+}
+
+function onTagStart() { tagDragging = true; closeActionMenus() }
 function onTagEnd() { setTimeout(() => { tagDragging = false }, 0) }
 
 function onAddButtonLine() { lines.push({ kind: 'buttons', buttons: [] }) }
@@ -541,6 +548,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
         :disabled="!editing"
         class="eqt-tag-bar__line-rows"
         @change="onLineChange"
+        @start="closeActionMenus"
       >
         <template #item="{ element: line, index: li }">
           <div
