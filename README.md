@@ -2,87 +2,52 @@
 
 [繁體中文](README.zh-TW.md) | [Sleazy Fork](https://sleazyfork.org/zh-TW/scripts/578820-eh-quick-tag)
 
-> ⚠️ Early development. Data formats (profiles, settings, etc.) may change in future versions and require reconfiguration.
+A customizable quick tag bar and Gallery tagging toolkit for E-Hentai / ExHentai.
+
+> [!CAUTION]
+> Early development. Data formats (profiles, settings, etc.) may change in future versions and require reconfiguration.
 
 [tag-bar-and-search-panel.webm](https://github.com/user-attachments/assets/f3db2250-dc81-4e15-b50c-1555502debbb)
 
-A customizable quick tag bar for E-Hentai / ExHentai search, with various tag-related enhancements.
-
-Adds a quick tag bar above the search box for one-click condition assembly. A companion search panel renders the current search terms as clickable buttons that can be dragged back into the tag bar, and keeps cross-page search history.
+[gallery-tagging.webm](https://github.com/user-attachments/assets/77448a48-2d9c-485c-aa8c-81d14e806e95)
 
 ## Features
 
-### Quick tag bar
-
-- **Three-state toggle**: Each button cycles through Include / OR / Exclude, synced with the native search box in real time; left and right click can each be configured independently
-- **Line layout**:
-  - Two row types — tag rows and separator rows — freely interleaved
-  - Rows can be reordered and colored; tags can be dragged across rows
-  - Separator rows support label, line style (solid / dashed / none), line position (top / middle / bottom), line length & thickness, text size, and text alignment
-- **URL buttons**: Pin frequently used search pages, with auto-fetch of page titles
-- **Background double-click**: Left/right double-click on the tag bar background triggers search or clears the search box; actions are configurable
-
-### Search panel
-
-- **Visualize the current search**: Breaks the contents of the search box into buttons, with one-click Include / OR / Exclude switching
-- **Drag back into the tag bar**: Drop a frequently used term into the tag bar to make it a permanent button
-- **Cross-page search history**: Searched terms are remembered across pages and recallable in one click; can be disabled for privacy
-- **Toolbar**: Search, clear search box, clear history, and "+ Browse tags" (pick from the tag database and add to the current search)
-- **Display language**: Auto / Chinese-English toggle / English-only; the "toggle" mode adds a 中／EN switch button
-
-### Tag database search
-
-- Integrates [EhTagTranslation](https://github.com/EhTagTranslation/Database) — search in Traditional/Simplified Chinese, Japanese, or English
-- **Popularity-weighted suggestions**: Tags ranked by global EH gallery count derived from the [URenko/e-hentai-db](https://github.com/URenko/e-hentai-db) nightly snapshot — covers every tag across all namespaces, refreshed weekly
-- **OpenCC Simplified-to-Traditional**: Choose Auto / Traditional / Simplified (DB original) for Chinese tag labels
-- **Namespace order & visibility**: Customize namespace ranking; hide categories you don't care about
-- **Mirrors & cache**: Three assets (tag DB, tag count, tag wiki) each with 4-mirror CDN choice (jsDelivr / Fastly / gcore / GitHub raw), adjustable cache TTL, and manual refresh
-
-### Gallery detail page tagging
-
-[gallery-tagging.webm](https://github.com/user-attachments/assets/77448a48-2d9c-485c-aa8c-81d14e806e95)
-
-Takes over the native taglist on `/g/` detail pages with a chip-based selection UI:
-
-- **Batch vote / batch search**: Build a selection with left-click (+1 include / positive vote) and right-click (-1 exclude / negative vote), then send it as a single batched vote request or open the tokens as a search — one action, many tags
-- **Drag-select**: Sweep across chips to toggle groups at once (cohort model — drag only affects chips sharing the drag start's state)
-- **Definition panel**: Click any chip to show its definition — Chinese from EhTagTranslation, English scraped from ehwiki.org's 5 tag categories (~13k pages, weekly incremental refresh via RecentChanges API); primary language configurable, per-panel toggle in the panel header
-- **Add tags picker**: Search the tag database inline and add tags to the selection without touching the native tag input
-- **Configurable double-click actions**: Left / right double-click on the taglist can trigger Search (current / new tab), Vote, Clear selection, Add tags picker, or None — independent from the tag bar's own dblclick settings
-- **Wiki shortcut**: One-click access to the Gallery_Tagging guide (CJK locale routes to the `/Chinese` sub-page)
-- **Toggle-able**: Can be turned off entirely (settings → Gallery → Tagging Enhancer) to preserve the native EH UI
-
-### Tag button configuration
-
-![tag settings](docs/tag_settings.png)
-
-- **Full syntax editor**: namespace (long/short form), qualifier, exact match (`$`), wildcard (`*`), and more
-- **Display name**: Separate from the underlying tag syntax — show whatever label you want on the button
-- **Click cycle editor**: Visually edit the state cycle for each mouse button; shapes that can't be expressed in EH search syntax are flagged
-
-### Appearance
-
-![color picker](docs/color_feature.png)
-
-- **Four button style presets**: Default, bottom shadow, offset shadow, pushable
-- **Two-layer coloring**: Color rows, color buttons individually, and optionally force the include state to always render green
-- **Custom font**: Pick a font-family and weight that only applies inside the tag bar
-
-### Profiles
-
-- Multiple independent profiles, one-click switch, reorderable and renameable
-- **Trash**: Deleted profiles can be restored or permanently purged
-- **JSON editor**: Import / export profile data directly; unparseable data is collected under "corrupted data"
-- **Persistent storage**: Backed by GM storage, compatible with Tampermonkey backup/sync
-
-### Sites & languages
-
-- Supports both **e-hentai.org** and **exhentai.org**
-- UI languages: **Traditional Chinese, Simplified Chinese, English, Japanese, Korean**
+- [x] Quick tag bar
+  - [x] Include, OR, and Exclude search states
+  - [x] Tag rows, separators, and cross-row dragging
+  - [x] Separator text, line style, position, size, and alignment
+  - [x] URL shortcuts
+  - [x] EH search syntax editor
+- [x] Search panel
+  - [x] Visual search terms
+  - [x] Cross-page search history
+  - [x] Drag search terms back into the quick tag bar
+- [x] Tag data
+  - [x] [EhTagTranslation/Database](https://github.com/EhTagTranslation/Database) integration for tag search in Traditional Chinese, Simplified Chinese, Japanese, and English
+  - [x] Site-wide tag usage statistics for ranking suggestions by Gallery count
+  - [x] [ehwiki](https://ehwiki.org/) tag definition integration with Chinese and English descriptions on Gallery pages
+  - [x] OpenCC Simplified/Traditional display conversion
+- [x] Gallery Tagging Enhancer
+  - [x] Left-click, right-click, and drag selection
+  - [x] Batch voting and batch search
+  - [x] Inline add-tag picker
+  - [x] Gallery Tagging Wiki shortcut
+- [x] Personalization
+  - [x] Multiple independent tag profiles
+  - [x] Profile ordering, renaming, trash, and JSON editor
+  - [x] Row and button colors
+  - [x] Button styles and custom fonts
+  - [x] Configurable tag bar and Gallery double-click actions
+  - [x] E-Hentai and ExHentai support
+  - [x] Traditional Chinese, Simplified Chinese, English, Japanese, and Korean UI
 
 ## Install
 
-Requires [Tampermonkey](https://www.tampermonkey.net/) or a compatible userscript manager. Install from [Sleazy Fork](https://sleazyfork.org/zh-TW/scripts/578820-eh-quick-tag) or [GitHub Releases](https://github.com/Tsuyumi25/EhQuickTag/releases).
+Requires [Tampermonkey](https://www.tampermonkey.net/) or a compatible userscript manager.
+
+- [x] [Sleazy Fork](https://sleazyfork.org/zh-TW/scripts/578820-eh-quick-tag)
+- [x] [GitHub Releases](https://github.com/Tsuyumi25/EhQuickTag/releases)
 
 ## Development
 
