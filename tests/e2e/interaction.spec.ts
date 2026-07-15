@@ -143,6 +143,19 @@ test('__lines 寬度 = bar 寬 − 2 × line-controls 寬', async ({ page }) => 
   // lines = bar - 2 × controls（容忍 2px sub-pixel）
   const expected = barBox!.width - 2 * controlsBox!.width
   expect(Math.abs(linesBox!.width - expected)).toBeLessThanOrEqual(2)
+
+  // row item 本身要擴回 bar 全寬，讓 Sortable 在 handle 的 x 座標上也能命中；
+  // 中央 line 仍跟 __lines 對齊，左右 controls 則各住一個等寬欄位。
+  await page.locator('.eqt-tag-bar__ctrl--toggle').click()
+  const rowBox = await page.locator('.eqt-tag-bar__line-wrap').first().boundingBox()
+  const lineBox = await page.locator('.eqt-tag-bar__line').first().boundingBox()
+  const actionsBox = await page.locator('.eqt-tag-bar__line-actions').first().boundingBox()
+  expect(rowBox && lineBox && actionsBox).toBeTruthy()
+  expect(Math.abs(rowBox!.x - barBox!.x)).toBeLessThanOrEqual(2)
+  expect(Math.abs(rowBox!.width - barBox!.width)).toBeLessThanOrEqual(2)
+  expect(Math.abs(lineBox!.x - linesBox!.x)).toBeLessThanOrEqual(2)
+  expect(Math.abs(lineBox!.width - linesBox!.width)).toBeLessThanOrEqual(2)
+  expect(Math.abs(actionsBox!.width - controlsBox!.width)).toBeLessThanOrEqual(2)
 })
 
 // === Tier 1.5 / 新行為：「直接從 URL 進到帶 f_search 的頁面」mount initial 視同 submit ===

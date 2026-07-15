@@ -139,7 +139,10 @@ function onCopyRgb() { if (rgbText.value) rgbClip.copy(rgbText.value) }
   gap: 6px;
 
   &__picker {
-    width: 180px;
+    // 寬度跟著容器走（context menu 內撐滿選單寬）；shrink-to-fit 容器
+    //（AnchoredPopover）裡百分比無錨定，靠 min-width 保底不塌
+    width: 100%;
+    min-width: 180px;
     height: 180px;
     user-select: none;
   }

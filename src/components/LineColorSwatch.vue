@@ -8,6 +8,7 @@ import { t } from '@/composables/useI18n'
 defineProps<{
   modelValue: string | undefined
   title?: string
+  embedded?: boolean
 }>()
 const emit = defineEmits<{ 'update:modelValue': [value: string | undefined] }>()
 
@@ -22,6 +23,7 @@ function clearColor() {
 
 <template>
   <button
+    v-if="!embedded"
     ref="triggerEl"
     v-bind="$attrs"
     type="button"
@@ -32,14 +34,14 @@ function clearColor() {
   >
     <Palette :size="12" />
   </button>
-  <AnchoredPopover v-model:open="open" :anchor="triggerEl">
-    <div class="eqt-line-color__popup">
+  <component :is="embedded ? 'div' : AnchoredPopover" v-model:open="open" :anchor="triggerEl">
+    <div class="eqt-line-color__popup" :class="{ 'eqt-line-color__popup--embedded': embedded }">
       <ColorPicker :model-value="modelValue" @update:model-value="emit('update:modelValue', $event)" />
       <button type="button" class="eqt-line-color__clear" @click="clearColor">
         <X :size="12" /> {{ t('tagbar.lineColorClear') }}
       </button>
     </div>
-  </AnchoredPopover>
+  </component>
 </template>
 
 <style lang="scss">
@@ -61,6 +63,13 @@ function clearColor() {
     display: flex;
     flex-direction: column;
     gap: 6px;
+
+    &--embedded {
+      padding: 4px;
+      background: none;
+      border: 0;
+      box-shadow: none;
+    }
   }
 
   &__clear {

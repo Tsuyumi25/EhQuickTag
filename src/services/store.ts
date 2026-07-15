@@ -588,6 +588,15 @@ export function updateProfileLines(idx: number, newLines: Line[]): void {
   }
 }
 
+export function moveLineToProfile(lineIdx: number, targetProfileIdx: number): void {
+  if (lineIdx < 0 || lineIdx >= lines.length) return
+  if (targetProfileIdx < 0 || targetProfileIdx >= profiles.length || targetProfileIdx === activeProfileIdx.value) return
+  const [moved] = lines.splice(lineIdx, 1)
+  profiles[targetProfileIdx].lines.push(JSON.parse(JSON.stringify(moved)))
+  if (profiles[targetProfileIdx].isDefault) profiles[targetProfileIdx].isDefault = false
+  saveProfiles()
+}
+
 // --- auto-save on change ---
 
 function saveProfiles() {

@@ -1,6 +1,7 @@
 export default {
   // Common
   'common.itemColor': 'ボタンの色',
+  'common.back': '戻る',
 
   // TagBar
   'nsFilter.label': 'Namespace で絞り込む',
@@ -13,6 +14,10 @@ export default {
   'tagbar.infoTooltip': '左ダブルクリック：{left}\n右ダブルクリック：{right}\n動作は設定で変更可能',
   'tagbar.newProfile': 'クリックして新しいプロファイルに名前を付ける',
   'tagbar.handleTitle': 'ドラッグして行を並べ替え',
+  'tagbar.lineActions': '行の操作',
+  'tagbar.moveLine': 'プロファイルに移動',
+  'tagbar.moveLineToProfile': '{profile} に移動',
+  'tagbar.layout': 'レイアウト',
   'tagbar.deleteLine': 'この行を削除',
   'tagbar.deleteLineConfirm': 'この行を削除しますか？この操作は元に戻せません。',
   'tagbar.lineColor': '行の色',

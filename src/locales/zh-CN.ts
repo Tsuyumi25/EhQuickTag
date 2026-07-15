@@ -1,6 +1,7 @@
 export default {
   // Common
   'common.itemColor': '按钮颜色',
+  'common.back': '返回',
 
   // TagBar
   'nsFilter.label': '按 namespace 筛选',
@@ -13,6 +14,10 @@ export default {
   'tagbar.infoTooltip': '左键双击：{left}\n右键双击：{right}\n设置里可调整动作',
   'tagbar.newProfile': '点击命名新标签组',
   'tagbar.handleTitle': '拖拽排序行',
+  'tagbar.lineActions': '行操作',
+  'tagbar.moveLine': '移动到 Profile',
+  'tagbar.moveLineToProfile': '移动到 {profile}',
+  'tagbar.layout': '排版',
   'tagbar.deleteLine': '删除此行',
   'tagbar.deleteLineConfirm': '确定删除这行吗？此操作无法撤销。',
   'tagbar.lineColor': '行颜色',

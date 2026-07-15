@@ -1,6 +1,7 @@
 export default {
   // Common
   'common.itemColor': '버튼 색상',
+  'common.back': '뒤로',
 
   // TagBar
   'nsFilter.label': 'Namespace로 필터링',
@@ -13,6 +14,10 @@ export default {
   'tagbar.infoTooltip': '왼쪽 더블클릭: {left}\n오른쪽 더블클릭: {right}\n동작은 설정에서 변경 가능',
   'tagbar.newProfile': '클릭하여 새 프로필 이름 지정',
   'tagbar.handleTitle': '드래그하여 행 순서 변경',
+  'tagbar.lineActions': '행 작업',
+  'tagbar.moveLine': '프로필로 이동',
+  'tagbar.moveLineToProfile': '{profile}(으)로 이동',
+  'tagbar.layout': '레이아웃',
   'tagbar.deleteLine': '이 행 삭제',
   'tagbar.deleteLineConfirm': '이 행을 삭제할까요? 이 작업은 되돌릴 수 없습니다.',
   'tagbar.lineColor': '행 색상',

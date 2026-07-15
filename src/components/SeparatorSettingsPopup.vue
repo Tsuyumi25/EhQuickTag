@@ -7,6 +7,7 @@ import { t } from '@/composables/useI18n'
 
 const props = defineProps<{
   line: SeparatorLine
+  embedded?: boolean
 }>()
 const emit = defineEmits<{ 'update:line': [value: SeparatorLine] }>()
 
@@ -33,6 +34,7 @@ function updateStyle(patch: Partial<SeparatorStyle>) {
 
 <template>
   <button
+    v-if="!embedded"
     ref="triggerEl"
     type="button"
     class="eqt-line-sep__trigger"
@@ -41,8 +43,8 @@ function updateStyle(patch: Partial<SeparatorStyle>) {
   >
     <Settings :size="12" />
   </button>
-  <AnchoredPopover v-model:open="open" :anchor="triggerEl">
-    <div class="eqt-line-sep__popup">
+  <component :is="embedded ? 'div' : AnchoredPopover" v-model:open="open" :anchor="triggerEl">
+    <div class="eqt-line-sep__popup" :class="{ 'eqt-line-sep__popup--embedded': embedded }">
       <div class="eqt-line-sep__row eqt-line-sep__row--col">
         <span>{{ t('tagbar.separatorLinePosition') }}</span>
         <div class="eqt-line-sep__styles">
@@ -127,7 +129,7 @@ function updateStyle(patch: Partial<SeparatorStyle>) {
         />
       </div>
     </div>
-  </AnchoredPopover>
+  </component>
 </template>
 
 <style lang="scss">
@@ -152,6 +154,11 @@ function updateStyle(patch: Partial<SeparatorStyle>) {
     gap: 8px;
     font-size: 12px;
     color: var(--eqt-text);
+
+    &--embedded {
+      border: 0;
+      box-shadow: none;
+    }
   }
 
   &__row {

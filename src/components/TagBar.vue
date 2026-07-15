@@ -1,15 +1,16 @@
 <script setup lang="ts">
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed, nextTick, watch } from 'vue'
 import { useResizeObserver } from '@vueuse/core'
 import Draggable from 'vuedraggable'
-import { ChevronLeft, ChevronRight, ExternalLink, GripVertical, Trash2, Pencil, Check, Settings, Plus, Info } from '@lucide/vue'
+import { ArrowLeft, ChevronLeft, ChevronRight, ExternalLink, GripVertical, Trash2, Pencil, Check, Settings, Plus, Info, Ellipsis, Palette, SquareDashedMousePointer } from '@lucide/vue'
 import ContentEditable from 'vue-contenteditable'
 import LineColorSwatch from '@/components/LineColorSwatch.vue'
 import SeparatorSettingsPopup from '@/components/SeparatorSettingsPopup.vue'
+import ContextMenu from '@/components/ContextMenu.vue'
 import SearchPanel from '@/components/search/SearchPanel.vue'
 import { TagState, type Line, type Button, type TagButton } from '@/types'
 import { tokenize, buildIdentityIndex, getState as _getState, setTagState, getNextRightClickState } from '@/services/tagState'
-import { lines, dblClickLeft, dblClickRight, dblClickLeftNewTabActive, dblClickRightNewTabActive, useAccentOnInclude, showSearchPanel, type DblClickAction } from '@/services/store'
+import { lines, profiles, activeProfileIdx, moveLineToProfile, dblClickLeft, dblClickRight, dblClickLeftNewTabActive, dblClickRightNewTabActive, useAccentOnInclude, showSearchPanel, type DblClickAction } from '@/services/store'
 import { baseDragOptions, EQT_TAGS_GROUP } from '@/utils/drag'
 import { dismissTerms, recordSubmitAndFlush } from '@/services/search/searchSession'
 import { t } from '@/composables/useI18n'
@@ -213,6 +214,64 @@ function onDeleteLine(li: number) {
   lines.splice(li, 1)
 }
 
+// --- line actions ---
+
+const lineMenuOpen = ref(false)
+const lineMenuIdx = ref(-1)
+const lineMenuX = ref(0)
+const lineMenuY = ref(0)
+const lineMenuAnchorWidth = ref(0)
+const lineMenuAnchorHeight = ref(0)
+const lineMenuView = ref<'menu' | 'move' | 'layout' | 'color'>('menu')
+const lineMenuTrigger = ref<HTMLButtonElement | null>(null)
+let lineMenuCloseTimer: ReturnType<typeof setTimeout> | undefined
+
+function cancelLineMenuClose(): void {
+  if (lineMenuCloseTimer !== undefined) clearTimeout(lineMenuCloseTimer)
+  lineMenuCloseTimer = undefined
+}
+
+function scheduleLineMenuClose(): void {
+  cancelLineMenuClose()
+  if (lineMenuView.value !== 'menu') return
+  lineMenuCloseTimer = setTimeout(() => {
+    lineMenuCloseTimer = undefined
+    if (lineMenuView.value !== 'menu') return
+    lineMenuOpen.value = false
+  }, 150)
+}
+
+function openLineMenu(e: MouseEvent, li: number): void {
+  if (lineMenuOpen.value && lineMenuView.value !== 'menu') return
+  cancelLineMenuClose()
+  const trigger = e.currentTarget as HTMLButtonElement
+  const rect = trigger.getBoundingClientRect()
+  lineMenuIdx.value = li
+  lineMenuX.value = rect.left
+  lineMenuY.value = rect.top
+  lineMenuAnchorWidth.value = rect.width
+  lineMenuAnchorHeight.value = rect.height
+  lineMenuView.value = 'menu'
+  lineMenuTrigger.value = trigger
+  lineMenuOpen.value = true
+}
+
+watch(lineMenuOpen, (open) => {
+  if (open) return
+  lineMenuView.value = 'menu'
+  nextTick(() => lineMenuTrigger.value?.focus())
+})
+
+function moveLine(li: number, profileIdx: number): void {
+  moveLineToProfile(li, profileIdx)
+  lineMenuOpen.value = false
+}
+
+function deleteLineFromMenu(li: number): void {
+  onDeleteLine(li)
+  lineMenuOpen.value = false
+}
+
 function onConfigure(li: number, ti: number) {
   if (tagDragging) return
   emit('configure', li, ti)
@@ -340,7 +399,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
         ><ChevronRight :size="12" /> {{ onCreationPage ? '' : nextProfileName }}</button>
       </div>
       <template v-if="onCreationPage">
-        <div v-for="n in lines.length" :key="n" class="eqt-tag-bar__line-wrap">
+        <div v-for="n in lines.length" :key="n" class="eqt-tag-bar__line-wrap eqt-tag-bar__line-wrap--placeholder">
           <div class="eqt-tag-bar__line"></div>
         </div>
       </template>
@@ -355,7 +414,10 @@ function onRightClick(event: MouseEvent, b: TagButton) {
         @change="onLineChange"
       >
         <template #item="{ element: line, index: li }">
-          <div class="eqt-tag-bar__line-wrap">
+          <div
+            class="eqt-tag-bar__line-wrap"
+            :class="{ 'eqt-tag-bar__line-wrap--actions-active': lineMenuOpen && lineMenuIdx === li }"
+          >
             <div
               :ref="(el) => captureControlsEl(el, li)"
               class="eqt-tag-bar__line-controls"
@@ -433,23 +495,70 @@ function onRightClick(event: MouseEvent, b: TagButton) {
               </template>
             </Draggable>
 
-            <SeparatorSettingsPopup
-              v-if="editing && line.kind === 'separator'"
-              :line="line"
-              @update:line="onUpdateLine(li, $event)"
-            />
-            <LineColorSwatch
-              v-if="editing"
-              :model-value="line.color"
-              @update:model-value="line.color = $event"
-            />
             <button
               v-if="editing"
-              class="eqt-tag-bar__line-delete"
+              class="eqt-tag-bar__line-actions"
               type="button"
-              :title="t('tagbar.deleteLine')"
-              @click="onDeleteLine(li)"
-            ><Trash2 :size="12" /></button>
+              :title="t('tagbar.lineActions')"
+              @mouseenter="openLineMenu($event, li)"
+              @mouseleave="scheduleLineMenuClose"
+            ><Ellipsis :size="14" /></button>
+            <ContextMenu
+              v-if="lineMenuIdx === li"
+              v-model:open="lineMenuOpen"
+              :x="lineMenuX"
+              :y="lineMenuY"
+              :anchor-width="lineMenuAnchorWidth"
+              :anchor-height="lineMenuAnchorHeight"
+              :entries="[]"
+              placement="right-start"
+              @enter="cancelLineMenuClose"
+              @leave="scheduleLineMenuClose"
+            >
+              <template v-if="lineMenuView === 'menu'">
+                <button v-if="profiles.length > 1" type="button" class="eqt-context-menu__item" @click="lineMenuView = 'move'">
+                  <SquareDashedMousePointer :size="14" class="eqt-context-menu__icon" /><span class="eqt-context-menu__label">{{ t('tagbar.moveLine') }}</span>
+                </button>
+                <button v-if="line.kind === 'separator'" type="button" class="eqt-context-menu__item" @click="lineMenuView = 'layout'">
+                  <Settings :size="14" class="eqt-context-menu__icon" /><span class="eqt-context-menu__label">{{ t('tagbar.layout') }}</span>
+                </button>
+                <button type="button" class="eqt-context-menu__item" @click="lineMenuView = 'color'">
+                  <Palette :size="14" class="eqt-context-menu__icon" /><span class="eqt-context-menu__label">{{ t('tagbar.lineColor') }}</span>
+                </button>
+                <div class="eqt-context-menu__separator" />
+                <button type="button" class="eqt-context-menu__item eqt-context-menu__item--danger" @click="deleteLineFromMenu(li)">
+                  <Trash2 :size="14" class="eqt-context-menu__icon" /><span class="eqt-context-menu__label">{{ t('tagbar.deleteLine') }}</span>
+                </button>
+              </template>
+              <template v-else>
+                <button type="button" class="eqt-tag-bar__line-menu-back" @click="lineMenuView = 'menu'">
+                  <ArrowLeft :size="14" /> {{ t('common.back') }}
+                </button>
+                <div class="eqt-context-menu__separator" />
+                <template v-if="lineMenuView === 'move'">
+                  <button
+                    v-for="(profile, pi) in profiles"
+                    v-show="pi !== activeProfileIdx"
+                    :key="pi"
+                    type="button"
+                    class="eqt-context-menu__item"
+                    @click="moveLine(li, pi)"
+                  ><span class="eqt-context-menu__label">{{ profile.name }}</span></button>
+                </template>
+                <SeparatorSettingsPopup
+                  v-else-if="lineMenuView === 'layout' && line.kind === 'separator'"
+                  embedded
+                  :line="line"
+                  @update:line="onUpdateLine(li, $event)"
+                />
+                <LineColorSwatch
+                  v-else-if="lineMenuView === 'color'"
+                  embedded
+                  :model-value="line.color"
+                  @update:model-value="line.color = $event"
+                />
+              </template>
+            </ContextMenu>
           </div>
         </template>
       </Draggable>
@@ -625,7 +734,8 @@ function onRightClick(event: MouseEvent, b: TagButton) {
   &__line-rows {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    // 列間距歸屬到各 row 的 padding，避免 hover / drag hit area 中間出現死區。
+    gap: 0;
   }
 
   // button 區的 framed 卡片：「+」按鈕住在框內當新增入口，整個框視覺上就是
@@ -661,9 +771,28 @@ function onRightClick(event: MouseEvent, b: TagButton) {
 
   &__line-wrap {
     position: relative;
-    display: flex;
+    display: grid;
+    grid-template-columns:
+      var(--eqt-controls-w, var(--eqt-row-h))
+      minmax(0, 1fr)
+      var(--eqt-controls-w, var(--eqt-row-h));
     align-items: flex-start;
-    gap: 4px;
+    padding-block: 2px;
+    margin-inline: calc(-1 * var(--eqt-controls-w, var(--eqt-row-h)));
+
+    // 建立新 profile 時只畫中央空行；沒有左右 controls 也必須留在內容欄。
+    &--placeholder > .eqt-tag-bar__line {
+      grid-column: 2;
+    }
+
+    // 左右 controls 都代表「操作這一行」：hover 任一側時高亮完整三欄 row；
+    // 行操作 popup 離開 DOM 到 Teleport 後，則由 actions-active 延續狀態。
+    &:has(> .eqt-tag-bar__line-controls .eqt-tag-bar__handle:hover),
+    &:has(> .eqt-tag-bar__line-actions:hover),
+    &--actions-active {
+      background: var(--eqt-bg-hover);
+      border-radius: var(--eqt-radius-sm);
+    }
 
     &--ghost {
       opacity: 0.4;
@@ -671,11 +800,10 @@ function onRightClick(event: MouseEvent, b: TagButton) {
   }
 
   &__line-controls {
-    position: absolute;
-    right: 100%;
-    top: 0;
     display: flex;
     align-items: center;
+    justify-content: center;
+    width: 100%;
     height: var(--eqt-row-h);
   }
 
@@ -726,15 +854,26 @@ function onRightClick(event: MouseEvent, b: TagButton) {
 
   // btn-icon 的非正方變體：高度照樣是 row-h，但寬度由內容決定（保留 padding）。
   // hover 走 danger 色（不變底）給「會刪行」的視覺暗示。
-  &__line-delete {
+  &__line-actions {
     @include btn-icon;
-    width: auto;
-    padding: 0 4px;
+    width: 100%;
+    padding: 0;
     flex-shrink: 0;
 
     &:hover:not(:disabled) {
       color: var(--eqt-danger);
     }
+  }
+
+  &__line-menu-back {
+    @include btn-ghost;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+    padding: 4px;
+    color: var(--eqt-text);
+    font-weight: 600;
   }
 
   &__line {

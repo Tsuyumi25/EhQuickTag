@@ -1,6 +1,7 @@
 export default {
   // Common
   'common.itemColor': 'Button color',
+  'common.back': 'Back',
 
   // TagBar
   'nsFilter.label': 'Filter by namespace',
@@ -13,6 +14,10 @@ export default {
   'tagbar.infoTooltip': 'Left double-click: {left}\nRight double-click: {right}\nActions configurable in settings',
   'tagbar.newProfile': 'Click to name new profile',
   'tagbar.handleTitle': 'Drag to reorder rows',
+  'tagbar.lineActions': 'Row actions',
+  'tagbar.moveLine': 'Move to profile',
+  'tagbar.moveLineToProfile': 'Move to {profile}',
+  'tagbar.layout': 'Layout',
   'tagbar.deleteLine': 'Delete this row',
   'tagbar.deleteLineConfirm': 'Delete this row? This cannot be undone.',
   'tagbar.lineColor': 'Row color',
