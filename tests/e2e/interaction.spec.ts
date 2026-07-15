@@ -91,8 +91,7 @@ test('編輯 → + 標籤 → 填寫 → 儲存 → TagBar 多一顆按鈕', asy
   await expect(tagInput).toBeEnabled()
   await tagInput.fill('yuri')
 
-  // primary 按鈕 = 儲存
-  await page.locator('.eqt-popup__btn--primary').click()
+  await page.locator('.eqt-popup-overlay').getByRole('button', { name: /^儲存/ }).click()
   await expect(page.locator('.eqt-popup-overlay')).toBeHidden()
 
   await expect(allBtns).toHaveCount(countBefore + 1)
@@ -102,7 +101,7 @@ test('tag 與 URL button 的左鍵編輯 popup 不顯示調色盤', async ({ pag
   await injectUserscript(page)
   await page.locator('.eqt-tag-bar__ctrl--toggle').click()
 
-  await page.getByRole('button', { name: '中文', exact: true }).click()
+  await page.locator('.eqt-tag-bar__line').getByRole('button', { name: '中文', exact: true }).click()
   const popup = page.locator('.eqt-popup-overlay')
   await expect(popup).toBeVisible()
   await expect(popup.locator('.eqt-line-color__trigger')).toHaveCount(0)
@@ -134,7 +133,9 @@ test('history 跨 reload 還留在 SearchPanel', async ({ page }) => {
   await expect(page.locator('.eqt-tag-bar')).toBeVisible()
   // loadHistory async；row 出現代表 storage round-trip + reclaim 後仍有 term 殘留
   await expect(page.locator('.eqt-search-panel__label', { hasText: '歷史' })).toBeVisible()
-  await expect(page.locator('.eqt-search-panel__button--ghost').filter({ hasText: 'e2etest' })).toBeVisible()
+  await expect(
+    page.locator('.eqt-search-panel').getByRole('button', { name: 'artist:e2etest', exact: true }),
+  ).toBeVisible()
 })
 
 // === Tier 1 / ⑥：--eqt-controls-w 鏈完整性（ResizeObserver → emit → CSS var）===
@@ -237,7 +238,10 @@ test('行操作支援鍵盤開啟、drill-in 與 Escape 返回 trigger', async (
   const trigger = page.locator('.eqt-tag-bar__line-actions').first()
   await trigger.focus()
   await page.keyboard.press('Enter')
+  const duplicate = page.getByRole('button', { name: '建立副本', exact: true })
   const layout = page.locator('.eqt-context-menu__item', { hasText: '排版' })
+  await expect(duplicate).toBeFocused()
+  await page.keyboard.press('Tab')
   await expect(layout).toBeFocused()
 
   await page.keyboard.press('Enter')
@@ -255,7 +259,7 @@ test('編輯模式的 tag context menu 支援相鄰副本、顏色與刪除', as
   const rowButtons = row.locator('.eqt-tag-bar__btn')
   const countBefore = await rowButtons.count()
   const chinese = row.getByRole('button', { name: '中文', exact: true })
-  const english = row.getByRole('button', { name: '英文', exact: true })
+  const english = row.getByRole('button', { name: '英語', exact: true })
 
   await chinese.click({ button: 'right' })
   const menu = page.locator('.eqt-context-menu')
@@ -267,7 +271,7 @@ test('編輯模式的 tag context menu 支援相鄰副本、顏色與刪除', as
   await menu.getByRole('button', { name: '建立副本' }).click()
   await expect(rowButtons).toHaveCount(countBefore + 1)
 
-  const copies = row.getByRole('button', { name: '英文', exact: true })
+  const copies = row.getByRole('button', { name: '英語', exact: true })
   await expect(copies).toHaveCount(2)
   await copies.nth(1).click({ button: 'right' })
   await menu.getByRole('button', { name: '按鈕顏色' }).click()
@@ -324,8 +328,9 @@ test('編輯模式會阻止 tag 與背景冒出瀏覽器原生 context menu', as
     return event.defaultPrevented
   }
   await expect.poll(() => page.locator('.eqt-tag-bar').evaluate(dispatchContextMenu)).toBe(true)
-  await expect.poll(() => page.getByRole('button', { name: '中文', exact: true }).evaluate(dispatchContextMenu)).toBe(true)
-  await expect.poll(() => page.getByRole('button', { name: '教學', exact: true }).evaluate(dispatchContextMenu)).toBe(true)
+  const tagBarLines = page.locator('.eqt-tag-bar__line')
+  await expect.poll(() => tagBarLines.getByRole('button', { name: '中文', exact: true }).evaluate(dispatchContextMenu)).toBe(true)
+  await expect.poll(() => tagBarLines.getByRole('button', { name: '教學', exact: true }).evaluate(dispatchContextMenu)).toBe(true)
 })
 
 test('tag 可從 context menu 移動到另一個 Profile 的最後普通行', async ({ page }) => {
@@ -339,7 +344,7 @@ test('tag 可從 context menu 移動到另一個 Profile 的最後普通行', as
   await page.locator('.eqt-tag-bar__profile-nav--prev').click()
 
   await page.locator('.eqt-tag-bar__ctrl--toggle').click()
-  const chinese = page.getByRole('button', { name: '中文', exact: true })
+  const chinese = page.locator('.eqt-tag-bar__line').getByRole('button', { name: '中文', exact: true })
   await chinese.click({ button: 'right' })
   const menu = page.locator('.eqt-context-menu')
   await menu.getByRole('button', { name: '移動到 Profile' }).click()
@@ -347,7 +352,7 @@ test('tag 可從 context menu 移動到另一個 Profile 的最後普通行', as
   await expect(chinese).toHaveCount(0)
 
   await page.locator('.eqt-tag-bar__profile-nav--next').click()
-  await expect(page.getByRole('button', { name: '中文', exact: true })).toBeVisible()
+  await expect(page.locator('.eqt-tag-bar__line').getByRole('button', { name: '中文', exact: true })).toBeVisible()
 })
 
 test('全域普通行對齊套用到未覆寫的行', async ({ page }) => {
@@ -401,7 +406,7 @@ test('mount 初始已有 f_search、未 off、回主頁後 visible history 仍�
   // sessionTerms 空 ⇒ visibleHistory 投影出 e2einitial 為 ghost chip
   await expect(page.locator('.eqt-search-panel__label', { hasText: '歷史' })).toBeVisible()
   await expect(
-    page.locator('.eqt-search-panel__button--ghost').filter({ hasText: 'e2einitial' })
+    page.locator('.eqt-search-panel').getByRole('button', { name: 'artist:e2einitial', exact: true }),
   ).toBeVisible()
 })
 
@@ -443,14 +448,17 @@ test('逐字 typing 完整 token 不污染 history（中間態 a:e2t / a:e2te �
 
   // 再 append 第二個 token，中間態 a:e2test a:e2b
   await input.fill('a:e2test a:e2b')
-  const chips = page.locator('.eqt-search-panel__button')
+  const artistRow = page.locator('.eqt-search-panel__row').filter({
+    has: page.locator('.eqt-search-panel__label', { hasText: '繪師' }),
+  })
+  const chips = artistRow.getByRole('button')
   await expect(chips).toHaveCount(2)
-  await expect(chips.nth(1)).toContainText('e2b')
+  await expect(artistRow.getByRole('button', { name: 'e2b', exact: true })).toBeVisible()
   expect(await storageState()).toBeNull()
 
   // 完整態 a:e2test a:e2bar
   await input.fill('a:e2test a:e2bar')
-  await expect(chips.nth(1)).toContainText('e2bar')
+  await expect(artistRow.getByRole('button', { name: 'e2bar', exact: true })).toBeVisible()
   expect(await storageState()).toBeNull()
 
   // 等過 schedulePersist debounce 視窗（100ms）確認真的沒人觸發 persist
@@ -475,7 +483,7 @@ test('mount 後立刻 typing 中間態不被 mount-initial recordSubmit 推進 H
   await page.locator('#f_search').fill('artist:e2mid')
 
   // 等 chip 同步到 mid + storage 完成寫入（mount-initial recordSubmit 跑完）
-  await expect(page.locator('.eqt-search-panel__button').filter({ hasText: 'e2mid' })).toBeVisible()
+  await expect(page.locator('.eqt-search-panel').getByRole('button', { name: 'e2mid', exact: true })).toBeVisible()
   await page.waitForFunction(() => localStorage.getItem('eqt-test:eqt-search-history') !== null)
   await page.waitForTimeout(150)  // 跨過 schedulePersist debounce 窗
 
@@ -499,7 +507,7 @@ test('mount 後立刻 typing 中間態不被 mount-initial recordSubmit 推進 H
 // 體感像「清掉怎麼又出來」。修法：clearHistory 改回只保留 O 對應條目
 test('清歷史後 backspace 掉 active token 不會浮出 ghost chip', async ({ page }) => {
   await injectUserscript(page, 'artist:e2clr')
-  await expect(page.locator('.eqt-search-panel__button').filter({ hasText: 'e2clr' })).toBeVisible()
+  await expect(page.locator('.eqt-search-panel').getByRole('button', { name: 'e2clr', exact: true })).toBeVisible()
 
   // 等 mount initial recordSubmit + persist 完成
   await page.waitForFunction(() => {
@@ -517,7 +525,7 @@ test('清歷史後 backspace 掉 active token 不會浮出 ghost chip', async ({
 
   // ghost chip 不該出現——舊版會冒出 artist:e2clr，新版 clearHistory 已把它清掉
   await expect(
-    page.locator('.eqt-search-panel__button--ghost').filter({ hasText: 'e2clr' })
+    page.locator('.eqt-search-panel').getByRole('button', { name: 'artist:e2clr', exact: true }),
   ).not.toBeVisible()
   await expect(page.locator('.eqt-search-panel__label', { hasText: '歷史' })).not.toBeVisible()
 })
@@ -537,7 +545,7 @@ test('search submit 後 history 同步寫入 GM storage（不等 debounce）', a
   })
 
   await page.locator('#f_search').fill('artist:e2nav')
-  await expect(page.locator('.eqt-search-panel__button').filter({ hasText: 'e2nav' })).toBeVisible()
+  await expect(page.locator('.eqt-search-panel').getByRole('button', { name: 'e2nav', exact: true })).toBeVisible()
 
   // 點 submit；onSearchClick 是 async，await recordSubmitAndFlush 確保 cacheSet 已 resolve
   await page.getByTestId('search-submit').click()
@@ -558,9 +566,9 @@ test('chip 切 Off 後在原位殘留、不跑到末尾', async ({ page }) => {
   // SearchPanel artist row。順序：先 alpha 後 beta
   await page.locator('#f_search').fill('artist:alpha artist:beta')
 
-  const chips = page.locator('.eqt-search-panel__button')
-  const alphaChip = chips.filter({ hasText: 'alpha' })
-  const betaChip = chips.filter({ hasText: 'beta' })
+  const panel = page.locator('.eqt-search-panel')
+  const alphaChip = panel.getByRole('button', { name: 'alpha', exact: true })
+  const betaChip = panel.getByRole('button', { name: 'beta', exact: true })
   await expect(alphaChip).toHaveClass(/eqt-search-panel__button--include/)
   await expect(betaChip).toHaveClass(/eqt-search-panel__button--include/)
 

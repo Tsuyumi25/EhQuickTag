@@ -122,12 +122,13 @@ test('history + namespace group cells 不橫向溢出', async ({ page }) => {
   await injectUserscript(page, INITIAL_SEARCH)
 
   // history label 出現代表 loadHistory 完成、history row 已 mount
-  await expect(page.locator('.eqt-search-panel__label', { hasText: '歷史' })).toBeVisible()
-  await expect(page.locator('.eqt-search-panel__button--ghost')).toHaveCount(HISTORY_SEED.length)
+  const historyRow = page.locator('.eqt-search-panel__row').filter({
+    has: page.locator('.eqt-search-panel__label', { hasText: '歷史' }),
+  })
+  await expect(historyRow).toBeVisible()
+  await expect(historyRow.getByRole('button')).toHaveCount(HISTORY_SEED.length)
   // active term chip mount 完才能保證 namespace group cells 在 DOM 內
-  await expect(
-    page.locator('.eqt-search-panel__button:not(.eqt-search-panel__button--ghost)'),
-  ).toHaveCount(1)
+  await expect(page.locator('.eqt-search-panel').getByRole('button', { name: 'demo_active', exact: true })).toBeVisible()
 
   await assertCellsFitsPanel(page, 'initial')
 })
