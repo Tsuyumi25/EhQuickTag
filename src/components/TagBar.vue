@@ -108,8 +108,12 @@ function onBarContextMenu(e: MouseEvent) {
 
 // 編輯模式的整個 TagBar 都是自訂操作面：capture phase 先封住瀏覽器原生
 // context menu，但不阻止事件往子層走，tag 仍可接手開啟自己的 ContextMenu。
+// 文字輸入元素（分隔線 label 的 contenteditable、profile 改名 input）除外——
+// 它們需要原生選單做貼上 / 拼字建議，且沒有自訂選單可替代。
 function preventNativeContextMenuWhileEditing(e: MouseEvent): void {
-  if (editing.value) e.preventDefault()
+  if (!editing.value) return
+  if ((e.target as HTMLElement).closest('input, textarea, [contenteditable]')) return
+  e.preventDefault()
 }
 
 async function execDblClickAction(action: DblClickAction, newTabActive?: boolean) {
