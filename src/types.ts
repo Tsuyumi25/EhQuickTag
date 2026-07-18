@@ -7,8 +7,8 @@ export enum TagState {
 
 export type TagMode = 'or' | 'exclude'
 
-// --- Button = TagButton | UrlButton ---
-// 用 discriminated union 表達「tag 按鈕 vs URL 按鈕」xor，取代舊版以
+// --- Button = TagButton | UrlButton | SpacerButton ---
+// 用 discriminated union 表達「tag 按鈕 vs URL 按鈕 vs 空位」xor，取代舊版以
 // `tag === '' && url !== ''` 當 URL discriminant 的 hack。
 
 export interface TagButton {
@@ -26,7 +26,17 @@ export interface UrlButton {
   color?: string
 }
 
-export type Button = TagButton | UrlButton
+// 行內隱形空位：非編輯時只佔位不可見。
+//   flex  = 彈性空位，吃掉整行剩餘空間、把兩側按鈕推開（flex: 1）
+//   fixed = 固定空位，寬度為使用者拖曳出的 px 快照——同環境穩定、
+//           換字體 / 瀏覽器會漂移，語意上就是「當下環境的凍結對齊」，漂了重拉
+export interface SpacerButton {
+  kind: 'spacer'
+  mode: 'flex' | 'fixed'
+  width?: number   // px，僅 fixed 有意義；未設時走 UI 預設
+}
+
+export type Button = TagButton | UrlButton | SpacerButton
 
 export type LineTextAlign = 'left' | 'center' | 'right'
 

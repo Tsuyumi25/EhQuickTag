@@ -492,12 +492,13 @@ function onEditorPurge() {
                     class="eqt-settings__preview-line"
                     :style="{ justifyContent: textAlignToJustify(line.style?.textAlign ?? buttonLineTextAlign) }"
                   >
-                    <span
-                      v-for="(b, ti) in line.buttons"
-                      :key="ti"
-                      class="eqt-settings__preview-tag"
-                      :class="{ 'eqt-settings__preview-tag--url': b.kind === 'url' }"
-                    >{{ b.label || (b.kind === 'tag' ? b.tags.join(', ') : b.url) }}</span>
+                    <template v-for="(b, ti) in line.buttons" :key="ti">
+                      <span
+                        v-if="b.kind !== 'spacer'"
+                        class="eqt-settings__preview-tag"
+                        :class="{ 'eqt-settings__preview-tag--url': b.kind === 'url' }"
+                      >{{ b.label || (b.kind === 'tag' ? b.tags.join(', ') : b.url) }}</span>
+                    </template>
                   </div>
                 </template>
               </div>
@@ -790,12 +791,13 @@ function onEditorPurge() {
                     class="eqt-settings__preview-line"
                     :style="{ justifyContent: textAlignToJustify(line.style?.textAlign ?? buttonLineTextAlign) }"
                   >
-                    <span
-                      v-for="(b, ti) in line.buttons"
-                      :key="ti"
-                      class="eqt-settings__preview-tag"
-                      :class="{ 'eqt-settings__preview-tag--url': b.kind === 'url' }"
-                    >{{ b.label || (b.kind === 'tag' ? b.tags.join(', ') : b.url) }}</span>
+                    <template v-for="(b, ti) in line.buttons" :key="ti">
+                      <span
+                        v-if="b.kind !== 'spacer'"
+                        class="eqt-settings__preview-tag"
+                        :class="{ 'eqt-settings__preview-tag--url': b.kind === 'url' }"
+                      >{{ b.label || (b.kind === 'tag' ? b.tags.join(', ') : b.url) }}</span>
+                    </template>
                   </div>
                 </template>
               </div>

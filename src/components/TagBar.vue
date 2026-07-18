@@ -2,13 +2,13 @@
 import { ref, computed, nextTick, watch } from 'vue'
 import { useResizeObserver } from '@vueuse/core'
 import Draggable from 'vuedraggable'
-import { ArrowLeft, ChevronLeft, ChevronRight, CopyPlus, ExternalLink, GripVertical, Trash2, Pencil, Check, Settings, Plus, Info, Ellipsis, Palette, SquareDashedMousePointer } from '@lucide/vue'
+import { AlignHorizontalSpaceBetween, ArrowLeft, ArrowLeftRight, ChevronLeft, ChevronRight, CopyPlus, ExternalLink, GripVertical, Trash2, Pencil, Check, Settings, Plus, Info, Ellipsis, Palette, SquareDashedMousePointer } from '@lucide/vue'
 import ContentEditable from 'vue-contenteditable'
 import LineColorSwatch from '@/components/LineColorSwatch.vue'
 import SeparatorSettingsPopup from '@/components/SeparatorSettingsPopup.vue'
 import ContextMenu from '@/components/ContextMenu.vue'
 import SearchPanel from '@/components/search/SearchPanel.vue'
-import { TagState, type Line, type Button, type TagButton } from '@/types'
+import { TagState, type Line, type Button, type ButtonLine, type TagButton, type SpacerButton, type LineTextAlign } from '@/types'
 import { tokenize, buildIdentityIndex, getState as _getState, setTagState, getNextRightClickState } from '@/services/tagState'
 import { lines, profiles, activeProfileIdx, moveLineToProfile, moveButtonToProfile, buttonLineTextAlign, separatorLineTextAlign, dblClickLeft, dblClickRight, dblClickLeftNewTabActive, dblClickRightNewTabActive, useAccentOnInclude, showSearchPanel, type DblClickAction } from '@/services/store'
 import { baseDragOptions, EQT_TAGS_GROUP } from '@/utils/drag'
@@ -223,6 +223,199 @@ function onTagEnd() { setTimeout(() => { tagDragging = false }, 0) }
 function onAddButtonLine() { lines.push({ kind: 'buttons', buttons: [] }) }
 function onAddSeparatorLine() { lines.push({ kind: 'separator' }) }
 
+// --- spacers ---
+
+const DEFAULT_SPACER_WIDTH = 40
+const SPACER_MIN_WIDTH = 8
+const SPACER_SNAP_RANGE = 8
+
+// 新增入口跟 moveButtonToProfile 同承接邏輯：進最後一個普通行、沒有就建一行,
+// 再由使用者在編輯模式拖到目標位置
+function appendSpacer(b: SpacerButton): void {
+  let target: ButtonLine | undefined
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const line = lines[i]
+    if (line.kind === 'buttons') { target = line; break }
+  }
+  if (!target) {
+    target = { kind: 'buttons', buttons: [] }
+    lines.push(target)
+  }
+  target.buttons.push(b)
+}
+
+// 單一「新增空位」入口,點擊冒出兩項選單(固定 / 彈性)——模式在新增時
+// 一次選定,不佔兩顆入口鈕、也不用事後翻右鍵選單切換
+const addSpacerMenuOpen = ref(false)
+const addSpacerMenuX = ref(0)
+const addSpacerMenuY = ref(0)
+const addSpacerMenuAnchorWidth = ref(0)
+const addSpacerMenuAnchorHeight = ref(0)
+const addSpacerTrigger = ref<HTMLButtonElement | null>(null)
+
+function toggleAddSpacerMenu(e: MouseEvent): void {
+  if (addSpacerMenuOpen.value) {
+    addSpacerMenuOpen.value = false
+    return
+  }
+  const trigger = e.currentTarget as HTMLButtonElement
+  const rect = trigger.getBoundingClientRect()
+  addSpacerMenuX.value = rect.left
+  addSpacerMenuY.value = rect.top
+  addSpacerMenuAnchorWidth.value = rect.width
+  addSpacerMenuAnchorHeight.value = rect.height
+  addSpacerTrigger.value = trigger
+  addSpacerMenuOpen.value = true
+}
+
+function onAddSpacer(mode: SpacerButton['mode']): void {
+  appendSpacer(mode === 'fixed'
+    ? { kind: 'spacer', mode, width: DEFAULT_SPACER_WIDTH }
+    : { kind: 'spacer', mode })
+  addSpacerMenuOpen.value = false
+}
+
+// --- fixed spacer resize（smart guide 吸附）---
+// 閉環實測模型：不做 pointerdown 位置快照、不做開環預測。寬度是唯一的
+// 控制量,由「逐次滑鼠增量」累積（lastX 是整個拖曳僅有的狀態）；吸附候選
+// 每次 move 都基於 spacer 當下實測 rect 計算——行內 flex-wrap 折行把 spacer
+// 搬到別的視覺行時,折行改的是位置不是寬度,下一次實測自動反映新現實,
+// 不需要 drift 偵測 / re-anchor。候選公式只用 rect 實測值,對同一佈局重複
+// 計算得同一結果（冪等）,pointermove 快於渲染幀也不會累加誤差。
+// 目標集合仍在 pointerdown 收集一次即可：拖曳只影響自己這一行,其他行的
+// x 座標不動（自己行折行數變化只造成下方行的垂直位移,目標只存 x）。
+//
+// 吸附邊由「行的有效對齊」決定,核心是 gap 恆等式——對齊「按鈕的邊」等價於
+// 對齊「相鄰 item 的反向邊」,兩邊各自的 flex gap 在等式兩側同時出現、互相抵消：
+//   left 行：行首釘死、左緣是錨,預測右緣 = 實測左緣 + 意圖寬 → 右吸右
+//   right 行：行尾釘死在容器右緣、右緣是錨 → 左吸左,把手也放左緣
+//     （右把手在 flex-end 行拖起來手跟內容脫節）
+//   center 行：兩端各以半速對稱伸縮,中心是數學不變量——「兩邊同時對齊」
+//     無解,但單邊對齊可解：左右緣各對自己的目標集合產生吸附候選,取全局
+//     最近者,拖近哪邊就吸哪邊；增量 ×2 讓被拖的邊跟手
+
+const spacerGuideX = ref<number | null>(null)
+const resizingSpacer = ref<SpacerButton | null>(null)
+
+function lineAlignOf(line: ButtonLine): LineTextAlign {
+  return line.style?.textAlign ?? buttonLineTextAlign.value
+}
+
+let spacerResizeCtx: {
+  btn: SpacerButton
+  lastX: number        // 上一次 move 的 clientX——逐次增量的唯一狀態
+  widthF: number       // 意圖寬度的浮點累積（避免逐次 round 漂移）
+  align: LineTextAlign
+  side: 'left' | 'right'   // 被拖的把手（center 行兩緣都有把手）
+  spacerEl: HTMLElement
+  rowsEl: Element
+  targetsL: number[]   // 參照 item 左緣集合,viewport 絕對 x（供 spacer 左緣吸）
+  targetsR: number[]   // 參照 item 右緣集合,viewport 絕對 x（供 spacer 右緣吸）
+} | null = null
+
+function onSpacerGripDown(e: PointerEvent, li: number, b: SpacerButton, align: LineTextAlign, side: 'left' | 'right'): void {
+  e.preventDefault()
+  e.stopPropagation()   // 擋住 sortable 把 grip 拖曳當成排序拖曳
+  const grip = e.currentTarget as HTMLElement
+  grip.setPointerCapture(e.pointerId)
+  const rowsEl = barEl.value?.querySelector('.eqt-tag-bar__line-rows')
+  const spacerEl = grip.parentElement
+  if (!rowsEl || !spacerEl) return
+  // 兩邊都收：left 行只用右緣集、right 行只用左緣集、center 行兩集都用。
+  // 參照 item 含按鈕與兩種 spacer——spacer 也是幾何 item,邊緣同樣是有效參照。
+  // 存 viewport 絕對座標:吸附判斷是「絕對對絕對」做差,天然就是相對量,
+  // 只有畫 guide 線時才換算回 __line-rows 座標系
+  const targetsL: number[] = []
+  const targetsR: number[] = []
+  rowsEl.querySelectorAll('.eqt-tag-bar__line-wrap').forEach((wrap, wi) => {
+    if (wi === li) return
+    wrap.querySelectorAll('.eqt-tag-bar__btn, .eqt-tag-bar__spacer').forEach((item) => {
+      const r = item.getBoundingClientRect()
+      targetsL.push(r.left)
+      targetsR.push(r.right)
+    })
+  })
+  spacerResizeCtx = {
+    btn: b,
+    lastX: e.clientX,
+    widthF: spacerEl.getBoundingClientRect().width,
+    align,
+    side,
+    spacerEl,
+    rowsEl,
+    targetsL,
+    targetsR,
+  }
+  resizingSpacer.value = b
+}
+
+function onSpacerGripMove(e: PointerEvent): void {
+  const ctx = spacerResizeCtx
+  if (!ctx) return
+
+  // 增量方向 / 倍率：被拖的把手在左緣時向左拖增寬（負向）;center 行兩端
+  // 對稱伸縮、各攤一半,×2 才能讓被拖的邊跟手
+  const dir = ctx.side === 'left' ? -1 : 1
+  const scale = (ctx.align === 'center' ? 2 : 1) * dir
+
+  // 上限 = 行容器寬（實測）:間隔永遠不寬於它的行——超過的部分沒有佈局
+  // 意義（後面的按鈕早已被推到下一折行）,只會溢出破版、寫髒資料
+  const maxW = ctx.spacerEl.parentElement?.getBoundingClientRect().width ?? Infinity
+
+  // 意圖寬度 = 逐次增量的浮點累積。吸附命中時不覆蓋它——它一直跟著手走,
+  // 滑出吸附範圍即自然脫離回到 raw
+  ctx.widthF = Math.min(maxW, Math.max(SPACER_MIN_WIDTH, ctx.widthF + (e.clientX - ctx.lastX) * scale))
+  ctx.lastX = e.clientX
+
+  // 吸附 = 候選比較：對每個（目標邊緣, spacer 動邊）解出「吸上去所需的寬度」
+  // 與意圖位置的距離,取範圍內全局最近者。所有公式只用當下實測 rect + 意圖寬,
+  // 冪等——折行把 spacer 搬走後,下一次實測自動基於新位置,無需任何補償
+  const rect = ctx.spacerEl.getBoundingClientRect()
+  const candidates: { d: number; w: number; x: number }[] = []
+  function consider(d: number, w: number, x: number): void {
+    // 超行寬的吸附解一併排除:渲染端 max-width 會擋住實際位置,吸了也到不了目標
+    if (d <= SPACER_SNAP_RANGE && w >= SPACER_MIN_WIDTH && w <= maxW) candidates.push({ d, w, x })
+  }
+  if (ctx.align === 'left') {
+    // 左緣是錨:意圖右緣 = 實測左緣 + 意圖寬
+    const predR = rect.left + ctx.widthF
+    for (const t of ctx.targetsR) consider(Math.abs(t - predR), t - rect.left, t)
+  } else if (ctx.align === 'right') {
+    const predL = rect.right - ctx.widthF
+    for (const t of ctx.targetsL) consider(Math.abs(t - predL), rect.right - t, t)
+  } else {
+    // 中心是不變量:兩緣各距中心「意圖寬 / 2」
+    const center = (rect.left + rect.right) / 2
+    const predR = center + ctx.widthF / 2
+    const predL = center - ctx.widthF / 2
+    for (const t of ctx.targetsR) consider(Math.abs(t - predR), 2 * (t - center), t)
+    for (const t of ctx.targetsL) consider(Math.abs(t - predL), 2 * (center - t), t)
+  }
+
+  let best: { d: number; w: number; x: number } | null = null
+  for (const c of candidates) {
+    if (!best || c.d < best.d) best = c
+  }
+  ctx.btn.width = Math.round(best ? best.w : ctx.widthF)
+  // guide 線畫在 __line-rows 座標系:此刻才把目標的絕對 x 換算過去
+  spacerGuideX.value = best ? best.x - ctx.rowsEl.getBoundingClientRect().left : null
+}
+
+function onSpacerGripUp(): void {
+  spacerResizeCtx = null
+  resizingSpacer.value = null
+  spacerGuideX.value = null
+}
+
+// 非編輯時 spacer 是「空白區域」：右鍵放行給 bar 的雙右鍵動作,不能用
+// .prevent.stop 修飾符（會無條件吞掉事件）
+function onSpacerContextMenu(e: MouseEvent, li: number, ti: number): void {
+  if (!editing.value) return
+  e.preventDefault()
+  e.stopPropagation()
+  openTagMenu(e, li, ti)
+}
+
 // 空行可以直接刪（誤按零損失）；有內容才彈 confirm：
 //   ButtonLine 有 button、SeparatorLine 有 label 或調過 style 視為「有內容」
 function isLineEmpty(line: Line): boolean {
@@ -398,7 +591,7 @@ function moveTag(li: number, ti: number, profileIdx: number): void {
 
 function updateTagColor(value: string | undefined): void {
   const button = tagMenuButton.value
-  if (button) button.color = value
+  if (button && button.kind !== 'spacer') button.color = value
 }
 
 watch(editing, (enabled) => {
@@ -634,8 +827,48 @@ function onRightClick(event: MouseEvent, b: TagButton) {
               @end="onTagEnd"
             >
               <template #item="{ element: b, index: ti }">
+                <div
+                  v-if="b.kind === 'spacer'"
+                  class="eqt-tag-bar__spacer"
+                  :class="[
+                    `eqt-tag-bar__spacer--${b.mode}`,
+                    {
+                      'eqt-tag-bar__spacer--editing': editing,
+                      'eqt-tag-bar__spacer--resizing': resizingSpacer === b,
+                    },
+                  ]"
+                  :style="b.mode === 'fixed' ? { width: `${b.width ?? DEFAULT_SPACER_WIDTH}px` } : undefined"
+                  @contextmenu="onSpacerContextMenu($event, li, ti)"
+                >
+                  <span v-if="editing" class="eqt-tag-bar__spacer-body">{{
+                    b.mode === 'flex'
+                      ? `⇤ ${t('tagbar.spacerFlexLabel')} ⇥`
+                      : (resizingSpacer === b ? `${b.width}px` : '↔')
+                  }}</span>
+                  <!-- 把手放在「拖了會動的邊」：left 行只有右緣動、right 行只有
+                       左緣動、center 行兩緣對稱動所以兩邊都給 -->
+                  <span
+                    v-if="editing && b.mode === 'fixed' && lineAlignOf(line) !== 'left'"
+                    class="eqt-tag-bar__spacer-grip eqt-tag-bar__spacer-grip--left"
+                    :title="t('tagbar.spacerResizeTitle')"
+                    @pointerdown="onSpacerGripDown($event, li, b, lineAlignOf(line), 'left')"
+                    @pointermove="onSpacerGripMove"
+                    @pointerup="onSpacerGripUp"
+                    @pointercancel="onSpacerGripUp"
+                  ></span>
+                  <span
+                    v-if="editing && b.mode === 'fixed' && lineAlignOf(line) !== 'right'"
+                    class="eqt-tag-bar__spacer-grip"
+                    :title="t('tagbar.spacerResizeTitle')"
+                    @pointerdown="onSpacerGripDown($event, li, b, lineAlignOf(line), 'right')"
+                    @pointermove="onSpacerGripMove"
+                    @pointerup="onSpacerGripUp"
+                    @pointercancel="onSpacerGripUp"
+                  ></span>
+                </div>
+
                 <a
-                  v-if="b.kind === 'url' && !editing"
+                  v-else-if="b.kind === 'url' && !editing"
                   :href="b.url"
                   class="eqt-tag-bar__btn eqt-tag-bar__btn--url"
                   :style="b.color ? { '--line-color': b.color } : undefined"
@@ -734,6 +967,13 @@ function onRightClick(event: MouseEvent, b: TagButton) {
             </ContextMenu>
           </div>
         </template>
+        <template #footer>
+          <div
+            v-if="spacerGuideX !== null"
+            class="eqt-tag-bar__spacer-guide"
+            :style="{ left: `${spacerGuideX}px` }"
+          ></div>
+        </template>
       </Draggable>
       <ContextMenu
         v-model:open="tagMenuOpen"
@@ -751,7 +991,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
           <button type="button" class="eqt-context-menu__item" @click="duplicateTag(tagMenuLineIdx, tagMenuButtonIdx)">
             <CopyPlus :size="14" class="eqt-context-menu__icon" /><span class="eqt-context-menu__label">{{ t('tagbar.duplicateTag') }}</span>
           </button>
-          <button type="button" class="eqt-context-menu__item" @click="openTagMenuView('color', $event)">
+          <button v-if="tagMenuButton?.kind !== 'spacer'" type="button" class="eqt-context-menu__item" @click="openTagMenuView('color', $event)">
             <Palette :size="14" class="eqt-context-menu__icon" /><span class="eqt-context-menu__label">{{ t('common.itemColor') }}</span>
           </button>
           <div class="eqt-context-menu__separator" />
@@ -775,7 +1015,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
             ><span class="eqt-context-menu__label">{{ profile.name }}</span></button>
           </template>
           <LineColorSwatch
-            v-else-if="tagMenuView === 'color' && tagMenuButton"
+            v-else-if="tagMenuView === 'color' && tagMenuButton && tagMenuButton.kind !== 'spacer'"
             embedded
             :model-value="tagMenuButton.color"
             @update:model-value="updateTagColor"
@@ -806,6 +1046,31 @@ function onRightClick(event: MouseEvent, b: TagButton) {
             type="button"
             @click="onAddSeparatorLine"
           ><Plus :size="12" /> {{ t('tagbar.addSeparatorLine') }}</button>
+          <button
+            class="eqt-tag-bar__line-add-btn"
+            type="button"
+            aria-haspopup="menu"
+            :aria-expanded="addSpacerMenuOpen"
+            @click="toggleAddSpacerMenu"
+          ><Plus :size="12" /> {{ t('tagbar.addSpacer') }}</button>
+          <ContextMenu
+            v-model:open="addSpacerMenuOpen"
+            :x="addSpacerMenuX"
+            :y="addSpacerMenuY"
+            :anchor-width="addSpacerMenuAnchorWidth"
+            :anchor-height="addSpacerMenuAnchorHeight"
+            :ignore="[addSpacerTrigger]"
+            auto-focus
+            :aria-label="t('tagbar.addSpacer')"
+            placement="top-start"
+          >
+            <button type="button" class="eqt-context-menu__item" @click="onAddSpacer('fixed')">
+              <ArrowLeftRight :size="14" class="eqt-context-menu__icon" /><span class="eqt-context-menu__label">{{ t('tagbar.spacerModeFixed') }}</span>
+            </button>
+            <button type="button" class="eqt-context-menu__item" @click="onAddSpacer('flex')">
+              <AlignHorizontalSpaceBetween :size="14" class="eqt-context-menu__icon" /><span class="eqt-context-menu__label">{{ t('tagbar.spacerModeFlex') }}</span>
+            </button>
+          </ContextMenu>
         </div>
         <div class="eqt-tag-bar__controls">
           <div class="eqt-tag-bar__ctrl-split">
@@ -953,6 +1218,8 @@ function onRightClick(event: MouseEvent, b: TagButton) {
   }
 
   &__line-rows {
+    // spacer resize guide（縱貫多行的吸附輔助線）的定位基準
+    position: relative;
     display: flex;
     flex-direction: column;
     // 列間距歸屬到各 row 的 padding，避免 hover / drag hit area 中間出現死區。
@@ -1474,6 +1741,102 @@ function onRightClick(event: MouseEvent, b: TagButton) {
       opacity: 0.8;
       box-shadow: var(--eqt-shadow-drag);
     }
+  }
+
+  // 行內空位：非編輯時純佔位、完全隱形；編輯時畫虛線框給拖曳 / 右鍵一個
+  // 可視目標。flex 變體吃掉整行剩餘空間（把兩側按鈕推開）、fixed 變體寬度
+  // 由使用者拖 grip 調出的 px 快照（inline style 設定）。
+  &__spacer {
+    position: relative;
+    box-sizing: border-box;
+    height: var(--eqt-row-h);
+
+    &--flex {
+      flex: 1 1 0;
+      min-width: 8px;
+    }
+
+    &--fixed {
+      flex: 0 0 auto;
+      // 渲染端保險:不管資料存了多大的 width(舊髒資料、換窄視窗載入),
+      // 都 clamp 在行容器寬內,不溢出破版
+      max-width: 100%;
+    }
+
+    &--editing {
+      border: var(--eqt-border-width) dashed color-mix(in srgb, var(--eqt-border) 60%, transparent);
+      border-radius: var(--eqt-radius-sm);
+      cursor: grab;
+    }
+
+    // resize 中框線轉實線 + 綠色，跟拖曳排序的視覺（ghost / chosen）區分
+    &--resizing {
+      border-color: var(--eqt-green);
+      border-style: solid;
+    }
+  }
+
+  &__spacer-body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--eqt-text-hint);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  // 右緣 resize 把手：熱區向外擴 6px 好抓,視覺上只露 4px 圓條
+  &__spacer-grip {
+    position: absolute;
+    top: calc(-1 * var(--eqt-border-width));
+    bottom: calc(-1 * var(--eqt-border-width));
+    right: -6px;
+    width: 12px;
+    cursor: ew-resize;
+    touch-action: none;
+    z-index: 2;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 5px;
+      bottom: 5px;
+      right: 5px;
+      width: 4px;
+      border-radius: 2px;
+      background: var(--eqt-border);
+    }
+
+    &:hover::after {
+      background: var(--eqt-text-hint);
+    }
+
+    // 右對齊行的鏡像：flex-end 下右緣是不動錨點、左緣才是拖了會動的邊,
+    // 把手移到左緣才不會「手在右邊拖、內容往左跑」
+    &--left {
+      right: auto;
+      left: -6px;
+
+      &::after {
+        right: auto;
+        left: 5px;
+      }
+    }
+  }
+
+  // smart guide 吸附輔助線：resize 命中其他行邊緣時縱貫整個行區
+  &__spacer-guide {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--eqt-status-or);
+    pointer-events: none;
+    z-index: 5;
   }
 
   &__ctrl {

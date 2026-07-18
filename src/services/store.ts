@@ -373,6 +373,7 @@ function isValidButton(x: unknown): x is Button {
   const o = x as any
   if (o.kind === 'tag') return Array.isArray(o.tags) && o.tags.every((t: unknown) => typeof t === 'string' && t !== '')
   if (o.kind === 'url') return typeof o.url === 'string' && o.url !== ''
+  if (o.kind === 'spacer') return o.mode === 'flex' || o.mode === 'fixed'
   return false
 }
 
