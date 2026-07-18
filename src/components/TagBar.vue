@@ -281,6 +281,18 @@ function onAddSpacer(mode: SpacerButton['mode']): void {
 
 const spacerGuideX = ref<number | null>(null)
 const resizingSpacer = ref<SpacerButton | null>(null)
+// 拖曳中的顯示寬——故意不寫進 lines 樹:store 的自動存檔 watcher 沒有
+// debounce,每次 pointermove 寫 btn.width 會觸發「全 profile 深拷貝 +
+// JSON 序列化 + GM 寫入」的風暴。拖曳期間只更新這個 ref,pointerup 才
+// commit 進 btn.width——整場拖曳只存檔一次
+const resizingWidth = ref<number | null>(null)
+
+// 拖曳中以 resizingWidth 為準,其餘時候讀資料值;fallback 同時涵蓋
+// 手編 JSON 沒帶 width 的資料(避免顯示 undefinedpx)
+function spacerRenderWidth(b: SpacerButton): number {
+  if (resizingSpacer.value === b && resizingWidth.value !== null) return resizingWidth.value
+  return b.width ?? DEFAULT_SPACER_WIDTH
+}
 
 function lineAlignOf(line: ButtonLine): LineTextAlign {
   return line.style?.textAlign ?? buttonLineTextAlign.value
@@ -288,6 +300,8 @@ function lineAlignOf(line: ButtonLine): LineTextAlign {
 
 let spacerResizeCtx: {
   btn: SpacerButton
+  pointerId: number    // 一次只允許一場 resize:move / up 都驗 pointerId,
+                       // 第二根手指按上別顆把手不會覆寫進行中的 session
   lastX: number        // 上一次 move 的 clientX——逐次增量的唯一狀態
   widthF: number       // 意圖寬度的浮點累積（避免逐次 round 漂移）
   align: LineTextAlign
@@ -301,6 +315,7 @@ let spacerResizeCtx: {
 function onSpacerGripDown(e: PointerEvent, li: number, b: SpacerButton, align: LineTextAlign, side: 'left' | 'right'): void {
   e.preventDefault()
   e.stopPropagation()   // 擋住 sortable 把 grip 拖曳當成排序拖曳
+  if (spacerResizeCtx) return   // 已有進行中的 resize(多指):忽略後來者
   const grip = e.currentTarget as HTMLElement
   grip.setPointerCapture(e.pointerId)
   const rowsEl = barEl.value?.querySelector('.eqt-tag-bar__line-rows')
@@ -320,10 +335,12 @@ function onSpacerGripDown(e: PointerEvent, li: number, b: SpacerButton, align: L
       targetsR.push(r.right)
     })
   })
+  const startWidth = spacerEl.getBoundingClientRect().width
   spacerResizeCtx = {
     btn: b,
+    pointerId: e.pointerId,
     lastX: e.clientX,
-    widthF: spacerEl.getBoundingClientRect().width,
+    widthF: startWidth,
     align,
     side,
     spacerEl,
@@ -332,11 +349,12 @@ function onSpacerGripDown(e: PointerEvent, li: number, b: SpacerButton, align: L
     targetsR,
   }
   resizingSpacer.value = b
+  resizingWidth.value = Math.round(startWidth)
 }
 
 function onSpacerGripMove(e: PointerEvent): void {
   const ctx = spacerResizeCtx
-  if (!ctx) return
+  if (!ctx || e.pointerId !== ctx.pointerId) return
   const rect = ctx.spacerEl.getBoundingClientRect()
   const result = computeSpacerResize({
     align: ctx.align,
@@ -352,17 +370,29 @@ function onSpacerGripMove(e: PointerEvent): void {
   })
   ctx.lastX = e.clientX
   ctx.widthF = result.widthF
-  ctx.btn.width = result.width
+  resizingWidth.value = result.width
   // guide 線畫在 __line-rows 座標系:此刻才把目標的絕對 x 換算過去
   spacerGuideX.value = result.guideX !== null
     ? result.guideX - ctx.rowsEl.getBoundingClientRect().left
     : null
 }
 
-function onSpacerGripUp(): void {
+// commit + 清理。除了 pointerup / pointercancel,退出編輯模式也走這裡——
+// grip 是 v-if="editing" 的,拖曳中按「完成」會讓元素 unmount、pointerup
+// 永遠送不到,不清的話 resizing 視覺會殘留到下次進編輯
+function finishSpacerResize(): void {
+  const ctx = spacerResizeCtx
+  if (!ctx) return
+  if (resizingWidth.value !== null) ctx.btn.width = resizingWidth.value
   spacerResizeCtx = null
   resizingSpacer.value = null
+  resizingWidth.value = null
   spacerGuideX.value = null
+}
+
+function onSpacerGripUp(e: PointerEvent): void {
+  if (spacerResizeCtx && e.pointerId !== spacerResizeCtx.pointerId) return
+  finishSpacerResize()
 }
 
 // 非編輯時 spacer 是「空白區域」：右鍵放行給 bar 的雙右鍵動作,不能用
@@ -556,6 +586,7 @@ watch(editing, (enabled) => {
   if (enabled) return
   lineMenuOpen.value = false
   tagMenuOpen.value = false
+  finishSpacerResize()
 })
 
 // 同 focusLineMenuTriggerOrFallback：按鈕被刪掉 / 移走時聚焦同行補位
@@ -795,13 +826,13 @@ function onRightClick(event: MouseEvent, b: TagButton) {
                       'eqt-tag-bar__spacer--resizing': resizingSpacer === b,
                     },
                   ]"
-                  :style="b.mode === 'fixed' ? { width: `${b.width ?? DEFAULT_SPACER_WIDTH}px` } : undefined"
+                  :style="b.mode === 'fixed' ? { width: `${spacerRenderWidth(b)}px` } : undefined"
                   @contextmenu="onSpacerContextMenu($event, li, ti)"
                 >
                   <span v-if="editing" class="eqt-tag-bar__spacer-body">{{
                     b.mode === 'flex'
                       ? `⇤ ${t('tagbar.spacerFlexLabel')} ⇥`
-                      : (resizingSpacer === b ? `${b.width}px` : '↔')
+                      : (resizingSpacer === b ? `${spacerRenderWidth(b)}px` : '↔')
                   }}</span>
                   <!-- 把手放在「拖了會動的邊」：left 行只有右緣動、right 行只有
                        左緣動、center 行兩緣對稱動所以兩邊都給 -->
