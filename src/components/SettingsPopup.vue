@@ -30,6 +30,7 @@ import {
   GALLERY_DBL_CLICK_ACTIONS, type GalleryDblClickAction,
 } from '@/services/store'
 import { TAG_STYLE_PRESETS, currentTagStyleClass } from '@/composables/useTagStyle'
+import { buttonPreviewLabel } from '@/utils/buttonPreview'
 import ProfileListItem from '@/components/ProfileListItem.vue'
 import ProfileJsonEditor from '@/components/ProfileJsonEditor.vue'
 import SettingsAboutTab from '@/components/SettingsAboutTab.vue'
@@ -498,7 +499,7 @@ function onEditorPurge() {
                         v-if="b.kind !== 'spacer'"
                         class="eqt-settings__preview-tag"
                         :class="{ 'eqt-settings__preview-tag--url': b.kind === 'url' }"
-                      >{{ b.label || (b.kind === 'tag' ? b.tags.join(', ') : b.url) }}</span>
+                      >{{ buttonPreviewLabel(b) }}</span>
                     </template>
                   </div>
                 </template>
@@ -797,7 +798,7 @@ function onEditorPurge() {
                         v-if="b.kind !== 'spacer'"
                         class="eqt-settings__preview-tag"
                         :class="{ 'eqt-settings__preview-tag--url': b.kind === 'url' }"
-                      >{{ b.label || (b.kind === 'tag' ? b.tags.join(', ') : b.url) }}</span>
+                      >{{ buttonPreviewLabel(b) }}</span>
                     </template>
                   </div>
                 </template>

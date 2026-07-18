@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, watch } from 'vue'
+import { ref, computed, nextTick, watch, type Ref } from 'vue'
 import { useResizeObserver } from '@vueuse/core'
 import Draggable from 'vuedraggable'
 import { AlignHorizontalSpaceBetween, ArrowLeft, ArrowLeftRight, ChevronLeft, ChevronRight, CopyPlus, ExternalLink, GripVertical, Trash2, Pencil, Check, Settings, Plus, Info, Ellipsis, Palette, SquareDashedMousePointer } from '@lucide/vue'
@@ -10,7 +10,7 @@ import ContextMenu from '@/components/ContextMenu.vue'
 import SearchPanel from '@/components/search/SearchPanel.vue'
 import { TagState, type Line, type Button, type ButtonLine, type TagButton, type SpacerButton, type LineTextAlign } from '@/types'
 import { tokenize, buildIdentityIndex, getState as _getState, setTagState, getNextRightClickState } from '@/services/tagState'
-import { lines, profiles, activeProfileIdx, moveLineToProfile, moveButtonToProfile, buttonLineTextAlign, separatorLineTextAlign, dblClickLeft, dblClickRight, dblClickLeftNewTabActive, dblClickRightNewTabActive, useAccentOnInclude, showSearchPanel, type DblClickAction } from '@/services/store'
+import { lines, profiles, activeProfileIdx, moveLineToProfile, moveButtonToProfile, appendToLastButtonLine, buttonLineTextAlign, separatorLineTextAlign, dblClickLeft, dblClickRight, dblClickLeftNewTabActive, dblClickRightNewTabActive, useAccentOnInclude, showSearchPanel, type DblClickAction } from '@/services/store'
 import { baseDragOptions, EQT_TAGS_GROUP } from '@/utils/drag'
 import { dismissTerms, recordSubmitAndFlush } from '@/services/search/searchSession'
 import { t } from '@/composables/useI18n'
@@ -226,20 +226,8 @@ function onAddSeparatorLine() { lines.push({ kind: 'separator' }) }
 
 // --- spacers ---
 
-// 新增入口跟 moveButtonToProfile 同承接邏輯：進最後一個普通行、沒有就建一行,
-// 再由使用者在編輯模式拖到目標位置
-function appendSpacer(b: SpacerButton): void {
-  let target: ButtonLine | undefined
-  for (let i = lines.length - 1; i >= 0; i--) {
-    const line = lines[i]
-    if (line.kind === 'buttons') { target = line; break }
-  }
-  if (!target) {
-    target = { kind: 'buttons', buttons: [] }
-    lines.push(target)
-  }
-  target.buttons.push(b)
-}
+// 新增入口跟 moveButtonToProfile 同一條承接政策（appendToLastButtonLine）:
+// 進最後一個普通行、沒有就建一行,再由使用者在編輯模式拖到目標位置
 
 // 單一「新增空位」入口,點擊冒出兩項選單(固定 / 彈性)——模式在新增時
 // 一次選定,不佔兩顆入口鈕、也不用事後翻右鍵選單切換
@@ -256,17 +244,24 @@ function toggleAddSpacerMenu(e: MouseEvent): void {
     return
   }
   const trigger = e.currentTarget as HTMLButtonElement
-  const rect = trigger.getBoundingClientRect()
-  addSpacerMenuX.value = rect.left
-  addSpacerMenuY.value = rect.top
-  addSpacerMenuAnchorWidth.value = rect.width
-  addSpacerMenuAnchorHeight.value = rect.height
+  captureMenuAnchor(trigger, addSpacerMenuX, addSpacerMenuY, addSpacerMenuAnchorWidth, addSpacerMenuAnchorHeight)
   addSpacerTrigger.value = trigger
   addSpacerMenuOpen.value = true
 }
 
+// 「量 trigger rect 寫進 x / y / anchor 尺寸 refs」的共用步驟——
+// lineMenu 與 addSpacerMenu 都以 trigger 元素為 anchor(tagMenu 以滑鼠
+// 座標為 anchor,不走這裡)
+function captureMenuAnchor(trigger: HTMLElement, x: Ref<number>, y: Ref<number>, width: Ref<number>, height: Ref<number>): void {
+  const rect = trigger.getBoundingClientRect()
+  x.value = rect.left
+  y.value = rect.top
+  width.value = rect.width
+  height.value = rect.height
+}
+
 function onAddSpacer(mode: SpacerButton['mode']): void {
-  appendSpacer(mode === 'fixed'
+  appendToLastButtonLine(lines, mode === 'fixed'
     ? { kind: 'spacer', mode, width: DEFAULT_SPACER_WIDTH }
     : { kind: 'spacer', mode })
   addSpacerMenuOpen.value = false
@@ -442,12 +437,8 @@ function toggleLineMenu(e: MouseEvent, li: number): void {
     lineMenuOpen.value = false
     return
   }
-  const rect = trigger.getBoundingClientRect()
   lineMenuIdx.value = li
-  lineMenuX.value = rect.left
-  lineMenuY.value = rect.top
-  lineMenuAnchorWidth.value = rect.width
-  lineMenuAnchorHeight.value = rect.height
+  captureMenuAnchor(trigger, lineMenuX, lineMenuY, lineMenuAnchorWidth, lineMenuAnchorHeight)
   lineMenuView.value = 'menu'
   lineMenuTrigger.value = trigger
   lineMenuDrillTrigger.value = null

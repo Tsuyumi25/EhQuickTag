@@ -626,6 +626,20 @@ export function moveLineToProfile(lineIdx: number, targetProfileIdx: number): vo
   saveProfiles()
 }
 
+// 把 button 追加到 lineList 的最後一個普通行；只有 separator 或空列表時
+// 建一個普通行承接。跨 profile 搬移與 TagBar 的「新增空位」入口共用這條
+// 承接政策——政策若要改（例如跳過某類行、限制每行數量）只改這裡。
+export function appendToLastButtonLine(lineList: Line[], button: Button): void {
+  for (let i = lineList.length - 1; i >= 0; i--) {
+    const candidate = lineList[i]
+    if (candidate.kind === 'buttons') {
+      candidate.buttons.push(button)
+      return
+    }
+  }
+  lineList.push({ kind: 'buttons', buttons: [button] })
+}
+
 export function moveButtonToProfile(lineIdx: number, buttonIdx: number, targetProfileIdx: number): void {
   const sourceLine = lines[lineIdx]
   if (!sourceLine || sourceLine.kind !== 'buttons' || buttonIdx < 0 || buttonIdx >= sourceLine.buttons.length) return
@@ -633,21 +647,8 @@ export function moveButtonToProfile(lineIdx: number, buttonIdx: number, targetPr
 
   const [moved] = sourceLine.buttons.splice(buttonIdx, 1)
   const targetProfile = profiles[targetProfileIdx]
-  // Profile 是目標層級，沒有要求使用者再選一次 row：追加到最後一個普通行；
-  // 若目標只有 separator，就建立一個普通行承接。
-  let targetLine: ButtonLine | undefined
-  for (let i = targetProfile.lines.length - 1; i >= 0; i--) {
-    const candidate = targetProfile.lines[i]
-    if (candidate.kind === 'buttons') {
-      targetLine = candidate
-      break
-    }
-  }
-  if (!targetLine) {
-    targetLine = { kind: 'buttons', buttons: [] }
-    targetProfile.lines.push(targetLine)
-  }
-  targetLine.buttons.push(JSON.parse(JSON.stringify(moved)) as Button)
+  // Profile 是目標層級，沒有要求使用者再選一次 row
+  appendToLastButtonLine(targetProfile.lines, JSON.parse(JSON.stringify(moved)) as Button)
   if (targetProfile.isDefault) targetProfile.isDefault = false
   saveProfiles()
 }

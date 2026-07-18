@@ -7,6 +7,7 @@ import { buttonLineTextAlign, isValidLine } from '@/services/store'
 import { textAlignToJustify } from '@/utils/align'
 import { t } from '@/composables/useI18n'
 import { currentTagStyleClass } from '@/composables/useTagStyle'
+import { buttonPreviewLabel } from '@/utils/buttonPreview'
 
 const props = defineProps<{
   mode: 'normal' | 'deleted' | 'corrupted'
@@ -98,7 +99,7 @@ function onEditorExport() {
               v-if="b.kind !== 'spacer'"
               class="eqt-settings__preview-tag"
               :class="{ 'eqt-settings__preview-tag--url': b.kind === 'url' }"
-            >{{ b.label || (b.kind === 'tag' ? b.tags.join(', ') : b.url) || t('settings.emptyTag') }}</span>
+            >{{ buttonPreviewLabel(b) || t('settings.emptyTag') }}</span>
           </template>
         </div>
       </template>
