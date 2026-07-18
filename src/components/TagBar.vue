@@ -396,7 +396,13 @@ function onSpacerGripUp(e: PointerEvent): void {
 }
 
 // 非編輯時 spacer 是「空白區域」：右鍵放行給 bar 的雙右鍵動作,不能用
-// .prevent.stop 修飾符（會無條件吞掉事件）
+// .prevent.stop 修飾符（會無條件吞掉事件）。
+// 鍵盤可達性:編輯模式的 spacer 有 tabindex=0,Tab 過去按 Menu 鍵 /
+// Shift+F10 瀏覽器會在 focused 元素上發 contextmenu、走進這裡開選單
+// (刪除 / 複製 / 搬移),跟 tag / url 按鈕的鍵盤路徑對齊。
+// ⚠️ 這段說明必須放 script:vuedraggable 的 item slot 要求每個 item
+// 恰好渲染一個節點,template 裡的 HTML 註解會變成 comment vnode、
+// 觸發它的 "Item slot must have only one child" throw,mount 直接炸
 function onSpacerContextMenu(e: MouseEvent, li: number, ti: number): void {
   if (!editing.value) return
   e.preventDefault()
@@ -590,12 +596,15 @@ watch(editing, (enabled) => {
 })
 
 // 同 focusLineMenuTriggerOrFallback：按鈕被刪掉 / 移走時聚焦同行補位
-// 按鈕，整行清空則退到行操作鈕，最後退到編輯切換鈕
+// 按鈕，整行清空則退到行操作鈕，最後退到編輯切換鈕。
+// selector 必須連 spacer 一起收：tagMenuButtonIdx 是 line.buttons 的索引,
+// 行內有 spacer 時「只查按鈕」的 NodeList 會跟 buttons 索引空間錯位,
+// 焦點落到非相鄰的按鈕上(spacer 在編輯模式有 tabindex,可聚焦)
 function focusTagMenuTriggerOrFallback(trigger: HTMLButtonElement | null): void {
   if (!trigger) return
   if (trigger.isConnected) { trigger.focus(); return }
   const wrap = barEl.value?.querySelectorAll('.eqt-tag-bar__line-wrap')[tagMenuLineIdx.value]
-  const buttons = wrap?.querySelectorAll<HTMLElement>('.eqt-tag-bar__btn') ?? []
+  const buttons = wrap?.querySelectorAll<HTMLElement>('.eqt-tag-bar__btn, .eqt-tag-bar__spacer') ?? []
   const fallback = buttons[Math.min(tagMenuButtonIdx.value, buttons.length - 1)]
     ?? wrap?.querySelector<HTMLElement>('.eqt-tag-bar__line-actions')
     ?? editToggleEl.value
@@ -827,6 +836,9 @@ function onRightClick(event: MouseEvent, b: TagButton) {
                     },
                   ]"
                   :style="b.mode === 'fixed' ? { width: `${spacerRenderWidth(b)}px` } : undefined"
+                  :tabindex="editing ? 0 : undefined"
+                  :role="editing ? 'button' : undefined"
+                  :aria-label="editing ? t(b.mode === 'flex' ? 'tagbar.spacerModeFlex' : 'tagbar.spacerModeFixed') : undefined"
                   @contextmenu="onSpacerContextMenu($event, li, ti)"
                 >
                   <span v-if="editing" class="eqt-tag-bar__spacer-body">{{
@@ -1756,6 +1768,11 @@ function onRightClick(event: MouseEvent, b: TagButton) {
       border: var(--eqt-border-width) dashed color-mix(in srgb, var(--eqt-border) 60%, transparent);
       border-radius: var(--eqt-radius-sm);
       cursor: grab;
+
+      &:focus-visible {
+        outline: var(--eqt-border-width) solid var(--eqt-green);
+        outline-offset: 1px;
+      }
     }
 
     // resize 中框線轉實線 + 綠色，跟拖曳排序的視覺（ghost / chosen）區分
