@@ -15,6 +15,7 @@ import { baseDragOptions, EQT_TAGS_GROUP } from '@/utils/drag'
 import { dismissTerms, recordSubmitAndFlush } from '@/services/search/searchSession'
 import { t } from '@/composables/useI18n'
 import { currentTagStyleClass } from '@/composables/useTagStyle'
+import { computeSpacerResize, DEFAULT_SPACER_WIDTH } from '@/services/spacerResize'
 
 const ACTION_KEYS: Record<DblClickAction, string> = {
   search: 'tagbar.search',
@@ -225,10 +226,6 @@ function onAddSeparatorLine() { lines.push({ kind: 'separator' }) }
 
 // --- spacers ---
 
-const DEFAULT_SPACER_WIDTH = 40
-const SPACER_MIN_WIDTH = 8
-const SPACER_SNAP_RANGE = 8
-
 // 新增入口跟 moveButtonToProfile 同承接邏輯：進最後一個普通行、沒有就建一行,
 // 再由使用者在編輯模式拖到目標位置
 function appendSpacer(b: SpacerButton): void {
@@ -275,24 +272,12 @@ function onAddSpacer(mode: SpacerButton['mode']): void {
   addSpacerMenuOpen.value = false
 }
 
-// --- fixed spacer resize（smart guide 吸附）---
-// 閉環實測模型：不做 pointerdown 位置快照、不做開環預測。寬度是唯一的
-// 控制量,由「逐次滑鼠增量」累積（lastX 是整個拖曳僅有的狀態）；吸附候選
-// 每次 move 都基於 spacer 當下實測 rect 計算——行內 flex-wrap 折行把 spacer
-// 搬到別的視覺行時,折行改的是位置不是寬度,下一次實測自動反映新現實,
-// 不需要 drift 偵測 / re-anchor。候選公式只用 rect 實測值,對同一佈局重複
-// 計算得同一結果（冪等）,pointermove 快於渲染幀也不會累加誤差。
-// 目標集合仍在 pointerdown 收集一次即可：拖曳只影響自己這一行,其他行的
+// --- fixed spacer resize ---
+// 數學核心（閉環實測 + gap 恆等式吸附）住在 services/spacerResize.ts 的
+// 純函式裡,這邊只當薄 DOM adapter：pointerdown 收集吸附目標、pointermove
+// 量 rect 餵給 computeSpacerResize、把結果套回資料與 guide 線。
+// 目標集合在 pointerdown 收集一次即可：拖曳只影響自己這一行,其他行的
 // x 座標不動（自己行折行數變化只造成下方行的垂直位移,目標只存 x）。
-//
-// 吸附邊由「行的有效對齊」決定,核心是 gap 恆等式——對齊「按鈕的邊」等價於
-// 對齊「相鄰 item 的反向邊」,兩邊各自的 flex gap 在等式兩側同時出現、互相抵消：
-//   left 行：行首釘死、左緣是錨,預測右緣 = 實測左緣 + 意圖寬 → 右吸右
-//   right 行：行尾釘死在容器右緣、右緣是錨 → 左吸左,把手也放左緣
-//     （右把手在 flex-end 行拖起來手跟內容脫節）
-//   center 行：兩端各以半速對稱伸縮,中心是數學不變量——「兩邊同時對齊」
-//     無解,但單邊對齊可解：左右緣各對自己的目標集合產生吸附候選,取全局
-//     最近者,拖近哪邊就吸哪邊；增量 ×2 讓被拖的邊跟手
 
 const spacerGuideX = ref<number | null>(null)
 const resizingSpacer = ref<SpacerButton | null>(null)
@@ -352,53 +337,26 @@ function onSpacerGripDown(e: PointerEvent, li: number, b: SpacerButton, align: L
 function onSpacerGripMove(e: PointerEvent): void {
   const ctx = spacerResizeCtx
   if (!ctx) return
-
-  // 增量方向 / 倍率：被拖的把手在左緣時向左拖增寬（負向）;center 行兩端
-  // 對稱伸縮、各攤一半,×2 才能讓被拖的邊跟手
-  const dir = ctx.side === 'left' ? -1 : 1
-  const scale = (ctx.align === 'center' ? 2 : 1) * dir
-
-  // 上限 = 行容器寬（實測）:間隔永遠不寬於它的行——超過的部分沒有佈局
-  // 意義（後面的按鈕早已被推到下一折行）,只會溢出破版、寫髒資料
-  const maxW = ctx.spacerEl.parentElement?.getBoundingClientRect().width ?? Infinity
-
-  // 意圖寬度 = 逐次增量的浮點累積。吸附命中時不覆蓋它——它一直跟著手走,
-  // 滑出吸附範圍即自然脫離回到 raw
-  ctx.widthF = Math.min(maxW, Math.max(SPACER_MIN_WIDTH, ctx.widthF + (e.clientX - ctx.lastX) * scale))
-  ctx.lastX = e.clientX
-
-  // 吸附 = 候選比較：對每個（目標邊緣, spacer 動邊）解出「吸上去所需的寬度」
-  // 與意圖位置的距離,取範圍內全局最近者。所有公式只用當下實測 rect + 意圖寬,
-  // 冪等——折行把 spacer 搬走後,下一次實測自動基於新位置,無需任何補償
   const rect = ctx.spacerEl.getBoundingClientRect()
-  const candidates: { d: number; w: number; x: number }[] = []
-  function consider(d: number, w: number, x: number): void {
-    // 超行寬的吸附解一併排除:渲染端 max-width 會擋住實際位置,吸了也到不了目標
-    if (d <= SPACER_SNAP_RANGE && w >= SPACER_MIN_WIDTH && w <= maxW) candidates.push({ d, w, x })
-  }
-  if (ctx.align === 'left') {
-    // 左緣是錨:意圖右緣 = 實測左緣 + 意圖寬
-    const predR = rect.left + ctx.widthF
-    for (const t of ctx.targetsR) consider(Math.abs(t - predR), t - rect.left, t)
-  } else if (ctx.align === 'right') {
-    const predL = rect.right - ctx.widthF
-    for (const t of ctx.targetsL) consider(Math.abs(t - predL), rect.right - t, t)
-  } else {
-    // 中心是不變量:兩緣各距中心「意圖寬 / 2」
-    const center = (rect.left + rect.right) / 2
-    const predR = center + ctx.widthF / 2
-    const predL = center - ctx.widthF / 2
-    for (const t of ctx.targetsR) consider(Math.abs(t - predR), 2 * (t - center), t)
-    for (const t of ctx.targetsL) consider(Math.abs(t - predL), 2 * (center - t), t)
-  }
-
-  let best: { d: number; w: number; x: number } | null = null
-  for (const c of candidates) {
-    if (!best || c.d < best.d) best = c
-  }
-  ctx.btn.width = Math.round(best ? best.w : ctx.widthF)
+  const result = computeSpacerResize({
+    align: ctx.align,
+    side: ctx.side,
+    widthF: ctx.widthF,
+    deltaX: e.clientX - ctx.lastX,
+    rectLeft: rect.left,
+    rectRight: rect.right,
+    targetsL: ctx.targetsL,
+    targetsR: ctx.targetsR,
+    // 上限 = 行容器寬（實測）:間隔永遠不寬於它的行
+    maxWidth: ctx.spacerEl.parentElement?.getBoundingClientRect().width ?? Infinity,
+  })
+  ctx.lastX = e.clientX
+  ctx.widthF = result.widthF
+  ctx.btn.width = result.width
   // guide 線畫在 __line-rows 座標系:此刻才把目標的絕對 x 換算過去
-  spacerGuideX.value = best ? best.x - ctx.rowsEl.getBoundingClientRect().left : null
+  spacerGuideX.value = result.guideX !== null
+    ? result.guideX - ctx.rowsEl.getBoundingClientRect().left
+    : null
 }
 
 function onSpacerGripUp(): void {
