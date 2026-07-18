@@ -89,7 +89,7 @@ function onEditorExport() {
     >
       <template v-for="(line, li) in editorPreview" :key="li">
         <div
-          v-if="line.kind === 'buttons' && line.buttons.length"
+          v-if="line.kind === 'buttons' && line.buttons.some(b => b.kind !== 'spacer')"
           class="eqt-settings__preview-line"
           :style="{ justifyContent: textAlignToJustify(line.style?.textAlign ?? buttonLineTextAlign) }"
         >

@@ -1795,13 +1795,15 @@ function onRightClick(event: MouseEvent, b: TagButton) {
     user-select: none;
   }
 
-  // 右緣 resize 把手：熱區向外擴 6px 好抓,視覺上只露 4px 圓條
+  // 右緣 resize 把手：熱區向外擴 6px 好抓,視覺上只露 4px 圓條。
+  // 寬度 cap 在「spacer 半寬 + 外擴」內:居中行雙把手在接近最小寬的間隔上,
+  // 向內的熱區各不超過半寬,兩把手不重疊搶點
   &__spacer-grip {
     position: absolute;
     top: calc(-1 * var(--eqt-border-width));
     bottom: calc(-1 * var(--eqt-border-width));
     right: -6px;
-    width: 12px;
+    width: min(12px, calc(50% + 6px));
     cursor: ew-resize;
     touch-action: none;
     z-index: 2;

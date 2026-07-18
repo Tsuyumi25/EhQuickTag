@@ -101,7 +101,8 @@ const localeOptions: { value: Locale; label: string }[] = [
 const previewLines = computed(() => getDefaultLines())
 
 function tagCount(lines: Line[]): number {
-  return lines.reduce((sum, l) => sum + (l.kind === 'buttons' ? l.buttons.length : 0), 0)
+  // spacer 是排版物不是標籤,不計入 profile 徽章數
+  return lines.reduce((sum, l) => sum + (l.kind === 'buttons' ? l.buttons.filter(b => b.kind !== 'spacer').length : 0), 0)
 }
 
 const tagCounts = computed(() => profiles.map((p, i) =>
@@ -488,7 +489,7 @@ function onEditorPurge() {
               <div class="eqt-settings__font-preview" :class="currentTagStyleClass">
                 <template v-for="(line, li) in previewLines" :key="li">
                   <div
-                    v-if="line.kind === 'buttons' && line.buttons.length"
+                    v-if="line.kind === 'buttons' && line.buttons.some(b => b.kind !== 'spacer')"
                     class="eqt-settings__preview-line"
                     :style="{ justifyContent: textAlignToJustify(line.style?.textAlign ?? buttonLineTextAlign) }"
                   >
@@ -787,7 +788,7 @@ function onEditorPurge() {
               <div class="eqt-settings__font-preview" :class="currentTagStyleClass">
                 <template v-for="(line, li) in previewLines" :key="li">
                   <div
-                    v-if="line.kind === 'buttons' && line.buttons.length"
+                    v-if="line.kind === 'buttons' && line.buttons.some(b => b.kind !== 'spacer')"
                     class="eqt-settings__preview-line"
                     :style="{ justifyContent: textAlignToJustify(line.style?.textAlign ?? buttonLineTextAlign) }"
                   >
