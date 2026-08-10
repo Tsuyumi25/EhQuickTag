@@ -16,6 +16,12 @@
         "yuri": { "name": "百合", "intro": "", "links": "" },
         "sole female": { "name": "單一女性", "intro": "", "links": "" }
       }
+    },
+    {
+      "namespace": "other",
+      "data": {
+        "non-h": { "name": "全年齡向作品", "intro": "", "links": "" }
+      }
     }
   ]
 }
