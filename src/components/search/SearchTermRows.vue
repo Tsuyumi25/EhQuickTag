@@ -161,6 +161,7 @@ const { chunkBilingual } = useBilingualWrap({
   containerRef,
   itemSelector: '.eqt-search-panel__button',
   rowSelector: '.eqt-search-panel__cells',
+  itemRowSelector: '.eqt-search-panel__cells-row',
   itemsSignal: () => groups.value,
 })
 

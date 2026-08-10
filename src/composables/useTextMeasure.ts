@@ -4,7 +4,7 @@ import { ref, watch, onMounted, onScopeDispose, type Ref, type WatchSource } fro
 //
 // 設計：clone 一個 visible item element（sample），inline style 改成 absolute +
 // hidden，appendChild 到 container。量測時把 textContent 換成目標字串、讀
-// offsetWidth——layout engine 自己量、CSS 完全繼承（含 font-family fallback、
+// border box 寬度——layout engine 自己量、CSS 完全繼承（含 font-family fallback、
 // letter-spacing、kerning、font-feature-settings 等所有屬性），跟實際渲染 100% match
 //
 // 為什麼不用 canvas measureText：在 CJK + 西文 fallback 場景，canvas 跟 DOM 走
@@ -64,7 +64,9 @@ export function useTextMeasure(opts: UseTextMeasureOptions): TextMeasureApi {
     const r = ensureRuler()
     if (!r) return 0
     r.textContent = text
-    return r.offsetWidth
+    // getBoundingClientRect 而非 offsetWidth：後者是整數，caller 累加多個寬度時
+    // 每項最多帶 0.5px 捨入誤差，一行五顆就可能漂到足以誤判換行點
+    return r.getBoundingClientRect().width
   }
 
   function getWidth(text: string): number {

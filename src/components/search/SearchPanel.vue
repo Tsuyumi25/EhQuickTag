@@ -121,6 +121,7 @@ const { chunkBilingual: chunkBilingualHistory } = useBilingualWrap({
   containerRef: historyContainerRef,
   itemSelector: '.eqt-search-panel__button',
   rowSelector: '.eqt-search-panel__cells',
+  itemRowSelector: '.eqt-search-panel__cells-row',
   itemsSignal: () => historyDisplays.value,
 })
 
