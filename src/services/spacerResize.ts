@@ -61,8 +61,10 @@ interface SnapNudge {
 }
 
 // 這一緣的位置對「寬度」的靈敏度。left / right 行各有一緣釘死在行的端點
-// (靈敏度 0);center 行中心是不變量,兩緣各攤一半
-function edgeSensitivity(align: LineTextAlign, edge: Edge): number {
+// (靈敏度 0);center 行中心是不變量,兩緣各攤一半。
+// export 出去是為了讓「哪一緣拖得動」只有這一份定義——渲染端要決定把手長在哪
+// 邊時讀它,靈敏度 0 就是拖不動
+export function edgeSensitivity(align: LineTextAlign, edge: Edge): number {
   if (align === 'center') return edge === 'right' ? 0.5 : -0.5
   if (align === 'left') return edge === 'right' ? 1 : 0
   return edge === 'left' ? -1 : 0

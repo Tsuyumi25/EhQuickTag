@@ -15,7 +15,7 @@ import { baseDragOptions, EQT_TAGS_GROUP } from '@/utils/drag'
 import { dismissTerms, recordSubmitAndFlush } from '@/services/search/searchSession'
 import { t } from '@/composables/useI18n'
 import { currentTagStyleClass } from '@/composables/useTagStyle'
-import { computeSpacerResize, DEFAULT_SPACER_WIDTH } from '@/services/spacerResize'
+import { computeSpacerResize, edgeSensitivity, DEFAULT_SPACER_WIDTH } from '@/services/spacerResize'
 
 const ACTION_KEYS: Record<DblClickAction, string> = {
   search: 'tagbar.search',
@@ -291,6 +291,13 @@ function spacerRenderWidth(b: SpacerButton): number {
 
 function lineAlignOf(line: ButtonLine): LineTextAlign {
   return line.style?.textAlign ?? buttonLineTextAlign.value
+}
+
+// 這一緣拖得動嗎。規則的唯一來源是 spacerResize 的 edgeSensitivity——靈敏度 0
+// 表示那一緣被行釘死(left 行的左緣、right 行的右緣),拖再多都不動。把手的
+// v-if 與方括號的 class 共用這條判斷,兩者永遠指向同一緣
+function spacerHasGrip(b: SpacerButton, align: LineTextAlign, side: 'left' | 'right'): boolean {
+  return b.mode === 'fixed' && edgeSensitivity(align, side) !== 0
 }
 
 let spacerResizeCtx: {
@@ -823,7 +830,8 @@ function onRightClick(event: MouseEvent, b: TagButton) {
                     `eqt-tag-bar__spacer--${b.mode}`,
                     {
                       'eqt-tag-bar__spacer--editing': editing,
-                      'eqt-tag-bar__spacer--resizing': resizingSpacer === b,
+                      'eqt-tag-bar__spacer--grip-left': editing && spacerHasGrip(b, lineAlignOf(line), 'left'),
+                      'eqt-tag-bar__spacer--grip-right': editing && spacerHasGrip(b, lineAlignOf(line), 'right'),
                     },
                   ]"
                   :style="b.mode === 'fixed' ? { width: `${spacerRenderWidth(b)}px` } : undefined"
@@ -837,10 +845,9 @@ function onRightClick(event: MouseEvent, b: TagButton) {
                       ? `⇤ ${t('tagbar.spacerFlexLabel')} ⇥`
                       : (resizingSpacer === b ? `${spacerRenderWidth(b)}px` : '↔')
                   }}</span>
-                  <!-- 把手放在「拖了會動的邊」：left 行只有右緣動、right 行只有
-                       左緣動、center 行兩緣對稱動所以兩邊都給 -->
+                  <!-- 把手放在「拖了會動的邊」，跟該邊畫成實線的 class 共用判斷 -->
                   <span
-                    v-if="editing && b.mode === 'fixed' && lineAlignOf(line) !== 'left'"
+                    v-if="editing && spacerHasGrip(b, lineAlignOf(line), 'left')"
                     class="eqt-tag-bar__spacer-grip eqt-tag-bar__spacer-grip--left"
                     :title="t('tagbar.spacerResizeTitle')"
                     @pointerdown="onSpacerGripDown($event, li, b, lineAlignOf(line), 'left')"
@@ -849,7 +856,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
                     @pointercancel="onSpacerGripUp"
                   ></span>
                   <span
-                    v-if="editing && b.mode === 'fixed' && lineAlignOf(line) !== 'right'"
+                    v-if="editing && spacerHasGrip(b, lineAlignOf(line), 'right')"
                     class="eqt-tag-bar__spacer-grip"
                     :title="t('tagbar.spacerResizeTitle')"
                     @pointerdown="onSpacerGripDown($event, li, b, lineAlignOf(line), 'right')"
@@ -1735,10 +1742,12 @@ function onRightClick(event: MouseEvent, b: TagButton) {
     }
   }
 
-  // 行內空位：非編輯時純佔位、完全隱形；編輯時畫虛線框給拖曳 / 右鍵一個
-  // 可視目標。flex 變體吃掉整行剩餘空間（把兩側按鈕推開）、fixed 變體寬度
-  // 由使用者拖 grip 調出的 px 快照（inline style 設定）。
+  // 行內空位：非編輯時純佔位、完全隱形；編輯時畫虛線框給拖曳 / 右鍵一個可視
+  // 目標，拖得動的邊再加一個方括號。flex 變體吃掉整行剩餘空間（把兩側按鈕
+  // 推開）、fixed 變體寬度由使用者拖把手調出的 px 快照（inline style 設定）。
   &__spacer {
+    $spacer: &;
+
     position: relative;
     box-sizing: border-box;
     height: var(--eqt-row-h);
@@ -1766,10 +1775,35 @@ function onRightClick(event: MouseEvent, b: TagButton) {
       }
     }
 
-    // resize 中框線轉實線 + 綠色，跟拖曳排序的視覺（ghost / chosen）區分
-    &--resizing {
-      border-color: var(--eqt-green);
-      border-style: solid;
+    // 拖得動的那一緣就是把手,畫成實線主文字色的方括號——豎線標出那條邊,
+    // 上下再各往內延伸一小段包住轉角,整體讀作「這一整塊邊區抓得住」,跟另外
+    // 三邊的虛線分開(虛線說「這是佔位物」)。
+    //
+    // 用偽元素畫成一個有右側圓角的 border box,而不是疊一根直條上去:圓角因此
+    // 自動吻合外框。定位相對 padding box,所以三個方向各外推一個 border-width
+    // 才貼齊 border box。寬度 cap 在半寬內,免得最小寬的間隔上兩個括號對撞
+    &--grip-left#{$spacer}--editing::before,
+    &--grip-right#{$spacer}--editing::after {
+      content: '';
+      position: absolute;
+      box-sizing: border-box;
+      top: calc(-1 * var(--eqt-border-width));
+      bottom: calc(-1 * var(--eqt-border-width));
+      width: min(6px, calc(50% + var(--eqt-border-width)));
+      border: var(--eqt-border-width) solid var(--eqt-text);
+      pointer-events: none;
+    }
+
+    &--grip-left#{$spacer}--editing::before {
+      left: calc(-1 * var(--eqt-border-width));
+      border-right: none;
+      border-radius: var(--eqt-radius-sm) 0 0 var(--eqt-radius-sm);
+    }
+
+    &--grip-right#{$spacer}--editing::after {
+      right: calc(-1 * var(--eqt-border-width));
+      border-left: none;
+      border-radius: 0 var(--eqt-radius-sm) var(--eqt-radius-sm) 0;
     }
   }
 
@@ -1786,7 +1820,9 @@ function onRightClick(event: MouseEvent, b: TagButton) {
     user-select: none;
   }
 
-  // 右緣 resize 把手：熱區向外擴 6px 好抓,視覺上只露 4px 圓條。
+  // 右緣 resize 把手:純透明熱區,沒有自己的視覺——使用者看到的把手是 --grip-right
+  // 畫的那個方括號。照 VS Code sash 的模型,熱區比視覺寬得多:2px 的線點不到,
+  // 所以向外擴 4px、向內吃一段。
   // 寬度 cap 在「spacer 半寬 + 外擴」內:居中行雙把手在接近最小寬的間隔上,
   // 向內的熱區各不超過半寬,兩把手不重疊搶點
   &__spacer-grip {
@@ -1799,31 +1835,11 @@ function onRightClick(event: MouseEvent, b: TagButton) {
     touch-action: none;
     z-index: 2;
 
-    &::after {
-      content: '';
-      position: absolute;
-      top: 5px;
-      bottom: 5px;
-      right: 5px;
-      width: 4px;
-      border-radius: 2px;
-      background: var(--eqt-border);
-    }
-
-    &:hover::after {
-      background: var(--eqt-text-hint);
-    }
-
     // 右對齊行的鏡像：flex-end 下右緣是不動錨點、左緣才是拖了會動的邊,
     // 把手移到左緣才不會「手在右邊拖、內容往左跑」
     &--left {
       right: auto;
       left: -6px;
-
-      &::after {
-        right: auto;
-        left: 5px;
-      }
     }
   }
 
