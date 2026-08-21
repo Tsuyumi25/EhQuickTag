@@ -1072,8 +1072,11 @@ function onRightClick(event: MouseEvent, b: TagButton) {
             type="button"
             @click="onAddSeparatorLine"
           ><Plus :size="12" /> {{ t('tagbar.addSeparatorLine') }}</button>
+        </div>
+        <!-- 空位加的是行內物而不是行，所以不併進左邊那條 split -->
+        <div v-if="editing" class="eqt-tag-bar__item-add">
           <button
-            class="eqt-tag-bar__line-add-btn"
+            class="eqt-tag-bar__item-add-btn"
             type="button"
             aria-haspopup="menu"
             :aria-expanded="addSpacerMenuOpen"
@@ -1351,6 +1354,16 @@ function onRightClick(event: MouseEvent, b: TagButton) {
   }
   &__line-add-btn {
     flex: 1;
+    @include btn-split-item;
+  }
+
+  // 「+ 空位」自成一格。它加的是行內物（Button）不是行（Line）——併進左邊那條
+  // split 會讓兩個層級讀起來像三個平行選項，使用者得自己把層級補回來。
+  // hug content：撐滿留給真正管「行」的那組
+  &__item-add {
+    @include btn-split-group;
+  }
+  &__item-add-btn {
     @include btn-split-item;
   }
 
