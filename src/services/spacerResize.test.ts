@@ -45,7 +45,7 @@ const NO_TARGETS = { targetsL: [], targetsR: [] } as const
 describe('computeSpacerResize · 意圖寬度累積', () => {
   it('left 行右把手:向右拖增寬', () => {
     const r = computeSpacerResize(input({ ...NO_TARGETS, deltaX: 10 }))
-    expect(r).toEqual({ widthF: 50, width: 50, guideX: null })
+    expect(r).toEqual({ widthF: 50, width: 50, guideX: null, guideIndex: null })
   })
 
   it('right 行左把手:向左拖增寬', () => {
@@ -202,6 +202,33 @@ describe('computeSpacerResize · 落不到目標時退回不吸附', () => {
     }))
     expect(r.guideX).toBeNull()
     expect(r.width).toBe(SPACER_MIN_WIDTH)
+  })
+})
+
+// 呼叫端要拿命中的那顆 item 的 y 範圍畫輔助線,而 y 不能在 pointerdown 時快照
+// (拖曳中自己這行折行數一變,下方行整批垂直位移)。所以吸附得回報索引,讓呼叫端
+// 當場重量那一顆
+describe('computeSpacerResize · 回報命中目標的索引', () => {
+  it('右緣命中:索引指向 targetsR 裡的位置', () => {
+    const r = computeSpacerResize(input({ deltaX: -22 }))
+    expect(r.guideX).toBe(176)
+    expect(r.guideIndex).toBe(TARGETS_R.indexOf(176))
+  })
+
+  it('左緣命中:索引指向 targetsL 裡的位置(兩集合平行,對應同一顆 item)', () => {
+    const r = computeSpacerResize(input({ align: 'right', side: 'left', deltaX: -42 }))
+    expect(r.guideX).toBe(112)
+    expect(r.guideIndex).toBe(TARGETS_L.indexOf(112))
+  })
+
+  it('未命中時為 null', () => {
+    const r = computeSpacerResize(input({ ...NO_TARGETS, deltaX: 10 }))
+    expect(r.guideIndex).toBeNull()
+  })
+
+  it('吸附解落不到目標而退回時也為 null', () => {
+    const r = computeSpacerResize(input({ deltaX: -22, maxWidth: 15 }))
+    expect(r.guideIndex).toBeNull()
   })
 })
 

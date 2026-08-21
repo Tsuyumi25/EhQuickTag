@@ -42,15 +42,18 @@ export interface SpacerResizeInput {
   deltaX: number               // 本次滑鼠位移(clientX - lastX)
   rectLeft: number             // spacer 當下實測左緣(viewport 絕對 x)
   rectRight: number
+  // 兩個集合是平行的:同一個索引指向同一個參照 item 的左緣與右緣。呼叫端靠
+  // 這條約定把 guideIndex 換回那顆 item(拿它的 y 範圍畫輔助線)
   targetsL: readonly number[]  // 參照 item 左緣集合,viewport 絕對 x(供 spacer 左緣吸)
   targetsR: readonly number[]  // 參照 item 右緣集合(供 spacer 右緣吸)
   maxWidth: number             // 行容器寬:「間隔永遠不寬於它的行」
 }
 
 export interface SpacerResizeResult {
-  widthF: number           // 新意圖寬度(回存,下次呼叫的輸入)
-  width: number            // 應套用的整數寬(吸附命中時為吸附解)
-  guideX: number | null    // 吸附目標的 viewport 絕對 x;未命中為 null
+  widthF: number             // 新意圖寬度(回存,下次呼叫的輸入)
+  width: number              // 應套用的整數寬(吸附命中時為吸附解)
+  guideX: number | null      // 吸附目標的 viewport 絕對 x;未命中為 null
+  guideIndex: number | null  // 命中目標在 targets 裡的索引,供呼叫端換回那顆 item
 }
 
 interface SnapNudge {
@@ -58,6 +61,7 @@ interface SnapNudge {
   deltaX: number     // 位移還差多少才能讓那一緣落在目標上
   edge: Edge
   target: number
+  index: number
 }
 
 // 這一緣的位置對「寬度」的靈敏度。left / right 行各有一緣釘死在行的端點
@@ -93,12 +97,13 @@ function findSnapNudge(input: SpacerResizeInput, widthF: number, scale: number):
     const motion = edgeSensitivity(input.align, edge) * scale
     if (motion === 0) return   // 錨緣:拖再多也不動,不能吸
     const predicted = edgePosition(input.align, edge, widthF, input.rectLeft, input.rectRight)
-    for (const target of targets) {
+    for (let i = 0; i < targets.length; i++) {
+      const target = targets[i]
       const distance = Math.abs(target - predicted)
       if (distance > SPACER_SNAP_RANGE) continue
       // 平手取先到者(收集順序來自 DOM,穩定)
       if (best && distance >= best.distance) continue
-      best = { distance, deltaX: (target - predicted) / motion, edge, target }
+      best = { distance, deltaX: (target - predicted) / motion, edge, target, index: i }
     }
   }
 
@@ -119,7 +124,12 @@ export function computeSpacerResize(input: SpacerResizeInput): SpacerResizeResul
   // 不吸附的結果。意圖寬度是逐次增量的浮點累積,吸附不覆蓋它——它一直跟著手走,
   // 滑出吸附範圍即自然脫離
   const widthF = clampWidth(input.widthF + input.deltaX * scale)
-  const unsnapped: SpacerResizeResult = { widthF, width: Math.round(widthF), guideX: null }
+  const unsnapped: SpacerResizeResult = {
+    widthF,
+    width: Math.round(widthF),
+    guideX: null,
+    guideIndex: null,
+  }
 
   const nudge = findSnapNudge(input, widthF, scale)
   if (!nudge) return unsnapped
@@ -133,5 +143,5 @@ export function computeSpacerResize(input: SpacerResizeInput): SpacerResizeResul
   const landed = edgePosition(input.align, nudge.edge, width, input.rectLeft, input.rectRight)
   if (Math.abs(landed - nudge.target) > SNAP_LANDING_TOLERANCE) return unsnapped
 
-  return { widthF, width, guideX: nudge.target }
+  return { widthF, width, guideX: nudge.target, guideIndex: nudge.index }
 }

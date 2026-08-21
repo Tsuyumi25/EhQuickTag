@@ -274,7 +274,10 @@ function onAddSpacer(mode: SpacerButton['mode']): void {
 // 目標集合在 pointerdown 收集一次即可：拖曳只影響自己這一行,其他行的
 // x 座標不動（自己行折行數變化只造成下方行的垂直位移,目標只存 x）。
 
-const spacerGuideX = ref<number | null>(null)
+// 吸附輔助線。x 是對齊軸,top / height 讓線只涵蓋「目標行 ↔ spacer 行」這一段
+// 而不是縱貫整個 TagBar——線穿過每一行的話,看的人不知道自己對齊到誰。
+// 座標都已換算到 __line-rows 座標系
+const spacerGuide = ref<{ x: number; top: number; height: number } | null>(null)
 const resizingSpacer = ref<SpacerButton | null>(null)
 // 拖曳中的顯示寬——故意不寫進 lines 樹:store 的自動存檔 watcher 沒有
 // debounce,每次 pointermove 寫 btn.width 會觸發「全 profile 深拷貝 +
@@ -312,6 +315,7 @@ let spacerResizeCtx: {
   rowsEl: Element
   targetsL: number[]   // 參照 item 左緣集合,viewport 絕對 x（供 spacer 左緣吸）
   targetsR: number[]   // 參照 item 右緣集合,viewport 絕對 x（供 spacer 右緣吸）
+  targetEls: Element[] // 與上面兩個集合平行:命中時當場重量它的 y 範圍畫輔助線
 } | null = null
 
 function onSpacerGripDown(e: PointerEvent, li: number, b: SpacerButton, align: LineTextAlign, side: 'left' | 'right'): void {
@@ -329,12 +333,14 @@ function onSpacerGripDown(e: PointerEvent, li: number, b: SpacerButton, align: L
   // 只有畫 guide 線時才換算回 __line-rows 座標系
   const targetsL: number[] = []
   const targetsR: number[] = []
+  const targetEls: Element[] = []
   rowsEl.querySelectorAll('.eqt-tag-bar__line-wrap').forEach((wrap, wi) => {
     if (wi === li) return
     wrap.querySelectorAll('.eqt-tag-bar__btn, .eqt-tag-bar__spacer').forEach((item) => {
       const r = item.getBoundingClientRect()
       targetsL.push(r.left)
       targetsR.push(r.right)
+      targetEls.push(item)
     })
   })
   const startWidth = spacerEl.getBoundingClientRect().width
@@ -349,9 +355,27 @@ function onSpacerGripDown(e: PointerEvent, li: number, b: SpacerButton, align: L
     rowsEl,
     targetsL,
     targetsR,
+    targetEls,
   }
   resizingSpacer.value = b
   resizingWidth.value = Math.round(startWidth)
+}
+
+// 輔助線的幾何:垂直範圍取「目標 item ∪ spacer」的聯集,線因此從目標那一行連到
+// 被拖的這一行。目標的 y 在此刻才量——pointerdown 的快照會被拖曳中的折行數變化
+// 作廢(自己這行少一折,下方所有行整批往上移),x 不受影響所以那個仍可快照
+function buildSpacerGuide(
+  ctx: NonNullable<typeof spacerResizeCtx>,
+  guideX: number,
+  guideIndex: number,
+  spacerRect: DOMRect,
+): { x: number; top: number; height: number } | null {
+  const targetRect = ctx.targetEls[guideIndex]?.getBoundingClientRect()
+  if (!targetRect) return null
+  const rows = ctx.rowsEl.getBoundingClientRect()
+  const top = Math.min(targetRect.top, spacerRect.top)
+  const bottom = Math.max(targetRect.bottom, spacerRect.bottom)
+  return { x: guideX - rows.left, top: top - rows.top, height: bottom - top }
 }
 
 function onSpacerGripMove(e: PointerEvent): void {
@@ -373,9 +397,8 @@ function onSpacerGripMove(e: PointerEvent): void {
   ctx.lastX = e.clientX
   ctx.widthF = result.widthF
   resizingWidth.value = result.width
-  // guide 線畫在 __line-rows 座標系:此刻才把目標的絕對 x 換算過去
-  spacerGuideX.value = result.guideX !== null
-    ? result.guideX - ctx.rowsEl.getBoundingClientRect().left
+  spacerGuide.value = result.guideX !== null && result.guideIndex !== null
+    ? buildSpacerGuide(ctx, result.guideX, result.guideIndex, rect)
     : null
 }
 
@@ -389,7 +412,7 @@ function finishSpacerResize(): void {
   spacerResizeCtx = null
   resizingSpacer.value = null
   resizingWidth.value = null
-  spacerGuideX.value = null
+  spacerGuide.value = null
 }
 
 function onSpacerGripUp(e: PointerEvent): void {
@@ -968,9 +991,13 @@ function onRightClick(event: MouseEvent, b: TagButton) {
         </template>
         <template #footer>
           <div
-            v-if="spacerGuideX !== null"
+            v-if="spacerGuide"
             class="eqt-tag-bar__spacer-guide"
-            :style="{ left: `${spacerGuideX}px` }"
+            :style="{
+              left: `${spacerGuide.x}px`,
+              top: `${spacerGuide.top}px`,
+              height: `${spacerGuide.height}px`,
+            }"
           ></div>
         </template>
       </Draggable>
@@ -1217,7 +1244,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
   }
 
   &__line-rows {
-    // spacer resize guide（縱貫多行的吸附輔助線）的定位基準
+    // spacer resize guide 的定位基準：輔助線用絕對座標橫跨行與行之間
     position: relative;
     display: flex;
     flex-direction: column;
@@ -1843,11 +1870,10 @@ function onRightClick(event: MouseEvent, b: TagButton) {
     }
   }
 
-  // smart guide 吸附輔助線：resize 命中其他行邊緣時縱貫整個行區
+  // smart guide 吸附輔助線：resize 命中其他行的邊緣時，從那一行連到被拖的這
+  // 一行。垂直範圍由 JS 逐幀給（top / height），這裡只定形狀
   &__spacer-guide {
     position: absolute;
-    top: 0;
-    bottom: 0;
     width: 2px;
     background: var(--eqt-status-or);
     pointer-events: none;
