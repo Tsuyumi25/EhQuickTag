@@ -2,11 +2,15 @@
 import { ref, watch, computed, onScopeDispose } from 'vue'
 import { GM } from '$'
 import { hasGMXHR } from '@/services/gmStorage'
+import { Star } from '@lucide/vue'
 import ContentEditable from 'vue-contenteditable'
 import { currentTagStyleClass } from '@/composables/useTagStyle'
 import { usePopupBehavior } from '@/composables/usePopupBehavior'
 import type { UrlButton } from '@/types'
 import { toAbsoluteUrl } from '@/utils/ehUrl'
+import { parseSearchUrl } from '@/services/ehSearchParams'
+import { readEhSearchSnapshot } from '@/composables/ehSearchSnapshot'
+import UrlSearchBuilder from './UrlSearchBuilder.vue'
 import { t } from '@/composables/useI18n'
 
 const props = defineProps<{
@@ -29,6 +33,9 @@ const effectiveColor = computed(() => color.value ?? props.lineColor)
 const url = ref('')
 const fetchingTitle = ref(false)
 const popupEl = ref<HTMLElement | null>(null)
+const builderApplicable = computed(() => !url.value.trim() || parseSearchUrl(url.value) !== null)
+const snapshotAvailable = readEhSearchSnapshot() !== null
+const builderRef = ref<{ useCurrentPage: () => void } | null>(null)
 
 watch(() => props.tag, (t) => {
   label.value = t.label ?? ''
@@ -119,9 +126,18 @@ function onSave() {
             @click="fetchTitle"
           >{{ fetchingTitle ? t('urlConfig.fetching') : t('urlConfig.fetchTitle') }}</button>
         </div>
+
       </div>
 
+      <UrlSearchBuilder v-if="builderApplicable" ref="builderRef" v-model="url" />
+
       <div class="eqt-popup__actions">
+        <button
+          v-if="builderApplicable && snapshotAvailable"
+          class="eqt-popup__btn"
+          type="button"
+          @click="builderRef?.useCurrentPage()"
+        ><Star :size="12" /> {{ t('urlBuilder.useCurrentPage') }}</button>
         <button v-if="!isAdd" class="eqt-popup__btn eqt-popup__btn--delete" type="button" @click="emit('delete')">
           {{ t('urlConfig.delete') }}
         </button>
