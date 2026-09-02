@@ -4,9 +4,6 @@
 
 E-Hentai / ExHentai 的可自訂快捷標籤列與 Gallery 標籤工具。
 
-> [!CAUTION]
-> 早期開發中，資料格式（標籤組、設定等）在未來版本可能不相容，屆時可能需要重新設定。
-
 [tag-bar-and-search-panel.webm](https://github.com/user-attachments/assets/f3db2250-dc81-4e15-b50c-1555502debbb)
 
 [gallery-tagging.webm](https://github.com/user-attachments/assets/77448a48-2d9c-485c-aa8c-81d14e806e95)
@@ -17,8 +14,12 @@ E-Hentai / ExHentai 的可自訂快捷標籤列與 Gallery 標籤工具。
   - [x] Include、OR、Exclude 搜尋狀態切換
   - [x] 標籤行、分隔線與跨行拖曳
   - [x] 分隔線文字、線型、位置、尺寸與對齊
-  - [x] URL 快捷按鈕
+  - [x] 行內間隔與彈簧，可拖曳調寬並跨行吸附對齊
   - [x] EH 搜尋語法編輯器
+- [x] 連結按鈕
+  - [x] 以分類、關鍵字與進階選項組出 EH 搜尋網址
+  - [x] 一鍵帶入當前頁面的搜尋條件
+  - [x] 連結自動跟隨當前所在的表 / 裡站
 - [x] 搜尋面板
   - [x] 視覺化目前搜尋條件
   - [x] 跨頁搜尋歷史

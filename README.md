@@ -4,9 +4,6 @@
 
 A customizable quick tag bar and Gallery tagging toolkit for E-Hentai / ExHentai.
 
-> [!CAUTION]
-> Early development. Data formats (profiles, settings, etc.) may change in future versions and require reconfiguration.
-
 [tag-bar-and-search-panel.webm](https://github.com/user-attachments/assets/f3db2250-dc81-4e15-b50c-1555502debbb)
 
 [gallery-tagging.webm](https://github.com/user-attachments/assets/77448a48-2d9c-485c-aa8c-81d14e806e95)
@@ -17,8 +14,12 @@ A customizable quick tag bar and Gallery tagging toolkit for E-Hentai / ExHentai
   - [x] Include, OR, and Exclude search states
   - [x] Tag rows, separators, and cross-row dragging
   - [x] Separator text, line style, position, size, and alignment
-  - [x] URL shortcuts
+  - [x] Inline gaps and springs, drag-resizable with cross-row snapping
   - [x] EH search syntax editor
+- [x] Link buttons
+  - [x] Build EH search URLs from categories, keywords, and advanced options
+  - [x] Fill in the current page's search conditions in one click
+  - [x] Links follow whichever site you are on (e-hentai / exhentai)
 - [x] Search panel
   - [x] Visual search terms
   - [x] Cross-page search history
