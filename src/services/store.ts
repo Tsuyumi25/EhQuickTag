@@ -1,5 +1,6 @@
 import { reactive, ref, watch, nextTick, type Ref } from 'vue'
 import { cacheGet, cacheSet } from '@/services/gmStorage'
+import { toAbsoluteUrl } from '@/utils/ehUrl'
 import type { Line, Button, ButtonLine, SeparatorLine, TagButton, UrlButton, TagMode, LineTextAlign } from '@/types'
 import { TAG_DB_MIRRORS, type TagDbMirror } from '@/services/tagDb'
 import { TAG_COUNT_MIRRORS, type TagCountMirror } from '@/services/tagCount'
@@ -159,6 +160,7 @@ const INITIAL_SETTINGS = {
   // 有一段提醒且通常很長會擋住 90% 定義內容，預設收起 (false)；使用者仍可
   // per-panel 點「▸ Notes」展開，切下個 chip 又回預設
   wikiPreludeExpanded: false,
+  followCurrentSite: true,
 }
 
 type Settings = typeof INITIAL_SETTINGS
@@ -202,6 +204,7 @@ export const galleryDblClickRight = refs.galleryDblClickRight
 export const galleryDblClickLeftNewTabActive  = refs.galleryDblClickLeftNewTabActive
 export const galleryDblClickRightNewTabActive = refs.galleryDblClickRightNewTabActive
 export const wikiPreludeExpanded = refs.wikiPreludeExpanded
+export const followCurrentSite  = refs.followCurrentSite
 
 // enum-shape setting 的合法 id 集合。壞值 silently fallback 到 INITIAL_SETTINGS 預設——
 // 沒這層守門 GM storage 被竄改塞個壞字串會直接灌進 ref，UI 永久卡在「無 active button、
@@ -274,11 +277,11 @@ const DEFAULT_LINE_DEFS: DefaultLineDef[] = [
     { kind: 'tag', tags: ['-o:"rough translation$"'], labelKey: 'default.excludeRoughTL', disabledModes: ['or', 'exclude'] },
   ] },
   { kind: 'buttons', buttons: [
-    { kind: 'url', url: '?f_cats=0&f_search=o%3A%22how+to%24%22', labelKey: 'default.howto' },
-    { kind: 'url', url: '?f_cats=0&f_search=o%3Aartbook%24', labelKey: 'default.artbook' },
-    { kind: 'url', url: '?f_cats=991', labelKey: 'default.imageset' },
-    { kind: 'url', url: '?f_cats=1019&f_search=o%3Atankoubon%24', labelKey: 'default.tankoubon' },
-    { kind: 'url', url: '?f_cats=1019&f_search=o%3Aanthology%24', labelKey: 'default.anthology' },
+    { kind: 'url', url: 'https://e-hentai.org/?f_cats=0&f_search=o%3A%22how+to%24%22', labelKey: 'default.howto' },
+    { kind: 'url', url: 'https://e-hentai.org/?f_cats=0&f_search=o%3Aartbook%24', labelKey: 'default.artbook' },
+    { kind: 'url', url: 'https://e-hentai.org/?f_cats=991', labelKey: 'default.imageset' },
+    { kind: 'url', url: 'https://e-hentai.org/?f_cats=1019&f_search=o%3Atankoubon%24', labelKey: 'default.tankoubon' },
+    { kind: 'url', url: 'https://e-hentai.org/?f_cats=1019&f_search=o%3Aanthology%24', labelKey: 'default.anthology' },
   ] },
   { kind: 'separator' },
   { kind: 'buttons', buttons: [] },
@@ -462,6 +465,18 @@ function normalizeDefaultProfileLineAlignment(): void {
   }
 }
 
+function normalizeButtonUrls(): void {
+  for (const profile of [...profiles, ...deletedProfiles]) {
+    for (const line of profile.lines) {
+      if (line.kind !== 'buttons') continue
+      for (const b of line.buttons) {
+        if (b.kind !== 'url') continue
+        b.url = toAbsoluteUrl(b.url)?.href ?? b.url
+      }
+    }
+  }
+}
+
 // --- load from GM ---
 
 export async function loadStore(): Promise<void> {
@@ -509,6 +524,7 @@ export async function loadStore(): Promise<void> {
   }
 
   normalizeDefaultProfileLineAlignment()
+  normalizeButtonUrls()
 
   lines.splice(0, lines.length, ...profiles[activeProfileIdx.value].lines)
 

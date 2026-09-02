@@ -4,7 +4,7 @@ import { usePopupBehavior } from '@/composables/usePopupBehavior'
 import {
   RotateCcw, Languages, Replace, Type, Eye, LayoutPanelTop, Tag,
   MousePointerClick, Palette, ToggleLeft, UnfoldVertical, Info,
-  Database, ChartColumn, BookOpen,
+  Database, ChartColumn, BookOpen, ExternalLink,
 } from '@lucide/vue'
 import Draggable from 'vuedraggable'
 import { baseDragOptions } from '@/utils/drag'
@@ -23,7 +23,7 @@ import {
   tagDbMirror, tagDbTtlDays, tagCountMirror, tagCountTtlDays,
   tagWikiMirror, tagWikiTtlDays,
   tagStylePreset, buttonLineTextAlign, separatorLineTextAlign, useAccentOnInclude, type DblClickAction,
-  showSearchPanel, searchPanelLangMode, convertToTraditional, enableHistory,
+  showSearchPanel, searchPanelLangMode, convertToTraditional, enableHistory, followCurrentSite,
   taggingEnhancerEnabled, galleryDragSelectEnabled, galleryTaglistExpand, galleryTaglistHeight, galleryTaglistZoom, introPanelPrimaryLang, wikiPreludeExpanded,
   galleryDblClickLeft, galleryDblClickRight, galleryDblClickLeftNewTabActive, galleryDblClickRightNewTabActive,
   SEARCH_PANEL_LANG_MODES, CONVERT_TO_TRADITIONAL_MODES, INTRO_PANEL_PRIMARY_LANGS,
@@ -436,6 +436,18 @@ function onEditorPurge() {
                   <span class="eqt-settings__label">{{ t('settings.newTabActivate') }}</span>
                 </label>
               </div>
+            </section>
+
+            <section class="eqt-settings__section">
+              <h4 class="eqt-settings__subtitle"><ExternalLink :size="14" /> {{ t('settings.sectionUrlButton') }}</h4>
+              <label class="eqt-settings__row">
+                <input
+                  type="checkbox"
+                  :checked="followCurrentSite"
+                  @change="followCurrentSite = ($event.target as HTMLInputElement).checked"
+                />
+                <span class="eqt-settings__label">{{ t('settings.followCurrentSite') }}</span>
+              </label>
             </section>
 
             <section class="eqt-settings__section">

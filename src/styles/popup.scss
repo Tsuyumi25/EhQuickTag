@@ -184,7 +184,7 @@
     }
   }
 
-  // URL popup 專用：URL 前綴 + URL 輸入框並排
+  // URL popup 專用：URL 輸入框 + 取得標題按鈕並排
   &__url-row {
     display: flex;
     gap: 6px;
@@ -192,20 +192,6 @@
     .eqt-popup__input {
       flex: 1;
       min-width: 0;
-    }
-  }
-
-  &__url-prefix {
-    padding: 4px 6px;
-    border: var(--eqt-border-width) solid var(--eqt-border);
-    border-radius: var(--eqt-radius-sm);
-    font-size: var(--eqt-fs-lg);
-    background: var(--eqt-bg-elevated);
-    color: var(--eqt-text);
-    flex-shrink: 0;
-
-    &:focus {
-      outline: none;
     }
   }
 

@@ -10,8 +10,9 @@ import ContextMenu from '@/components/ContextMenu.vue'
 import SearchPanel from '@/components/search/SearchPanel.vue'
 import { TagState, type Line, type Button, type ButtonLine, type TagButton, type SpacerButton, type LineTextAlign } from '@/types'
 import { tokenize, buildIdentityIndex, getState as _getState, setTagState, getNextRightClickState } from '@/services/tagState'
-import { lines, profiles, activeProfileIdx, moveLineToProfile, moveButtonToProfile, appendToLastButtonLine, buttonLineTextAlign, separatorLineTextAlign, dblClickLeft, dblClickRight, dblClickLeftNewTabActive, dblClickRightNewTabActive, useAccentOnInclude, showSearchPanel, type DblClickAction } from '@/services/store'
+import { lines, profiles, activeProfileIdx, moveLineToProfile, moveButtonToProfile, appendToLastButtonLine, buttonLineTextAlign, separatorLineTextAlign, dblClickLeft, dblClickRight, dblClickLeftNewTabActive, dblClickRightNewTabActive, useAccentOnInclude, showSearchPanel, followCurrentSite, type DblClickAction } from '@/services/store'
 import { baseDragOptions, EQT_TAGS_GROUP } from '@/utils/drag'
+import { resolveButtonUrl } from '@/utils/ehUrl'
 import { dismissTerms, recordSubmitAndFlush } from '@/services/search/searchSession'
 import { t } from '@/composables/useI18n'
 import { currentTagStyleClass } from '@/composables/useTagStyle'
@@ -294,6 +295,10 @@ function spacerRenderWidth(b: SpacerButton): number {
 
 function lineAlignOf(line: ButtonLine): LineTextAlign {
   return line.style?.textAlign ?? buttonLineTextAlign.value
+}
+
+function resolveUrl(raw: string): string {
+  return resolveButtonUrl(raw, followCurrentSite.value, location.origin)
 }
 
 // 這一緣拖得動嗎。規則的唯一來源是 spacerResize 的 edgeSensitivity——靈敏度 0
@@ -891,7 +896,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
 
                 <a
                   v-else-if="b.kind === 'url' && !editing"
-                  :href="b.url"
+                  :href="resolveUrl(b.url)"
                   class="eqt-tag-bar__btn eqt-tag-bar__btn--url"
                   :style="b.color ? { '--line-color': b.color } : undefined"
                 ><ExternalLink :size="12" /> {{ b.label || b.url }}</a>
