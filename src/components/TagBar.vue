@@ -257,6 +257,12 @@ const spacerToolDragOptions = {
   group: { name: EQT_TAGS_GROUP, pull: 'clone' as const, put: false },
 }
 
+// 說明面板列的可拖曳項目直接由工具箱資料推導，增減或改名時不會漏改說明
+const dragToolNames = computed(() => [
+  ...lineTools.map(tool => t(tool.kind === 'separator' ? 'tagbar.addSeparatorLine' : 'tagbar.addButtonLine')),
+  ...spacerTools.map(tool => t(tool.mode === 'flex' ? 'tagbar.spacerModeFlex' : 'tagbar.spacerModeFixed')),
+].join(t('tagbar.infoListSeparator')))
+
 // --- spacers ---
 
 // --- fixed spacer resize ---
@@ -730,7 +736,16 @@ function onRightClick(event: MouseEvent, b: TagButton) {
     <div class="eqt-tag-bar__overlay"></div>
     <div class="eqt-tag-bar__lines">
       <div class="eqt-tag-bar__profile-row">
-        <span class="eqt-tag-bar__info"><Info :size="16" /><span class="eqt-tag-bar__info-text">{{ t('tagbar.infoTooltip', { left: t(ACTION_KEYS[dblClickLeft]), right: t(ACTION_KEYS[dblClickRight]) }) }}</span></span>
+        <span class="eqt-tag-bar__info"><Info :size="16" /><span class="eqt-tag-bar__info-text">
+          <span class="eqt-tag-bar__info-section">{{ t('tagbar.infoPreviewSection') }}</span>
+          <span class="eqt-tag-bar__info-row">{{ t('tagbar.infoPreviewLeft', { action: t(ACTION_KEYS[dblClickLeft]) }) }}</span>
+          <span class="eqt-tag-bar__info-row">{{ t('tagbar.infoPreviewRight', { action: t(ACTION_KEYS[dblClickRight]) }) }}</span>
+          <span class="eqt-tag-bar__info-hint">{{ t('tagbar.infoHint') }}</span>
+          <span class="eqt-tag-bar__info-section">{{ t('tagbar.infoEditSection') }}</span>
+          <span class="eqt-tag-bar__info-row">{{ t('tagbar.infoEditLeft') }}</span>
+          <span class="eqt-tag-bar__info-row">{{ t('tagbar.infoEditRight') }}</span>
+          <span class="eqt-tag-bar__info-row">{{ t('tagbar.infoEditDrag', { tools: dragToolNames }) }}</span>
+        </span></span>
         <button
           class="eqt-tag-bar__profile-nav eqt-tag-bar__profile-nav--prev"
           type="button"
@@ -1186,9 +1201,9 @@ function onRightClick(event: MouseEvent, b: TagButton) {
     color: var(--eqt-text);
     font-size: var(--eqt-fs-sm);
     text-align: left;
-    // pre 識別 i18n 字串內的 \n 作換行、但不 wrap——tooltip 寬度跟著最長那行
-    // 內容自動 hug，比 pre-line（會 wrap）穩定
-    white-space: pre;
+    // nowrap 讓 tooltip 寬度 hug 最長那一行；換行改由每個 row 各佔一列達成，
+    // 不再靠 i18n 字串裡的 \n——分隔線與分區標題需要真的元素才排得出來
+    white-space: nowrap;
     line-height: 1.5;
     pointer-events: none;
     z-index: 3;
@@ -1218,8 +1233,35 @@ function onRightClick(event: MouseEvent, b: TagButton) {
     }
 
     .eqt-tag-bar__info:hover & {
-      display: block;
+      display: flex;
+      flex-direction: column;
     }
+  }
+
+  // 分區標題兼作兩區的分界：首個貼齊上緣，之後每個都帶一條分隔線
+  &__info-section {
+    color: var(--eqt-text-hint);
+    font-size: 11px;
+
+    & + * {
+      margin-top: 1px;
+    }
+
+    &:not(:first-of-type) {
+      margin-top: 6px;
+      padding-top: 6px;
+      border-top: var(--eqt-border-width) solid var(--eqt-divider);
+    }
+  }
+
+  &__info-row {
+    padding-left: 8px;
+  }
+
+  &__info-hint {
+    padding-left: 8px;
+    color: var(--eqt-text-hint);
+    font-size: 11px;
   }
 
   &__lines {
