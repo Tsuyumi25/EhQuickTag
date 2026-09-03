@@ -323,7 +323,13 @@ let spacerResizeCtx: {
 function onSpacerGripDown(e: PointerEvent, li: number, b: SpacerButton, align: LineTextAlign, side: 'left' | 'right'): void {
   e.preventDefault()
   e.stopPropagation()   // 擋住 sortable 把 grip 拖曳當成排序拖曳
-  if (spacerResizeCtx) return   // 已有進行中的 resize(多指):忽略後來者
+  // 已有進行中的 resize(多指):忽略後來者。但拖曳中那一行若被移除,grip 連同
+  // 它身上的 pointerup / pointercancel 一起消失,ctx 會永遠留著、擋掉之後每一次
+  // 調整。上一個 ctx 的元素已離開文件就代表它不可能再收到收尾事件,直接清掉
+  if (spacerResizeCtx) {
+    if (spacerResizeCtx.spacerEl.isConnected) return
+    finishSpacerResize()
+  }
   const grip = e.currentTarget as HTMLElement
   grip.setPointerCapture(e.pointerId)
   const rowsEl = barEl.value?.querySelector('.eqt-tag-bar__line-rows')
@@ -886,6 +892,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
                     @pointermove="onSpacerGripMove"
                     @pointerup="onSpacerGripUp"
                     @pointercancel="onSpacerGripUp"
+                    @lostpointercapture="onSpacerGripUp"
                   ></span>
                   <span
                     v-if="editing && spacerHasGrip(b, lineAlignOf(line), 'right')"
@@ -895,6 +902,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
                     @pointermove="onSpacerGripMove"
                     @pointerup="onSpacerGripUp"
                     @pointercancel="onSpacerGripUp"
+                    @lostpointercapture="onSpacerGripUp"
                   ></span>
                 </div>
 
