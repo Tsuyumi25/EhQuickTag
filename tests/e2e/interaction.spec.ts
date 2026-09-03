@@ -592,6 +592,13 @@ test('chip 切 Off 後在原位殘留、不跑到末尾', async ({ page }) => {
 
 // 選單錨定在 trigger 元素上，所以捲動時該跟著頁面內容走，而不是黏在畫面上。
 // 量的是「選單與 trigger 的相對距離」——這個差值不受捲動影響才算真的錨住了。
+// mouse.wheel 有慣性，捲動可能還在進行中就被量到；量測分兩次讀 boundingBox，
+// 中間頁面若還在動就會差出誤差、讓斷言間歇性失敗。改成直接捲到定值並等它停穩
+async function scrollToStable(page: import('@playwright/test').Page, top: number) {
+  await page.evaluate((y) => window.scrollTo({ top: y, behavior: 'instant' }), top)
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(top)
+}
+
 async function menuOffsetFromTrigger(page: import('@playwright/test').Page, triggerSelector: string) {
   const trigger = (await page.locator(triggerSelector).first().boundingBox())!
   const menu = (await page.locator('.eqt-context-menu').boundingBox())!
@@ -610,8 +617,7 @@ test('捲動時行操作選單跟著 trigger 走，不黏在畫面上', async ({
   await expect(page.locator('.eqt-context-menu')).toBeVisible()
 
   const before = await menuOffsetFromTrigger(page, '.eqt-tag-bar__line-actions')
-  await page.mouse.wheel(0, 300)
-  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(100)
+  await scrollToStable(page, 300)
   const after = await menuOffsetFromTrigger(page, '.eqt-tag-bar__line-actions')
 
   expect(Math.abs(after.dy - before.dy)).toBeLessThanOrEqual(1)
@@ -632,8 +638,7 @@ test('捲動時 tag 右鍵選單跟著 trigger 走，不黏在畫面上', async 
   await expect(page.locator('.eqt-context-menu')).toBeVisible()
 
   const before = await menuOffsetFromTrigger(page, '.eqt-tag-bar__btn')
-  await page.mouse.wheel(0, 300)
-  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(100)
+  await scrollToStable(page, 300)
   const after = await menuOffsetFromTrigger(page, '.eqt-tag-bar__btn')
 
   expect(Math.abs(after.dy - before.dy)).toBeLessThanOrEqual(1)
