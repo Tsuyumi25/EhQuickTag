@@ -589,3 +589,52 @@ test('chip 切 Off 後在原位殘留、不跑到末尾', async ({ page }) => {
   expect(Math.abs(alphaX1 - alphaX0)).toBeLessThanOrEqual(1)
   expect(alphaX1).toBeLessThan(betaX1)
 })
+
+// 選單錨定在 trigger 元素上，所以捲動時該跟著頁面內容走，而不是黏在畫面上。
+// 量的是「選單與 trigger 的相對距離」——這個差值不受捲動影響才算真的錨住了。
+async function menuOffsetFromTrigger(page: import('@playwright/test').Page, triggerSelector: string) {
+  const trigger = (await page.locator(triggerSelector).first().boundingBox())!
+  const menu = (await page.locator('.eqt-context-menu').boundingBox())!
+  return { dx: menu.x - trigger.x, dy: menu.y - trigger.y }
+}
+
+test('捲動時行操作選單跟著 trigger 走，不黏在畫面上', async ({ page }) => {
+  await injectUserscript(page)
+  await page.evaluate(() => {
+    const filler = document.createElement('div')
+    filler.style.height = '2000px'
+    document.body.append(filler)
+  })
+  await page.locator('.eqt-tag-bar__ctrl--toggle').click()
+  await page.locator('.eqt-tag-bar__line-actions').first().click()
+  await expect(page.locator('.eqt-context-menu')).toBeVisible()
+
+  const before = await menuOffsetFromTrigger(page, '.eqt-tag-bar__line-actions')
+  await page.mouse.wheel(0, 300)
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(100)
+  const after = await menuOffsetFromTrigger(page, '.eqt-tag-bar__line-actions')
+
+  expect(Math.abs(after.dy - before.dy)).toBeLessThanOrEqual(1)
+  expect(Math.abs(after.dx - before.dx)).toBeLessThanOrEqual(1)
+})
+
+test('捲動時新增空位選單跟著 trigger 走，不黏在畫面上', async ({ page }) => {
+  await injectUserscript(page)
+  await page.evaluate(() => {
+    const filler = document.createElement('div')
+    filler.style.height = '2000px'
+    document.body.append(filler)
+  })
+  await page.locator('.eqt-tag-bar__ctrl--toggle').click()
+  const trigger = page.locator('.eqt-tag-bar__item-add-btn')
+  await trigger.click()
+  await expect(page.locator('.eqt-context-menu')).toBeVisible()
+
+  const before = await menuOffsetFromTrigger(page, '.eqt-tag-bar__item-add-btn')
+  await page.mouse.wheel(0, 300)
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(100)
+  const after = await menuOffsetFromTrigger(page, '.eqt-tag-bar__item-add-btn')
+
+  expect(Math.abs(after.dy - before.dy)).toBeLessThanOrEqual(1)
+  expect(Math.abs(after.dx - before.dx)).toBeLessThanOrEqual(1)
+})

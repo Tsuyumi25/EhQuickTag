@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { ref, computed, inject, provide, watch, nextTick } from 'vue'
 import { onClickOutside, useEventListener } from '@vueuse/core'
-import { useFloating, autoUpdate, flip, shift, offset, type Placement, type VirtualElement } from '@floating-ui/vue'
+import { useFloating, autoUpdate, flip, shift, offset, type Placement, type ReferenceElement } from '@floating-ui/vue'
 import { POPUP_IGNORE_KEY, type PopupIgnoreRegister } from '@/composables/usePopupBehavior'
 
 const props = defineProps<{
   open: boolean
-  x: number
-  y: number
-  anchorWidth?: number
-  anchorHeight?: number
+  anchorEl: HTMLElement | null
+  // 右鍵開啟時選單要落在游標上，而不是按鈕邊緣。記游標相對錨點左上角的
+  // 偏移即可：錨點會隨頁面捲動，偏移不會，兩者相加永遠是當下的正確位置。
+  pointerOffset?: { x: number, y: number } | null
   placement?: Placement
   ignore?: Array<HTMLElement | null>
   autoFocus?: boolean
@@ -23,24 +23,39 @@ const emit = defineEmits<{
 
 const menuEl = ref<HTMLElement | null>(null)
 
-// 錨點不是 DOM 元素而是 caller 提供的座標／矩形——右鍵入口使用零尺寸游標點，
-// overflow button 則帶實際寬高，讓 flip 到另一側時仍保留按鈕邊界與 offset。
-const anchor = computed<VirtualElement>(() => ({
-  getBoundingClientRect: () => ({
-    x: props.x, y: props.y,
-    width: props.anchorWidth ?? 0,
-    height: props.anchorHeight ?? 0,
-    top: props.y,
-    left: props.x,
-    right: props.x + (props.anchorWidth ?? 0),
-    bottom: props.y + (props.anchorHeight ?? 0),
-  }),
-}))
+// 錨點一律綁到實際存在的元素，不抄下它當時的座標：抄下來的數字不會隨頁面
+// 捲動更新，autoUpdate 每次重算都拿同一個過期答案再疊上新的捲動位移，選單
+// 就會逐格漂離目標、看起來像釘在畫面上。
+// 游標點也走同一條路——contextElement 讓 floating-ui 知道這個矩形衍生自誰，
+// 裁切偵測與位置更新才找得到正確的祖先。
+const anchor = computed<ReferenceElement | null>(() => {
+  const el = props.anchorEl
+  if (!el) return null
 
+  const offsets = props.pointerOffset
+  if (!offsets) return el
+
+  return {
+    getBoundingClientRect: () => {
+      const rect = el.getBoundingClientRect()
+      const x = rect.left + offsets.x
+      const y = rect.top + offsets.y
+      return { x, y, width: 0, height: 0, top: y, left: x, right: x, bottom: y }
+    },
+    contextElement: el,
+  }
+})
+
+// flip / shift 是開啟那一刻的碰撞閃避，不該在捲動時繼續作用：錨點捲向視窗
+// 邊緣時 shift 會把選單一路往回推，選單於是卡在邊緣、看起來黏住畫面。
+// 捲動觸發重算的有兩條路，兩條都要關——ancestorScroll 聽捲動事件，
+// layoutShift 用 IntersectionObserver 監看錨點移動，只關前者仍會重算。
+// 選單自身尺寸變化（drill-down 換頁）不受影響，那時重新閃避才是對的。
 const { floatingStyles } = useFloating(anchor, menuEl, {
   placement: () => props.placement ?? 'bottom-start',
   middleware: [offset(2), flip(), shift({ padding: 8 })],
-  whileElementsMounted: autoUpdate,
+  whileElementsMounted: (reference, floating, update) =>
+    autoUpdate(reference, floating, update, { ancestorScroll: false, layoutShift: false }),
 })
 
 function close(): void {
@@ -60,12 +75,12 @@ const outsideIgnoreList = computed(() => [
 ])
 onClickOutside(menuEl, close, { ignore: outsideIgnoreList })
 
-// 開啟（或座標變動 = 在別處重開）時，dialog 模式把焦點主動送進 popup，
+// 開啟（或錨點換人 = 在別處重開）時，dialog 模式把焦點主動送進 popup，
 // 讓鍵盤使用者不必從觸發器一路 Tab 到 Teleport 尾端。
-watch(() => [props.open, props.x, props.y] as const, async ([open]) => {
+watch(() => [props.open, props.anchorEl] as const, async ([open]) => {
   if (!open || !props.autoFocus) return
   await nextTick()
-  menuEl.value?.querySelector<HTMLElement>('button:not(:disabled), input:not(:disabled), [tabindex]:not([tabindex="-1"])')?.focus()
+  menuEl.value?.querySelector<HTMLElement>('button:not(:disabled), input:not(:disabled), [tabindex]:not([tabindex="-1"])')?.focus({ preventScroll: true })
 }, { immediate: true })
 
 // capture + stopPropagation：外層 popup（usePopupBehavior）也在 document 聽

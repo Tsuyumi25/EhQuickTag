@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, watch, type Ref } from 'vue'
+import { ref, computed, nextTick, watch } from 'vue'
 import { useResizeObserver } from '@vueuse/core'
 import Draggable from 'vuedraggable'
 import { AlignHorizontalSpaceBetween, ArrowLeft, ArrowLeftRight, ChevronLeft, ChevronRight, CopyPlus, ExternalLink, GripVertical, Trash2, Pencil, Check, Settings, Plus, Info, Ellipsis, Palette, SquareDashedMousePointer } from '@lucide/vue'
@@ -233,10 +233,6 @@ function onAddSeparatorLine() { lines.push({ kind: 'separator' }) }
 // 單一「新增空位」入口,點擊冒出兩項選單(固定 / 彈性)——模式在新增時
 // 一次選定,不佔兩顆入口鈕、也不用事後翻右鍵選單切換
 const addSpacerMenuOpen = ref(false)
-const addSpacerMenuX = ref(0)
-const addSpacerMenuY = ref(0)
-const addSpacerMenuAnchorWidth = ref(0)
-const addSpacerMenuAnchorHeight = ref(0)
 const addSpacerTrigger = ref<HTMLButtonElement | null>(null)
 
 function toggleAddSpacerMenu(e: MouseEvent): void {
@@ -244,21 +240,8 @@ function toggleAddSpacerMenu(e: MouseEvent): void {
     addSpacerMenuOpen.value = false
     return
   }
-  const trigger = e.currentTarget as HTMLButtonElement
-  captureMenuAnchor(trigger, addSpacerMenuX, addSpacerMenuY, addSpacerMenuAnchorWidth, addSpacerMenuAnchorHeight)
-  addSpacerTrigger.value = trigger
+  addSpacerTrigger.value = e.currentTarget as HTMLButtonElement
   addSpacerMenuOpen.value = true
-}
-
-// 「量 trigger rect 寫進 x / y / anchor 尺寸 refs」的共用步驟——
-// lineMenu 與 addSpacerMenu 都以 trigger 元素為 anchor(tagMenu 以滑鼠
-// 座標為 anchor,不走這裡)
-function captureMenuAnchor(trigger: HTMLElement, x: Ref<number>, y: Ref<number>, width: Ref<number>, height: Ref<number>): void {
-  const rect = trigger.getBoundingClientRect()
-  x.value = rect.left
-  y.value = rect.top
-  width.value = rect.width
-  height.value = rect.height
 }
 
 function onAddSpacer(mode: SpacerButton['mode']): void {
@@ -455,10 +438,6 @@ function onDeleteLine(li: number) {
 
 const lineMenuOpen = ref(false)
 const lineMenuIdx = ref(-1)
-const lineMenuX = ref(0)
-const lineMenuY = ref(0)
-const lineMenuAnchorWidth = ref(0)
-const lineMenuAnchorHeight = ref(0)
 const lineMenuView = ref<'menu' | 'move' | 'layout' | 'color'>('menu')
 const lineMenuTrigger = ref<HTMLButtonElement | null>(null)
 const lineMenuBack = ref<HTMLButtonElement | null>(null)
@@ -473,7 +452,6 @@ function toggleLineMenu(e: MouseEvent, li: number): void {
     return
   }
   lineMenuIdx.value = li
-  captureMenuAnchor(trigger, lineMenuX, lineMenuY, lineMenuAnchorWidth, lineMenuAnchorHeight)
   lineMenuView.value = 'menu'
   lineMenuTrigger.value = trigger
   lineMenuDrillTrigger.value = null
@@ -483,12 +461,12 @@ function toggleLineMenu(e: MouseEvent, li: number): void {
 function openLineMenuView(view: 'move' | 'layout' | 'color', e: MouseEvent): void {
   lineMenuDrillTrigger.value = e.currentTarget as HTMLButtonElement
   lineMenuView.value = view
-  nextTick(() => lineMenuBack.value?.focus())
+  nextTick(() => lineMenuBack.value?.focus({ preventScroll: true }))
 }
 
 function returnToLineMenu(): void {
   lineMenuView.value = 'menu'
-  nextTick(() => lineMenuDrillTrigger.value?.focus())
+  nextTick(() => lineMenuDrillTrigger.value?.focus({ preventScroll: true }))
 }
 
 // 選單裡的刪除 / 移動會把觸發鈕從 DOM 拆掉，對脫離的節點 focus 是
@@ -530,8 +508,9 @@ function deleteLineFromMenu(li: number): void {
 const tagMenuOpen = ref(false)
 const tagMenuLineIdx = ref(-1)
 const tagMenuButtonIdx = ref(-1)
-const tagMenuX = ref(0)
-const tagMenuY = ref(0)
+// 右鍵記游標相對按鈕左上角的偏移；鍵盤開啟沒有游標，改用 null 讓選單
+// 直接貼著按鈕（placement 決定貼哪一邊）
+const tagMenuPointerOffset = ref<{ x: number, y: number } | null>(null)
 const tagMenuView = ref<'menu' | 'move' | 'color'>('menu')
 const tagMenuTrigger = ref<HTMLButtonElement | null>(null)
 const tagMenuRestoreFocus = ref(false)
@@ -567,8 +546,9 @@ async function openTagMenu(e: MouseEvent, li: number, ti: number): Promise<void>
   const rect = trigger.getBoundingClientRect()
   tagMenuLineIdx.value = li
   tagMenuButtonIdx.value = ti
-  tagMenuX.value = openedFromKeyboard ? rect.left : e.clientX
-  tagMenuY.value = openedFromKeyboard ? rect.bottom : e.clientY
+  tagMenuPointerOffset.value = openedFromKeyboard
+    ? null
+    : { x: e.clientX - rect.left, y: e.clientY - rect.top }
   tagMenuView.value = 'menu'
   tagMenuTrigger.value = trigger
   tagMenuRestoreFocus.value = openedFromKeyboard
@@ -580,12 +560,12 @@ async function openTagMenu(e: MouseEvent, li: number, ti: number): Promise<void>
 function openTagMenuView(view: 'move' | 'color', e: MouseEvent): void {
   tagMenuDrillTrigger.value = e.currentTarget as HTMLButtonElement
   tagMenuView.value = view
-  nextTick(() => tagMenuBack.value?.focus())
+  nextTick(() => tagMenuBack.value?.focus({ preventScroll: true }))
 }
 
 function returnToTagMenu(): void {
   tagMenuView.value = 'menu'
-  nextTick(() => tagMenuDrillTrigger.value?.focus())
+  nextTick(() => tagMenuDrillTrigger.value?.focus({ preventScroll: true }))
 }
 
 function duplicateTag(li: number, ti: number): void {
@@ -934,10 +914,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
             <ContextMenu
               v-if="lineMenuIdx === li"
               v-model:open="lineMenuOpen"
-              :x="lineMenuX"
-              :y="lineMenuY"
-              :anchor-width="lineMenuAnchorWidth"
-              :anchor-height="lineMenuAnchorHeight"
+              :anchor-el="lineMenuTrigger"
               :ignore="[lineMenuTrigger]"
               auto-focus
               aria-role="dialog"
@@ -1008,8 +985,8 @@ function onRightClick(event: MouseEvent, b: TagButton) {
       </Draggable>
       <ContextMenu
         v-model:open="tagMenuOpen"
-        :x="tagMenuX"
-        :y="tagMenuY"
+        :anchor-el="tagMenuTrigger"
+        :pointer-offset="tagMenuPointerOffset"
         auto-focus
         aria-role="dialog"
         :aria-label="t('tagbar.tagActions')"
@@ -1089,10 +1066,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
           ><Plus :size="12" /> {{ t('tagbar.addSpacer') }}</button>
           <ContextMenu
             v-model:open="addSpacerMenuOpen"
-            :x="addSpacerMenuX"
-            :y="addSpacerMenuY"
-            :anchor-width="addSpacerMenuAnchorWidth"
-            :anchor-height="addSpacerMenuAnchorHeight"
+            :anchor-el="addSpacerTrigger"
             :ignore="[addSpacerTrigger]"
             auto-focus
             :aria-label="t('tagbar.addSpacer')"
