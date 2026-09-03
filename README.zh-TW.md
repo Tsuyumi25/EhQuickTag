@@ -8,6 +8,26 @@ E-Hentai / ExHentai 的可自訂快捷標籤列與 Gallery 標籤工具。
 
 [gallery-tagging.webm](https://github.com/user-attachments/assets/77448a48-2d9c-485c-aa8c-81d14e806e95)
 
+## 截圖
+
+一般模式
+<img width="1857" height="1295" alt="一般模式" src="https://github.com/user-attachments/assets/a60eddbb-692d-4620-9411-99c66ad221a1" />
+
+編輯模式
+<img width="2232" height="1226" alt="編輯模式" src="https://github.com/user-attachments/assets/caba3961-3067-48fa-b2f5-aa203dfac410" />
+
+標籤編輯器
+<img width="2078" height="992" alt="標籤編輯器" src="https://github.com/user-attachments/assets/16f28de7-dd27-4d94-a4ff-468234c795af" />
+
+連結按鈕編輯器
+<img width="2067" height="1272" alt="連結按鈕編輯器" src="https://github.com/user-attachments/assets/d2bbc76a-615b-42a4-872e-9fa6b219d898" />
+
+標籤瀏覽器
+<img width="2366" height="2008" alt="標籤瀏覽器" src="https://github.com/user-attachments/assets/6ed46053-80c7-4df9-a56b-4e92e21659c8" />
+
+Gallery Tagging Enhancer
+<img width="1454" height="831" alt="Gallery Tagging Enhancer" src="https://github.com/user-attachments/assets/2335e64e-3655-42df-b884-b10e68d321e9" />
+
 ## 功能
 
 - [x] 快捷標籤列
