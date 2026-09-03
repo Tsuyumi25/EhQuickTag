@@ -8,6 +8,26 @@ A customizable quick tag bar and Gallery tagging toolkit for E-Hentai / ExHentai
 
 [gallery-tagging.webm](https://github.com/user-attachments/assets/77448a48-2d9c-485c-aa8c-81d14e806e95)
 
+## Screenshots
+
+Normal mode
+<img width="1857" height="1295" alt="Normal mode" src="https://github.com/user-attachments/assets/a60eddbb-692d-4620-9411-99c66ad221a1" />
+
+Edit mode
+<img width="2232" height="1226" alt="Edit mode" src="https://github.com/user-attachments/assets/caba3961-3067-48fa-b2f5-aa203dfac410" />
+
+Tag editor
+<img width="2078" height="992" alt="Tag editor" src="https://github.com/user-attachments/assets/16f28de7-dd27-4d94-a4ff-468234c795af" />
+
+Link button editor
+<img width="2067" height="1272" alt="Link button editor" src="https://github.com/user-attachments/assets/d2bbc76a-615b-42a4-872e-9fa6b219d898" />
+
+Tag browser
+<img width="2366" height="2008" alt="Tag browser" src="https://github.com/user-attachments/assets/6ed46053-80c7-4df9-a56b-4e92e21659c8" />
+
+Gallery Tagging Enhancer
+<img width="1454" height="831" alt="Gallery Tagging Enhancer" src="https://github.com/user-attachments/assets/2335e64e-3655-42df-b884-b10e68d321e9" />
+
 ## Features
 
 - [x] Quick tag bar
