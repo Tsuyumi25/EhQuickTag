@@ -10,8 +10,8 @@ import ContextMenu from '@/components/ContextMenu.vue'
 import SearchPanel from '@/components/search/SearchPanel.vue'
 import { TagState, type Line, type Button, type ButtonLine, type TagButton, type SpacerButton, type LineTextAlign } from '@/types'
 import { tokenize, buildIdentityIndex, getState as _getState, setTagState, getNextRightClickState } from '@/services/tagState'
-import { lines, profiles, activeProfileIdx, moveLineToProfile, moveButtonToProfile, appendToLastButtonLine, buttonLineTextAlign, separatorLineTextAlign, dblClickLeft, dblClickRight, dblClickLeftNewTabActive, dblClickRightNewTabActive, useAccentOnInclude, showSearchPanel, followCurrentSite, type DblClickAction } from '@/services/store'
-import { baseDragOptions, EQT_TAGS_GROUP } from '@/utils/drag'
+import { lines, profiles, activeProfileIdx, moveLineToProfile, moveButtonToProfile, buttonLineTextAlign, separatorLineTextAlign, dblClickLeft, dblClickRight, dblClickLeftNewTabActive, dblClickRightNewTabActive, useAccentOnInclude, showSearchPanel, followCurrentSite, type DblClickAction } from '@/services/store'
+import { baseDragOptions, EQT_TAGS_GROUP, EQT_LINES_GROUP } from '@/utils/drag'
 import { resolveButtonUrl } from '@/utils/ehUrl'
 import { dismissTerms, recordSubmitAndFlush } from '@/services/search/searchSession'
 import { t } from '@/composables/useI18n'
@@ -191,6 +191,9 @@ function finishRenameOrCreate() {
 let tagDragging = false
 
 function onLineChange(evt: any) {
+  if (evt.added) {
+    lines.splice(evt.added.newIndex, 0, evt.added.element)
+  }
   if (evt.moved) {
     const [line] = lines.splice(evt.moved.oldIndex, 1)
     lines.splice(evt.moved.newIndex, 0, line)
@@ -222,34 +225,39 @@ function closeActionMenus() {
 function onTagStart() { tagDragging = true; closeActionMenus() }
 function onTagEnd() { setTimeout(() => { tagDragging = false }, 0) }
 
-function onAddButtonLine() { lines.push({ kind: 'buttons', buttons: [] }) }
-function onAddSeparatorLine() { lines.push({ kind: 'separator' }) }
+// 底部工具箱：四種新元素都靠拖曳落位，不再有「新增到預設位置」的點擊入口。
+// 兩箱分屬不同 group——行工具落進 line-rows,行內工具落進某一行的 buttons。
+// 模板本身是唯讀樣板,靠 :clone 深拷貝後才交給目標清單,否則 vuedraggable
+// 預設的 clone 是 identity,拖出去的物件會跟工具箱裡那個共用參考。
+const lineTools: Line[] = [
+  { kind: 'buttons', buttons: [] },
+  { kind: 'separator' },
+]
+
+const spacerTools: SpacerButton[] = [
+  { kind: 'spacer', mode: 'fixed', width: DEFAULT_SPACER_WIDTH },
+  { kind: 'spacer', mode: 'flex' },
+]
+
+function cloneTool<T>(tool: T): T {
+  return JSON.parse(JSON.stringify(tool)) as T
+}
+
+const lineToolDragOptions = {
+  ...baseDragOptions,
+  group: { name: EQT_LINES_GROUP, pull: 'clone' as const, put: false },
+  sort: false,
+  ghostClass: 'eqt-tag-bar__tool--ghost',
+  chosenClass: 'eqt-tag-bar__tool--chosen',
+  dragClass: 'eqt-tag-bar__tool--drag',
+}
+
+const spacerToolDragOptions = {
+  ...lineToolDragOptions,
+  group: { name: EQT_TAGS_GROUP, pull: 'clone' as const, put: false },
+}
 
 // --- spacers ---
-
-// 新增入口跟 moveButtonToProfile 同一條承接政策（appendToLastButtonLine）:
-// 進最後一個普通行、沒有就建一行,再由使用者在編輯模式拖到目標位置
-
-// 單一「新增空位」入口,點擊冒出兩項選單(固定 / 彈性)——模式在新增時
-// 一次選定,不佔兩顆入口鈕、也不用事後翻右鍵選單切換
-const addSpacerMenuOpen = ref(false)
-const addSpacerTrigger = ref<HTMLButtonElement | null>(null)
-
-function toggleAddSpacerMenu(e: MouseEvent): void {
-  if (addSpacerMenuOpen.value) {
-    addSpacerMenuOpen.value = false
-    return
-  }
-  addSpacerTrigger.value = e.currentTarget as HTMLButtonElement
-  addSpacerMenuOpen.value = true
-}
-
-function onAddSpacer(mode: SpacerButton['mode']): void {
-  appendToLastButtonLine(lines, mode === 'fixed'
-    ? { kind: 'spacer', mode, width: DEFAULT_SPACER_WIDTH }
-    : { kind: 'spacer', mode })
-  addSpacerMenuOpen.value = false
-}
 
 // --- fixed spacer resize ---
 // 數學核心（閉環實測 + gap 恆等式吸附）住在 services/spacerResize.ts 的
@@ -654,6 +662,7 @@ function onUpdateLine(li: number, newLine: Line) {
 
 const lineDragOptions = {
   ...baseDragOptions,
+  group: EQT_LINES_GROUP,
   ghostClass: 'eqt-tag-bar__line-wrap--ghost',
 }
 
@@ -1043,43 +1052,39 @@ function onRightClick(event: MouseEvent, b: TagButton) {
         />
       </div>
       <div class="eqt-tag-bar__bottom-row">
-        <div v-if="editing" class="eqt-tag-bar__line-add">
-          <button
-            class="eqt-tag-bar__line-add-btn"
-            type="button"
-            @click="onAddButtonLine"
-          ><Plus :size="12" /> {{ t('tagbar.addButtonLine') }}</button>
-          <button
-            class="eqt-tag-bar__line-add-btn"
-            type="button"
-            @click="onAddSeparatorLine"
-          ><Plus :size="12" /> {{ t('tagbar.addSeparatorLine') }}</button>
-        </div>
+        <Draggable
+          v-if="editing"
+          v-bind="lineToolDragOptions"
+          :model-value="lineTools"
+          :item-key="(tool: Line) => tool.kind"
+          :clone="cloneTool"
+          tag="div"
+          class="eqt-tag-bar__line-add"
+        >
+          <template #item="{ element: tool }">
+            <div class="eqt-tag-bar__tool">
+              <GripVertical :size="12" />
+              {{ t(tool.kind === 'separator' ? 'tagbar.addSeparatorLine' : 'tagbar.addButtonLine') }}
+            </div>
+          </template>
+        </Draggable>
         <!-- 空位加的是行內物而不是行，所以不併進左邊那條 split -->
-        <div v-if="editing" class="eqt-tag-bar__item-add">
-          <button
-            class="eqt-tag-bar__item-add-btn"
-            type="button"
-            aria-haspopup="menu"
-            :aria-expanded="addSpacerMenuOpen"
-            @click="toggleAddSpacerMenu"
-          ><Plus :size="12" /> {{ t('tagbar.addSpacer') }}</button>
-          <ContextMenu
-            v-model:open="addSpacerMenuOpen"
-            :anchor-el="addSpacerTrigger"
-            :ignore="[addSpacerTrigger]"
-            auto-focus
-            :aria-label="t('tagbar.addSpacer')"
-            placement="top-start"
-          >
-            <button type="button" class="eqt-context-menu__item" @click="onAddSpacer('fixed')">
-              <ArrowLeftRight :size="14" class="eqt-context-menu__icon" /><span class="eqt-context-menu__label">{{ t('tagbar.spacerModeFixed') }}</span>
-            </button>
-            <button type="button" class="eqt-context-menu__item" @click="onAddSpacer('flex')">
-              <AlignHorizontalSpaceBetween :size="14" class="eqt-context-menu__icon" /><span class="eqt-context-menu__label">{{ t('tagbar.spacerModeFlex') }}</span>
-            </button>
-          </ContextMenu>
-        </div>
+        <Draggable
+          v-if="editing"
+          v-bind="spacerToolDragOptions"
+          :model-value="spacerTools"
+          :item-key="(tool: SpacerButton) => tool.mode"
+          :clone="cloneTool"
+          tag="div"
+          class="eqt-tag-bar__item-add"
+        >
+          <template #item="{ element: tool }">
+            <div class="eqt-tag-bar__tool">
+              <component :is="tool.mode === 'flex' ? AlignHorizontalSpaceBetween : ArrowLeftRight" :size="12" />
+              {{ t(tool.mode === 'flex' ? 'tagbar.spacerModeFlex' : 'tagbar.spacerModeFixed') }}
+            </div>
+          </template>
+        </Draggable>
         <div class="eqt-tag-bar__controls">
           <div class="eqt-tag-bar__ctrl-split">
             <button
@@ -1326,24 +1331,41 @@ function onRightClick(event: MouseEvent, b: TagButton) {
     margin-bottom: 6px;
   }
 
-  // 編輯態下方的「+ 行 / + 分隔線」split。flex: 1 撐滿剩餘空間
+  // 編輯態下方的「行 / 分隔線」拖曳來源。flex: 1 撐滿剩餘空間
   &__line-add {
     flex: 1;
     @include btn-split-group;
-  }
-  &__line-add-btn {
-    flex: 1;
-    @include btn-split-item;
+
+    .eqt-tag-bar__tool {
+      flex: 1;
+    }
   }
 
-  // 「+ 空位」自成一格。它加的是行內物（Button）不是行（Line）——併進左邊那條
-  // split 會讓兩個層級讀起來像三個平行選項，使用者得自己把層級補回來。
+  // 「間隔 / 彈簧」自成一格。它們是行內物（Button）不是行（Line）——併進左邊
+  // 那條 split 會讓兩個層級讀起來像四個平行選項，使用者得自己把層級補回來。
   // hug content：撐滿留給真正管「行」的那組
   &__item-add {
     @include btn-split-group;
   }
-  &__item-add-btn {
+
+  // 工具箱裡的東西只能拖不能點，grab 游標是它跟一般按鈕唯一的視覺區別
+  &__tool {
     @include btn-split-item;
+    cursor: grab;
+    user-select: none;
+
+    &--chosen {
+      cursor: grabbing;
+    }
+
+    // ghost 不用 display: none——forceFallback 下會讓浮動 ghost 量到 0×0
+    &--ghost {
+      opacity: 0.4;
+    }
+
+    &--drag {
+      opacity: 0.9;
+    }
   }
 
   // 右下 ctrl 區的「+ 標籤 / + URL」split；hug content 不撐。

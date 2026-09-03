@@ -618,7 +618,9 @@ test('捲動時行操作選單跟著 trigger 走，不黏在畫面上', async ({
   expect(Math.abs(after.dx - before.dx)).toBeLessThanOrEqual(1)
 })
 
-test('捲動時新增空位選單跟著 trigger 走，不黏在畫面上', async ({ page }) => {
+// 右鍵選單走的是「游標偏移 + contextElement」那條路，跟行操作的實體錨點
+// 不同分支，所以兩邊都要量
+test('捲動時 tag 右鍵選單跟著 trigger 走，不黏在畫面上', async ({ page }) => {
   await injectUserscript(page)
   await page.evaluate(() => {
     const filler = document.createElement('div')
@@ -626,15 +628,57 @@ test('捲動時新增空位選單跟著 trigger 走，不黏在畫面上', async
     document.body.append(filler)
   })
   await page.locator('.eqt-tag-bar__ctrl--toggle').click()
-  const trigger = page.locator('.eqt-tag-bar__item-add-btn')
-  await trigger.click()
+  await page.locator('.eqt-tag-bar__btn').first().click({ button: 'right' })
   await expect(page.locator('.eqt-context-menu')).toBeVisible()
 
-  const before = await menuOffsetFromTrigger(page, '.eqt-tag-bar__item-add-btn')
+  const before = await menuOffsetFromTrigger(page, '.eqt-tag-bar__btn')
   await page.mouse.wheel(0, 300)
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(100)
-  const after = await menuOffsetFromTrigger(page, '.eqt-tag-bar__item-add-btn')
+  const after = await menuOffsetFromTrigger(page, '.eqt-tag-bar__btn')
 
   expect(Math.abs(after.dy - before.dy)).toBeLessThanOrEqual(1)
   expect(Math.abs(after.dx - before.dx)).toBeLessThanOrEqual(1)
+})
+
+// 工具箱是 pull: 'clone' 的來源，拖出去之後自己不能少東西。
+// baseDragOptions 開了 forceFallback，SortableJS 走 mouse 事件而非 HTML5 DnD，
+// 所以用 mouse.move 逐步移動驅動；steps 太少不會越過它的拖曳判定門檻。
+async function dragTo(page: import('@playwright/test').Page, from: string, to: string) {
+  const src = (await page.locator(from).boundingBox())!
+  const dst = (await page.locator(to).boundingBox())!
+  await page.mouse.move(src.x + src.width / 2, src.y + src.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(dst.x + dst.width / 2, dst.y + dst.height / 2, { steps: 20 })
+  await page.mouse.move(dst.x + dst.width / 2, dst.y + dst.height / 2 + 4, { steps: 5 })
+  await page.mouse.up()
+}
+
+test('從工具箱拖出一行，行數增加而工具箱不變', async ({ page }) => {
+  await injectUserscript(page)
+  await page.locator('.eqt-tag-bar__ctrl--toggle').click()
+
+  const rows = page.locator('.eqt-tag-bar__line-wrap')
+  const tools = page.locator('.eqt-tag-bar__line-add .eqt-tag-bar__tool')
+  const before = await rows.count()
+  await expect(tools).toHaveCount(2)
+
+  await dragTo(page, '.eqt-tag-bar__line-add .eqt-tag-bar__tool >> nth=0', '.eqt-tag-bar__line-rows')
+
+  await expect(rows).toHaveCount(before + 1)
+  await expect(tools).toHaveCount(2)
+})
+
+test('從工具箱拖出彈簧，落進行內成為 spacer', async ({ page }) => {
+  await injectUserscript(page)
+  await page.locator('.eqt-tag-bar__ctrl--toggle').click()
+
+  const spacers = page.locator('.eqt-tag-bar__spacer')
+  const tools = page.locator('.eqt-tag-bar__item-add .eqt-tag-bar__tool')
+  const before = await spacers.count()
+  await expect(tools).toHaveCount(2)
+
+  await dragTo(page, '.eqt-tag-bar__item-add .eqt-tag-bar__tool >> nth=0', '.eqt-tag-bar__line >> nth=0')
+
+  await expect(spacers).toHaveCount(before + 1)
+  await expect(tools).toHaveCount(2)
 })
