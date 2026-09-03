@@ -682,3 +682,23 @@ test('從工具箱拖出彈簧，落進行內成為 spacer', async ({ page }) =>
   await expect(spacers).toHaveCount(before + 1)
   await expect(tools).toHaveCount(2)
 })
+
+// builder 只要網址仍可解析就不重建，所以外部改動必須主動同步進去，
+// 否則接下來碰任一控制項都會把改動前的狀態寫回網址欄
+test('在網址欄貼上另一組搜尋條件後，動 builder 不會蓋掉貼上的內容', async ({ page }) => {
+  await injectUserscript(page)
+  await page.locator('.eqt-tag-bar__ctrl--toggle').click()
+  await page.locator('.eqt-tag-bar__ctrl-split-btn').nth(1).click()
+
+  const urlInput = page.locator('.eqt-popup__input').first()
+  await urlInput.fill('https://e-hentai.org/?f_search=alpha')
+  await expect(page.locator('.eqt-url-builder')).toBeVisible()
+
+  // 換成完全不同的一組條件
+  await urlInput.fill('https://e-hentai.org/?f_search=bravo')
+
+  // 碰一個跟關鍵字無關的控制項：關鍵字必須還是 bravo
+  await page.locator('.eqt-url-builder__cat').first().click()
+  await expect(urlInput).toHaveValue(/f_search=bravo/)
+  await expect(urlInput).not.toHaveValue(/alpha/)
+})

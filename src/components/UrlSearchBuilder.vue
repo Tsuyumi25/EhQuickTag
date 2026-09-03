@@ -45,6 +45,18 @@ function currentParams(): EhSearchParams {
   }
 }
 
+// 網址欄可以被直接編輯或貼上，而只要新值仍解析得動，這個元件就不會重建
+//（掛載條件是「網址可解析」）。少了這個 watch，外部改動進不到底下的欄位，
+// 使用者接著碰任一控制項就會把改動前的狀態寫回去、蓋掉剛貼上的網址。
+watch(() => props.modelValue, (next) => {
+  // 自己送出去的值會原樣回彈，重讀只是白工；比對過濾掉那一輪。
+  // 若外部值只是同一組條件的另一種寫法，load 後送出的正規化網址會讓下一輪
+  // 命中這個比對，最多多跑一圈就收斂
+  if (next === buildSearchUrl(currentParams(), EH_ORIGIN)) return
+  const parsed = parseSearchUrl(next)
+  if (parsed) load(parsed)
+})
+
 watch(
   [keywords, categories, showAdvanced, advanced],
   () => emit('update:modelValue', buildSearchUrl(currentParams(), EH_ORIGIN)),
