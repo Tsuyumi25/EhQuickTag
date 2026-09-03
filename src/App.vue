@@ -7,6 +7,7 @@ import SettingsPopup from '@/components/SettingsPopup.vue'
 import SearchPopup from '@/components/search/SearchPopup.vue'
 import GalleryTagList from '@/components/gallery/GalleryTagList.vue'
 import GalleryIntroPanel from '@/components/gallery/GalleryIntroPanel.vue'
+import MyTagsPanel from '@/components/mytags/MyTagsPanel.vue'
 import { GM } from '$'
 import type { Button, TagButton, UrlButton } from '@/types'
 import { bindSearchBar } from '@/services/search/searchSession'
@@ -18,6 +19,7 @@ import { useEqtToast } from '@/composables/useEqtToast'
 import { t } from '@/composables/useI18n'
 import { useEhFormHost } from '@/composables/useEhFormHost'
 import { useEhGalleryHost } from '@/composables/useEhGalleryHost'
+import { useEhMyTagsHost } from '@/composables/useEhMyTagsHost'
 
 // useEhFormHost 在 setup 階段呼叫（非 onMounted）——searchText 在 bindSearchBar
 // 之前就要拿到 native input 的值，session 抓的 initialSubmittedIds snapshot 才
@@ -34,6 +36,9 @@ const anchorReady = ref(ehFormHost !== null)
 // 後 toggle 不會即時生效——需 reload，hint 會提示
 const galleryHost = taggingEnhancerEnabled.value ? useEhGalleryHost() : null
 const galleryReady = ref(galleryHost !== null)
+
+// /mytags host：跟上面兩個互斥（那頁既沒 #f_search 也沒 #taglist）
+const myTagsHost = useEhMyTagsHost()
 
 bindSearchBar({
   modelValue: () => searchText.value,
@@ -328,6 +333,10 @@ watch(searchText, (val) => {
       :taglist-el="galleryHost.taglistEl"
       @open-settings="openSettings('gallery')"
     />
+  </Teleport>
+
+  <Teleport v-if="myTagsHost" to="#eqt-mytags-anchor">
+    <MyTagsPanel :host="myTagsHost" />
   </Teleport>
 
   <GalleryIntroPanel v-if="galleryReady" />

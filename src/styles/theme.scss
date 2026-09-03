@@ -1,5 +1,6 @@
 #eqt-bar-anchor,
-#eqt-gallery-anchor {
+#eqt-gallery-anchor,
+#eqt-mytags-anchor {
   font-family: var(--eqt-font-family, inherit);
   font-weight: var(--eqt-font-weight, inherit);
   line-height: 1.4;
@@ -24,7 +25,10 @@
 #eqt-bar-anchor *::after,
 #eqt-gallery-anchor *,
 #eqt-gallery-anchor *::before,
-#eqt-gallery-anchor *::after {
+#eqt-gallery-anchor *::after,
+#eqt-mytags-anchor *,
+#eqt-mytags-anchor *::before,
+#eqt-mytags-anchor *::after {
   box-sizing: border-box;
 }
 
@@ -39,7 +43,7 @@
 // descendant selector / compound 即可 opt-out（例如 cycle-chip 要回到 native
 // 渲染）。EH 站內 bare `input[type="checkbox"]` 也是 (0,1,1)，靠 source order
 // 贏（userscript style 最後注入）。
-:where(#eqt-app, #eqt-bar-anchor) input[type="checkbox"] {
+:where(#eqt-app, #eqt-bar-anchor, #eqt-mytags-anchor) input[type="checkbox"] {
   appearance: none;
   -webkit-appearance: none;
   // 同時蓋掉 EH 全站的 `position: relative; top: 2px` 偏移
@@ -129,6 +133,7 @@
   --eqt-bg: #edebdf;
   --eqt-bg-elevated: #fff;
   --eqt-bg-hover: rgba(0, 0, 0, 0.06);
+  --eqt-bg-stripe: rgba(0, 0, 0, 0.045);
   --eqt-bg-active: #ddd8c8;
   --eqt-bg-btn: #edeada;
   --eqt-bg-btn-hover: #e2dfcf;
@@ -163,6 +168,7 @@
   --eqt-bg: #4f535b;
   --eqt-bg-elevated: #34353b;
   --eqt-bg-hover: rgba(255, 255, 255, 0.06);
+  --eqt-bg-stripe: rgba(255, 255, 255, 0.05);
   --eqt-bg-active: #5e636c;
   --eqt-bg-btn: #34353b;
   --eqt-bg-btn-hover: #3e3f45;

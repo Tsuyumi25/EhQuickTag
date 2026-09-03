@@ -1,0 +1,718 @@
+// /mytags 面板。頂部的模式列與套用列、左邊的標籤清單、右邊的兩欄預覽。
+
+// ⭐ 面板鋪滿整個視窗，不是頁面裡的一塊。
+//
+// 捲動只發生在該捲的地方（清單、兩欄、攤開的畫廊），頁面本身完全不捲——EH 原生的
+// nav 還在文檔流裡，但被整片蓋掉，所以它的高度不再影響任何東西。
+.eqt-panel {
+  position: fixed;
+  inset: 0;
+  // EH 站內最高的 z-index 是 9999，這層蓋得過去；但仍在 popover 和 toast 之下
+  z-index: var(--eqt-z-overlay);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 10px 12px;
+  background: var(--eqt-bg);
+  color: var(--eqt-text);
+  font-size: var(--eqt-fs-md);
+}
+
+.eqt-panel__modestrip,
+.eqt-panel__commit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.eqt-panel__spacer { margin-left: auto; }
+
+.eqt-panel__meta {
+  font-size: var(--eqt-fs-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--eqt-text-hint);
+}
+
+.eqt-panel__hint,
+.eqt-panel__warn {
+  margin: 0;
+  font-size: var(--eqt-fs-sm);
+  color: var(--eqt-text-hint);
+}
+
+.eqt-panel__warn { color: var(--eqt-danger); }
+
+// 門檻改過但還沒送出。跟清單那邊的 --dirty 同一個訊號，用同一個顏色
+.eqt-panel__field--dirty input {
+  border-color: var(--eqt-status-include);
+}
+
+.eqt-panel__field {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--eqt-fs-sm);
+  color: var(--eqt-text-hint);
+
+  input[type='number'] { width: 4.5em; font-variant-numeric: tabular-nums; }
+  input[type='color'] { width: 2.4em; height: 1.8em; padding: 0; }
+}
+
+// 編輯散在三個分頁裡，套用的入口不能跟著捲走
+.eqt-panel__commit {
+  position: sticky;
+  z-index: 20;
+  top: 4px;
+  justify-content: space-between;
+  margin: 8px 0;
+  padding: 8px 10px;
+  border: var(--eqt-border-width) solid var(--eqt-status-include);
+  border-radius: var(--eqt-radius-sm);
+  background: var(--eqt-bg-stripe);
+  font-size: var(--eqt-fs-sm);
+  backdrop-filter: blur(3px);
+}
+
+.eqt-panel__commitactions {
+  display: flex;
+  gap: 6px;
+}
+
+// 高度由 workspace 給（grid 的預設 stretch）。min-height: 0 讓裡面的捲動區能真的
+// 收縮——沒有它 flex item 會被內容撐開
+.eqt-panel__side {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  min-height: 0;
+  padding: 8px;
+  border: var(--eqt-border-width) solid var(--eqt-divider);
+  border-radius: var(--eqt-radius-md);
+  background: var(--eqt-bg-stripe);
+}
+
+// 側欄底部的控制區。它不需要自己 sticky——側欄本身已經貼著視窗，而清單被
+// `flex: 1` 壓在上面，所以這條天生就在視野內
+.eqt-panel__dock {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 -8px -8px;
+  padding: 8px;
+  border-top: var(--eqt-border-width) solid var(--eqt-divider);
+  // ⚠️ 實色。--eqt-bg-stripe 是半透明的疊加色（rgba ~5%），拿來當底會透出清單
+  background: var(--eqt-bg);
+}
+
+.eqt-panel__dockmeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.eqt-panel__setbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.eqt-panel__commitbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  // 兩顆常駐，所以各佔一半——位置不會因為有沒有未送出的改動而跳動
+  > .eqt-panel__btn { flex: 1 1 0; justify-content: center; }
+}
+
+// 主要篩選，所以它是這一欄裡最大的控制項
+.eqt-panel__setpick {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 4px 6px;
+  font-size: var(--eqt-fs-md);
+  font-weight: 700;
+}
+
+// ⛔ 不要加 align-items: start。兩欄要吃滿 workspace 的高度，各自在內部捲；
+// 加了的話兩欄會各自縮成自己的內容高度，dock 就浮在半空中
+.eqt-panel__workspace {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-columns: minmax(340px, 0.8fr) minmax(520px, 2fr);
+  gap: 12px;
+  min-height: 0;
+
+  @media (max-width: 1200px) { grid-template-columns: 1fr; }
+}
+
+.eqt-panel__btn {
+  padding: 3px 10px;
+  border: var(--eqt-border-width) solid var(--eqt-border);
+  border-radius: var(--eqt-radius-sm);
+  background: var(--eqt-bg-btn);
+  color: inherit;
+  font-size: var(--eqt-fs-sm);
+  cursor: pointer;
+
+  &:hover:not(:disabled) { background: var(--eqt-bg-btn-hover); }
+  &:disabled { opacity: 0.5; cursor: default; }
+
+  &--primary {
+    border-color: var(--eqt-danger);
+    background: var(--eqt-danger);
+    color: var(--eqt-text-on-color);
+    font-weight: 700;
+
+    &:hover:not(:disabled) { background: var(--eqt-danger-hover); }
+  }
+
+  // 虛線 = 這顆會把整頁刷掉。EH 沒有這些操作的 API，只能送表單，而編輯到一半
+  // 被刷走是這個面板最容易嚇到人的地方，所以先講在前面
+  &--reload { border-style: dashed; }
+}
+
+.eqt-panel__link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--eqt-text-hint);
+  font-size: var(--eqt-fs-xs);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.eqt-panel__dialog {
+  position: fixed;
+  z-index: 40;
+  top: 50%;
+  left: 50%;
+  width: min(28em, 92vw);
+  padding: 12px 14px;
+  transform: translate(-50%, -50%);
+  border: var(--eqt-border-width) solid var(--eqt-border);
+  border-radius: var(--eqt-radius-md);
+  background: var(--eqt-bg);
+  box-shadow: 0 12px 40px rgb(0 0 0 / 35%);
+
+  header,
+  footer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  header { justify-content: space-between; margin-bottom: 10px; }
+  footer { margin-top: 12px; }
+  label { display: flex; margin-bottom: 8px; }
+}
+
+// ---- 標籤清單 ----
+
+.eqt-taglist {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  min-height: 0;
+}
+
+.eqt-taglist__bulk {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.eqt-taglist__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 6px;
+  border-bottom: var(--eqt-border-width) solid var(--eqt-divider);
+  font-size: var(--eqt-fs-xs);
+  color: var(--eqt-text-hint);
+
+  label { display: inline-flex; align-items: center; gap: 5px; }
+}
+
+// 清單自己捲，而且只畫看得到的那幾列（虛擬捲動）。
+// ⚠️ `min-height: 0` 不能省。flex 子項的預設 min-height 是 auto，也就是「不小於
+// 內容」——一百多列的內容會把側欄撐破 max-height，捲軸就跑到頁面上而不是清單裡
+.eqt-taglist__rows {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+// 撐出總高度，讓捲軸的長度跟真實筆數對得上
+.eqt-taglist__spacer { position: relative; }
+
+// 一個標籤佔三行：標籤自己一行（長名字才放得下）、旗標與權重、去向分佈
+// ⚠️ 高度由 JS 的 ROW_H 決定（inline style），這裡不要再設 height
+.eqt-taglist__row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px;
+  overflow: hidden;
+  padding: 4px 6px;
+  border-left: 3px solid transparent;
+  border-radius: var(--eqt-radius-sm);
+
+  &:hover { background: var(--eqt-bg-hover); }
+  &--on { background: var(--eqt-bg-active); }
+  // 還沒送出去的編輯要一眼看得出來，否則「N 項變更尚未套用」只是個數字
+  &--dirty { border-left-color: var(--eqt-status-include); }
+
+  // ⛔ 不要用 opacity 表達狀態。它會連同標籤自己的顏色一起沖淡，而使用者正是靠
+  // 那個顏色在認標籤的——狀態要用邊框或圖示講，不要動顏色本身
+}
+
+.eqt-taglist__check { display: flex; align-items: start; padding-top: 3px; }
+
+.eqt-taglist__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.eqt-taglist__top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+
+  // 標籤獨佔這一行，所以讓它把剩下的寬度吃滿——調色盤靠右
+  > .eqt-taglist__chip { flex: 1 1 auto; }
+}
+
+.eqt-taglist__controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+// 兩個旗標用原生 checkbox——theme.scss 已經把全站的 checkbox 重畫過了
+.eqt-taglist__flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: var(--eqt-fs-xs);
+  white-space: nowrap;
+  color: var(--eqt-text-hint);
+  cursor: pointer;
+}
+
+.eqt-taglist__chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  min-width: 0;
+  padding: 2px 7px;
+  border: var(--eqt-border-width) solid var(--eqt-border);
+  border-radius: var(--eqt-radius-sm);
+  background: var(--eqt-bg-btn);
+  color: inherit;
+  font: inherit;
+  font-size: var(--eqt-fs-sm);
+  // 粗體是 EH 標籤最明顯的識別特徵（原生的 div.gt 就是 bold）
+  font-weight: 700;
+  cursor: pointer;
+
+  // ⚠️ 配色整組由 chipStyle 走 inline style 給（color / background / border-color）。
+  // 不要在這裡再疊 box-shadow 或 filter——那會在算好的顏色上又蓋一層，就是先前
+  // 「比原生淡」的成因
+  > span:last-child {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+}
+
+.eqt-taglist__ns { font-size: var(--eqt-fs-xs); opacity: 0.7; }
+
+.eqt-taglist__bar {
+  display: flex;
+  overflow: hidden;
+  height: 8px;
+  border-radius: 5px;
+  background: var(--eqt-bg-stripe);
+}
+
+.eqt-taglist__neg { background: var(--eqt-danger); }
+.eqt-taglist__pos { background: var(--eqt-green); }
+
+.eqt-taglist__weight {
+  width: 4em;
+  font-variant-numeric: tabular-nums;
+}
+
+.eqt-taglist__bulk {
+  position: sticky;
+  bottom: 0;
+  padding: 7px 8px;
+  border: var(--eqt-border-width) solid var(--eqt-border);
+  border-radius: var(--eqt-radius-sm);
+  background: var(--eqt-bg-active);
+  font-size: var(--eqt-fs-sm);
+}
+
+// ---- 兩欄預覽 ----
+
+.eqt-preview {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.eqt-preview__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.eqt-preview__titlerow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.eqt-preview__title {
+  margin: 0;
+  font-size: var(--eqt-fs-md);
+  font-weight: 700;
+}
+
+.eqt-preview__chip {
+  padding: 2px 8px;
+  border: var(--eqt-border-width) solid var(--eqt-status-include);
+  border-radius: var(--eqt-radius-sm);
+  background: var(--eqt-bg-active);
+  color: inherit;
+  font-size: var(--eqt-fs-sm);
+  cursor: pointer;
+}
+
+.eqt-preview__controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.eqt-preview__effect {
+  margin: 0 0 8px;
+  padding: 6px 9px;
+  border-left: 3px solid var(--eqt-status-include);
+  border-radius: var(--eqt-radius-sm);
+  background: var(--eqt-bg-stripe);
+  font-size: var(--eqt-fs-sm);
+}
+
+.eqt-preview__cols {
+  display: grid;
+  flex: 1 1 auto;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  min-height: 0;
+
+  @media (max-width: 900px) { grid-template-columns: 1fr; }
+}
+
+.eqt-preview__col {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 6px 8px;
+  border-radius: var(--eqt-radius-sm);
+  border-top: 3px solid var(--eqt-green);
+  background: var(--eqt-bg-stripe);
+
+  &--left { border-top-color: var(--eqt-danger); }
+}
+
+.eqt-preview__colhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: var(--eqt-fs-sm);
+}
+
+.eqt-preview__icon {
+  display: inline-block;
+  width: 1.4em;
+  text-align: center;
+  opacity: 0.7;
+}
+
+// 撐滿那一欄 + 自己捲。兩欄各是獨立的捲動容器，量差很多的時候不會互相拖著走
+.eqt-preview__colbody {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.eqt-preview__grid {
+  display: grid;
+  // 固定四欄。跟著寬度浮動的話，切換模式時整片封面會重新排版，很難看
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.eqt-preview__tile {
+  display: flex;
+  flex-direction: column;
+  // 預設就有一圈灰框。全透明的話「還沒判」看起來像是缺了什麼，而那是最常見的狀態
+  border: 2px solid var(--eqt-border);
+  border-radius: var(--eqt-radius-sm);
+  overflow: hidden;
+
+  // 記號跟欄位不一致就是誤傷或漏網——它不是另一份清單，就是格子在錯的那一欄
+  &--over,
+  &--leak { border-color: var(--eqt-danger); }
+  &--correct { border-color: var(--eqt-green); }
+  &--none { opacity: 0.85; }
+  &--flipped { outline: 2px dashed var(--eqt-status-include); outline-offset: 1px; }
+}
+
+// 封面底下的第一行：只有分數。拆解改成點封面把整本攤開，不用再開一個 popup
+.eqt-preview__meta {
+  padding: 2px 4px;
+  background: var(--eqt-bg-btn);
+  font-size: var(--eqt-fs-xs);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+// 第二行：判斷。再按一次同一顆就是取消
+.eqt-preview__pick {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--eqt-border);
+
+  button {
+    padding: 3px 2px;
+    border: 0;
+    background: var(--eqt-bg-btn);
+    color: inherit;
+    font-size: var(--eqt-fs-xs);
+    cursor: pointer;
+
+    &:hover { background: var(--eqt-bg-btn-hover); }
+  }
+
+  button:first-child.eqt-preview__pick--on {
+    background: var(--eqt-danger);
+    color: var(--eqt-text-on-color);
+    font-weight: 700;
+  }
+
+  button:last-child.eqt-preview__pick--on {
+    background: var(--eqt-green);
+    color: var(--eqt-text-on-color);
+    font-weight: 700;
+  }
+}
+
+.eqt-preview__cover {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+
+  // 攤開中的那一本要看得出來，不然點第二下想收起來會找不到是哪一格
+  &--on { outline: 2px solid var(--eqt-status-include); outline-offset: -2px; }
+
+  img {
+    display: block;
+    width: 100%;
+    // 固定高度的話，格子一變寬封面就被拉扁。用長寬比綁住，同人誌封面大致是 3:4
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+  }
+}
+
+.eqt-preview__nocover {
+  display: flex;
+  align-items: center;
+  aspect-ratio: 3 / 4;
+  padding: 4px;
+  overflow: hidden;
+  border: 1px dashed var(--eqt-border);
+  border-radius: var(--eqt-radius-sm);
+  font-size: var(--eqt-fs-xs);
+  line-height: 1.2;
+  text-align: left;
+  color: var(--eqt-text-hint);
+}
+
+.eqt-preview__flag {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  padding: 0 3px;
+  border-radius: var(--eqt-radius-sm);
+  background: var(--eqt-danger);
+  color: var(--eqt-text-on-color);
+  font-size: var(--eqt-fs-xs);
+  pointer-events: none;
+}
+
+
+.eqt-preview__more {
+  width: 100%;
+  margin-top: 6px;
+}
+
+
+.eqt-preview__neg { color: var(--eqt-danger); font-variant-numeric: tabular-nums; }
+.eqt-preview__pos { color: var(--eqt-green); font-variant-numeric: tabular-nums; }
+
+// ---- 攤開的整本畫廊 ----
+
+// 右欄現在是「兩欄預覽」再疊「攤開的畫廊」，所以它自己也要是 flex column
+.eqt-panel__right {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  min-height: 0;
+}
+
+// 攤開的那一本吃掉右欄下半、自己捲，不把上面的兩欄擠沒
+.eqt-gal {
+  flex: 0 0 auto;
+  max-height: 45%;
+  overflow-y: auto;
+  padding: 8px 10px;
+  border: var(--eqt-border-width) solid var(--eqt-border);
+  border-radius: var(--eqt-radius-md);
+  background: var(--eqt-bg-stripe);
+  font-size: var(--eqt-fs-sm);
+}
+
+.eqt-gal__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding-bottom: 6px;
+  border-bottom: var(--eqt-border-width) solid var(--eqt-divider);
+}
+
+.eqt-gal__titles {
+  flex: 1 1 auto;
+  min-width: 0;
+
+  p { margin: 2px 0 0; }
+}
+
+.eqt-gal__body {
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  gap: 12px;
+  margin-top: 8px;
+
+  @media (max-width: 900px) { grid-template-columns: 1fr; }
+}
+
+.eqt-gal__side {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+// EH 算好的 background 定位整段照抄，所以尺寸也由它決定——這裡不要再設寬高
+.eqt-gal__cover { border-radius: var(--eqt-radius-sm); }
+
+.eqt-gal__facts {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 1px 8px;
+  margin: 0;
+  font-size: var(--eqt-fs-xs);
+
+  dt { color: var(--eqt-text-hint); }
+  dd { margin: 0; }
+}
+
+.eqt-gal__pick {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin-top: 4px;
+
+  button {
+    padding: 4px;
+    border: var(--eqt-border-width) solid var(--eqt-border);
+    border-radius: var(--eqt-radius-sm);
+    background: var(--eqt-bg-btn);
+    color: inherit;
+    font-size: var(--eqt-fs-sm);
+    cursor: pointer;
+
+    &:hover { background: var(--eqt-bg-btn-hover); }
+  }
+
+  &--block { background: var(--eqt-danger) !important; color: var(--eqt-text-on-color); font-weight: 700; }
+  &--keep { background: var(--eqt-green) !important; color: var(--eqt-text-on-color); font-weight: 700; }
+}
+
+.eqt-gal__main {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+// chip 沿用畫廊頁那一套（.eqt-gallery-chip），連原生的 gt/gtl/gtw 外框都一樣，
+// 所以這裡只管排列
+.eqt-gal__tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+// 縮圖是一張雪碧圖切出來的，每一格的 span 自帶 background 定位
+.eqt-gal__thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+
+  a { display: block; line-height: 0; }
+  span { display: block; }
+}
+
+// 攤開的畫廊裡，加總和門檻的那一行
+.eqt-gal__sum {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin: 0;
+  padding-top: 6px;
+  border-top: var(--eqt-border-width) solid var(--eqt-divider);
+  font-variant-numeric: tabular-nums;
+}

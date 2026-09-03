@@ -6,6 +6,8 @@ TODO.md
 test-results/
 playwright-report/
 __pycache__/
+# 本機產出的 dev fixture：內容是使用者自己的 My Tags，不進公開 repo
+src/dev/
 .env
 .env.*
 !.env.example

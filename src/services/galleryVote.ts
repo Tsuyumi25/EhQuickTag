@@ -1,4 +1,4 @@
-import { unsafeWindow } from '$'
+import { pageWindow } from '@/utils/pageWindow'
 import type { GalleryTag } from '@/composables/useEhGalleryHost'
 
 export type VoteState = 'up' | 'down' | null
@@ -31,7 +31,7 @@ function getVoteContext(): VoteContext | null {
   const m = location.pathname.match(/^\/g\/(\d+)\/([a-f0-9]+)\/?$/)
   if (!m) return null
 
-  const w = unsafeWindow as unknown as NativePageGlobals
+  const w = pageWindow<NativePageGlobals>()
   if (typeof w.apiuid !== 'number' || typeof w.apikey !== 'string') return null
 
   return {
