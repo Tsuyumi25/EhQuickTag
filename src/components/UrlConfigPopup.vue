@@ -16,12 +16,10 @@ import { t } from '@/composables/useI18n'
 const props = defineProps<{
   tag: UrlButton
   lineColor?: string
-  isAdd?: boolean
 }>()
 
 const emit = defineEmits<{
   'save': [value: UrlButton]
-  'delete': []
   'close': []
 }>()
 
@@ -138,9 +136,6 @@ function onSave() {
           type="button"
           @click="builderRef?.useCurrentPage()"
         ><Star :size="12" /> {{ t('urlBuilder.useCurrentPage') }}</button>
-        <button v-if="!isAdd" class="eqt-popup__btn eqt-popup__btn--delete" type="button" @click="emit('delete')">
-          {{ t('urlConfig.delete') }}
-        </button>
         <div class="eqt-popup__spacer" />
         <button class="eqt-popup__btn" type="button" @click="emit('close')">
           {{ t('urlConfig.cancel') }} <kbd class="eqt-popup__kbd">Esc</kbd>

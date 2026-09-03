@@ -152,14 +152,6 @@ function onSave(updated: Button) {
   showUrlPopup.value = false
 }
 
-function onDelete() {
-  const line = lines[editingLine.value]
-  if (line.kind === 'buttons') line.buttons.splice(editingIdx.value, 1)
-  pendingAdd.value = false
-  showTagPopup.value = false
-  showUrlPopup.value = false
-}
-
 function onClose() {
   pendingAdd.value = false
   showTagPopup.value = false
@@ -306,7 +298,6 @@ watch(searchText, (val) => {
     :ns-format="nsFormat"
     :default-exact-match="defaultExactMatch"
     @save="onSave"
-    @delete="onDelete"
     @close="onClose"
   />
 
@@ -314,9 +305,7 @@ watch(searchText, (val) => {
     v-if="urlPopupValue"
     :tag="urlPopupValue"
     :line-color="editingLineColor"
-    :is-add="pendingAdd"
     @save="onSave"
-    @delete="onDelete"
     @close="onClose"
   />
 

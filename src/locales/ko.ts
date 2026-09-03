@@ -233,7 +233,6 @@ export default {
   'urlConfig.url': 'URL',
   'urlConfig.fetching': '가져오는 중…',
   'urlConfig.fetchTitle': '제목 가져오기',
-  'urlConfig.delete': '삭제',
   'urlConfig.cancel': '취소',
   'urlConfig.save': '저장',
 

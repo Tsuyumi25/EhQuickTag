@@ -233,7 +233,6 @@ export default {
   'urlConfig.url': 'URL',
   'urlConfig.fetching': 'Fetching...',
   'urlConfig.fetchTitle': 'Fetch title',
-  'urlConfig.delete': 'Delete',
   'urlConfig.cancel': 'Cancel',
   'urlConfig.save': 'Save',
 

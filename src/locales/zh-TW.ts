@@ -233,7 +233,6 @@ export default {
   'urlConfig.url': '網址',
   'urlConfig.fetching': '取得中…',
   'urlConfig.fetchTitle': '取得標題',
-  'urlConfig.delete': '刪除',
   'urlConfig.cancel': '取消',
   'urlConfig.save': '儲存',
 

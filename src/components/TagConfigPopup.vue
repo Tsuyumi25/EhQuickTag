@@ -21,7 +21,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'save': [value: TagButton]
-  'delete': []
   'close': []
 }>()
 
@@ -351,9 +350,6 @@ const simOutput = computed(() => {
       </div>
 
       <div class="eqt-popup__actions">
-        <button v-if="!isAdd" class="eqt-popup__btn eqt-popup__btn--delete" type="button" @click="emit('delete')">
-          {{ t('tagConfig.delete') }}
-        </button>
         <div class="eqt-popup__spacer" />
         <button class="eqt-popup__btn" type="button" @click="emit('close')">
           {{ t('tagConfig.cancel') }} <kbd class="eqt-popup__kbd">Esc</kbd>

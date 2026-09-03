@@ -233,7 +233,6 @@ export default {
   'urlConfig.url': 'URL',
   'urlConfig.fetching': '取得中…',
   'urlConfig.fetchTitle': 'タイトルを取得',
-  'urlConfig.delete': '削除',
   'urlConfig.cancel': 'キャンセル',
   'urlConfig.save': '保存',
 
