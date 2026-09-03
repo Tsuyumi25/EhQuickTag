@@ -27,9 +27,9 @@ function readCategories(): Set<number> {
   return selected
 }
 
-function readAdvanced(form: HTMLFormElement): EhAdvancedOptions | null {
-  if (!form.elements.namedItem('advsearch')) return null
-
+// 面板收起時 #advdiv 被清空，f_s* 欄位不存在，fieldValue 一律回空字串，
+// 於是這裡讀回來的就是一組預設值——不必先問面板開著沒。
+function readAdvanced(form: HTMLFormElement): EhAdvancedOptions {
   const a = emptyAdvancedOptions()
   a.browseExpunged = fieldValue(form, 'f_sh') === 'on'
   a.requireTorrent = fieldValue(form, 'f_sto') === 'on'
@@ -53,6 +53,8 @@ export function readEhSearchSnapshot(): EhSearchParams | null {
   return {
     keywords: input.value,
     categories: readCategories(),
+    // advsearch 這個 hidden 欄位隨面板一起生滅，它在不在就是面板展開與否。
+    showAdvanced: form.elements.namedItem('advsearch') !== null,
     advanced: readAdvanced(form),
   }
 }

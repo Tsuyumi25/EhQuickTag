@@ -59,7 +59,11 @@ export interface EhAdvancedOptions {
 export interface EhSearchParams {
   keywords: string
   categories: Set<number>
-  advanced: EhAdvancedOptions | null
+  // advsearch 只決定進入頁面時進階面板展不展開；f_s* 不帶它一樣生效。
+  // 原生表單組不出這個分離：面板收起時 #advdiv 被清空，advsearch 這個
+  // hidden 欄位與八個 f_s* 一起消失，所以兩者在原生只會同進同出。
+  showAdvanced: boolean
+  advanced: EhAdvancedOptions
 }
 
 export function emptyAdvancedOptions(): EhAdvancedOptions {
@@ -85,18 +89,17 @@ export function buildSearchUrl(p: EhSearchParams, origin: string = EH_ORIGIN): s
   const fCats = fCatsFromSelected(p.categories)
   if (fCats !== 0) q.set(PARAM.categories, String(fCats))
 
+  if (p.showAdvanced) q.set(PARAM.advanced, '1')
+
   const a = p.advanced
-  if (a) {
-    q.set(PARAM.advanced, '1')
-    if (a.browseExpunged) q.set(PARAM.browseExpunged, 'on')
-    if (a.requireTorrent) q.set(PARAM.requireTorrent, 'on')
-    if (a.pagesFrom.trim()) q.set(PARAM.pagesFrom, a.pagesFrom.trim())
-    if (a.pagesTo.trim()) q.set(PARAM.pagesTo, a.pagesTo.trim())
-    if (a.minRating !== '0') q.set(PARAM.minRating, a.minRating)
-    if (a.disableFilterLanguage) q.set(PARAM.disableFilterLanguage, 'on')
-    if (a.disableFilterUploader) q.set(PARAM.disableFilterUploader, 'on')
-    if (a.disableFilterTags) q.set(PARAM.disableFilterTags, 'on')
-  }
+  if (a.browseExpunged) q.set(PARAM.browseExpunged, 'on')
+  if (a.requireTorrent) q.set(PARAM.requireTorrent, 'on')
+  if (a.pagesFrom.trim()) q.set(PARAM.pagesFrom, a.pagesFrom.trim())
+  if (a.pagesTo.trim()) q.set(PARAM.pagesTo, a.pagesTo.trim())
+  if (a.minRating !== '0') q.set(PARAM.minRating, a.minRating)
+  if (a.disableFilterLanguage) q.set(PARAM.disableFilterLanguage, 'on')
+  if (a.disableFilterUploader) q.set(PARAM.disableFilterUploader, 'on')
+  if (a.disableFilterTags) q.set(PARAM.disableFilterTags, 'on')
 
   return url.href
 }
@@ -112,7 +115,8 @@ export function parseSearchUrl(raw: string): EhSearchParams | null {
   return {
     keywords: q.get(PARAM.keywords) ?? '',
     categories: selectedFromFCats(fCats),
-    advanced: q.get(PARAM.advanced) === '1' ? readAdvanced(q) : null,
+    showAdvanced: q.get(PARAM.advanced) === '1',
+    advanced: readAdvanced(q),
   }
 }
 

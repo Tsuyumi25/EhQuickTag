@@ -17,40 +17,36 @@ const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 
 const keywords = ref('')
 const categories = ref<Set<number>>(new Set())
-const useAdvanced = ref(false)
+const showAdvanced = ref(false)
 const advanced = ref(emptyAdvancedOptions())
 
 const allCategories = () => new Set(EH_CATEGORIES.map(c => c.bit))
 
-let restoring = false
-
 function load(params: EhSearchParams) {
-  restoring = true
   keywords.value = params.keywords
   categories.value = new Set(params.categories)
-  useAdvanced.value = params.advanced !== null
-  advanced.value = params.advanced ?? emptyAdvancedOptions()
-  restoring = false
+  showAdvanced.value = params.showAdvanced
+  advanced.value = params.advanced
 }
 
-load(parseSearchUrl(props.modelValue) ?? { keywords: '', categories: allCategories(), advanced: null })
+load(parseSearchUrl(props.modelValue) ?? {
+  keywords: '',
+  categories: allCategories(),
+  showAdvanced: false,
+  advanced: emptyAdvancedOptions(),
+})
 
 function currentParams(): EhSearchParams {
   return {
     keywords: keywords.value,
     categories: categories.value,
-    advanced: useAdvanced.value ? advanced.value : null,
+    showAdvanced: showAdvanced.value,
+    advanced: advanced.value,
   }
 }
 
 watch(
-  advanced,
-  () => { if (!restoring) useAdvanced.value = true },
-  { deep: true, flush: 'sync' },
-)
-
-watch(
-  [keywords, categories, useAdvanced, advanced],
+  [keywords, categories, showAdvanced, advanced],
   () => emit('update:modelValue', buildSearchUrl(currentParams(), EH_ORIGIN)),
   { deep: true },
 )
@@ -100,7 +96,7 @@ defineExpose({ useCurrentPage })
     <div class="eqt-url-builder__advanced">
       <div class="eqt-url-builder__adv-row">
         <label class="eqt-url-builder__check">
-          <input type="checkbox" v-model="useAdvanced" />
+          <input type="checkbox" v-model="showAdvanced" />
           <span>{{ t('urlBuilder.showAdvanced') }}</span>
         </label>
       </div>

@@ -74,28 +74,43 @@ describe('分類轉換的性質', () => {
 
 const allCats = () => new Set(EH_CATEGORIES.map(c => c.bit))
 
+const params = (over: Partial<EhSearchParams> = {}): EhSearchParams => ({
+  keywords: '',
+  categories: allCats(),
+  showAdvanced: false,
+  advanced: emptyAdvancedOptions(),
+  ...over,
+})
+
 describe('組裝搜尋網址', () => {
   it('全選分類時不帶 f_cats', () => {
-    const url = buildSearchUrl({ keywords: 'foo', categories: allCats(), advanced: null })
+    const url = buildSearchUrl(params({ keywords: 'foo' }))
     expect(url).toBe('https://e-hentai.org/?f_search=foo')
   })
 
-  it('沒開進階選項時不帶 advsearch', () => {
-    const url = buildSearchUrl({ keywords: '', categories: new Set([MANGA]), advanced: null })
+  it('沒有任何進階條件時不帶 advsearch', () => {
+    const url = buildSearchUrl(params({ categories: new Set([MANGA]) }))
     expect(url).toBe('https://e-hentai.org/?f_cats=1019')
   })
 
-  it('開了進階選項一定帶 advsearch=1，未使用的欄位不出現', () => {
-    const advanced = emptyAdvancedOptions()
-    const url = new URL(buildSearchUrl({ keywords: '', categories: allCats(), advanced }))
+  it('showAdvanced 只帶出 advsearch=1，不代表任何條件被設定', () => {
+    const url = new URL(buildSearchUrl(params({ showAdvanced: true })))
     expect(url.searchParams.get('advsearch')).toBe('1')
     expect(url.searchParams.has('f_sh')).toBe(false)
     expect(url.searchParams.has('f_srdd')).toBe(false)
   })
 
+  it('進階條件不必等 advsearch 就寫進網址', () => {
+    const advanced = { ...emptyAdvancedOptions(), browseExpunged: true, minRating: '4' as const }
+    const url = new URL(buildSearchUrl(params({ advanced })))
+    expect(url.searchParams.has('advsearch')).toBe(false)
+    expect(url.searchParams.get('f_sh')).toBe('on')
+    expect(url.searchParams.get('f_srdd')).toBe('4')
+  })
+
   it('進階欄位有值才寫進網址', () => {
     const advanced = { ...emptyAdvancedOptions(), browseExpunged: true, minRating: '4' as const, pagesFrom: '10' }
-    const url = new URL(buildSearchUrl({ keywords: '', categories: allCats(), advanced }))
+    const url = new URL(buildSearchUrl(params({ showAdvanced: true, advanced })))
     expect(url.searchParams.get('f_sh')).toBe('on')
     expect(url.searchParams.get('f_srdd')).toBe('4')
     expect(url.searchParams.get('f_spf')).toBe('10')
@@ -103,12 +118,12 @@ describe('組裝搜尋網址', () => {
   })
 
   it('關鍵字前後空白被去掉', () => {
-    const url = buildSearchUrl({ keywords: '  foo  ', categories: allCats(), advanced: null })
+    const url = buildSearchUrl(params({ keywords: '  foo  ' }))
     expect(url).toBe('https://e-hentai.org/?f_search=foo')
   })
 
   it('跟著當前站走的 origin 會被採用', () => {
-    const url = buildSearchUrl({ keywords: 'foo', categories: allCats(), advanced: null }, 'https://exhentai.org')
+    const url = buildSearchUrl(params({ keywords: 'foo' }), 'https://exhentai.org')
     expect(url).toBe('https://exhentai.org/?f_search=foo')
   })
 })
@@ -126,33 +141,41 @@ describe('解析搜尋網址', () => {
     expect(parseSearchUrl('https://e-hentai.org/?f_search=foo')?.categories.size).toBe(10)
   })
 
-  it('沒有 advsearch 時進階選項是 null', () => {
-    expect(parseSearchUrl('https://e-hentai.org/?f_sh=on')?.advanced).toBeNull()
+  it('沒有 advsearch 時進階條件照樣讀得到', () => {
+    const p = parseSearchUrl('https://e-hentai.org/?f_sh=on')
+    expect(p?.showAdvanced).toBe(false)
+    expect(p?.advanced.browseExpunged).toBe(true)
+  })
+
+  it('只有 advsearch 時進階條件都是預設值', () => {
+    const p = parseSearchUrl('https://e-hentai.org/?advsearch=1')
+    expect(p?.showAdvanced).toBe(true)
+    expect(p?.advanced).toEqual(emptyAdvancedOptions())
   })
 
   it('不認得的星等退回不限', () => {
     const p = parseSearchUrl('https://e-hentai.org/?advsearch=1&f_srdd=9')
-    expect(p?.advanced?.minRating).toBe('0')
+    expect(p?.advanced.minRating).toBe('0')
   })
 })
 
 describe('組裝與解析的往返', () => {
+  const fullAdvanced = {
+    ...emptyAdvancedOptions(),
+    browseExpunged: true,
+    requireTorrent: true,
+    pagesFrom: '5',
+    pagesTo: '50',
+    minRating: '3' as const,
+    disableFilterTags: true,
+  }
+
   const cases: EhSearchParams[] = [
-    { keywords: 'foo bar', categories: allCats(), advanced: null },
-    { keywords: '', categories: new Set([DOUJINSHI, MANGA]), advanced: null },
-    {
-      keywords: 'x',
-      categories: new Set([IMAGE_SET]),
-      advanced: {
-        ...emptyAdvancedOptions(),
-        browseExpunged: true,
-        requireTorrent: true,
-        pagesFrom: '5',
-        pagesTo: '50',
-        minRating: '3',
-        disableFilterTags: true,
-      },
-    },
+    params({ keywords: 'foo bar' }),
+    params({ categories: new Set([DOUJINSHI, MANGA]) }),
+    params({ keywords: 'x', categories: new Set([IMAGE_SET]), showAdvanced: true, advanced: fullAdvanced }),
+    params({ advanced: fullAdvanced }),
+    params({ showAdvanced: true }),
   ]
 
   it.each(cases.map((c, i) => [i, c] as const))('第 %i 組參數往返後不變', (_i, params) => {
