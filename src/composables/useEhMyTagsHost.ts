@@ -80,9 +80,6 @@ export interface NewTagInput {
   color: string
 }
 
-// 權重輸入框的 `oninput="update_tagweight(id, this.value, saved)"`，第三個參數是
-// 已經存進 EH 的權重——EH 拿它跟當前輸入比對，決定 Save 按鈕要不要亮。
-const SAVED_WEIGHT = /update_tagweight\(\s*\d+\s*,[^,]*,\s*(-?\d+)\s*\)/
 /** #usertag_target 的選項文字長成「名稱 (34)」 */
 const SET_USED = /\((\d+)\)\s*$/
 
@@ -105,18 +102,14 @@ export function parseTagRows(doc: Document | HTMLElement, tagSet: string): MyTag
     if (!full) continue
 
     const weightEl = el<HTMLInputElement>(root, `tagweight_${raw}`)
-    // parseInt 而不是 Number：EH 自己的 handler 就是 `b = parseInt(b)`，跟著它才會
-    // 跟使用者眼前的預覽配色一致
-    const live = parseInt(weightEl?.value ?? '', 10)
-    const saved = Number(
-      SAVED_WEIGHT.exec(weightEl?.getAttribute('oninput') ?? '')?.[1] ?? 10)
+    if (!weightEl) continue
+    // EH 的 handler 同樣用 parseInt；跟著它解析，畫面與原生預覽會採用同一個整數。
+    const weight = parseInt(weightEl.value, 10)
+    if (Number.isNaN(weight)) continue
     rows.push({
       id: Number(raw),
       full,
-      // 原生 UI 被蓋住之後不會有人打字，這裡幾乎總是等於已存值。留著 fallback 是
-      // 因為使用者可以把原生 UI 叫回來，那時打到一半的 "-" parseInt 出來是 NaN，
-      // 一路加總下去會讓「被擋」整片翻成「會顯示」
-      weight: Number.isNaN(live) ? saved : live,
+      weight,
       hidden: el<HTMLInputElement>(root, `taghide_${raw}`)?.checked ?? false,
       watch: el<HTMLInputElement>(root, `tagwatch_${raw}`)?.checked ?? false,
       color: el<HTMLInputElement>(root, `tagcolor_${raw}`)?.value ?? '',
