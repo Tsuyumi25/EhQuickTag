@@ -20,7 +20,11 @@ import {
   accuracy, listingUrl, emptyStore,
   type SampleStore, type SampleGallery, type Verdict,
 } from '@/services/mytagsSamples'
-import { loadSamples, saveSamples } from '@/services/mytagsSampleStore'
+import {
+  loadSamples,
+  saveGalleries,
+  saveVerdicts,
+} from '@/services/mytagsSampleStore'
 import {
   stage, stageMany, effective, unstage,
   type EditMap, type TagState,
@@ -290,7 +294,10 @@ async function applyThreshold(): Promise<void> {
 
 async function guarded(run: () => void): Promise<void> {
   await flush()
-  await saveSamples(store.value)
+  await Promise.all([
+    saveGalleries(store.value.galleries),
+    saveVerdicts(store.value.verdicts),
+  ])
   run()
 }
 
@@ -475,7 +482,8 @@ onMounted(async () => {
 })
 
 onUnmounted(() => { unbind?.(); setAppMode(false) })
-watch(store, (s) => { void saveSamples(s) }, { deep: true })
+watch(() => store.value.galleries, (galleries) => { void saveGalleries(galleries) })
+watch(() => store.value.verdicts, (verdicts) => { void saveVerdicts(verdicts) })
 watch(edits, () => { void flush() }, { deep: true })
 </script>
 

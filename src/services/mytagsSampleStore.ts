@@ -1,32 +1,68 @@
-// 問卷樣本的持久化。跟 mytagsSamples 的純邏輯分開，因為 gmStorage 會拉進
-// userscript runtime，混在一起會讓整個模組在 node 底下沒辦法測。
-
 import { cacheGet, cacheSet } from '@/services/gmStorage'
-import { emptyStore, type SampleStore, type Verdict } from '@/services/mytagsSamples'
+import {
+  type SampleGallery,
+  type SampleStore,
+  type Verdict,
+} from '@/services/mytagsSamples'
 
-const KEY = 'eqt_mytags_samples'
-/** 畫廊快取的 schema 版本。加欄位就 +1——舊資料丟掉重抓很便宜，判斷才是要保住的 */
-const SCHEMA = 2
+const GALLERIES_KEY = 'eqt_mytags_galleries'
+const VERDICTS_KEY = 'eqt_mytags_verdicts'
+const GALLERIES_SCHEMA = 1
+const VERDICTS_SCHEMA = 1
 
-export async function loadSamples(): Promise<SampleStore> {
-  const raw = await cacheGet(KEY)
-  if (!raw) return emptyStore()
+function parseGalleries(raw: string | null): Record<string, SampleGallery> {
+  if (!raw) return {}
   try {
-    const p = JSON.parse(raw) as Partial<SampleStore> & { schema?: number }
-    const out = emptyStore()
-    // 判斷跨版本一定保留：它是使用者花時間給的，畫廊重抓一下就有
-    if (p.schema === SCHEMA) {
-      for (const [k, v] of Object.entries(p.galleries ?? {})) {
-        if (v && Array.isArray(v.tags) && typeof v.thumb === 'string') out.galleries[k] = v
+    const saved = JSON.parse(raw) as {
+      schema?: number
+      galleries?: Record<string, SampleGallery>
+    }
+    if (saved.schema !== GALLERIES_SCHEMA) return {}
+    const galleries: Record<string, SampleGallery> = {}
+    for (const [key, value] of Object.entries(saved.galleries ?? {})) {
+      if (value && Array.isArray(value.tags) && typeof value.thumb === 'string') {
+        galleries[key] = value
       }
     }
-    for (const [k, v] of Object.entries(p.verdicts ?? {})) {
-      if (v === 'block' || v === 'keep') out.verdicts[k] = v as Verdict
-    }
-    return out
-  } catch { return emptyStore() }
+    return galleries
+  } catch {
+    return {}
+  }
 }
 
-export async function saveSamples(store: SampleStore): Promise<void> {
-  await cacheSet(KEY, JSON.stringify({ ...store, schema: SCHEMA }))
+function parseVerdicts(raw: string | null): Record<string, Verdict> {
+  if (!raw) return {}
+  try {
+    const saved = JSON.parse(raw) as {
+      schema?: number
+      verdicts?: Record<string, Verdict>
+    }
+    if (saved.schema !== VERDICTS_SCHEMA) return {}
+    const verdicts: Record<string, Verdict> = {}
+    for (const [key, value] of Object.entries(saved.verdicts ?? {})) {
+      if (value === 'block' || value === 'keep') verdicts[key] = value
+    }
+    return verdicts
+  } catch {
+    return {}
+  }
+}
+
+export async function loadSamples(): Promise<SampleStore> {
+  const [galleriesRaw, verdictsRaw] = await Promise.all([
+    cacheGet(GALLERIES_KEY),
+    cacheGet(VERDICTS_KEY),
+  ])
+  return {
+    galleries: parseGalleries(galleriesRaw),
+    verdicts: parseVerdicts(verdictsRaw),
+  }
+}
+
+export async function saveGalleries(galleries: Record<string, SampleGallery>): Promise<void> {
+  await cacheSet(GALLERIES_KEY, JSON.stringify({ schema: GALLERIES_SCHEMA, galleries }))
+}
+
+export async function saveVerdicts(verdicts: Record<string, Verdict>): Promise<void> {
+  await cacheSet(VERDICTS_KEY, JSON.stringify({ schema: VERDICTS_SCHEMA, verdicts }))
 }
