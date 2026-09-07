@@ -12,7 +12,7 @@ const props = defineProps<{
   verdicts: Record<string, Verdict>
   selected: string | null
   effect: (EffectSummary & { label: string }) | null
-  busy: string
+  refreshBusy: string
   markedOnly: boolean
   threshold: number | null
   /** 已經攤開在下面的那一本 */
@@ -107,8 +107,8 @@ function metric(item: PreviewItem): string {
           >
           {{ t('preview.markedOnly') }}
         </label>
-        <button type="button" class="eqt-panel__btn" :disabled="!!busy" @click="emit('refresh')">
-          {{ busy || t('preview.refresh') }}
+        <button type="button" class="eqt-panel__btn" :disabled="!!refreshBusy" @click="emit('refresh')">
+          {{ refreshBusy || t('preview.refresh') }}
         </button>
       </div>
     </header>

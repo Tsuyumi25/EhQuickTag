@@ -52,7 +52,8 @@ const filterThreshold = ref<number | null>(null)
 const savedThreshold = ref<number | null>(null)
 const selected = ref<string | null>(null)
 const markedOnly = ref(false)
-const busy = ref('')
+const writeBusy = ref('')
+const sampleBusy = ref('')
 const effect = ref<(EffectSummary & { label: string }) | null>(null)
 const fetchedPages = ref<Record<string, { pages: number; cursor: string | null }>>({})
 
@@ -234,7 +235,7 @@ async function flush(): Promise<void> { await saveEdits(edits.value) }
  * 錯誤都自己管，一筆失敗就停下來，不要把後面的也一起吞掉。
  */
 async function apply(): Promise<void> {
-  if (busy.value || !pendingTotal.value) return
+  if (writeBusy.value || !pendingTotal.value) return
   if (pending.value.length && !canWrite()) {
     toast.error(t('panel.noCredentials')); return
   }
@@ -242,7 +243,7 @@ async function apply(): Promise<void> {
   const done: number[] = []
   let failure = ''
   for (const [i, row] of todo.entries()) {
-    busy.value = t('panel.applying', { i: i + 1, n: todo.length })
+    writeBusy.value = t('panel.applying', { i: i + 1, n: todo.length })
     const want = effective(row, edits.value)
     const res = await setUserTag({ id: row.id, ...want })
     if (!res.ok) {
@@ -257,7 +258,7 @@ async function apply(): Promise<void> {
 
   // 標籤沒送完就不要動門檻——那是兩個不同的頁面，讓失敗停在一個地方比較好收拾
   if (!failure && thresholdDirty.value) await applyThreshold()
-  busy.value = ''
+  writeBusy.value = ''
 
   // 成功的先報，失敗的後報。停在最上面的應該是還沒解決的那件事
   if (done.length) toast.success(t('panel.applied', { n: done.length }))
@@ -271,7 +272,7 @@ async function apply(): Promise<void> {
  * bug，不是操作失誤，所以要把欄位名原原本本報出來而不是含糊帶過。
  */
 async function applyThreshold(): Promise<void> {
-  busy.value = t('panel.applyingThreshold')
+  writeBusy.value = t('panel.applyingThreshold')
   const res = await patchConfig('ft', 'ft', String(filterThreshold.value))
   if (!res.ok) {
     toast.error(t('panel.thresholdFailed', { error: res.error }))
@@ -306,12 +307,12 @@ function absorb(tagSet: string, next: MyTagRow[]): void {
  * 處理跨組的選取，而且不刷新。`target` 是 `0`（刪除）或目標組。
  */
 async function runMass(rows2: MyTagRow[], target: string): Promise<void> {
-  if (busy.value || !rows2.length) return
+  if (writeBusy.value || !rows2.length) return
   await flush()
   const bySet = new Map<string, number[]>()
   for (const r of rows2) bySet.set(r.tagSet, [...(bySet.get(r.tagSet) ?? []), r.id])
 
-  busy.value = t('panel.working')
+  writeBusy.value = t('panel.working')
   const touched: number[] = []
   for (const [set, ids] of bySet) {
     const next = target === '0'
@@ -328,7 +329,7 @@ async function runMass(rows2: MyTagRow[], target: string): Promise<void> {
   }
   // 編輯的對象已經不在了，留著只會一直算進「還沒送出」
   edits.value = unstage(edits.value, touched)
-  busy.value = ''
+  writeBusy.value = ''
 }
 
 function removeTags(target: MyTagRow[]): void {
@@ -370,10 +371,10 @@ async function grab(): Promise<void> {
   const tag = selected.value
   if (!tag) { toast.info(t('panel.pickTagFirst')); return }
   const at = fetchedPages.value[tag]
-  if (busy.value || (at && at.cursor === null)) return
+  if (sampleBusy.value || (at && at.cursor === null)) return
   // 抓回來的都還沒判過，「只看已標記」開著的話它們一本都不會出現，就沒得標記了
   markedOnly.value = false
-  busy.value = t('bars.grabbing')
+  sampleBusy.value = t('bars.grabbing')
   let { pages, cursor } = at ?? { pages: 0, cursor: null }
   for (let i = 0; i < MAX_FETCH; i += 1) {
     const got = await fetchListing(listingUrl(term(tag), location.origin, cursor))
@@ -387,7 +388,7 @@ async function grab(): Promise<void> {
     fetchedPages.value = { ...fetchedPages.value, [tag]: { pages, cursor } }
     if (!cursor) break
   }
-  busy.value = ''
+  sampleBusy.value = ''
 }
 
 /** 直接指定，不用一格一格輪。只認 gid——判斷本來就綁畫廊不綁設定 */
@@ -535,13 +536,13 @@ watch(edits, () => { void flush() }, { deep: true })
           <div class="eqt-panel__commitbar">
             <button
               type="button" class="eqt-panel__btn"
-              :disabled="!pendingTotal || !!busy"
+              :disabled="!pendingTotal || !!writeBusy"
               @click="discard"
             >{{ t('panel.discard') }}</button>
             <button
               type="button" class="eqt-panel__btn eqt-panel__btn--primary"
-              :disabled="!pendingTotal || !!busy" @click="apply"
-            >{{ busy || t('panel.applyN', { n: pendingTotal }) }}</button>
+              :disabled="!pendingTotal || !!writeBusy" @click="apply"
+            >{{ writeBusy || t('panel.applyN', { n: pendingTotal }) }}</button>
           </div>
         </footer>
       </aside>
@@ -551,7 +552,7 @@ watch(edits, () => { void flush() }, { deep: true })
         v-model:marked-only="markedOnly"
         :left="leftItems" :right="rightItems"
         :verdicts="store.verdicts" :selected="selected" :effect="effect"
-        :busy="busy" :threshold="activeThreshold"
+        :refresh-busy="sampleBusy" :threshold="activeThreshold"
         :opened-gid="openedGallery?.gid ?? null"
         @clear-tag="selected = null" @refresh="grab" @set-verdict="setVerdict"
         @open="openGallery"
