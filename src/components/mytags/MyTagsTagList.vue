@@ -13,7 +13,7 @@ import type { MyTagRow, TagSetRef } from '@/composables/useEhMyTagsHost'
 import type { EditMap, TagState } from '@/services/mytagsEdits'
 import { effective } from '@/services/mytagsEdits'
 import type { TagImpact } from '@/services/mytagsScore'
-import { normalizeTagColor, tagColors } from '@/services/mytagsColors'
+import { normalizeTagColor, tagChipStyle } from '@/services/mytagsColors'
 import type { TagFilter } from '@/services/mytagsEditStore'
 
 const props = defineProps<{
@@ -72,13 +72,12 @@ function dirty(row: MyTagRow): boolean {
  */
 function chipStyle(row: MyTagRow): Record<string, string> {
   const v = view(row)
-  const c = tagColors({
+  return tagChipStyle({
     color: v.color,
     setColor: props.setColors[row.tagSet] ?? '',
     weight: v.weight,
     hidden: v.hidden,
   })
-  return { color: `#${c.text}`, background: `#${c.face}`, borderColor: `#${c.edge}` }
 }
 
 /**
@@ -257,7 +256,7 @@ function impactTitle(row: MyTagRow): string {
               @click="emit('select', row.full)"
             >
               <span class="eqt-taglist__ns">{{ label(row.full).nsLabel }}:</span>
-              <span>{{ label(row.full).display }}</span>
+              <span class="eqt-taglist__label">{{ label(row.full).display }}</span>
             </button>
             <span class="eqt-taglist__color-control">
               <LineColorSwatch

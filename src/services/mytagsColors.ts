@@ -69,3 +69,16 @@ export function tagColors({ color, setColor, weight, hidden }: TagColorInput): T
     edge: light ? darker : base,
   }
 }
+
+export function tagChipStyle(input: TagColorInput): {
+  color: string
+  background: string
+  borderColor: string
+} {
+  const colors = tagColors(input)
+  return {
+    color: `#${colors.text}`,
+    background: `#${colors.face}`,
+    borderColor: `#${colors.edge}`,
+  }
+}

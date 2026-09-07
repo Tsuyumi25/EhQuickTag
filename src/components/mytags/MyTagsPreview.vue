@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, onBeforeUnmount } from 'vue'
 import { t } from '@/composables/useI18n'
+import { useTagLabel } from '@/composables/useTagLabel'
 import type { SampleGallery, Verdict } from '@/services/mytagsSamples'
 import {
   mismatchOf, type PreviewItem, type EffectSummary,
@@ -11,6 +12,7 @@ const props = defineProps<{
   right: PreviewItem[]
   verdicts: Record<string, Verdict>
   selected: string | null
+  selectedStyle: Record<string, string> | null
   effect: (EffectSummary & { label: string }) | null
   refreshBusy: string
   markedOnly: boolean
@@ -43,6 +45,8 @@ const labels = computed(() => ({
 }))
 
 const total = computed(() => props.left.length + props.right.length)
+const { label } = useTagLabel()
+const selectedLabel = computed(() => props.selected ? label.value(props.selected) : null)
 const flippedSet = computed(() => new Set(props.effect?.moved ?? []))
 
 function items(side: 'left' | 'right'): PreviewItem[] {
@@ -85,18 +89,20 @@ function metric(item: PreviewItem): string {
 <template>
   <section class="eqt-preview">
     <header class="eqt-preview__toolbar">
-      <div>
-        <div class="eqt-preview__titlerow">
-          <h3 class="eqt-preview__title">{{ t('preview.title') }}</h3>
-          <button v-if="selected" type="button" class="eqt-preview__chip" @click="emit('clearTag')">
-            {{ selected }} ✕
-          </button>
-        </div>
-        <p class="eqt-panel__hint">
-          {{ selected
-            ? t('preview.summaryTag', { tag: selected, n: total })
-            : t('preview.summaryAll', { n: total }) }}
-        </p>
+      <div class="eqt-preview__titlerow">
+        <h3 class="eqt-preview__title">{{ t('preview.title') }}</h3>
+        <button
+          v-if="selected && selectedLabel"
+          type="button"
+          class="eqt-taglist__chip"
+          :style="selectedStyle"
+          :title="selected"
+          @click="emit('clearTag')"
+        >
+          <span class="eqt-taglist__ns">{{ selectedLabel.nsLabel }}:</span>
+          <span class="eqt-taglist__label">{{ selectedLabel.display }}</span>
+          <span aria-hidden="true">✕</span>
+        </button>
       </div>
 
       <div class="eqt-preview__controls">
@@ -132,7 +138,11 @@ function metric(item: PreviewItem): string {
         <header class="eqt-preview__colhead">
           <span>
             <span class="eqt-preview__icon">{{ labels.icon[i] }}</span>
-            <strong>{{ i === 0 ? labels.left : labels.right }} {{ items(side).length }}</strong>
+            <strong>{{ t('preview.columnCount', {
+              side: i === 0 ? labels.left : labels.right,
+              shown: items(side).length,
+              total,
+            }) }}</strong>
           </span>
         </header>
 

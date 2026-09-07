@@ -395,7 +395,7 @@
   // ⚠️ 配色整組由 chipStyle 走 inline style 給（color / background / border-color）。
   // 不要在這裡再疊 box-shadow 或 filter——那會在算好的顏色上又蓋一層，就是先前
   // 「比原生淡」的成因
-  > span:last-child {
+  > .eqt-taglist__label {
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -486,7 +486,7 @@
 .eqt-preview__toolbar {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 10px;
   margin-bottom: 8px;
@@ -504,15 +504,6 @@
   font-weight: 700;
 }
 
-.eqt-preview__chip {
-  padding: 2px 8px;
-  border: var(--eqt-border-width) solid var(--eqt-status-include);
-  border-radius: var(--eqt-radius-sm);
-  background: var(--eqt-bg-active);
-  color: inherit;
-  font-size: var(--eqt-fs-sm);
-  cursor: pointer;
-}
 
 .eqt-preview__controls {
   display: flex;

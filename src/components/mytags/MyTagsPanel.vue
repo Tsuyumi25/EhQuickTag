@@ -37,6 +37,7 @@ import { setUserTag, canWrite } from '@/services/mytagsApi'
 import { patchConfig } from '@/services/ehConfig'
 import { serializeEntry } from '@/services/searchSyntax'
 import { nsFormat } from '@/services/store'
+import { tagChipStyle } from '@/services/mytagsColors'
 
 const props = defineProps<{ host: EhMyTagsHost }>()
 
@@ -106,6 +107,19 @@ const rowMap = computed(() => new Map(rows.value.map((r) => [r.full, r])))
 function view(row: MyTagRow): TagState {
   return effective(row, edits.value)
 }
+
+const selectedTagStyle = computed(() => {
+  if (!selected.value) return null
+  const row = rowMap.value.get(selected.value)
+  if (!row) return null
+  const state = view(row)
+  return tagChipStyle({
+    color: state.color,
+    setColor: setColors.value[row.tagSet] ?? '',
+    weight: state.weight,
+    hidden: state.hidden,
+  })
+})
 
 function factsOf(tag: string): TagFacts | null {
   const r = rowMap.value.get(tag)
@@ -559,7 +573,7 @@ watch(edits, () => { void flush() }, { deep: true })
       <MyTagsPreview
         v-model:marked-only="markedOnly"
         :left="leftItems" :right="rightItems"
-        :verdicts="store.verdicts" :selected="selected" :effect="effect"
+        :verdicts="store.verdicts" :selected="selected" :selected-style="selectedTagStyle" :effect="effect"
         :refresh-busy="sampleBusy" :threshold="activeThreshold"
         :opened-gid="openedGallery?.gid ?? null"
         @clear-tag="selected = null" @refresh="grab" @set-verdict="setVerdict"

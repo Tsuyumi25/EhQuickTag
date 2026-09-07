@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { normalizeTagColor, tagColors, type TagColorInput } from '@/services/mytagsColors'
+import { normalizeTagColor, tagChipStyle, tagColors, type TagColorInput } from '@/services/mytagsColors'
 
 const base = { color: '', setColor: '', weight: 10, hidden: false }
 
@@ -56,6 +56,16 @@ describe('tagColors · 壞掉的輸入不要吐 NaN 給 CSS', () => {
     const c = tagColors({ ...base, color: 'ZZZZZZ' })
     expect(c.face).toBe('3377FF')
     expect(c.edge).toBe('3377FF')
+  })
+})
+
+describe('tagChipStyle', () => {
+  it('把 EH 配色轉成 chip 的 CSS declarations', () => {
+    expect(tagChipStyle({ ...base, color: '#FFFFFF' })).toEqual({
+      color: '#090909',
+      background: '#FFFFFF',
+      borderColor: '#dfdfdf',
+    })
   })
 })
 
