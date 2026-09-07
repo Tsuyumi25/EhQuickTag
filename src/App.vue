@@ -336,7 +336,7 @@ watch(searchText, (val) => {
   </Teleport>
 
   <Teleport v-if="myTagsHost" to="#eqt-mytags-anchor">
-    <MyTagsPanel :host="myTagsHost" />
+    <MyTagsPanel :host="myTagsHost" @open-settings="openSettings()" />
   </Teleport>
 
   <GalleryIntroPanel v-if="galleryReady" />

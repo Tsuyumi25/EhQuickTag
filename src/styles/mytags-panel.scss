@@ -7,8 +7,8 @@
 .eqt-panel {
   position: fixed;
   inset: 0;
-  // EH 站內最高的 z-index 是 9999，這層蓋得過去；但仍在 popover 和 toast 之下
-  z-index: var(--eqt-z-overlay);
+  // EH 站內最高的 z-index 是 9999；panel 留在全局 overlay 之下，設定才能蓋上來
+  z-index: var(--eqt-z-panel);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -28,20 +28,11 @@
 
 .eqt-panel__spacer { margin-left: auto; }
 
-.eqt-panel__meta {
-  font-size: var(--eqt-fs-sm);
-  font-variant-numeric: tabular-nums;
-  color: var(--eqt-text-hint);
-}
-
-.eqt-panel__hint,
-.eqt-panel__warn {
+.eqt-panel__hint {
   margin: 0;
   font-size: var(--eqt-fs-sm);
   color: var(--eqt-text-hint);
 }
-
-.eqt-panel__warn { color: var(--eqt-danger); }
 
 // 門檻改過但還沒送出。跟清單那邊的 --dirty 同一個訊號，用同一個顏色
 .eqt-panel__field--dirty input {
@@ -55,8 +46,6 @@
   font-size: var(--eqt-fs-sm);
   color: var(--eqt-text-hint);
 
-  input[type='number'] { width: 4.5em; font-variant-numeric: tabular-nums; }
-  input[type='color'] { width: 2.4em; height: 1.8em; padding: 0; }
 }
 
 // 編輯散在三個分頁裡，套用的入口不能跟著捲走
@@ -107,18 +96,6 @@
   background: var(--eqt-bg);
 }
 
-.eqt-panel__dockmeta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-}
-
-.eqt-panel__setbar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
 
 .eqt-panel__commitbar {
   display: flex;
@@ -162,6 +139,15 @@
   &:hover:not(:disabled) { background: var(--eqt-bg-btn-hover); }
   &:disabled { opacity: 0.5; cursor: default; }
 
+  &--settings {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: var(--eqt-checkbox-size);
+    box-sizing: border-box;
+    color: var(--eqt-text);
+  }
+
   &--primary {
     border-color: var(--eqt-danger);
     background: var(--eqt-danger);
@@ -171,9 +157,6 @@
     &:hover:not(:disabled) { background: var(--eqt-danger-hover); }
   }
 
-  // 虛線 = 這顆會把整頁刷掉。EH 沒有這些操作的 API，只能送表單，而編輯到一半
-  // 被刷走是這個面板最容易嚇到人的地方，所以先講在前面
-  &--reload { border-style: dashed; }
 }
 
 .eqt-panel__link {
@@ -186,30 +169,6 @@
   cursor: pointer;
 }
 
-.eqt-panel__dialog {
-  position: fixed;
-  z-index: 40;
-  top: 50%;
-  left: 50%;
-  width: min(28em, 92vw);
-  padding: 12px 14px;
-  transform: translate(-50%, -50%);
-  border: var(--eqt-border-width) solid var(--eqt-border);
-  border-radius: var(--eqt-radius-md);
-  background: var(--eqt-bg);
-  box-shadow: 0 12px 40px rgb(0 0 0 / 35%);
-
-  header,
-  footer {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  header { justify-content: space-between; margin-bottom: 10px; }
-  footer { margin-top: 12px; }
-  label { display: flex; margin-bottom: 8px; }
-}
 
 // ---- 標籤清單 ----
 
@@ -231,15 +190,47 @@
 
 .eqt-taglist__head {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 4px 6px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  padding: 0 0 4px;
   border-bottom: var(--eqt-border-width) solid var(--eqt-divider);
   font-size: var(--eqt-fs-xs);
   color: var(--eqt-text-hint);
-
-  label { display: inline-flex; align-items: center; gap: 5px; }
 }
+
+.eqt-taglist__head-main,
+.eqt-taglist__head-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+
+.eqt-taglist__head-main,
+.eqt-taglist__head-meta {
+  padding-left: 7px;
+}
+
+.eqt-taglist__head select {
+  height: var(--eqt-checkbox-size);
+  min-height: var(--eqt-checkbox-size);
+  box-sizing: border-box;
+  margin: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+
+.eqt-taglist__check-all {
+  display: flex;
+  flex: 0 0 var(--eqt-checkbox-size);
+  align-items: center;
+  height: var(--eqt-checkbox-size);
+}
+
+.eqt-taglist__statuspick { flex: 0 0 auto; }
 
 // 清單自己捲，而且只畫看得到的那幾列（虛擬捲動）。
 // ⚠️ `min-height: 0` 不能省。flex 子項的預設 min-height 是 auto，也就是「不小於
@@ -264,7 +255,7 @@
   grid-template-columns: auto minmax(0, 1fr);
   gap: 4px;
   overflow: hidden;
-  padding: 4px 6px;
+  padding: 4px;
   border-left: 3px solid transparent;
   border-radius: var(--eqt-radius-sm);
 
@@ -277,7 +268,7 @@
   // 那個顏色在認標籤的——狀態要用邊框或圖示講，不要動顏色本身
 }
 
-.eqt-taglist__check { display: flex; align-items: start; padding-top: 3px; }
+.eqt-taglist__check { display: flex; align-items: start; }
 
 .eqt-taglist__body {
   display: flex;
@@ -298,9 +289,9 @@
 
 .eqt-taglist__color-control {
   display: inline-flex;
-  flex: 0 0 calc(var(--eqt-checkbox-size) * 5);
+  flex: 0 0 var(--eqt-number-field-width);
   align-items: center;
-  width: calc(var(--eqt-checkbox-size) * 5);
+  width: var(--eqt-number-field-width);
   height: var(--eqt-checkbox-size);
   gap: calc(var(--eqt-checkbox-size) / 6);
 }
@@ -415,53 +406,8 @@
 .eqt-taglist__neg { background: var(--eqt-danger); }
 .eqt-taglist__pos { background: var(--eqt-green); }
 
-.eqt-taglist__weight-control {
-  display: inline-flex;
-  flex: 0 0 calc(var(--eqt-checkbox-size) * 5);
-  align-items: center;
-  width: calc(var(--eqt-checkbox-size) * 5);
-  height: var(--eqt-checkbox-size);
-}
 
-.eqt-taglist__weight-step {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 calc(var(--eqt-checkbox-size) * 1.5);
-  width: calc(var(--eqt-checkbox-size) * 1.5);
-  height: var(--eqt-checkbox-size);
-  box-sizing: border-box;
-  padding: 0;
-  border: var(--eqt-border-width) solid var(--eqt-border);
-  background: var(--eqt-bg-btn);
-  color: var(--eqt-text);
-  font: inherit;
-  font-size: var(--eqt-fs-md);
-  line-height: 1;
-  cursor: pointer;
 
-  &:first-child {
-    border-right: 0;
-    border-radius: var(--eqt-radius-sm) 0 0 var(--eqt-radius-sm);
-  }
-
-  &:last-child {
-    border-left: 0;
-    border-radius: 0 var(--eqt-radius-sm) var(--eqt-radius-sm) 0;
-  }
-
-  &:hover:not(:disabled) { background: var(--eqt-bg-btn-hover); }
-  &:disabled { opacity: 0.3; cursor: default; }
-}
-
-.eqt-taglist input.eqt-taglist__weight {
-  flex: 1 1 auto;
-  width: auto;
-  min-width: 0;
-  border-radius: 0;
-  font-variant-numeric: tabular-nums;
-  text-align: center;
-}
 
 .eqt-taglist__bulk {
   position: sticky;

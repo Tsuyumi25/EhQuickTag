@@ -63,11 +63,6 @@ export interface EhMyTagsHost {
    */
   deleteTags(ids: number[], tagSet: string): Promise<MyTagRow[] | null>
   moveTags(ids: number[], targetSet: string, tagSet: string): Promise<MyTagRow[] | null>
-  /** 改當前組的預設色與啟用。改名是另一個動作，EH 分成兩種 action */
-  saveTagSet(input: { defaultColor: string; enabled: boolean }): void
-  renameTagSet(name: string): void
-  createTagSet(name: string): void
-  deleteTagSet(): void
   /** 綁在容器上的事件委派，回傳解除函式 */
   onChange(fn: () => void): () => void
 }
@@ -183,7 +178,8 @@ export function useEhMyTagsHost(): EhMyTagsHost | null {
   const outer = document.querySelector<HTMLElement>('#usertags_outer')
   if (!form || !outer) return null
 
-  const setForm = document.querySelector<HTMLFormElement>('#tagset_form')
+  // EH 的標籤集管理共用 #tagset_form，並以 #tagset_action 的
+  // update / rename / create / delete 值分派；MyTags 目前只提供 EhQuickTag 全局設定入口。
   const options = [...document.querySelectorAll<HTMLOptionElement>('#tagset_outer select option')]
   const currentSet = options.find((o) => o.selected)?.value ?? '1'
 
@@ -221,12 +217,6 @@ export function useEhMyTagsHost(): EhMyTagsHost | null {
     form.submit()
   }
 
-  function submitTagSetForm(action: string): void {
-    const field = el<HTMLInputElement>(document, 'tagset_action')
-    if (!field || !setForm) return
-    field.value = action
-    setForm.submit()
-  }
 
   async function massAction(
     ids: number[],
@@ -275,24 +265,6 @@ export function useEhMyTagsHost(): EhMyTagsHost | null {
     deleteTags(ids, tagSet) { return massAction(ids, '0', tagSet) },   // 0 = Delete Selected
     moveTags(ids, targetSet, tagSet) { return massAction(ids, targetSet, tagSet) },
 
-    saveTagSet({ defaultColor, enabled }) {
-      const color = el<HTMLInputElement>(document, 'tagcolor')
-      if (color) color.value = defaultColor
-      const on = el<HTMLInputElement>(document, 'tagset_enable')
-      if (on) on.checked = enabled
-      submitTagSetForm('update')
-    },
-    renameTagSet(name) {
-      const field = el<HTMLInputElement>(document, 'tagset_name')
-      if (field) field.value = name
-      submitTagSetForm('rename')
-    },
-    createTagSet(name) {
-      const field = el<HTMLInputElement>(document, 'tagset_name')
-      if (field) field.value = name
-      submitTagSetForm('create')
-    },
-    deleteTagSet() { submitTagSetForm('delete') },
 
     onChange(fn) {
       // 事件委派掛在 outer 上：EH 自己的 oninput handler 也在同一批 element 上，

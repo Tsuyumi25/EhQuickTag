@@ -1,15 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
-import {
-  NumberFieldDecrement,
-  NumberFieldIncrement,
-  NumberFieldInput,
-  NumberFieldRoot,
-} from 'reka-ui'
+import EqtNumberField from '@/components/EqtNumberField.vue'
 import { t } from '@/composables/useI18n'
 import { useTagLabel } from '@/composables/useTagLabel'
 import LineColorSwatch from '@/components/LineColorSwatch.vue'
-import type { MyTagRow, TagSetRef } from '@/composables/useEhMyTagsHost'
+import { TAGSET_CAPACITY, type MyTagRow, type TagSetRef } from '@/composables/useEhMyTagsHost'
 import type { EditMap, TagState } from '@/services/mytagsEdits'
 import { effective } from '@/services/mytagsEdits'
 import type { TagImpact } from '@/services/mytagsScore'
@@ -18,6 +13,7 @@ import type { TagFilter } from '@/services/mytagsEditStore'
 
 const props = defineProps<{
   rows: MyTagRow[]
+  totalCount: number
   edits: EditMap
   selected: string | null
   sets: TagSetRef[]
@@ -206,23 +202,41 @@ function impactTitle(row: MyTagRow): string {
 <template>
   <div class="eqt-taglist">
     <div class="eqt-taglist__head">
-      <label>
-        <input
-          type="checkbox" :checked="allPicked"
-          @change="toggleAll(($event.target as HTMLInputElement).checked)"
+      <div class="eqt-taglist__head-meta">
+        <slot name="head-meta" />
+      </div>
+      <div class="eqt-taglist__head-main">
+        <label class="eqt-taglist__check-all" :title="t('taglist.headLeft', { n: visible.length })">
+          <input
+            type="checkbox" :checked="allPicked"
+            :aria-label="t('taglist.headLeft', { n: visible.length })"
+            @change="toggleAll(($event.target as HTMLInputElement).checked)"
+          >
+        </label>
+        <select
+          class="eqt-panel__setpick"
+          :value="filter.set"
+          @change="emit('update:filter', {
+            ...filter, set: ($event.target as HTMLSelectElement).value,
+          })"
         >
-        {{ t('taglist.headLeft', { n: visible.length }) }}
-      </label>
-      <select
-        :value="filter.status"
-        @change="emit('update:filter', {
-          ...filter, status: ($event.target as HTMLSelectElement).value as TagFilter['status'],
-        })"
-      >
-        <option value="all">{{ t('taglist.statusAll') }}</option>
-        <option value="weighted">{{ t('taglist.statusWeighted') }}</option>
-        <option value="pending">{{ t('taglist.statusPending') }}</option>
-      </select>
+          <option value="all">{{ t('taglist.allSets') }}（{{ totalCount }}）</option>
+          <option v-for="s in sets" :key="s.value" :value="s.value">
+            {{ s.name }}{{ s.used !== null ? `（${s.used}/${TAGSET_CAPACITY}）` : '' }}
+          </option>
+        </select>
+        <select
+          class="eqt-taglist__statuspick"
+          :value="filter.status"
+          @change="emit('update:filter', {
+            ...filter, status: ($event.target as HTMLSelectElement).value as TagFilter['status'],
+          })"
+        >
+          <option value="all">{{ t('taglist.statusAll') }}</option>
+          <option value="weighted">{{ t('taglist.statusWeighted') }}</option>
+          <option value="pending">{{ t('taglist.statusPending') }}</option>
+        </select>
+      </div>
     </div>
 
     <div ref="scroller" class="eqt-taglist__rows" @scroll.passive="onScroll">
@@ -306,29 +320,14 @@ function impactTitle(row: MyTagRow): string {
             <span class="eqt-panel__spacer" />
 
             <!-- chip 上不再印權重：這一格就是權重，同一件事不用講兩次 -->
-            <NumberFieldRoot
-              class="eqt-taglist__weight-control"
+            <EqtNumberField
               :model-value="view(row).weight"
               :min="-99"
               :max="99"
-              :step="1"
               :disabled="view(row).hidden"
+              :label="t('panel.weightHint')"
               @update:model-value="emit('patch', row, { weight: $event })"
-            >
-              <NumberFieldDecrement
-                class="eqt-taglist__weight-step"
-                :title="t('panel.weightDecrease')"
-              >-</NumberFieldDecrement>
-              <NumberFieldInput
-                class="eqt-taglist__input eqt-taglist__weight"
-                :title="t('panel.weightHint')"
-                :aria-label="t('panel.weightHint')"
-              />
-              <NumberFieldIncrement
-                class="eqt-taglist__weight-step"
-                :title="t('panel.weightIncrease')"
-              >+</NumberFieldIncrement>
-            </NumberFieldRoot>
+            />
           </div>
 
           <!-- 第三行：這個標籤在樣本裡把東西分到哪一邊 -->
@@ -366,7 +365,7 @@ function impactTitle(row: MyTagRow): string {
       </button>
       <span class="eqt-panel__spacer" />
       <button
-        type="button" class="eqt-panel__btn eqt-panel__btn--reload"
+        type="button" class="eqt-panel__btn"
         @click="emit('remove', pickedRows)"
       >{{ t('panel.labelDelete') }}</button>
       <button type="button" class="eqt-panel__link" @click="picked = new Set()">

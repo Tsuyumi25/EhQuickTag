@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, shallowRef, watch } from 'vue'
+import { Settings } from '@lucide/vue'
 import { t } from '@/composables/useI18n'
 import { useEqtToast } from '@/composables/useEqtToast'
 import MyTagsTagList from '@/components/mytags/MyTagsTagList.vue'
 import MyTagsPreview from '@/components/mytags/MyTagsPreview.vue'
 import MyTagsGallery from '@/components/mytags/MyTagsGallery.vue'
+import EqtNumberField from '@/components/EqtNumberField.vue'
 import { fetchGallery, type GalleryDetail } from '@/composables/useEhGalleryPreview'
 import {
-  fetchTagSet, fetchThresholds, TAGSET_CAPACITY,
+  fetchTagSet, fetchThresholds,
   type EhMyTagsHost, type MyTagRow, type TagSetSnapshot,
 } from '@/composables/useEhMyTagsHost'
 import { fetchListing } from '@/composables/useEhSearchListing'
@@ -17,7 +19,7 @@ import {
   type PreviewItem, type TagFacts, type EffectSummary, type TagImpact,
 } from '@/services/mytagsScore'
 import {
-  accuracy, listingUrl, emptyStore,
+  listingUrl, emptyStore,
   type SampleStore, type SampleGallery, type Verdict,
 } from '@/services/mytagsSamples'
 import {
@@ -39,6 +41,7 @@ import { serializeEntry } from '@/services/searchSyntax'
 import { nsFormat } from '@/services/store'
 import { tagChipStyle } from '@/services/mytagsColors'
 
+const emit = defineEmits<{ openSettings: [] }>()
 const props = defineProps<{ host: EhMyTagsHost }>()
 
 const toast = useEqtToast()
@@ -70,10 +73,6 @@ const galleryCache = new Map<number, GalleryDetail>()
 
 const filter = ref<TagFilter>(emptyFilter())
 
-const dialogOpen = ref(false)
-const dialogName = ref('')
-const dialogColor = ref('')
-const dialogEnabled = ref(true)
 
 // ---- 合併所有標籤集 ----
 
@@ -134,8 +133,7 @@ function weightOf(tag: string): number | null {
   return f.hidden ? null : f.weight
 }
 
-// 清空輸入框時 v-model.number 給的是空字串，不是 null。直接拿去比大小的話 JS 會把它
-// 當成 0，面板就在沒有閾值的情況下照算不誤
+// NumberField 暫時沒有有限數字時，不讓空值經 JS coercion 混進計分。
 const activeThreshold = computed<number | null>(() => {
   const raw = filterThreshold.value
   return typeof raw === 'number' && Number.isFinite(raw) ? raw : null
@@ -193,9 +191,6 @@ const wholeDb = computed<Map<string, TagImpact> | null>(() => {
   return new Map(tagBars(combos.value, declared, weightOf, activeThreshold.value)
     .map((b) => [b.tag, { total: b.total, left: b.blocked, right: b.shown }]))
 })
-
-const score = computed(() =>
-  filterThreshold.value === null ? null : accuracy(store.value, weightOf, filterThreshold.value))
 
 // ---- 編輯 ----
 
@@ -304,16 +299,6 @@ async function applyThreshold(): Promise<void> {
   }
 }
 
-// ---- 會刷新的動作：pending 必須先落地 ----
-
-async function guarded(run: () => void): Promise<void> {
-  await flush()
-  await Promise.all([
-    saveGalleries(store.value.galleries),
-    saveVerdicts(store.value.verdicts),
-  ])
-  run()
-}
 
 /** 送出後把那一組的標籤列換成最新的。當前組住在 liveRows，其餘住在 otherSets */
 function absorb(tagSet: string, next: MyTagRow[]): void {
@@ -363,20 +348,6 @@ function moveTags(target: MyTagRow[], to: string): void {
   void runMass(target, to)
 }
 
-// ---- 標籤集設定 ----
-
-function openSetDialog(): void {
-  dialogName.value = props.host.tagSets.find((s) => s.value === props.host.currentSet)?.name ?? ''
-  dialogColor.value = props.host.defaultColor
-  dialogEnabled.value = props.host.enabled
-  dialogOpen.value = true
-}
-
-function newSet(): void {
-  const name = prompt(t('panel.newSetPrompt'), t('panel.newSetDefault'))
-  if (name === null || !name.trim()) return
-  void guarded(() => props.host.createTagSet(name.trim()))
-}
 
 // ---- 樣本 ----
 
@@ -508,52 +479,34 @@ watch(edits, () => { void flush() }, { deep: true })
         <!-- 清單吃掉側欄剩下的高度，自己捲。側欄本身貼著視窗，所以底下那條永遠在 -->
         <MyTagsTagList
           v-model:filter="filter"
-          :rows="sidebarRows" :edits="edits" :selected="selected"
+          :rows="sidebarRows" :total-count="rows.length" :edits="edits" :selected="selected"
           :sets="host.tagSets" :current-set="host.currentSet"
           :impact="impact" :whole-db="wholeDb" :set-colors="setColors"
           @patch="patch" @bulk="bulk" @select="select"
           @remove="removeTags" @move="moveTags"
-        />
-
-        <!-- ⭐ 全部收在底部：換組、調門檻、送出都是「看完清單之後才做的事」，
-             而且捲到哪裡都摸得到 -->
-        <footer class="eqt-panel__dock">
-          <div class="eqt-panel__setbar">
-            <select
-              class="eqt-panel__setpick"
-              :value="filter.set"
-              @change="filter = { ...filter, set: ($event.target as HTMLSelectElement).value }"
+        >
+          <template #head-meta>
+            <button
+              type="button" class="eqt-panel__btn eqt-panel__btn--settings"
+              @click="emit('openSettings')"
             >
-              <option value="all">{{ t('taglist.allSets') }}（{{ rows.length }}）</option>
-              <option v-for="s in host.tagSets" :key="s.value" :value="s.value">
-                {{ s.name }}{{ s.used !== null ? `（${s.used}/${TAGSET_CAPACITY}）` : '' }}
-              </option>
-            </select>
-            <button type="button" class="eqt-panel__btn" @click="newSet">
-              {{ t('taglist.newSet') }}
+              <Settings :size="14" aria-hidden="true" />
+              {{ t('settings.title') }}
             </button>
-            <button type="button" class="eqt-panel__btn" @click="openSetDialog">
-              {{ t('taglist.setSettings') }}
-            </button>
-          </div>
-
-          <div class="eqt-panel__dockmeta">
+            <span class="eqt-panel__spacer" />
             <label class="eqt-panel__field" :class="{ 'eqt-panel__field--dirty': thresholdDirty }">
               {{ t('bars.threshold') }}
-              <input v-model.number="filterThreshold" type="number" step="1" max="0">
+              <EqtNumberField
+                v-model="filterThreshold"
+                :max="0"
+                :label="t('bars.threshold')"
+              />
             </label>
-            <span v-if="filterThreshold === null" class="eqt-panel__warn">
-              {{ t('bars.noThreshold') }}
-            </span>
-            <span v-else-if="score && score.judged" class="eqt-panel__meta">
-              {{ t('bars.accuracy', {
-                correct: score.correct, judged: score.judged,
-                over: score.overBlocked, leak: score.leaked,
-              }) }}
-            </span>
-          </div>
+          </template>
+        </MyTagsTagList>
 
-
+        <!-- 底部只留下 pending edits 的取消與套用 -->
+        <footer class="eqt-panel__dock">
           <!-- 兩顆都常駐。沒有未送出的改動時灰掉，而不是消失——位置固定才不用每次找 -->
           <div class="eqt-panel__commitbar">
             <button
@@ -592,41 +545,5 @@ watch(edits, () => { void flush() }, { deep: true })
       </div>
     </div>
 
-    <!-- 標籤集設定。⚠️ 三個按鈕各自是一次表單送出，也就是各自一次整頁刷新 -->
-    <div v-if="dialogOpen" class="eqt-panel__dialog">
-      <header>
-        <strong>{{ t('panel.setDialogTitle') }}</strong>
-        <button type="button" class="eqt-panel__btn" @click="dialogOpen = false">✕</button>
-      </header>
-      <label class="eqt-panel__field">
-        {{ t('panel.setName') }}
-        <input v-model="dialogName" type="text">
-        <button
-          type="button" class="eqt-panel__btn eqt-panel__btn--reload"
-          @click="guarded(() => host.renameTagSet(dialogName))"
-        >{{ t('panel.rename') }}</button>
-      </label>
-      <label class="eqt-panel__field">
-        {{ t('panel.setColor') }}
-        <input v-model="dialogColor" type="color">
-        <input v-model="dialogColor" type="text" maxlength="7" size="7">
-      </label>
-      <label class="eqt-panel__field">
-        <input v-model="dialogEnabled" type="checkbox">
-        {{ t('panel.setEnabled') }}
-      </label>
-      <p class="eqt-panel__hint">{{ t('panel.setColorNote') }}</p>
-      <footer>
-        <button
-          type="button" class="eqt-panel__btn eqt-panel__btn--reload"
-          @click="guarded(() => host.deleteTagSet())"
-        >{{ t('panel.deleteSet') }}</button>
-        <span class="eqt-panel__spacer" />
-        <button
-          type="button" class="eqt-panel__btn eqt-panel__btn--primary eqt-panel__btn--reload"
-          @click="guarded(() => host.saveTagSet({ defaultColor: dialogColor, enabled: dialogEnabled }))"
-        >{{ t('panel.saveSet') }}</button>
-      </footer>
-    </div>
   </section>
 </template>
