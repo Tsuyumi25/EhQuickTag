@@ -15,8 +15,8 @@ import {
 import { fetchListing } from '@/composables/useEhSearchListing'
 import { tagBars, type ComboDataset } from '@/services/mytagsBars'
 import {
-  outcomeOf, compareItems, snapshot, summarizeEffect,
-  type PreviewItem, type TagFacts, type EffectSummary, type TagImpact,
+  outcomeOf, compareItems,
+  type PreviewItem, type TagFacts, type TagImpact,
 } from '@/services/mytagsScore'
 import {
   listingUrl, emptyStore,
@@ -62,7 +62,6 @@ const selected = ref<string | null>(null)
 const markedOnly = ref(false)
 const writeBusy = ref('')
 const sampleBusy = ref('')
-const effect = ref<(EffectSummary & { label: string }) | null>(null)
 const fetchedPages = ref<Record<string, { pages: number; cursor: string | null }>>({})
 
 /** 攤開在預覽下方的那一本。整頁抓回來，判斷才有一張封面以外的依據 */
@@ -194,13 +193,6 @@ const wholeDb = computed<Map<string, TagImpact> | null>(() => {
 
 // ---- 編輯 ----
 
-/** 每次改動都量一次「做了什麼」 */
-function withEffect(label: string, run: () => void): void {
-  const before = snapshot(allItems.value, store.value.verdicts)
-  run()
-  const sum = summarizeEffect(before, snapshot(allItems.value, store.value.verdicts))
-  effect.value = sum.moved.length ? { ...sum, label } : null
-}
 
 /** 丟掉所有還沒送出的東西，門檻那格也要跟著回到 EH 上的值 */
 function discard(): void {
@@ -209,15 +201,11 @@ function discard(): void {
 }
 
 function patch(row: MyTagRow, p: Partial<TagState>): void {
-  withEffect(t('panel.effectOne', { tag: row.full }), () => {
-    edits.value = stage(edits.value, row, p)
-  })
+  edits.value = stage(edits.value, row, p)
 }
 
 function bulk(rows2: MyTagRow[], p: Partial<TagState>): void {
-  withEffect(t('panel.effectMany', { n: rows2.length }), () => {
-    edits.value = stageMany(edits.value, rows2, p)
-  })
+  edits.value = stageMany(edits.value, rows2, p)
 }
 
 const pending = computed(() => rows.value.filter((row) => edits.value[row.id] !== undefined))
@@ -409,7 +397,6 @@ const openedOutcome = computed(() =>
 
 function select(tag: string): void {
   selected.value = selected.value === tag ? null : tag
-  effect.value = null
   if (selected.value && !fetchedPages.value[tag]) void grab()
 }
 
@@ -526,7 +513,7 @@ watch(edits, () => { void flush() }, { deep: true })
       <MyTagsPreview
         v-model:marked-only="markedOnly"
         :left="leftItems" :right="rightItems"
-        :verdicts="store.verdicts" :selected="selected" :selected-style="selectedTagStyle" :effect="effect"
+        :verdicts="store.verdicts" :selected="selected" :selected-style="selectedTagStyle"
         :refresh-busy="sampleBusy" :threshold="activeThreshold"
         :opened-gid="openedGallery?.gid ?? null"
         @clear-tag="selected = null" @refresh="grab" @set-verdict="setVerdict"

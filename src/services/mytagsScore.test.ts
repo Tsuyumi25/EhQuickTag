@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  outcomeOf, compareItems, mismatchOf, snapshot, summarizeEffect,
+  outcomeOf, compareItems, mismatchOf,
   type FactsOf, type PreviewItem,
 } from '@/services/mytagsScore'
 import type { SampleGallery } from '@/services/mytagsSamples'
@@ -87,32 +87,3 @@ describe('mismatchOf', () => {
   })
 })
 
-describe('summarizeEffect', () => {
-  const before = snapshot([item(1, ['male:core']), item(2, ['male:save'])], { 1: 'keep' })
-
-  it('換邊的算進 moved', () => {
-    const after = snapshot([item(1, ['male:save']), item(2, ['male:save'])], { 1: 'keep' })
-    expect(summarizeEffect(before, after).moved).toEqual([1])
-  })
-
-  it('⭐ 修好和弄壞要分開數——混成一個數字就沒有用了', () => {
-    // 1 本來被擋但判為該留（誤傷），改完之後放行 → 修好一本
-    const after = snapshot([item(1, ['male:save']), item(2, ['male:save'])], { 1: 'keep' })
-    const sum = summarizeEffect(before, after)
-    expect(sum.fixed).toBe(1)
-    expect(sum.introduced).toBe(0)
-  })
-
-  it('本來沒問題、現在對不上的算 introduced', () => {
-    const start = snapshot([item(3, ['male:save'])], { 3: 'keep' })
-    const end = snapshot([item(3, ['male:core'])], { 3: 'keep' })
-    const sum = summarizeEffect(start, end)
-    expect(sum.introduced).toBe(1)
-    expect(sum.fixed).toBe(0)
-  })
-
-  it('新出現的畫廊不算換邊', () => {
-    const after = snapshot([item(1, ['male:core']), item(9, ['male:core'])], {})
-    expect(summarizeEffect(before, after).moved).toEqual([])
-  })
-})

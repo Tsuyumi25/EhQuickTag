@@ -98,39 +98,3 @@ export function mismatchOf(side: 'left' | 'right', verdict: Verdict | undefined)
   return 'correct'
 }
 
-export interface Snapshot {
-  sides: Map<number, 'left' | 'right'>
-  mismatches: Map<number, Mismatch>
-}
-
-export function snapshot(items: PreviewItem[], verdicts: Record<string, Verdict>): Snapshot {
-  return {
-    sides: new Map(items.map((i) => [i.gallery.gid, i.outcome.side])),
-    mismatches: new Map(items.map((i) =>
-      [i.gallery.gid, mismatchOf(i.outcome.side, verdicts[String(i.gallery.gid)])])),
-  }
-}
-
-export interface EffectSummary {
-  moved: number[]
-  /** 本來對不上、現在對上了 */
-  fixed: number
-  /** 本來沒問題、現在對不上了 */
-  introduced: number
-}
-
-/** 一次改動做了什麼 */
-export function summarizeEffect(before: Snapshot, after: Snapshot): EffectSummary {
-  const moved: number[] = []
-  let fixed = 0
-  let introduced = 0
-
-  for (const [gid, side] of after.sides) {
-    if (before.sides.has(gid) && before.sides.get(gid) !== side) moved.push(gid)
-    const was = before.mismatches.get(gid)
-    const now = after.mismatches.get(gid)
-    if ((was === 'over' || was === 'leak') && now === 'correct') fixed += 1
-    if ((was === 'correct' || !was) && (now === 'over' || now === 'leak')) introduced += 1
-  }
-  return { moved, fixed, introduced }
-}

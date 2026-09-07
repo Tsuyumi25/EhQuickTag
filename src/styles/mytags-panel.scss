@@ -458,14 +458,6 @@
   gap: 8px;
 }
 
-.eqt-preview__effect {
-  margin: 0 0 8px;
-  padding: 6px 9px;
-  border-left: 3px solid var(--eqt-status-include);
-  border-radius: var(--eqt-radius-sm);
-  background: var(--eqt-bg-stripe);
-  font-size: var(--eqt-fs-sm);
-}
 
 .eqt-preview__cols {
   display: grid;
@@ -533,7 +525,6 @@
   &--leak { border-color: var(--eqt-danger); }
   &--correct { border-color: var(--eqt-green); }
   &--none { opacity: 0.85; }
-  &--flipped { outline: 2px dashed var(--eqt-status-include); outline-offset: 1px; }
 }
 
 // 封面底下的第一行：只有分數。拆解改成點封面把整本攤開，不用再開一個 popup

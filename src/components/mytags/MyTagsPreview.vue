@@ -3,9 +3,7 @@ import { computed, ref, watch, onBeforeUnmount } from 'vue'
 import { t } from '@/composables/useI18n'
 import { useTagLabel } from '@/composables/useTagLabel'
 import type { SampleGallery, Verdict } from '@/services/mytagsSamples'
-import {
-  mismatchOf, type PreviewItem, type EffectSummary,
-} from '@/services/mytagsScore'
+import { mismatchOf, type PreviewItem } from '@/services/mytagsScore'
 
 const props = defineProps<{
   left: PreviewItem[]
@@ -13,7 +11,6 @@ const props = defineProps<{
   verdicts: Record<string, Verdict>
   selected: string | null
   selectedStyle: Record<string, string> | null
-  effect: (EffectSummary & { label: string }) | null
   refreshBusy: string
   markedOnly: boolean
   threshold: number | null
@@ -47,7 +44,6 @@ const labels = computed(() => ({
 const total = computed(() => props.left.length + props.right.length)
 const { label } = useTagLabel()
 const selectedLabel = computed(() => props.selected ? label.value(props.selected) : null)
-const flippedSet = computed(() => new Set(props.effect?.moved ?? []))
 
 function items(side: 'left' | 'right'): PreviewItem[] {
   return side === 'left' ? props.left : props.right
@@ -119,14 +115,6 @@ function metric(item: PreviewItem): string {
       </div>
     </header>
 
-    <!-- ⭐ 只講「N 本換邊」不夠：修好幾本和弄壞幾本是相反的訊號 -->
-    <p v-if="effect && effect.moved.length" class="eqt-preview__effect">
-      <strong>{{ effect.label }}</strong>
-      · {{ t('preview.moved', { n: effect.moved.length }) }}
-      <template v-if="effect.fixed || effect.introduced">
-        · {{ t('preview.diagnostic', { fixed: effect.fixed, introduced: effect.introduced }) }}
-      </template>
-    </p>
 
     <div class="eqt-preview__cols">
       <section
@@ -155,10 +143,7 @@ function metric(item: PreviewItem): string {
               v-for="item in shown(side)"
               :key="item.gallery.gid"
               class="eqt-preview__tile"
-              :class="{
-                [`eqt-preview__tile--${outcomeClass(item)}`]: true,
-                'eqt-preview__tile--flipped': flippedSet.has(item.gallery.gid),
-              }"
+              :class="`eqt-preview__tile--${outcomeClass(item)}`"
             >
               <!-- 點封面把整本載到下面攤開。判斷從一張封面看不出來，尤其是邊緣的那些 -->
               <button
