@@ -352,8 +352,6 @@ export default {
   'panel.thresholdFailed': 'Could not write the filter threshold ({error}); tags were not affected.',
   'panel.thresholdClobbered': '⚠️ Threshold saved, but these settings changed too: {fields}. Please check them on EH.',
   'panel.applyFailed': '“{tag}” could not be saved ({error}); the rest were not sent.',
-  'panel.conflicted': '{n} were changed somewhere else',
-  'panel.rebase': 'Take the current values',
   'panel.discard': 'Cancel',
   'panel.noCredentials': 'No login credentials on this page, so nothing can be written back.',
   'marked.over': 'over',

@@ -352,8 +352,6 @@ export default {
   'panel.thresholdFailed': '필터 임계값을 쓰지 못했습니다({error}). 태그는 영향을 받지 않았습니다.',
   'panel.thresholdClobbered': '⚠️ 임계값은 저장했지만 다음 설정도 함께 바뀌었습니다: {fields}. EH 설정에서 확인하세요.',
   'panel.applyFailed': '「{tag}」을(를) 저장하지 못했습니다 ({error}). 이후 항목은 보내지 않았습니다.',
-  'panel.conflicted': '{n}개가 다른 곳에서 변경되었습니다',
-  'panel.rebase': '현재 값에 맞추기',
   'panel.discard': '취소',
   'panel.noCredentials': '이 페이지에서 로그인 정보를 읽을 수 없어 되돌려 쓸 수 없습니다.',
   'marked.over': '과차단',

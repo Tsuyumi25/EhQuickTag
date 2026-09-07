@@ -4,7 +4,7 @@
 // 「延後送出」這個設計就不成立。
 
 import { cacheGet, cacheSet } from '@/services/gmStorage'
-import type { EditMap, TagState } from '@/services/mytagsEdits'
+import type { EditMap, TagPatch } from '@/services/mytagsEdits'
 
 const EDITS_KEY = 'eqt_mytags_edits'
 const SCHEMA = 1
@@ -19,10 +19,16 @@ export function emptyFilter(): TagFilter {
   return { set: 'all', status: 'all' }
 }
 
-function isState(v: unknown): v is TagState {
-  const s = v as TagState
-  return !!s && typeof s.weight === 'number' && typeof s.hidden === 'boolean'
-    && typeof s.watch === 'boolean' && typeof s.color === 'string'
+function isPatch(value: unknown): value is TagPatch {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
+  const entries = Object.entries(value)
+  if (!entries.length) return false
+  return entries.every(([key, field]) => {
+    if (key === 'weight') return typeof field === 'number'
+    if (key === 'hidden' || key === 'watch') return typeof field === 'boolean'
+    if (key === 'color') return typeof field === 'string'
+    return false
+  })
 }
 
 export async function loadEdits(): Promise<EditMap> {
@@ -32,9 +38,8 @@ export async function loadEdits(): Promise<EditMap> {
     const p = JSON.parse(raw) as { schema?: number; edits?: Record<string, unknown> }
     if (p.schema !== SCHEMA) return {}
     const out: EditMap = {}
-    for (const [k, v] of Object.entries(p.edits ?? {})) {
-      const e = v as { want?: unknown; basedOn?: unknown }
-      if (isState(e?.want) && isState(e?.basedOn)) out[Number(k)] = { want: e.want, basedOn: e.basedOn }
+    for (const [key, value] of Object.entries(p.edits ?? {})) {
+      if (isPatch(value)) out[Number(key)] = value
     }
     return out
   } catch { return {} }

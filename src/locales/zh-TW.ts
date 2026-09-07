@@ -352,8 +352,6 @@ export default {
   'panel.thresholdFailed': '過濾門檻寫不進去（{error}），標籤的部分不受影響。',
   'panel.thresholdClobbered': '⚠️ 門檻改好了，但這些設定被一起動到：{fields}。請到 EH 的設定頁確認。',
   'panel.applyFailed': '「{tag}」送不出去（{error}），後面的沒送。',
-  'panel.conflicted': '{n} 個在別的地方被改過了',
-  'panel.rebase': '以現況為準',
   'panel.discard': '取消',
   'panel.noCredentials': '這一頁讀不到登入憑證，沒辦法寫回去。',
   'marked.over': '誤傷',

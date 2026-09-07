@@ -22,7 +22,7 @@ import {
 } from '@/services/mytagsSamples'
 import { loadSamples, saveSamples } from '@/services/mytagsSampleStore'
 import {
-  stage, stageMany, effective, splitPending, unstage, rebase,
+  stage, stageMany, effective, unstage,
   type EditMap, type TagState,
 } from '@/services/mytagsEdits'
 import {
@@ -199,7 +199,7 @@ function bulk(rows2: MyTagRow[], p: Partial<TagState>): void {
   })
 }
 
-const pending = computed(() => splitPending(rows.value, edits.value))
+const pending = computed(() => rows.value.filter((row) => edits.value[row.id] !== undefined))
 
 /**
  * 門檻也算一筆未送出的改動。
@@ -213,8 +213,7 @@ const thresholdDirty = computed(() =>
   && filterThreshold.value !== savedThreshold.value)
 
 const pendingTotal = computed(() =>
-  pending.value.ready.length + pending.value.conflicted.length
-  + (thresholdDirty.value ? 1 : 0))
+  pending.value.length + (thresholdDirty.value ? 1 : 0))
 
 async function flush(): Promise<void> { await saveEdits(edits.value) }
 
@@ -229,15 +228,15 @@ async function flush(): Promise<void> { await saveEdits(edits.value) }
  */
 async function apply(): Promise<void> {
   if (busy.value || !pendingTotal.value) return
-  if (pending.value.ready.length && !canWrite()) {
+  if (pending.value.length && !canWrite()) {
     toast.error(t('panel.noCredentials')); return
   }
-  const todo = [...pending.value.ready]
+  const todo = [...pending.value]
   const done: number[] = []
   let failure = ''
   for (const [i, row] of todo.entries()) {
     busy.value = t('panel.applying', { i: i + 1, n: todo.length })
-    const want = edits.value[row.id].want
+    const want = effective(row, edits.value)
     const res = await setUserTag({ id: row.id, ...want })
     if (!res.ok) {
       failure = t('panel.applyFailed', { tag: row.full, error: res.error })
@@ -524,13 +523,6 @@ watch(edits, () => { void flush() }, { deep: true })
             </span>
           </div>
 
-          <p v-if="pending.conflicted.length" class="eqt-panel__warn">
-            {{ t('panel.conflicted', { n: pending.conflicted.length }) }}
-            <button
-              type="button" class="eqt-panel__btn"
-              @click="edits = rebase(edits, pending.conflicted)"
-            >{{ t('panel.rebase') }}</button>
-          </p>
 
           <!-- 兩顆都常駐。沒有未送出的改動時灰掉，而不是消失——位置固定才不用每次找 -->
           <div class="eqt-panel__commitbar">

@@ -352,8 +352,6 @@ export default {
   'panel.thresholdFailed': 'フィルタ閾値を書き込めませんでした（{error}）。タグには影響していません。',
   'panel.thresholdClobbered': '⚠️ 閾値は保存できましたが、次の設定も変わってしまいました：{fields}。EH の設定画面で確認してください。',
   'panel.applyFailed': '「{tag}」を保存できませんでした（{error}）。以降は送信していません。',
-  'panel.conflicted': '{n} 件が別の場所で変更されています',
-  'panel.rebase': '現在の値に合わせる',
   'panel.discard': 'キャンセル',
   'panel.noCredentials': 'このページからログイン情報を読めないため、書き戻せません。',
   'marked.over': '誤検知',

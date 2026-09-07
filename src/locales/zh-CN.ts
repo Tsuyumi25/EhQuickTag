@@ -352,8 +352,6 @@ export default {
   'panel.thresholdFailed': '过滤阈值写不进去（{error}），标签的部分不受影响。',
   'panel.thresholdClobbered': '⚠️ 阈值改好了，但这些设置被一起动到：{fields}。请到 EH 的设置页确认。',
   'panel.applyFailed': '「{tag}」送不出去（{error}），后面的没送。',
-  'panel.conflicted': '{n} 个在别的地方被改过了',
-  'panel.rebase': '以现况为准',
   'panel.discard': '取消',
   'panel.noCredentials': '这一页读不到登录凭证，没办法写回去。',
   'marked.over': '误伤',
