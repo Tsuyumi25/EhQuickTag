@@ -367,7 +367,6 @@ export default {
   'taglist.empty': '找不到符合條件的標籤',
   'taglist.impact': '樣本裡：被擋 {left} · 顯示 {right}',
   'taglist.impactNone': '樣本裡還沒有帶這個標籤的畫廊',
-  'taglist.wholeDb': '全庫：被擋 {left} · 顯示 {right}',
   'taglist.picked': '已選 {n} 個',
   'taglist.moveTo': '移到標籤集⋯',
   'taglist.bulkWatch': '設為關注',

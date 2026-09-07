@@ -20,8 +20,6 @@ const props = defineProps<{
   currentSet: string
   /** 每個標籤在目前樣本裡的去向分佈 */
   impact: Map<string, TagImpact>
-  /** 有 fixture 的時候的全庫分佈，只放進 tooltip */
-  wholeDb: Map<string, TagImpact> | null
   setColors: Record<string, string>
   filter: TagFilter
 }>()
@@ -187,15 +185,9 @@ function pct(part: number, total: number): string {
 
 function impactTitle(row: MyTagRow): string {
   const here = props.impact.get(row.full)
-  const all = props.wholeDb?.get(row.full)
-  const one = here
+  return here
     ? t('taglist.impact', { left: here.left, right: here.right })
     : t('taglist.impactNone')
-  return all
-    ? `${one}\n${t('taglist.wholeDb', {
-      left: all.left.toLocaleString(), right: all.right.toLocaleString(),
-    })}`
-    : one
 }
 </script>
 

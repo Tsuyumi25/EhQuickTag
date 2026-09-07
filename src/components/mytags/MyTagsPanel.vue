@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, shallowRef, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { Settings } from '@lucide/vue'
 import { t } from '@/composables/useI18n'
 import { useEqtToast } from '@/composables/useEqtToast'
@@ -13,7 +13,6 @@ import {
   type EhMyTagsHost, type MyTagRow, type TagSetSnapshot,
 } from '@/composables/useEhMyTagsHost'
 import { fetchListing } from '@/composables/useEhSearchListing'
-import { tagBars, type ComboDataset } from '@/services/mytagsBars'
 import {
   outcomeOf, compareItems,
   type PreviewItem, type TagFacts, type TagImpact,
@@ -53,7 +52,6 @@ const liveRows = ref<MyTagRow[]>(props.host.readRows())
 const otherSets = ref<TagSetSnapshot[]>([])
 const edits = ref<EditMap>({})
 const store = ref<SampleStore>(emptyStore())
-const combos = shallowRef<ComboDataset | null>(null)
 
 const filterThreshold = ref<number | null>(null)
 /** EH 上現在的門檻。跟 filterThreshold 不一樣就代表這格也還沒送出去 */
@@ -126,11 +124,6 @@ function factsOf(tag: string): TagFacts | null {
   return { weight: v.weight, hidden: v.hidden, watch: v.watch }
 }
 
-function weightOf(tag: string): number | null {
-  const f = factsOf(tag)
-  if (!f) return 0            // 不在清單裡的標籤不進加總
-  return f.hidden ? null : f.weight
-}
 
 // NumberField 暫時沒有有限數字時，不讓空值經 JS coercion 混進計分。
 const activeThreshold = computed<number | null>(() => {
@@ -180,16 +173,6 @@ const sidebarRows = computed(() => (filter.value.set === 'all'
   ? rows.value
   : rows.value.filter((r) => r.tagSet === filter.value.set)))
 
-/** 有 fixture 的時候的全庫分佈，只放進 tooltip */
-const wholeDb = computed<Map<string, TagImpact> | null>(() => {
-  if (!combos.value || activeThreshold.value === null) return null
-  const declared = rows.value.filter((r) => {
-    const v = view(r)
-    return v.hidden || v.weight < 0
-  }).map((r) => r.full)
-  return new Map(tagBars(combos.value, declared, weightOf, activeThreshold.value)
-    .map((b) => [b.tag, { total: b.total, left: b.blocked, right: b.shown }]))
-})
 
 // ---- 編輯 ----
 
@@ -444,13 +427,6 @@ onMounted(async () => {
   // 沒啟用的組不進計分，所以連讀都不讀進來
   otherSets.value = got.filter((s): s is TagSetSnapshot => !!s && s.enabled)
 
-  if (import.meta.env.DEV) {
-    try {
-      // 經 unknown 中轉：TS 把 JSON 陣列一律推成 (string | number)[]，推不回 tuple
-      const mod = await import('@/dev/combos.json')
-      combos.value = mod.default as unknown as ComboDataset
-    } catch { /* fixture 沒產就沒有全庫數字，其他照常 */ }
-  }
 })
 
 onUnmounted(() => { unbind?.(); setAppMode(false) })
@@ -468,7 +444,7 @@ watch(edits, () => { void flush() }, { deep: true })
           v-model:filter="filter"
           :rows="sidebarRows" :total-count="rows.length" :edits="edits" :selected="selected"
           :sets="host.tagSets" :current-set="host.currentSet"
-          :impact="impact" :whole-db="wholeDb" :set-colors="setColors"
+          :impact="impact" :set-colors="setColors"
           @patch="patch" @bulk="bulk" @select="select"
           @remove="removeTags" @move="moveTags"
         >

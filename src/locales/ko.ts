@@ -367,7 +367,6 @@ export default {
   'taglist.empty': '조건에 맞는 태그가 없습니다',
   'taglist.impact': '표본: 차단 {left} · 표시 {right}',
   'taglist.impactNone': '이 태그가 붙은 표본이 아직 없습니다',
-  'taglist.wholeDb': '전체 DB: 차단 {left} · 표시 {right}',
   'taglist.picked': '{n}개 선택',
   'taglist.moveTo': '세트로 이동⋯',
   'taglist.bulkWatch': '관심으로',

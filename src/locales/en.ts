@@ -367,7 +367,6 @@ export default {
   'taglist.empty': 'No tags match',
   'taglist.impact': 'In samples: {left} blocked · {right} shown',
   'taglist.impactNone': 'No sampled gallery carries this tag yet',
-  'taglist.wholeDb': 'Whole database: {left} blocked · {right} shown',
   'taglist.picked': '{n} selected',
   'taglist.moveTo': 'Move to set…',
   'taglist.bulkWatch': 'Set watched',

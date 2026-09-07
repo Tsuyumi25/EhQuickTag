@@ -367,7 +367,6 @@ export default {
   'taglist.empty': '条件に合うタグがありません',
   'taglist.impact': 'サンプル：弾かれる {left} · 表示 {right}',
   'taglist.impactNone': 'このタグを持つサンプルはまだありません',
-  'taglist.wholeDb': '全データベース：弾かれる {left} · 表示 {right}',
   'taglist.picked': '{n} 件選択中',
   'taglist.moveTo': 'セットに移動⋯',
   'taglist.bulkWatch': '注目にする',

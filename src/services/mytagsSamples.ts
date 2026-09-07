@@ -2,7 +2,7 @@
 //
 // ⭐ 判斷綁在畫廊上，不綁在設定上——所以改權重之後先前判過的不用重判。
 
-import { isBlocked, type WeightOf } from '@/services/mytagsBars'
+import { outcomeOf, type FactsOf } from '@/services/mytagsScore'
 
 export interface SampleGallery {
   gid: number
@@ -43,7 +43,7 @@ export interface Accuracy {
  */
 export function accuracy(
   store: SampleStore,
-  weightOf: WeightOf,
+  factsOf: FactsOf,
   threshold: number,
 ): Accuracy {
   const out: Accuracy = { judged: 0, correct: 0, overBlocked: 0, leaked: 0 }
@@ -51,7 +51,7 @@ export function accuracy(
     const g = store.galleries[gid]
     if (!g) continue
     out.judged += 1
-    const blocked = isBlocked(g.tags, weightOf, threshold)
+    const blocked = outcomeOf(g.tags, factsOf, threshold).side === 'left'
     if (blocked === (want === 'block')) out.correct += 1
     else if (blocked) out.overBlocked += 1
     else out.leaked += 1
