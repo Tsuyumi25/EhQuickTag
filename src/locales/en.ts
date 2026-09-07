@@ -339,6 +339,8 @@ export default {
   'bars.noThreshold': 'Could not read the soft filter threshold from /uconfig.php. Enter it manually.',
   'bars.grabbing': 'Fetching…',
   'panel.weightHint': 'Weight -99 to 99. A total below the threshold gets blocked',
+  'panel.weightDecrease': 'Decrease weight',
+  'panel.weightIncrease': 'Increase weight',
   'panel.colorHint': 'Colour for this tag; leave blank to inherit the tag set default',
   'panel.toggleHidden': 'Hide unconditionally (skips the sum entirely)',
   'panel.toggleWatch': 'Mark as watched',

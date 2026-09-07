@@ -292,8 +292,68 @@
   gap: 6px;
   min-width: 0;
 
-  // 標籤獨佔這一行，所以讓它把剩下的寬度吃滿——調色盤靠右
+  // 標籤名稱吃滿第一行，讓長名稱保留最多空間
   > .eqt-taglist__chip { flex: 1 1 auto; }
+}
+
+.eqt-taglist__color-control {
+  display: inline-flex;
+  flex: 0 0 calc(var(--eqt-checkbox-size) * 5);
+  align-items: center;
+  width: calc(var(--eqt-checkbox-size) * 5);
+  height: var(--eqt-checkbox-size);
+  gap: calc(var(--eqt-checkbox-size) / 6);
+}
+
+.eqt-taglist__color-swatch.eqt-line-color__trigger {
+  flex: 0 0 var(--eqt-checkbox-size);
+  width: var(--eqt-checkbox-size);
+  height: var(--eqt-checkbox-size);
+  box-sizing: border-box;
+  border: var(--eqt-border-width) solid var(--eqt-border);
+  background: var(--eqt-tag-color-preview);
+
+  &:hover:not(:disabled) {
+    background: var(--eqt-tag-color-preview);
+  }
+
+  &:focus-visible {
+    outline: var(--eqt-border-width) solid var(--eqt-green);
+  }
+
+  > svg { visibility: hidden; }
+}
+
+.eqt-taglist input.eqt-taglist__input {
+  height: var(--eqt-checkbox-size);
+  margin: 0;
+  line-height: 1;
+  box-sizing: border-box;
+  padding: 0 calc(var(--eqt-checkbox-size) / 6);
+  border: var(--eqt-border-width) solid var(--eqt-border);
+  border-radius: var(--eqt-radius-sm);
+  background: var(--eqt-bg-btn-hover);
+  color: var(--eqt-text);
+  font-size: var(--eqt-fs-sm);
+
+  &:enabled:hover,
+  &:enabled:focus {
+    border-color: var(--eqt-border);
+    outline: none;
+    background: var(--eqt-bg-btn-hover);
+  }
+}
+
+.eqt-taglist__color {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  text-transform: uppercase;
+
+  &:invalid:not(:placeholder-shown) {
+    border-color: var(--eqt-danger);
+  }
 }
 
 .eqt-taglist__controls {
@@ -301,12 +361,14 @@
   align-items: center;
   gap: 8px;
   min-width: 0;
+  height: var(--eqt-checkbox-size);
 }
 
 // 兩個旗標用原生 checkbox——theme.scss 已經把全站的 checkbox 重畫過了
 .eqt-taglist__flag {
   display: inline-flex;
   align-items: center;
+  height: var(--eqt-checkbox-size);
   gap: 3px;
   font-size: var(--eqt-fs-xs);
   white-space: nowrap;
@@ -353,9 +415,52 @@
 .eqt-taglist__neg { background: var(--eqt-danger); }
 .eqt-taglist__pos { background: var(--eqt-green); }
 
-.eqt-taglist__weight {
-  width: 4em;
+.eqt-taglist__weight-control {
+  display: inline-flex;
+  flex: 0 0 calc(var(--eqt-checkbox-size) * 5);
+  align-items: center;
+  width: calc(var(--eqt-checkbox-size) * 5);
+  height: var(--eqt-checkbox-size);
+}
+
+.eqt-taglist__weight-step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 calc(var(--eqt-checkbox-size) * 1.5);
+  width: calc(var(--eqt-checkbox-size) * 1.5);
+  height: var(--eqt-checkbox-size);
+  box-sizing: border-box;
+  padding: 0;
+  border: var(--eqt-border-width) solid var(--eqt-border);
+  background: var(--eqt-bg-btn);
+  color: var(--eqt-text);
+  font: inherit;
+  font-size: var(--eqt-fs-md);
+  line-height: 1;
+  cursor: pointer;
+
+  &:first-child {
+    border-right: 0;
+    border-radius: var(--eqt-radius-sm) 0 0 var(--eqt-radius-sm);
+  }
+
+  &:last-child {
+    border-left: 0;
+    border-radius: 0 var(--eqt-radius-sm) var(--eqt-radius-sm) 0;
+  }
+
+  &:hover:not(:disabled) { background: var(--eqt-bg-btn-hover); }
+  &:disabled { opacity: 0.3; cursor: default; }
+}
+
+.eqt-taglist input.eqt-taglist__weight {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  border-radius: 0;
   font-variant-numeric: tabular-nums;
+  text-align: center;
 }
 
 .eqt-taglist__bulk {

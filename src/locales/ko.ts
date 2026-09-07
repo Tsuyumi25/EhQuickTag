@@ -339,6 +339,8 @@ export default {
   'bars.noThreshold': '/uconfig.php에서 소프트 필터 임계값을 읽지 못했습니다. 직접 입력하세요.',
   'bars.grabbing': '가져오는 중⋯',
   'panel.weightHint': '가중치 -99 ~ 99. 합계가 임계값보다 낮으면 차단됩니다',
+  'panel.weightDecrease': '가중치 낮추기',
+  'panel.weightIncrease': '가중치 높이기',
   'panel.colorHint': '이 태그의 색. 비워 두면 태그 세트 기본색을 씁니다',
   'panel.toggleHidden': '무조건 숨김 (합계에 들어가지 않음)',
   'panel.toggleWatch': '관심 태그로 지정 (watched)',

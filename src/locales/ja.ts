@@ -339,6 +339,8 @@ export default {
   'bars.noThreshold': '/uconfig.php からソフトフィルタ閾値を読めませんでした。手入力してください。',
   'bars.grabbing': '取得中⋯',
   'panel.weightHint': '重み -99 ~ 99。合計が閾値を下回ると弾かれます',
+  'panel.weightDecrease': '重みを下げる',
+  'panel.weightIncrease': '重みを上げる',
   'panel.colorHint': 'このタグの色。空欄ならタグセットの既定色を使います',
   'panel.toggleHidden': '無条件で隠す（合計に入りません）',
   'panel.toggleWatch': 'ウォッチ対象にする（watched）',

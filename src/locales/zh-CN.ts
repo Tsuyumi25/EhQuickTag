@@ -339,6 +339,8 @@ export default {
   'bars.noThreshold': '读不到 /uconfig.php 的软过滤阈值，请自己填。',
   'bars.grabbing': '抓取中⋯',
   'panel.weightHint': '权重 -99 ~ 99。合计低于阈值就会被挡',
+  'panel.weightDecrease': '降低权重',
+  'panel.weightIncrease': '提高权重',
   'panel.colorHint': '这个标签的颜色，留空就用标签集的默认色',
   'panel.toggleHidden': '无条件隐藏（不进合计）',
   'panel.toggleWatch': '设为关注（watched）',

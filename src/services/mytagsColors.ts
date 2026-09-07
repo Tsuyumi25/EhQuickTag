@@ -25,6 +25,14 @@ const LUMA_SPLIT = 151
 /** 深色變體的偏移量，同樣是 EH 寫死的 */
 const DARKEN = 32
 
+/** 回傳 EH 使用的色號格式；null 代表輸入尚未構成完整色號。 */
+export function normalizeTagColor(input: string): string | null {
+  const hex = input.trim().replace(/^#/, '')
+  if (!hex) return ''
+  if (!/^[0-9a-f]{6}$/i.test(hex)) return null
+  return `#${hex.toUpperCase()}`
+}
+
 function clampByte(n: number): string {
   return Math.min(255, Math.max(0, n)).toString(16).padStart(2, '0')
 }

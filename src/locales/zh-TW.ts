@@ -339,6 +339,8 @@ export default {
   'bars.noThreshold': '讀不到 /uconfig.php 的軟過濾閾值，請自己填。',
   'bars.grabbing': '抓取中⋯',
   'panel.weightHint': '權重 -99 ~ 99。加總低於閾值就會被擋',
+  'panel.weightDecrease': '降低權重',
+  'panel.weightIncrease': '提高權重',
   'panel.colorHint': '這個標籤的顏色，留空就用標籤集的預設色',
   'panel.toggleHidden': '無條件隱藏（不進加總）',
   'panel.toggleWatch': '設為關注（watched）',

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { tagColors, type TagColorInput } from '@/services/mytagsColors'
+import { normalizeTagColor, tagColors, type TagColorInput } from '@/services/mytagsColors'
 
 const base = { color: '', setColor: '', weight: 10, hidden: false }
 
@@ -56,5 +56,24 @@ describe('tagColors · 壞掉的輸入不要吐 NaN 給 CSS', () => {
     const c = tagColors({ ...base, color: 'ZZZZZZ' })
     expect(c.face).toBe('3377FF')
     expect(c.edge).toBe('3377FF')
+  })
+})
+
+describe('normalizeTagColor · 文字輸入', () => {
+  it('補上井字號並轉成大寫', () => {
+    expect(normalizeTagColor('a1b2c3')).toBe('#A1B2C3')
+  })
+
+  it('保留完整色號並移除頭尾空白', () => {
+    expect(normalizeTagColor('  #A1B2C3  ')).toBe('#A1B2C3')
+  })
+
+  it('空白代表沿用標籤集顏色', () => {
+    expect(normalizeTagColor('')).toBe('')
+  })
+
+  it('半成品與非 hex 字元保持未完成狀態', () => {
+    expect(normalizeTagColor('#123')).toBeNull()
+    expect(normalizeTagColor('#GGGGGG')).toBeNull()
   })
 })

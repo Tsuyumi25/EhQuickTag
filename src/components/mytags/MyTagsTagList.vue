@@ -1,5 +1,11 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import {
+  NumberFieldDecrement,
+  NumberFieldIncrement,
+  NumberFieldInput,
+  NumberFieldRoot,
+} from 'reka-ui'
 import { t } from '@/composables/useI18n'
 import { useTagLabel } from '@/composables/useTagLabel'
 import LineColorSwatch from '@/components/LineColorSwatch.vue'
@@ -7,7 +13,7 @@ import type { MyTagRow, TagSetRef } from '@/composables/useEhMyTagsHost'
 import type { EditMap, TagState } from '@/services/mytagsEdits'
 import { effective } from '@/services/mytagsEdits'
 import type { TagImpact } from '@/services/mytagsScore'
-import { tagColors } from '@/services/mytagsColors'
+import { normalizeTagColor, tagColors } from '@/services/mytagsColors'
 import type { TagFilter } from '@/services/mytagsEditStore'
 
 const props = defineProps<{
@@ -160,18 +166,24 @@ watch(() => [props.filter.set, props.filter.status], () => {
   if (scroller.value) scroller.value.scrollTop = 0
 })
 
-function onWeight(row: MyTagRow, e: Event): void {
-  const n = parseInt((e.target as HTMLInputElement).value, 10)
-  if (Number.isNaN(n)) return          // 打到一半的 "-" 不該讓整片翻面
-  emit('patch', row, { weight: Math.max(-99, Math.min(99, n)) })
+/** EH 的 tagcolor 只接受六位色號；picker 與文字輸入共用同一個正規化出口。 */
+function onColor(row: MyTagRow, v: string | undefined): void {
+  const color = normalizeTagColor(v ?? '')
+  if (color !== null) emit('patch', row, { color })
 }
 
-/**
- * ⚠️ ColorPicker 吐的是 8 位 hex（帶 alpha），EH 的 tagcolor 欄位是 maxlength="7"。
- * 多出來的兩位要切掉，不然存回去會被截斷成別的顏色。
- */
-function onColor(row: MyTagRow, v: string | undefined): void {
-  emit('patch', row, { color: v ? v.slice(0, 7).toUpperCase() : '' })
+function onHexInput(row: MyTagRow, e: Event): void {
+  const color = normalizeTagColor((e.target as HTMLInputElement).value)
+  if (color !== null) emit('patch', row, { color })
+}
+
+function onHexBlur(row: MyTagRow, e: Event): void {
+  const input = e.target as HTMLInputElement
+  input.value = normalizeTagColor(input.value) ?? view(row).color
+}
+
+function colorPreview(row: MyTagRow): string {
+  return view(row).color || props.setColors[row.tagSet] || '#000000'
 }
 
 function pct(part: number, total: number): string {
@@ -236,7 +248,7 @@ function impactTitle(row: MyTagRow): string {
         </label>
 
         <div class="eqt-taglist__body">
-          <!-- 第一行：標籤獨佔一整行，長名字才不會被右邊的控制項擠掉 -->
+          <!-- 第一行：標籤與它的顏色放在一起 -->
           <div class="eqt-taglist__top">
             <button
               type="button" class="eqt-taglist__chip"
@@ -247,15 +259,35 @@ function impactTitle(row: MyTagRow): string {
               <span class="eqt-taglist__ns">{{ label(row.full).nsLabel }}:</span>
               <span>{{ label(row.full).display }}</span>
             </button>
+            <span class="eqt-taglist__color-control">
+              <LineColorSwatch
+                class="eqt-taglist__color-swatch"
+                :model-value="view(row).color || undefined"
+                :alpha="false"
+                :style="{ '--eqt-tag-color-preview': colorPreview(row) }"
+                :title="t('panel.colorHint')"
+                @update:model-value="onColor(row, $event)"
+              />
+              <input
+                class="eqt-taglist__input eqt-taglist__color"
+                type="text"
+                :value="view(row).color"
+                placeholder="#default"
+                maxlength="7"
+                pattern="#?[0-9A-Fa-f]{6}"
+                spellcheck="false"
+                autocomplete="off"
+                :aria-label="t('panel.colorHint')"
+                :title="t('panel.colorHint')"
+                @input="onHexInput(row, $event)"
+                @blur="onHexBlur(row, $event)"
+                @keydown.enter.prevent="($event.target as HTMLInputElement).blur()"
+              >
+            </span>
 
-            <LineColorSwatch
-              :model-value="view(row).color || undefined"
-              :title="t('panel.colorHint')"
-              @update:model-value="onColor(row, $event)"
-            />
           </div>
 
-          <!-- 第二行：可以動的三個東西 -->
+          <!-- 第二行：旗標在左，權重固定靠右 -->
           <div class="eqt-taglist__controls">
             <label class="eqt-taglist__flag" :title="t('panel.toggleWatch')">
               <input
@@ -275,13 +307,29 @@ function impactTitle(row: MyTagRow): string {
             <span class="eqt-panel__spacer" />
 
             <!-- chip 上不再印權重：這一格就是權重，同一件事不用講兩次 -->
-            <input
-              class="eqt-taglist__weight"
-              type="number" min="-99" max="99" step="1"
-              :value="view(row).weight" :disabled="view(row).hidden"
-              :title="t('panel.weightHint')"
-              @input="onWeight(row, $event)"
+            <NumberFieldRoot
+              class="eqt-taglist__weight-control"
+              :model-value="view(row).weight"
+              :min="-99"
+              :max="99"
+              :step="1"
+              :disabled="view(row).hidden"
+              @update:model-value="emit('patch', row, { weight: $event })"
             >
+              <NumberFieldDecrement
+                class="eqt-taglist__weight-step"
+                :title="t('panel.weightDecrease')"
+              >-</NumberFieldDecrement>
+              <NumberFieldInput
+                class="eqt-taglist__input eqt-taglist__weight"
+                :title="t('panel.weightHint')"
+                :aria-label="t('panel.weightHint')"
+              />
+              <NumberFieldIncrement
+                class="eqt-taglist__weight-step"
+                :title="t('panel.weightIncrease')"
+              >+</NumberFieldIncrement>
+            </NumberFieldRoot>
           </div>
 
           <!-- 第三行：這個標籤在樣本裡把東西分到哪一邊 -->

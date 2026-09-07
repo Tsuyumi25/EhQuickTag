@@ -9,6 +9,7 @@ defineProps<{
   modelValue: string | undefined
   title?: string
   embedded?: boolean
+  alpha?: boolean
 }>()
 const emit = defineEmits<{ 'update:modelValue': [value: string | undefined] }>()
 
@@ -36,7 +37,11 @@ function clearColor() {
   </button>
   <component :is="embedded ? 'div' : AnchoredPopover" v-model:open="open" :anchor="triggerEl">
     <div class="eqt-line-color__popup" :class="{ 'eqt-line-color__popup--embedded': embedded }">
-      <ColorPicker :model-value="modelValue" @update:model-value="emit('update:modelValue', $event)" />
+      <ColorPicker
+        :model-value="modelValue"
+        :alpha="alpha"
+        @update:model-value="emit('update:modelValue', $event)"
+      />
       <button type="button" class="eqt-line-color__clear" @click="clearColor">
         <X :size="12" /> {{ t('tagbar.lineColorClear') }}
       </button>
