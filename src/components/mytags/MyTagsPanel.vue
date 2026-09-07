@@ -43,8 +43,6 @@ const MAX_FETCH = 6
 
 const liveRows = ref<MyTagRow[]>(props.host.readRows())
 const otherSets = ref<TagSetSnapshot[]>([])
-/** 已經成功寫回 EH 的值。原生 DOM 上的還是舊的，所以要疊在它上面當新的已存值 */
-const applied = ref<Record<number, TagState>>({})
 const edits = ref<EditMap>({})
 const store = ref<SampleStore>(emptyStore())
 const combos = shallowRef<ComboDataset | null>(null)
@@ -78,7 +76,7 @@ const dialogEnabled = ref(true)
 const rows = computed<MyTagRow[]>(() => {
   const byName = new Map<string, MyTagRow>()
   for (const r of [...otherSets.value.flatMap((s) => s.rows), ...liveRows.value]) {
-    byName.set(r.full, applied.value[r.id] ? { ...r, ...applied.value[r.id] } : r)
+    byName.set(r.full, r)
   }
   return [...byName.values()]
 })
@@ -88,6 +86,15 @@ const setColors = computed<Record<string, string>>(() => {
   for (const s of otherSets.value) out[s.value] = s.defaultColor
   return out
 })
+
+/** API 已接受後，直接更新 rows 這份已儲存狀態。 */
+function acceptWrite(id: number, state: TagState): void {
+  liveRows.value = liveRows.value.map((row) => row.id === id ? { ...row, ...state } : row)
+  otherSets.value = otherSets.value.map((set) => ({
+    ...set,
+    rows: set.rows.map((row) => row.id === id ? { ...row, ...state } : row),
+  }))
+}
 
 const rowMap = computed(() => new Map(rows.value.map((r) => [r.full, r])))
 
@@ -242,7 +249,7 @@ async function apply(): Promise<void> {
       failure = t('panel.applyFailed', { tag: row.full, error: res.error })
       break
     }
-    applied.value = { ...applied.value, [row.id]: want }
+    acceptWrite(row.id, want)
     done.push(row.id)
   }
   edits.value = unstage(edits.value, done)
