@@ -75,21 +75,41 @@ function chipStyle(row: MyTagRow): Record<string, string> {
 }
 
 /**
- * 順序凍結在這裡：只在「篩選 / 標籤增減」時重算一次，編輯、套用、選取都不動它。
+ * 順序凍結在這裡：只在「篩選 / 排序 / 標籤增減」時重算一次，編輯、套用、選取都不動它。
  *
  * ⛔ 不要改成即時重排。調一格權重那一列就會從眼前跑掉。
  */
 const order = ref(new Map<number, number>())
 
+function compareRows(a: MyTagRow, b: MyTagRow): number {
+  const av = view(a)
+  const bv = view(b)
+  if (props.filter.sort === 'positive') {
+    return bv.weight - av.weight || a.full.localeCompare(b.full)
+  }
+  if (props.filter.sort === 'color') {
+    const ac = (av.color || props.setColors[a.tagSet] || '').toLowerCase()
+    const bc = (bv.color || props.setColors[b.tagSet] || '').toLowerCase()
+    if (!ac && bc) return 1
+    if (ac && !bc) return -1
+    return ac.localeCompare(bc) || a.full.localeCompare(b.full)
+  }
+  return av.weight - bv.weight || a.full.localeCompare(b.full)
+}
+
 function reorder(): void {
-  // 最負的排最前面：擋掉最多東西的那些最常要調
-  const sorted = [...props.rows]
-    .sort((a, b) => a.weight - b.weight || a.full.localeCompare(b.full))
-  order.value = new Map(sorted.map((r, i) => [r.id, i]))
+  order.value = new Map([...props.rows].sort(compareRows).map((r, i) => [r.id, i]))
 }
 
 watch(
-  () => [props.filter.set, props.filter.status, props.rows.length],
+  () => [
+    props.filter.set,
+    props.filter.watch,
+    props.filter.hidden,
+    props.filter.sort,
+    props.filter.status,
+    props.rows.length,
+  ],
   reorder,
   { immediate: true },
 )
@@ -98,6 +118,9 @@ const visible = computed(() => {
   const at = order.value
   return props.rows.filter((row) => {
     const v = view(row)
+    const flagFilterOn = props.filter.watch || props.filter.hidden
+    const matchesFlag = (props.filter.watch && v.watch) || (props.filter.hidden && v.hidden)
+    if (flagFilterOn && !matchesFlag) return false
     // EH 的預設權重是 10，所以「非預設」是指使用者真的動過的那些
     if (props.filter.status === 'weighted' && v.weight === 10) return false
     if (props.filter.status === 'pending' && !dirty(row)) return false
@@ -153,11 +176,14 @@ onMounted(() => {
 })
 onBeforeUnmount(() => ro?.disconnect())
 
-// 換篩選之後留在原本的捲動位置多半會落在清單之外，直接回頂
-watch(() => [props.filter.set, props.filter.status], () => {
-  scrollTop.value = 0
-  if (scroller.value) scroller.value.scrollTop = 0
-})
+// 換篩選或排序之後留在原本的捲動位置多半會落在清單之外，直接回頂
+watch(
+  () => [props.filter.set, props.filter.watch, props.filter.hidden, props.filter.sort, props.filter.status],
+  () => {
+    scrollTop.value = 0
+    if (scroller.value) scroller.value.scrollTop = 0
+  },
+)
 
 /** EH 的 tagcolor 只接受六位色號；picker 與文字輸入共用同一個正規化出口。 */
 function onColor(row: MyTagRow, v: string | undefined): void {
@@ -216,6 +242,41 @@ function impactTitle(row: MyTagRow): string {
           <option v-for="s in sets" :key="s.value" :value="s.value">
             {{ s.name }}{{ s.used !== null ? `（${s.used}/${TAGSET_CAPACITY}）` : '' }}
           </option>
+        </select>
+        <button
+          type="button"
+          class="eqt-taglist__add-tag"
+          :aria-label="t('taglist.addTag')"
+          :title="t('taglist.addTag')"
+          disabled
+        >{{ t('taglist.addTag') }}</button>
+      </div>
+      <div class="eqt-taglist__head-filters">
+        <button
+          type="button"
+          class="eqt-taglist__flag-filter"
+          :class="{ 'eqt-taglist__flag-filter--on': filter.watch }"
+          :aria-pressed="filter.watch"
+          @click="emit('update:filter', { ...filter, watch: !filter.watch })"
+        >{{ t('taglist.filterWatch') }}</button>
+        <button
+          type="button"
+          class="eqt-taglist__flag-filter"
+          :class="{ 'eqt-taglist__flag-filter--on': filter.hidden }"
+          :aria-pressed="filter.hidden"
+          @click="emit('update:filter', { ...filter, hidden: !filter.hidden })"
+        >{{ t('taglist.filterHidden') }}</button>
+        <select
+          class="eqt-taglist__sortpick"
+          :value="filter.sort"
+          :aria-label="t('taglist.sortLabel')"
+          @change="emit('update:filter', {
+            ...filter, sort: ($event.target as HTMLSelectElement).value as TagFilter['sort'],
+          })"
+        >
+          <option value="negative">{{ t('taglist.sortNegative') }}</option>
+          <option value="positive">{{ t('taglist.sortPositive') }}</option>
+          <option value="color">{{ t('taglist.sortColor') }}</option>
         </select>
         <select
           class="eqt-taglist__statuspick"

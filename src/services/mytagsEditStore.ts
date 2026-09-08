@@ -9,14 +9,17 @@ import type { EditMap, TagPatch } from '@/services/mytagsEdits'
 const EDITS_KEY = 'eqt_mytags_edits'
 const SCHEMA = 1
 
-/** 清單的篩選條件。標籤集是主要的那一個，狀態是次要的 */
+/** 清單的篩選與排序條件。旗標篩選同時啟用時取聯集。 */
 export interface TagFilter {
   set: string
-  status: 'all' | 'watch' | 'hidden' | 'weighted' | 'pending'
+  watch: boolean
+  hidden: boolean
+  sort: 'negative' | 'positive' | 'color'
+  status: 'all' | 'weighted' | 'pending'
 }
 
 export function emptyFilter(): TagFilter {
-  return { set: 'all', status: 'all' }
+  return { set: 'all', watch: false, hidden: false, sort: 'negative', status: 'all' }
 }
 
 function isPatch(value: unknown): value is TagPatch {

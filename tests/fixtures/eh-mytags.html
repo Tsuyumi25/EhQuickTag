@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8">
+  <title>My Tags fixture</title>
+</head>
+<body>
+  <div id="outer">
+    <form id="tagset_form">
+      <div id="tagset_outer">
+        <select>
+          <option value="1" selected>Default</option>
+        </select>
+      </div>
+      <input id="tagset_enable" type="checkbox" checked>
+      <input id="tagcolor" type="text" value="#445566">
+    </form>
+
+    <form id="usertag_form">
+      <input id="usertag_action" type="hidden">
+      <select id="usertag_target">
+        <option value="0">Delete Selected</option>
+      </select>
+      <div id="usertags_outer">
+        <div id="usertag_0">
+          <span id="tagpreview_0"></span>
+          <input id="tagname_new" type="text">
+          <input id="tagweight_0" type="text" value="10">
+          <input id="tagcolor_0" type="text" value="">
+          <input id="tagwatch_0" type="checkbox">
+          <input id="taghide_0" type="checkbox">
+        </div>
+        <div id="usertag_1">
+          <span id="tagpreview_1" title="female:negative-sample"></span>
+          <input id="tagweight_1" type="text" value="-20">
+          <input id="tagcolor_1" type="text" value="#cc0000">
+          <input id="tagwatch_1" type="checkbox">
+          <input id="taghide_1" type="checkbox">
+        </div>
+        <div id="usertag_2">
+          <span id="tagpreview_2" title="male:positive-sample"></span>
+          <input id="tagweight_2" type="text" value="40">
+          <input id="tagcolor_2" type="text" value="#00cc00">
+          <input id="tagwatch_2" type="checkbox" checked>
+          <input id="taghide_2" type="checkbox">
+        </div>
+        <div id="usertag_3">
+          <span id="tagpreview_3" title="parody:hidden-sample"></span>
+          <input id="tagweight_3" type="text" value="-5">
+          <input id="tagcolor_3" type="text" value="">
+          <input id="tagwatch_3" type="checkbox">
+          <input id="taghide_3" type="checkbox" checked>
+        </div>
+        <div id="usertag_4">
+          <span id="tagpreview_4" title="character:plain-sample"></span>
+          <input id="tagweight_4" type="text" value="10">
+          <input id="tagcolor_4" type="text" value="#0000cc">
+          <input id="tagwatch_4" type="checkbox">
+          <input id="taghide_4" type="checkbox">
+        </div>
+      </div>
+    </form>
+  </div>
+</body>
+</html>

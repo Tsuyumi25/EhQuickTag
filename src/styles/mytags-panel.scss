@@ -1,3 +1,5 @@
+@use 'buttons' as *;
+
 // /mytags 面板。頂部的模式列與套用列、左邊的標籤清單、右邊的兩欄預覽。
 
 // ⭐ 面板鋪滿整個視窗，不是頁面裡的一塊。
@@ -200,7 +202,8 @@
 }
 
 .eqt-taglist__head-main,
-.eqt-taglist__head-meta {
+.eqt-taglist__head-meta,
+.eqt-taglist__head-filters {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -209,7 +212,8 @@
 
 
 .eqt-taglist__head-main,
-.eqt-taglist__head-meta {
+.eqt-taglist__head-meta,
+.eqt-taglist__head-filters {
   padding-left: 7px;
 }
 
@@ -230,7 +234,34 @@
   height: var(--eqt-checkbox-size);
 }
 
-.eqt-taglist__statuspick { flex: 0 0 auto; }
+.eqt-taglist__add-tag {
+  @include btn-toned;
+  flex: 0 0 auto;
+  height: var(--eqt-checkbox-size);
+  box-sizing: border-box;
+  padding: 0 8px;
+  font-size: var(--eqt-fs-xs);
+}
+
+.eqt-taglist__flag-filter {
+  @include btn-toned;
+  flex: 0 0 auto;
+  height: var(--eqt-checkbox-size);
+  box-sizing: border-box;
+  padding: 0 6px;
+  font-size: var(--eqt-fs-xs);
+
+  &--on {
+    background: var(--eqt-bg-active);
+    font-weight: 700;
+  }
+}
+
+.eqt-taglist__sortpick,
+.eqt-taglist__statuspick {
+  flex: 1 1 0;
+  min-width: 0;
+}
 
 // 清單自己捲，而且只畫看得到的那幾列（虛擬捲動）。
 // ⚠️ `min-height: 0` 不能省。flex 子項的預設 min-height 是 auto，也就是「不小於

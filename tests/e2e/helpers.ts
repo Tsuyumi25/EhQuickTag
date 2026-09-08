@@ -7,6 +7,7 @@ import { gzipSync } from 'node:zlib'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const FIXTURE_HTML = readFileSync(resolve(__dirname, '../fixtures/eh-list.html'), 'utf-8')
 const FIXTURE_GALLERY_HTML = readFileSync(resolve(__dirname, '../fixtures/eh-g.html'), 'utf-8')
+const FIXTURE_MYTAGS_HTML = readFileSync(resolve(__dirname, '../fixtures/eh-mytags.html'), 'utf-8')
 const FIXTURE_CSS = readFileSync(resolve(__dirname, '../fixtures/eh-g.css'), 'utf-8')
 const FIXTURE_TAGDB = readFileSync(resolve(__dirname, '../fixtures/eh-tag-db.json'), 'utf-8')
 const FIXTURE_TAG_WIKI_GZ = gzipSync(JSON.stringify({ version: 3, entries: {} }))
@@ -15,6 +16,7 @@ const USERSCRIPT_PATH = resolve(__dirname, '../../dist/eh-quick-tag.user.js')
 
 // gallery 詳情頁 fixture 的真實 URL（真實抓取，pathname 需對得上 route 白名單）
 const GALLERY_URL = 'https://e-hentai.org/g/757/483b65e703/'
+const MYTAGS_URL = 'https://e-hentai.org/mytags'
 
 // 單一 catch-all 路由：白名單回傳 fixture（HTML、g.css 與三種資料資產）；
 // 未知 document 維持 abort，EH 自身的廣告／圖片等非測試子資源則回空 204。
@@ -38,6 +40,10 @@ export async function mockEh(page: Page): Promise<void> {
       route.fulfill({ contentType: 'text/html', body: FIXTURE_HTML })
     } else if (url === GALLERY_URL) {
       route.fulfill({ contentType: 'text/html', body: FIXTURE_GALLERY_HTML })
+    } else if (url === MYTAGS_URL) {
+      route.fulfill({ contentType: 'text/html', body: FIXTURE_MYTAGS_HTML })
+    } else if (url === 'https://e-hentai.org/uconfig.php') {
+      route.fulfill({ contentType: 'text/html', body: '<input id="ft" value="0">' })
     } else if (CSS_URL_RE.test(url)) {
       route.fulfill({ contentType: 'text/css', body: FIXTURE_CSS })
     } else if (TAGDB_URL_RE.test(url)) {
@@ -129,6 +135,13 @@ export async function injectGalleryUserscript(
   await setupEhPage(page)
   await page.goto(GALLERY_URL)
   if (opts.externalCss) await page.addStyleTag({ content: opts.externalCss })
+  await page.addScriptTag({ path: USERSCRIPT_PATH })
+}
+
+// /mytags 版本：fixture 保留 EH 原生 forms，讓 host adapter 走完整接管路徑。
+export async function injectMyTagsUserscript(page: Page): Promise<void> {
+  await setupEhPage(page)
+  await page.goto(MYTAGS_URL)
   await page.addScriptTag({ path: USERSCRIPT_PATH })
 }
 
