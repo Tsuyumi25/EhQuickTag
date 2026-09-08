@@ -17,6 +17,23 @@ const USERSCRIPT_PATH = resolve(__dirname, '../../dist/eh-quick-tag.user.js')
 // gallery 詳情頁 fixture 的真實 URL（真實抓取，pathname 需對得上 route 白名單）
 const GALLERY_URL = 'https://e-hentai.org/g/757/483b65e703/'
 const MYTAGS_URL = 'https://e-hentai.org/mytags'
+const GDATA_URL = 'https://api.e-hentai.org/api.php'
+const SAMPLE_LIST_HTML = [
+  '<a href="/g/1001/aaaaaaaaaa/">sample one</a>',
+  '<a href="/g/1002/bbbbbbbbbb/">sample two</a>',
+].join('')
+const SAMPLE_GDATA = JSON.stringify({
+  gmetadata: [
+    {
+      gid: 1001, token: 'aaaaaaaaaa', title: 'Sample one', category: 'Doujinshi', thumb: '',
+      tags: ['female:sample tag', 'female:negative-sample'],
+    },
+    {
+      gid: 1002, token: 'bbbbbbbbbb', title: 'Sample two', category: 'Manga', thumb: '',
+      tags: ['female:sample tag', 'male:positive-sample'],
+    },
+  ],
+})
 
 // 單一 catch-all 路由：白名單回傳 fixture（HTML、g.css 與三種資料資產）；
 // 未知 document 維持 abort，EH 自身的廣告／圖片等非測試子資源則回空 204。
@@ -38,20 +55,52 @@ export async function mockEh(page: Page): Promise<void> {
     const url = route.request().url()
     if (url === 'https://e-hentai.org/') {
       route.fulfill({ contentType: 'text/html', body: FIXTURE_HTML })
+    } else if (url.startsWith('https://e-hentai.org/?') && new URL(url).searchParams.has('f_search')) {
+      route.fulfill({ contentType: 'text/html', body: SAMPLE_LIST_HTML })
     } else if (url === GALLERY_URL) {
       route.fulfill({ contentType: 'text/html', body: FIXTURE_GALLERY_HTML })
     } else if (url === MYTAGS_URL) {
       route.fulfill({ contentType: 'text/html', body: FIXTURE_MYTAGS_HTML })
+    } else if (url.startsWith(`${MYTAGS_URL}?tagset=`)) {
+      route.fulfill({ contentType: 'text/html', body: FIXTURE_MYTAGS_HTML })
     } else if (url === 'https://e-hentai.org/uconfig.php') {
       route.fulfill({ contentType: 'text/html', body: '<input id="ft" value="0">' })
+    } else if (url === GDATA_URL && route.request().method() === 'OPTIONS') {
+      route.fulfill({
+        status: 204,
+        headers: {
+          'access-control-allow-origin': '*',
+          'access-control-allow-methods': 'POST',
+          'access-control-allow-headers': 'content-type',
+        },
+        body: '',
+      })
+    } else if (url === GDATA_URL) {
+      route.fulfill({
+        contentType: 'application/json',
+        headers: { 'access-control-allow-origin': '*' },
+        body: SAMPLE_GDATA,
+      })
     } else if (CSS_URL_RE.test(url)) {
       route.fulfill({ contentType: 'text/css', body: FIXTURE_CSS })
     } else if (TAGDB_URL_RE.test(url)) {
-      route.fulfill({ contentType: 'application/json', body: FIXTURE_TAGDB })
+      route.fulfill({
+        contentType: 'application/json',
+        headers: { 'access-control-allow-origin': '*' },
+        body: FIXTURE_TAGDB,
+      })
     } else if (TAG_WIKI_URL_RE.test(url)) {
-      route.fulfill({ contentType: 'application/gzip', body: FIXTURE_TAG_WIKI_GZ })
+      route.fulfill({
+        contentType: 'application/gzip',
+        headers: { 'access-control-allow-origin': '*' },
+        body: FIXTURE_TAG_WIKI_GZ,
+      })
     } else if (TAG_COUNT_URL_RE.test(url)) {
-      route.fulfill({ contentType: 'application/gzip', body: FIXTURE_TAG_COUNT_GZ })
+      route.fulfill({
+        contentType: 'application/gzip',
+        headers: { 'access-control-allow-origin': '*' },
+        body: FIXTURE_TAG_COUNT_GZ,
+      })
     } else if (EHG_INDEX_URL_RE.test(url)) {
       route.fulfill({ contentType: 'application/javascript', body: 'function build_rangebar() {}' })
     } else if (route.request().resourceType() !== 'document') {

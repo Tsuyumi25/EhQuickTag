@@ -2,10 +2,11 @@
 import { ref, shallowRef, watch, onMounted, onBeforeUnmount, computed } from 'vue'
 import { useEventListener } from '@vueuse/core'
 import { useEqtToast } from '@/composables/useEqtToast'
-import { loadTagDb, getFallbackEntries, DEFAULT_NS_ORDER, type TagEntry } from '@/services/tagDb'
+import { loadTagDb, getFallbackEntries, type TagEntry } from '@/services/tagDb'
 import { useTagSuggestions } from '@/composables/useTagSuggestions'
 import { t } from '@/composables/useI18n'
 import SuggestionList from '@/components/SuggestionList.vue'
+import NamespaceFilter from '@/components/NamespaceFilter.vue'
 import { TagState } from '@/types'
 
 const toast = useEqtToast()
@@ -34,12 +35,8 @@ const selectedIdx = ref(0)
 const fallbackEntries = shallowRef<TagEntry[]>([])
 
 const selectedNs = ref<string | null>(null)
-const SEARCH_NS_LIST = DEFAULT_NS_ORDER.filter(ns => ns !== 'temp')
 const popupNsList = computed(() => selectedNs.value ? [selectedNs.value] : undefined)
 
-function toggleNs(ns: string): void {
-  selectedNs.value = selectedNs.value === ns ? null : ns
-}
 
 const panelRect = ref({ left: 0, top: 0, width: 0, height: 0 })
 
@@ -142,31 +139,7 @@ function onKeydown(e: KeyboardEvent): void {
       }"
       @keydown="onKeydown"
     >
-      <aside
-        class="eqt-gallery-add-inline__ns-filter"
-        role="group"
-        :aria-label="t('nsFilter.label')"
-      >
-        <button
-          type="button"
-          class="eqt-gallery-add-inline__ns-btn"
-          :class="{ 'is-active': selectedNs === null }"
-          @click="selectedNs = null"
-        >
-          {{ t('nsFilter.all') }}
-        </button>
-        <button
-          v-for="ns in SEARCH_NS_LIST"
-          :key="ns"
-          type="button"
-          class="eqt-gallery-add-inline__ns-btn"
-          :class="{ 'is-active': selectedNs === ns }"
-          :title="t('ns.' + ns)"
-          @click="toggleNs(ns)"
-        >
-          {{ t('ns.' + ns) }}
-        </button>
-      </aside>
+      <NamespaceFilter v-model="selectedNs" />
 
       <div class="eqt-gallery-add-inline__main">
         <div class="eqt-gallery-add-inline__title">
@@ -237,29 +210,6 @@ body.eqt-gallery-add-inline-open {
   font-size: 9pt;
   color: inherit;
 
-  // 左側 ns 篩選 sidebar、單列直排、寬度按最寬 ns label 縮
-  &__ns-filter {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    flex-shrink: 0;
-    overflow-y: auto;
-  }
-
-  &__ns-btn {
-    @include btn-toned;
-    padding: 1px 6px;
-    text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-size: 9pt;
-
-    &.is-active {
-      background: var(--eqt-bg-active);
-      border-color: var(--eqt-text);
-    }
-  }
 
   // 右側主區：input + suggestion list 垂直排
   &__main {

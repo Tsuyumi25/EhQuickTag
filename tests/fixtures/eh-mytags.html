@@ -10,25 +10,27 @@
       <div id="tagset_outer">
         <select>
           <option value="1" selected>Default</option>
+          <option value="2">Second set</option>
         </select>
       </div>
       <input id="tagset_enable" type="checkbox" checked>
       <input id="tagcolor" type="text" value="#445566">
     </form>
 
-    <form id="usertag_form">
-      <input id="usertag_action" type="hidden">
-      <select id="usertag_target">
+    <form id="usertag_form" method="post" action="/mytags">
+      <input id="usertag_action" name="usertag_action" type="hidden">
+      <select id="usertag_target" name="usertag_target">
         <option value="0">Delete Selected</option>
+        <option value="2">Second set (7)</option>
       </select>
       <div id="usertags_outer">
         <div id="usertag_0">
           <span id="tagpreview_0"></span>
-          <input id="tagname_new" type="text">
-          <input id="tagweight_0" type="text" value="10">
-          <input id="tagcolor_0" type="text" value="">
-          <input id="tagwatch_0" type="checkbox">
-          <input id="taghide_0" type="checkbox">
+          <input id="tagname_new" name="tagname_new" type="text">
+          <input id="tagweight_0" name="tagweight_0" type="text" value="10">
+          <input id="tagcolor_0" name="tagcolor_0" type="text" value="">
+          <input id="tagwatch_0" name="tagwatch_0" type="checkbox">
+          <input id="taghide_0" name="taghide_0" type="checkbox">
         </div>
         <div id="usertag_1">
           <span id="tagpreview_1" title="female:negative-sample"></span>

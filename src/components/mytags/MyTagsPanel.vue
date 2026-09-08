@@ -4,13 +4,14 @@ import { Settings } from '@lucide/vue'
 import { t } from '@/composables/useI18n'
 import { useEqtToast } from '@/composables/useEqtToast'
 import MyTagsTagList from '@/components/mytags/MyTagsTagList.vue'
+import MyTagsCatalog from '@/components/mytags/MyTagsCatalog.vue'
 import MyTagsPreview from '@/components/mytags/MyTagsPreview.vue'
 import MyTagsGallery from '@/components/mytags/MyTagsGallery.vue'
 import EqtNumberField from '@/components/EqtNumberField.vue'
 import { fetchGallery, type GalleryDetail } from '@/composables/useEhGalleryPreview'
 import {
   fetchTagSet, fetchThresholds,
-  type EhMyTagsHost, type MyTagRow, type TagSetSnapshot,
+  type EhMyTagsHost, type MyTagRow, type NewTagInput, type TagSetSnapshot,
 } from '@/composables/useEhMyTagsHost'
 import { fetchListing } from '@/composables/useEhSearchListing'
 import {
@@ -39,6 +40,7 @@ import { patchConfig } from '@/services/ehConfig'
 import { serializeEntry } from '@/services/searchSyntax'
 import { nsFormat } from '@/services/store'
 import { tagChipStyle } from '@/services/mytagsColors'
+import type { TagEntry } from '@/services/tagDb'
 
 const emit = defineEmits<{ openSettings: [] }>()
 const props = defineProps<{ host: EhMyTagsHost }>()
@@ -47,11 +49,28 @@ const toast = useEqtToast()
 
 /** 一次「更新樣本」最多翻幾頁 EH */
 const MAX_FETCH = 6
+type PanelMode = 'manage' | 'preview'
+type NewTagDraft = NewTagInput & { tagSet: string }
+
+function emptyDraft(): NewTagDraft {
+  return {
+    full: '',
+    tagSet: props.host.currentSet,
+    weight: 10,
+    color: '',
+    watch: false,
+    hidden: false,
+  }
+}
 
 const liveRows = ref<MyTagRow[]>(props.host.readRows())
 const otherSets = ref<TagSetSnapshot[]>([])
 const edits = ref<EditMap>({})
 const store = ref<SampleStore>(emptyStore())
+const mode = ref<PanelMode>('manage')
+const draft = ref<NewTagDraft>(emptyDraft())
+const createBusy = ref(false)
+const catalogFocusRequest = ref(0)
 
 const filterThreshold = ref<number | null>(null)
 /** EH 上現在的門檻。跟 filterThreshold 不一樣就代表這格也還沒送出去 */
@@ -99,6 +118,7 @@ function acceptWrite(id: number, state: TagState): void {
 }
 
 const rowMap = computed(() => new Map(rows.value.map((r) => [r.full, r])))
+const existingTags = computed<ReadonlySet<string>>(() => new Set(rowMap.value.keys()))
 
 function view(row: MyTagRow): TagState {
   return effective(row, edits.value)
@@ -123,6 +143,24 @@ function factsOf(tag: string): TagFacts | null {
   const v = view(r)
   return { weight: v.weight, hidden: v.hidden, watch: v.watch }
 }
+
+function manageFactsOf(tag: string): TagFacts | null {
+  const current = draft.value
+  if (current.full === tag) {
+    return { weight: current.weight, hidden: current.hidden, watch: current.watch }
+  }
+  return factsOf(tag)
+}
+
+const draftTagStyle = computed(() => {
+  const current = draft.value
+  return tagChipStyle({
+    color: current.color,
+    setColor: setColors.value[current.tagSet] ?? '',
+    weight: current.weight,
+    hidden: current.hidden,
+  })
+})
 
 
 // NumberField 暫時沒有有限數字時，不讓空值經 JS coercion 混進計分。
@@ -151,6 +189,35 @@ const leftItems = computed(() =>
   visibleItems.value.filter((i) => i.outcome.side === 'left').sort(compareItems))
 const rightItems = computed(() =>
   visibleItems.value.filter((i) => i.outcome.side === 'right').sort(compareItems))
+
+const manageItems = computed<PreviewItem[]>(() => {
+  const current = draft.value
+  if (!current.full) return []
+  const threshold = activeThreshold.value ?? 0
+  return Object.values(store.value.galleries)
+    .filter((gallery) => gallery.tags.includes(current.full))
+    .filter((gallery) => !markedOnly.value || !!store.value.verdicts[String(gallery.gid)])
+    .map((gallery) => ({
+      gallery,
+      outcome: outcomeOf(gallery.tags, manageFactsOf, threshold),
+    }))
+})
+
+const manageLeftItems = computed(() =>
+  manageItems.value.filter((item) => item.outcome.side === 'left').sort(compareItems))
+const manageRightItems = computed(() =>
+  manageItems.value.filter((item) => item.outcome.side === 'right').sort(compareItems))
+const draftImpact = computed<TagImpact>(() => ({
+  total: manageItems.value.length,
+  left: manageLeftItems.value.length,
+  right: manageRightItems.value.length,
+}))
+
+const activeLeftItems = computed(() => mode.value === 'manage' ? manageLeftItems.value : leftItems.value)
+const activeRightItems = computed(() => mode.value === 'manage' ? manageRightItems.value : rightItems.value)
+const activeItems = computed(() => mode.value === 'manage' ? manageItems.value : visibleItems.value)
+const activeSelected = computed(() => mode.value === 'manage' ? draft.value.full || null : selected.value)
+const activeSelectedStyle = computed(() => mode.value === 'manage' ? draftTagStyle.value : selectedTagStyle.value)
 
 /** 每個標籤在目前樣本裡的去向分佈 */
 const impact = computed<Map<string, TagImpact>>(() => {
@@ -330,9 +397,7 @@ function term(full: string): string {
   )
 }
 
-async function grab(): Promise<void> {
-  const tag = selected.value
-  if (!tag) { toast.info(t('panel.pickTagFirst')); return }
+async function grabTag(tag: string): Promise<void> {
   const at = fetchedPages.value[tag]
   if (sampleBusy.value || (at && at.cursor === null)) return
   // 抓回來的都還沒判過，「只看已標記」開著的話它們一本都不會出現，就沒得標記了
@@ -352,6 +417,18 @@ async function grab(): Promise<void> {
     if (!cursor) break
   }
   sampleBusy.value = ''
+}
+
+async function grab(): Promise<void> {
+  const tag = selected.value
+  if (!tag) { toast.info(t('panel.pickTagFirst')); return }
+  await grabTag(tag)
+}
+
+async function grabDraft(): Promise<void> {
+  const tag = draft.value?.full
+  if (!tag) { toast.info(t('manage.pickCandidate')); return }
+  await grabTag(tag)
 }
 
 /** 直接指定，不用一格一格輪。只認 gid——判斷本來就綁畫廊不綁設定 */
@@ -376,17 +453,60 @@ async function openGallery(g: SampleGallery): Promise<void> {
 
 /** 攤開的那一本在目前模式下的去向，跟格子上顯示的是同一份 */
 const openedOutcome = computed(() =>
-  allItems.value.find((i) => i.gallery.gid === openedGallery.value?.gid)?.outcome ?? null)
+  activeItems.value.find((item) => item.gallery.gid === openedGallery.value?.gid)?.outcome ?? null)
 
 function select(tag: string): void {
   selected.value = selected.value === tag ? null : tag
   if (selected.value && !fetchedPages.value[tag]) void grab()
 }
 
+function pickCandidate(entry: TagEntry): void {
+  draft.value = { ...draft.value, full: entry.fullTag }
+  openedGallery.value = null
+  if (!fetchedPages.value[entry.fullTag]) void grabTag(entry.fullTag)
+}
+
+function openManage(): void {
+  mode.value = 'manage'
+  openedGallery.value = null
+  catalogFocusRequest.value += 1
+}
+
+function switchMode(next: PanelMode): void {
+  mode.value = next
+  openedGallery.value = null
+}
+
+function clearActiveTag(): void {
+  if (mode.value === 'manage') draft.value = { ...draft.value, full: '' }
+  else selected.value = null
+  openedGallery.value = null
+}
+
+function refreshActive(): void {
+  if (mode.value === 'manage') void grabDraft()
+  else void grab()
+}
+
+async function createNewTag(current: NewTagDraft): Promise<void> {
+  if (createBusy.value) return
+  createBusy.value = true
+  try {
+    // 原生新增會立刻刷新；先等既有 pending edits 真正落進 gmStorage。
+    await flush()
+    if (props.host.createTag(current.tagSet, current)) return
+    toast.error(t('panel.createFailed'))
+  } catch (error) {
+    console.error('createTag failed', error)
+    toast.error(t('panel.createFailed'))
+  }
+  createBusy.value = false
+}
+
 // ---- 封面預載：當前和接下來的先進快取，往下捲就不用等網路 ----
 
 const warmed = new Set<string>()
-watch([leftItems, rightItems], ([l, r]) => {
+watch([activeLeftItems, activeRightItems], ([l, r]) => {
   for (const item of [...l.slice(0, 36), ...r.slice(0, 36)]) {
     const url = item.gallery.thumb
     if (!url || warmed.has(url)) continue
@@ -437,6 +557,22 @@ watch(edits, () => { void flush() }, { deep: true })
 
 <template>
   <section class="eqt-panel">
+    <nav class="eqt-panel__modestrip" :aria-label="t('panel.modeLabel')">
+      <button
+        type="button"
+        class="eqt-panel__mode"
+        :class="{ 'eqt-panel__mode--on': mode === 'manage' }"
+        :aria-pressed="mode === 'manage'"
+        @click="openManage"
+      >{{ t('panel.modeManage') }}</button>
+      <button
+        type="button"
+        class="eqt-panel__mode"
+        :class="{ 'eqt-panel__mode--on': mode === 'preview' }"
+        :aria-pressed="mode === 'preview'"
+        @click="switchMode('preview')"
+      >{{ t('panel.modePreview') }}</button>
+    </nav>
     <div class="eqt-panel__workspace">
       <aside class="eqt-panel__side">
         <!-- 清單吃掉側欄剩下的高度，自己捲。側欄本身貼著視窗，所以底下那條永遠在 -->
@@ -485,26 +621,42 @@ watch(edits, () => { void flush() }, { deep: true })
         </footer>
       </aside>
 
-      <div class="eqt-panel__right">
-      <MyTagsPreview
-        v-model:marked-only="markedOnly"
-        :left="leftItems" :right="rightItems"
-        :verdicts="store.verdicts" :selected="selected" :selected-style="selectedTagStyle"
-        :refresh-busy="sampleBusy" :threshold="activeThreshold"
-        :opened-gid="openedGallery?.gid ?? null"
-        @clear-tag="selected = null" @refresh="grab" @set-verdict="setVerdict"
-        @open="openGallery"
-      />
+      <div class="eqt-panel__right" :class="{ 'eqt-panel__right--manage': mode === 'manage' }">
+        <MyTagsCatalog
+          v-if="mode === 'manage'"
+          v-model:draft="draft"
+          :sets="host.tagSets"
+          :impact="draftImpact"
+          :set-colors="setColors"
+          :focus-request="catalogFocusRequest"
+          :existing-tags="existingTags"
+          :busy="createBusy"
+          @pick="pickCandidate"
+          @create="createNewTag"
+        />
 
-      <MyTagsGallery
-        v-if="openedGallery"
-        :detail="openedGallery" :outcome="openedOutcome"
-        :verdict="store.verdicts[String(openedGallery.gid)]" :loading="galleryBusy"
-        :threshold="activeThreshold"
-        @close="openedGallery = null"
-        @pick-tag="select"
-        @set-verdict="(v) => openedGallery && setVerdict(openedGallery.gid, v)"
-      />
+        <div class="eqt-panel__preview-stack">
+          <MyTagsPreview
+            :class="{ 'eqt-preview--manage': mode === 'manage' }"
+            v-model:marked-only="markedOnly"
+            :left="activeLeftItems" :right="activeRightItems"
+            :verdicts="store.verdicts" :selected="activeSelected" :selected-style="activeSelectedStyle"
+            :refresh-busy="sampleBusy" :threshold="activeThreshold"
+            :opened-gid="openedGallery?.gid ?? null"
+            @clear-tag="clearActiveTag" @refresh="refreshActive" @set-verdict="setVerdict"
+            @open="openGallery"
+          />
+
+          <MyTagsGallery
+            v-if="openedGallery"
+            :detail="openedGallery" :outcome="openedOutcome"
+            :verdict="store.verdicts[String(openedGallery.gid)]" :loading="galleryBusy"
+            :threshold="activeThreshold"
+            @close="openedGallery = null"
+            @pick-tag="select"
+            @set-verdict="(v) => openedGallery && setVerdict(openedGallery.gid, v)"
+          />
+        </div>
       </div>
     </div>
 

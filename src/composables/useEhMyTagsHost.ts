@@ -56,7 +56,7 @@ export interface EhMyTagsHost {
   coverNative(on: boolean): void
   /** 下面這些都會讓整頁刷新——呼叫前 pending 必須先落地 */
   switchSet(value: string): void
-  createTag(input: NewTagInput): void
+  createTag(tagSet: string, input: NewTagInput): boolean
   /**
    * 刪除 / 搬移。`tagSet` 是這批 tagid 所屬的組，不是當前組——表單認的是 URL 上的
    * `?tagset=`，所以任何一組都動得了，也不刷新。回傳那一組的最新標籤列，null 代表失敗。
@@ -210,11 +210,13 @@ export function useEhMyTagsHost(): EhMyTagsHost | null {
   if (pageBox) pageBox.after(anchor)
   else form.after(anchor)
 
-  function submitUsertagForm(action: string): void {
+  function submitUsertagForm(action: string, tagSet: string): boolean {
     const field = el<HTMLInputElement>(document, 'usertag_action')
-    if (!field || !form) return
+    if (!field || !form) return false
     field.value = action
+    form.action = tagSetUrl(tagSet)
     form.submit()
+    return true
   }
 
 
@@ -247,9 +249,9 @@ export function useEhMyTagsHost(): EhMyTagsHost | null {
 
     switchSet(value) { location.href = tagSetUrl(value) },
 
-    createTag(input) {
+    createTag(tagSet, input) {
       const name = el<HTMLInputElement>(document, 'tagname_new')
-      if (!name) return
+      if (!name) return false
       name.value = input.full
       const w = el<HTMLInputElement>(document, 'tagweight_0')
       if (w) w.value = String(input.weight)
@@ -259,7 +261,7 @@ export function useEhMyTagsHost(): EhMyTagsHost | null {
       if (h) h.checked = input.hidden
       const t = el<HTMLInputElement>(document, 'tagwatch_0')
       if (t) t.checked = input.watch
-      submitUsertagForm('add')
+      return submitUsertagForm('add', tagSet)
     },
 
     deleteTags(ids, tagSet) { return massAction(ids, '0', tagSet) },   // 0 = Delete Selected

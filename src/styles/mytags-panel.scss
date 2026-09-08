@@ -28,6 +28,26 @@
   gap: 10px;
 }
 
+.eqt-panel__modestrip {
+  @include btn-split-group;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  align-self: center;
+  gap: 0;
+  margin-bottom: 8px;
+}
+
+.eqt-panel__mode {
+  @include btn-split-item;
+  min-width: calc(var(--eqt-checkbox-size) * 5);
+
+  &--on {
+    background: var(--eqt-bg-active);
+    color: var(--eqt-text);
+    font-weight: 700;
+  }
+}
+
 .eqt-panel__spacer { margin-left: auto; }
 
 .eqt-panel__hint {
@@ -122,11 +142,11 @@
 .eqt-panel__workspace {
   display: grid;
   flex: 1 1 auto;
-  grid-template-columns: minmax(340px, 0.8fr) minmax(520px, 2fr);
+  grid-template-columns:
+    minmax(calc(var(--eqt-checkbox-size) * 14), 0.8fr)
+    minmax(0, 2fr);
   gap: 12px;
   min-height: 0;
-
-  @media (max-width: 1200px) { grid-template-columns: 1fr; }
 }
 
 .eqt-panel__btn {
@@ -234,14 +254,6 @@
   height: var(--eqt-checkbox-size);
 }
 
-.eqt-taglist__add-tag {
-  @include btn-toned;
-  flex: 0 0 auto;
-  height: var(--eqt-checkbox-size);
-  box-sizing: border-box;
-  padding: 0 8px;
-  font-size: var(--eqt-fs-xs);
-}
 
 .eqt-taglist__flag-filter {
   @include btn-toned;
@@ -414,6 +426,8 @@
   font-weight: 700;
   cursor: pointer;
 
+  &--static { cursor: default; }
+
   // ⚠️ 配色整組由 chipStyle 走 inline style 給（color / background / border-color）。
   // 不要在這裡再疊 box-shadow 或 filter——那會在算好的顏色上又蓋一層，就是先前
   // 「比原生淡」的成因
@@ -461,10 +475,9 @@
 }
 
 .eqt-preview__toolbar {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   gap: 10px;
   margin-bottom: 8px;
 }
@@ -473,6 +486,11 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
+
+  > .eqt-taglist__chip {
+    max-width: 100%;
+  }
 }
 
 .eqt-preview__title {
@@ -486,6 +504,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
 }
 
@@ -497,7 +516,6 @@
   gap: 12px;
   min-height: 0;
 
-  @media (max-width: 900px) { grid-template-columns: 1fr; }
 }
 
 .eqt-preview__col {
@@ -541,6 +559,10 @@
   // 固定四欄。跟著寬度浮動的話，切換模式時整片封面會重新排版，很難看
   grid-template-columns: repeat(4, 1fr);
   gap: 6px;
+}
+
+.eqt-preview--manage .eqt-preview__grid {
+  grid-template-columns: repeat(2, 1fr);
 }
 
 .eqt-preview__tile {
@@ -657,9 +679,42 @@
 
 // ---- 攤開的整本畫廊 ----
 
-// 右欄現在是「兩欄預覽」再疊「攤開的畫廊」，所以它自己也要是 flex column
+// 右欄在預覽模式是單一 stack；管理模式切成候選池與同一套 gallery preview。
 .eqt-panel__right {
   display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  min-height: 0;
+
+  &--manage {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.45fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .eqt-panel {
+    overflow-y: auto;
+  }
+
+  .eqt-panel__workspace {
+    display: flex;
+    flex: 0 0 auto;
+    flex-direction: column;
+    min-height: auto;
+  }
+
+  .eqt-panel__side,
+  .eqt-panel__right {
+    flex: 0 0 calc(100dvh - var(--eqt-checkbox-size) * 3);
+    min-height: calc(var(--eqt-checkbox-size) * 16);
+  }
+}
+
+.eqt-panel__preview-stack {
+  display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: 12px;
   min-width: 0;

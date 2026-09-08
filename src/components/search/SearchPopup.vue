@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, shallowRef, watch, onMounted, computed } from 'vue'
-import { loadTagDb, getFallbackEntries, DEFAULT_NS_ORDER, type TagEntry } from '@/services/tagDb'
+import { loadTagDb, getFallbackEntries, type TagEntry } from '@/services/tagDb'
 import { nsFormat, defaultExactMatch, dblClickLeft, dblClickRight, dblClickLeftNewTabActive, dblClickRightNewTabActive, type DblClickAction } from '@/services/store'
 import { useTagSuggestions } from '@/composables/useTagSuggestions'
 import { usePopupBehavior } from '@/composables/usePopupBehavior'
@@ -9,6 +9,7 @@ import { tokenize, tokenIdentity, buildIdentityIndex, getNextRightClickState, se
 import { sessionTerms, dismissTerms, recordSubmitAndFlush } from '@/services/search/searchSession'
 import { t } from '@/composables/useI18n'
 import SuggestionList from '@/components/SuggestionList.vue'
+import NamespaceFilter from '@/components/NamespaceFilter.vue'
 import SearchTermRows from '@/components/search/SearchTermRows.vue'
 import SearchControls from '@/components/search/SearchControls.vue'
 import { TagState } from '@/types'
@@ -48,16 +49,12 @@ const fallbackEntries = shallowRef<TagEntry[]>([])
 // 點一個 ns = 只看該 ns；點同一個 = 取消回 null
 const selectedNs = ref<string | null>(null)
 
-function toggleNs(ns: string): void {
-  selectedNs.value = selectedNs.value === ns ? null : ns
-}
 
 // 包成 computed 給 SuggestionList 用的 nsList prop——避免 template 內每次 render
 // 都建一個新的 [selectedNs] 陣列字面量、讓 SuggestionList 的 nsColWidth 在每次
 // 父 re-render（譬如 selectedIdx / query 變動）都因為 prop reference 不同而 dirty
 const popupNsList = computed(() => selectedNs.value ? [selectedNs.value] : undefined)
 
-const SEARCH_NS_LIST = DEFAULT_NS_ORDER.filter(ns => ns !== 'temp')
 
 // 跟其他 popup 同套：onClickOutside + Escape + useScrollLock 一條龍，
 // 避免 SearchPopup 開啟時滾輪穿透到背景 EH 列表
@@ -227,30 +224,8 @@ function onKeydown(e: KeyboardEvent): void {
       @dblclick="onBgDblClick"
       @contextmenu="onBgContextMenu"
     >
-      <aside
-        class="eqt-search-popup__ns-filter"
-        role="group"
-        :aria-label="t('nsFilter.label')"
-      >
-        <button
-          type="button"
-          class="eqt-search-popup__ns-btn"
-          :class="{ 'is-active': selectedNs === null }"
-          @click="selectedNs = null"
-        >
-          {{ t('nsFilter.all') }}
-        </button>
-        <button
-          v-for="ns in SEARCH_NS_LIST"
-          :key="ns"
-          type="button"
-          class="eqt-search-popup__ns-btn"
-          :class="{ 'is-active': selectedNs === ns }"
-          :title="t('ns.' + ns)"
-          @click="toggleNs(ns)"
-        >
-          {{ t('ns.' + ns) }}
-        </button>
+      <div class="eqt-search-popup__rail">
+        <NamespaceFilter v-model="selectedNs" />
         <button
           class="eqt-popup__btn eqt-search-popup__close-btn"
           type="button"
@@ -258,7 +233,7 @@ function onKeydown(e: KeyboardEvent): void {
         >
           {{ t('settings.close') }}
         </button>
-      </aside>
+      </div>
       <div class="eqt-search-popup__main">
         <input
           ref="inputEl"
@@ -323,13 +298,11 @@ function onKeydown(e: KeyboardEvent): void {
   overflow: hidden;
 }
 
-// 左側 sidebar：單列直排，按鈕寬度跟著最寬 namespace label 走，main 區得到更多空間
-.eqt-search-popup__ns-filter {
+.eqt-search-popup__rail {
   display: flex;
+  flex: 0 0 auto;
   flex-direction: column;
-  gap: 4px;
-  flex-shrink: 0;
-  overflow-y: auto;
+  min-height: 0;
 }
 
 // 關閉鍵：margin-top auto 推到底，跟 namespace 按鈕中間留空
@@ -338,20 +311,6 @@ function onKeydown(e: KeyboardEvent): void {
   flex-shrink: 0;
 }
 
-.eqt-search-popup__ns-btn {
-  @include btn-toned;
-  padding: 2px 6px;
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-
-  // 選中態：用 bg-active + 加深 border 區分，跟整體統一的中性風格一致
-  &.is-active {
-    background: var(--eqt-bg-active);
-    border-color: var(--eqt-text);
-  }
-}
 
 // 右側主區：input → SuggestionList → SearchTermRows 垂直排
 //

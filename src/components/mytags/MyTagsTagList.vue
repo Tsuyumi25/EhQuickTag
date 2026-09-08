@@ -1,14 +1,11 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
-import EqtNumberField from '@/components/EqtNumberField.vue'
+import MyTagsTagBody from '@/components/mytags/MyTagsTagBody.vue'
 import { t } from '@/composables/useI18n'
-import { useTagLabel } from '@/composables/useTagLabel'
-import LineColorSwatch from '@/components/LineColorSwatch.vue'
 import { TAGSET_CAPACITY, type MyTagRow, type TagSetRef } from '@/composables/useEhMyTagsHost'
 import type { EditMap, TagState } from '@/services/mytagsEdits'
 import { effective } from '@/services/mytagsEdits'
 import type { TagImpact } from '@/services/mytagsScore'
-import { normalizeTagColor, tagChipStyle } from '@/services/mytagsColors'
 import type { TagFilter } from '@/services/mytagsEditStore'
 
 const props = defineProps<{
@@ -47,7 +44,6 @@ const scroller = ref<HTMLElement | null>(null)
 const scrollTop = ref(0)
 const viewport = ref(600)
 
-const { label } = useTagLabel()
 
 function view(row: MyTagRow): TagState {
   return effective(row, props.edits)
@@ -57,22 +53,6 @@ function dirty(row: MyTagRow): boolean {
   return props.edits[row.id] !== undefined
 }
 
-/**
- * 標籤的外觀，照 EH 自己的規則算（見 mytagsColors）。
- *
- * ⛔ 不用原生 radial-gradient 的那兩個顏色。EH 的標籤是貼合文字的小方塊，漸層在
- * 那個尺寸下幾乎看不出來；這裡的標籤佔滿一整行，同一個漸層會變成中間一塊橢圓。
- * 取它的中心色當實色，外圈色只留給邊框。
- */
-function chipStyle(row: MyTagRow): Record<string, string> {
-  const v = view(row)
-  return tagChipStyle({
-    color: v.color,
-    setColor: props.setColors[row.tagSet] ?? '',
-    weight: v.weight,
-    hidden: v.hidden,
-  })
-}
 
 /**
  * 順序凍結在這裡：只在「篩選 / 排序 / 標籤增減」時重算一次，編輯、套用、選取都不動它。
@@ -185,36 +165,6 @@ watch(
   },
 )
 
-/** EH 的 tagcolor 只接受六位色號；picker 與文字輸入共用同一個正規化出口。 */
-function onColor(row: MyTagRow, v: string | undefined): void {
-  const color = normalizeTagColor(v ?? '')
-  if (color !== null) emit('patch', row, { color })
-}
-
-function onHexInput(row: MyTagRow, e: Event): void {
-  const color = normalizeTagColor((e.target as HTMLInputElement).value)
-  if (color !== null) emit('patch', row, { color })
-}
-
-function onHexBlur(row: MyTagRow, e: Event): void {
-  const input = e.target as HTMLInputElement
-  input.value = normalizeTagColor(input.value) ?? view(row).color
-}
-
-function colorPreview(row: MyTagRow): string {
-  return view(row).color || props.setColors[row.tagSet] || '#000000'
-}
-
-function pct(part: number, total: number): string {
-  return total ? `${(part / total * 100).toFixed(1)}%` : '0%'
-}
-
-function impactTitle(row: MyTagRow): string {
-  const here = props.impact.get(row.full)
-  return here
-    ? t('taglist.impact', { left: here.left, right: here.right })
-    : t('taglist.impactNone')
-}
 </script>
 
 <template>
@@ -243,13 +193,6 @@ function impactTitle(row: MyTagRow): string {
             {{ s.name }}{{ s.used !== null ? `（${s.used}/${TAGSET_CAPACITY}）` : '' }}
           </option>
         </select>
-        <button
-          type="button"
-          class="eqt-taglist__add-tag"
-          :aria-label="t('taglist.addTag')"
-          :title="t('taglist.addTag')"
-          disabled
-        >{{ t('taglist.addTag') }}</button>
       </div>
       <div class="eqt-taglist__head-filters">
         <button
@@ -313,88 +256,16 @@ function impactTitle(row: MyTagRow): string {
           >
         </label>
 
-        <div class="eqt-taglist__body">
-          <!-- 第一行：標籤與它的顏色放在一起 -->
-          <div class="eqt-taglist__top">
-            <button
-              type="button" class="eqt-taglist__chip"
-              :style="chipStyle(row)"
-              :title="row.full"
-              @click="emit('select', row.full)"
-            >
-              <span class="eqt-taglist__ns">{{ label(row.full).nsLabel }}:</span>
-              <span class="eqt-taglist__label">{{ label(row.full).display }}</span>
-            </button>
-            <span class="eqt-taglist__color-control">
-              <LineColorSwatch
-                class="eqt-taglist__color-swatch"
-                :model-value="view(row).color || undefined"
-                :alpha="false"
-                :style="{ '--eqt-tag-color-preview': colorPreview(row) }"
-                :title="t('panel.colorHint')"
-                @update:model-value="onColor(row, $event)"
-              />
-              <input
-                class="eqt-taglist__input eqt-taglist__color"
-                type="text"
-                :value="view(row).color"
-                placeholder="#default"
-                maxlength="7"
-                pattern="#?[0-9A-Fa-f]{6}"
-                spellcheck="false"
-                autocomplete="off"
-                :aria-label="t('panel.colorHint')"
-                :title="t('panel.colorHint')"
-                @input="onHexInput(row, $event)"
-                @blur="onHexBlur(row, $event)"
-                @keydown.enter.prevent="($event.target as HTMLInputElement).blur()"
-              >
-            </span>
-
-          </div>
-
-          <!-- 第二行：旗標在左，權重固定靠右 -->
-          <div class="eqt-taglist__controls">
-            <label class="eqt-taglist__flag" :title="t('panel.toggleWatch')">
-              <input
-                type="checkbox" :checked="view(row).watch"
-                @change="emit('patch', row, { watch: ($event.target as HTMLInputElement).checked })"
-              >
-              {{ t('panel.labelWatch') }}
-            </label>
-            <label class="eqt-taglist__flag" :title="t('panel.toggleHidden')">
-              <input
-                type="checkbox" :checked="view(row).hidden"
-                @change="emit('patch', row, { hidden: ($event.target as HTMLInputElement).checked })"
-              >
-              {{ t('panel.labelHidden') }}
-            </label>
-
-            <span class="eqt-panel__spacer" />
-
-            <!-- chip 上不再印權重：這一格就是權重，同一件事不用講兩次 -->
-            <EqtNumberField
-              :model-value="view(row).weight"
-              :min="-99"
-              :max="99"
-              :disabled="view(row).hidden"
-              :label="t('panel.weightHint')"
-              @update:model-value="emit('patch', row, { weight: $event })"
-            />
-          </div>
-
-          <!-- 第三行：這個標籤在樣本裡把東西分到哪一邊 -->
-          <span class="eqt-taglist__bar" :title="impactTitle(row)">
-            <i
-              class="eqt-taglist__neg"
-              :style="{ width: pct(impact.get(row.full)?.left ?? 0, impact.get(row.full)?.total ?? 0) }"
-            />
-            <i
-              class="eqt-taglist__pos"
-              :style="{ width: pct(impact.get(row.full)?.right ?? 0, impact.get(row.full)?.total ?? 0) }"
-            />
-          </span>
-        </div>
+        <MyTagsTagBody
+          :full="row.full"
+          :state="view(row)"
+          :set-color="setColors[row.tagSet] ?? ''"
+          :impact="impact.get(row.full)"
+          selectable
+          show-impact
+          @select="emit('select', row.full)"
+          @patch="emit('patch', row, $event)"
+        />
       </article>
       </div>
     </div>
