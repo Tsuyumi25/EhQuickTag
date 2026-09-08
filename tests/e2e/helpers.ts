@@ -49,6 +49,7 @@ const TAGDB_URL_RE = /^https:\/\/(cdn|fastly|gcore)\.jsdelivr\.net\/.*\/db\.html
 const TAG_WIKI_URL_RE = /\/tag-wiki\/wiki\.json\.gz$/
 const TAG_COUNT_URL_RE = /\/tag-count\/tagname_count\.csv\.gz$/
 const EHG_INDEX_URL_RE = /^https:\/\/e-hentai\.org\/z\/\d+\/ehg_index\.c\.js$/
+const SAMPLE_GALLERY_URL_RE = /^https:\/\/e-hentai\.org\/g\/(?:1001\/aaaaaaaaaa|1002\/bbbbbbbbbb)\/$/
 
 export async function mockEh(page: Page): Promise<void> {
   await page.route('**/*', (route) => {
@@ -58,6 +59,8 @@ export async function mockEh(page: Page): Promise<void> {
     } else if (url.startsWith('https://e-hentai.org/?') && new URL(url).searchParams.has('f_search')) {
       route.fulfill({ contentType: 'text/html', body: SAMPLE_LIST_HTML })
     } else if (url === GALLERY_URL) {
+      route.fulfill({ contentType: 'text/html', body: FIXTURE_GALLERY_HTML })
+    } else if (SAMPLE_GALLERY_URL_RE.test(url)) {
       route.fulfill({ contentType: 'text/html', body: FIXTURE_GALLERY_HTML })
     } else if (url === MYTAGS_URL) {
       route.fulfill({ contentType: 'text/html', body: FIXTURE_MYTAGS_HTML })

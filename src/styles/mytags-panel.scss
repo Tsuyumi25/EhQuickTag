@@ -716,11 +716,13 @@
   min-height: 0;
 }
 
-// 攤開的那一本吃掉右欄下半、自己捲，不把上面的兩欄擠沒
+// 攤開的那一本吃掉右欄下半；操作列固定，內部資料自己捲動。
 .eqt-gal {
+  display: flex;
   flex: 0 0 auto;
+  flex-direction: column;
   max-height: 45%;
-  overflow-y: auto;
+  overflow: hidden;
   padding: 8px 10px;
   border: var(--eqt-border-width) solid var(--eqt-border);
   border-radius: var(--eqt-radius-md);
@@ -728,18 +730,25 @@
   font-size: var(--eqt-fs-sm);
 }
 
+.eqt-gal__scroll {
+  min-height: 0;
+  overflow-y: auto;
+}
+
 .eqt-gal__head {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
+  display: grid;
+  flex: 0 0 auto;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto auto;
+  align-items: stretch;
+  gap: 4px;
   padding-bottom: 6px;
   border-bottom: var(--eqt-border-width) solid var(--eqt-divider);
 }
 
 .eqt-gal__titles {
-  flex: 1 1 auto;
   min-width: 0;
 
+  strong { display: block; }
   p { margin: 2px 0 0; }
 }
 
@@ -773,26 +782,30 @@
   dd { margin: 0; }
 }
 
-.eqt-gal__pick {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px;
-  margin-top: 4px;
+.eqt-gal__verdict {
+  justify-content: center;
 
-  button {
-    padding: 4px;
-    border: var(--eqt-border-width) solid var(--eqt-border);
-    border-radius: var(--eqt-radius-sm);
-    background: var(--eqt-bg-btn);
-    color: inherit;
-    font-size: var(--eqt-fs-sm);
-    cursor: pointer;
-
-    &:hover { background: var(--eqt-bg-btn-hover); }
+  &--block {
+    background: var(--eqt-danger);
+    color: var(--eqt-text-on-color);
+    font-weight: 700;
   }
 
-  &--block { background: var(--eqt-danger) !important; color: var(--eqt-text-on-color); font-weight: 700; }
-  &--keep { background: var(--eqt-green) !important; color: var(--eqt-text-on-color); font-weight: 700; }
+  &--keep {
+    background: var(--eqt-green);
+    color: var(--eqt-text-on-color);
+    font-weight: 700;
+  }
+}
+
+.eqt-gal__open {
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.eqt-gal__close {
+  min-width: var(--eqt-checkbox-size);
+  justify-content: center;
 }
 
 .eqt-gal__main {

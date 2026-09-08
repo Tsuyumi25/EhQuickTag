@@ -405,6 +405,7 @@ export default {
   'preview.shouldBlock': '차단해야',
   'preview.shouldKeep': '유지해야',
   'panel.applyN': '{n}개를 EH에 적용',
+  'gallery.open': '갤러리 열기',
   'gallery.loading': '불러오는 중⋯',
   'gallery.failed': '이 작품을 가져오지 못했습니다.',
 } as Record<string, string>

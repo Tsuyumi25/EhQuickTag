@@ -405,6 +405,7 @@ export default {
   'preview.shouldBlock': '该挡',
   'preview.shouldKeep': '该留',
   'panel.applyN': '套用 {n} 个到 EH',
+  'gallery.open': '打开图库',
   'gallery.loading': '加载中⋯',
   'gallery.failed': '这本抓不回来。',
 } as Record<string, string>

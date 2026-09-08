@@ -248,6 +248,40 @@ test('新增欄從候選建立草稿，左右兩欄都能接管同一份預覽',
   await expect(search).toBeFocused()
 })
 
+test('Gallery 操作列固定在捲動區外，標題緊接封面', async ({ page }) => {
+  await page.getByRole('button', { name: '新增標籤 >', exact: true }).click()
+  const search = page.locator('.eqt-tag-catalog__search-input')
+  await search.fill('sample tag')
+  await page.locator('.eqt-popup__suggestion').filter({ hasText: 'female:sample tag' }).click()
+  await page.locator('.eqt-preview__cover').first().click()
+
+  const gallery = page.locator('.eqt-gal')
+  await expect(gallery).toBeVisible()
+  const controls = gallery.locator(':scope > .eqt-gal__head > *')
+  await expect(controls).toHaveCount(4)
+  await expect(controls.nth(0)).toHaveText('該擋')
+  await expect(controls.nth(1)).toHaveText('該留')
+  await expect(controls.nth(2)).toHaveText('打開圖庫')
+  await expect(controls.nth(2)).toHaveAttribute(
+    'href',
+    'https://e-hentai.org/g/1001/aaaaaaaaaa/',
+  )
+  await expect(controls.nth(3)).toHaveText('X')
+
+  const scroll = gallery.locator(':scope > .eqt-gal__scroll')
+  await expect(gallery).toHaveCSS('overflow', 'hidden')
+  await expect(scroll).toHaveCSS('overflow-y', 'auto')
+  const headY = (await gallery.locator(':scope > .eqt-gal__head').boundingBox())!.y
+  await scroll.evaluate((element) => { element.scrollTop = element.scrollHeight })
+  expect((await gallery.locator(':scope > .eqt-gal__head').boundingBox())!.y).toBe(headY)
+
+  const cover = gallery.locator('.eqt-gal__cover')
+  expect(await cover.evaluate((element) => (
+    element.nextElementSibling?.classList.contains('eqt-gal__titles') ?? false
+  ))).toBe(true)
+  await expect(gallery.locator('.eqt-gal__titles')).toContainText('Angel Interval')
+})
+
 test('Catalog 搜尋結果與左欄解析成同一個既有標籤實體', async ({ page }) => {
   await page.getByRole('button', { name: '新增標籤 >', exact: true }).click()
   const search = page.locator('.eqt-tag-catalog__search-input')

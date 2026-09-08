@@ -405,6 +405,7 @@ export default {
   'preview.shouldBlock': 'Should block',
   'preview.shouldKeep': 'Should keep',
   'panel.applyN': 'Apply {n} to EH',
+  'gallery.open': 'Open gallery',
   'gallery.loading': 'Loading…',
   'gallery.failed': 'Could not load this gallery.',
 } as Record<string, string>

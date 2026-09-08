@@ -405,6 +405,7 @@ export default {
   'preview.shouldBlock': '弾くべき',
   'preview.shouldKeep': '残すべき',
   'panel.applyN': '{n} 件を EH に適用',
+  'gallery.open': 'ギャラリーを開く',
   'gallery.loading': '読み込み中⋯',
   'gallery.failed': 'この作品を取得できませんでした。',
 } as Record<string, string>
