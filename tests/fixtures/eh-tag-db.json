@@ -15,7 +15,8 @@
       "data": {
         "yuri": { "name": "百合", "intro": "", "links": "" },
         "sole female": { "name": "單一女性", "intro": "", "links": "" },
-        "sample tag": { "name": "範例標籤", "intro": "", "links": "" }
+        "sample tag": { "name": "範例標籤", "intro": "", "links": "" },
+        "negative-sample": { "name": "負權重樣本", "intro": "", "links": "" }
       }
     },
     {

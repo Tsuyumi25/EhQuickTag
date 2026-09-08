@@ -54,6 +54,10 @@ export interface EhMyTagsHost {
   readRows(): MyTagRow[]
   /** 蓋住原生 UI。DOM 留在文件裡（display:none），寫入路徑還要靠它 */
   coverNative(on: boolean): void
+  /** 將 EH 原生 #nb / #lb 節點借給 E站頂部欄，保留 identity 與 handler。 */
+  mountEhTopbar(target: HTMLElement): void
+  /** 將 #nb / #lb 放回各自在 EH 文件裡的原位置。 */
+  restoreEhTopbar(): void
   /** 下面這些都會讓整頁刷新——呼叫前 pending 必須先落地 */
   switchSet(value: string): void
   createTag(tagSet: string, input: NewTagInput): boolean
@@ -200,8 +204,16 @@ export function useEhMyTagsHost(): EhMyTagsHost | null {
     used: used.get(o.value) ?? null,
   }))
 
-  // 掛在 #outer 之後，不是塞進它裡面：#outer 有 max-width:900px，塞進去的話左右
-  // 兩欄分不開。掛在它後面位置一樣在頁面內容正下方，但寬度不受限
+  // #nb / #lb 共同構成 E站頂部欄，兩者含 EH 自己的連結與 inline handler；移動原節點
+  // 才能保留黑箱行為與現場狀態。comment marker 記住兩者各自的精確原位。
+  const topbarHomes = ['nb', 'lb'].flatMap((id) => {
+    const node = document.getElementById(id)
+    if (!node) return []
+    const marker = document.createComment(`eqt-${id}-home`)
+    node.before(marker)
+    return [{ node, marker }]
+  })
+
   const anchor = document.createElement('div')
   anchor.id = 'eqt-mytags-anchor'
   anchor.setAttribute('translate', 'no')
@@ -245,6 +257,16 @@ export function useEhMyTagsHost(): EhMyTagsHost | null {
       // 表單，而 form.submit() 和 getElementById 對隱藏的節點照樣有效
       const box = pageBox ?? form
       if (box instanceof HTMLElement) box.style.display = on ? 'none' : ''
+    },
+
+    mountEhTopbar(target) {
+      for (const { node } of topbarHomes) target.appendChild(node)
+    },
+
+    restoreEhTopbar() {
+      for (const { node, marker } of topbarHomes) {
+        marker.parentNode?.insertBefore(node, marker.nextSibling)
+      }
     },
 
     switchSet(value) { location.href = tagSetUrl(value) },

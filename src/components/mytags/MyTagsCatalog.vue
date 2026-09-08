@@ -8,24 +8,31 @@ import NamespaceFilter from '@/components/NamespaceFilter.vue'
 import MyTagsTagBody from '@/components/mytags/MyTagsTagBody.vue'
 import { TAGSET_CAPACITY, type NewTagInput, type TagSetRef } from '@/composables/useEhMyTagsHost'
 import { normalizeTagColor } from '@/services/mytagsColors'
+import type { TagState } from '@/services/mytagsEdits'
 import type { TagImpact } from '@/services/mytagsScore'
 
-type NewTagDraft = NewTagInput & { tagSet: string }
+type NewTagSubmission = NewTagInput & { tagSet: string }
 
 const props = defineProps<{
-  draft: NewTagDraft
+  full: string
+  state: TagState
+  targetSet: string
+  sourceSet: string | null
   sets: TagSetRef[]
   impact: TagImpact
   setColors: Record<string, string>
-  existingTags: ReadonlySet<string>
   busy: boolean
   focusRequest: number
+  previewed: boolean
 }>()
 
 const emit = defineEmits<{
-  'update:draft': [draft: NewTagDraft]
+  'update:targetSet': [value: string]
+  patch: [change: Partial<TagState>]
   pick: [entry: TagEntry]
-  create: [draft: NewTagDraft]
+  create: [submission: NewTagSubmission]
+  move: [target: string]
+  preview: []
 }>()
 
 const query = ref('')
@@ -78,69 +85,85 @@ function onSearchKeydown(event: KeyboardEvent): void {
   }
 }
 
-function patch(patch: Partial<NewTagDraft>): void {
-  const next = { ...props.draft, ...patch }
-  if (patch.watch) next.hidden = false
-  if (patch.hidden) next.watch = false
-  emit('update:draft', next)
-}
-
-const selectedSet = computed(() => props.sets.find((set) => set.value === props.draft.tagSet))
+const selectedSet = computed(() => props.sets.find((set) => set.value === props.targetSet))
+const existing = computed(() => props.sourceSet !== null)
 const setFull = computed(() => (selectedSet.value?.used ?? 0) >= TAGSET_CAPACITY)
-const alreadyAdded = computed(() => !!props.draft.full && props.existingTags.has(props.draft.full))
-const normalizedColor = computed(() => normalizeTagColor(props.draft.color))
+const normalizedColor = computed(() => normalizeTagColor(props.state.color))
 const colorInvalid = computed(() => normalizedColor.value === null)
 const canCreate = computed(() => (
-  !!props.draft.full
-  && !alreadyAdded.value
+  !existing.value
+  && !!props.full
   && !setFull.value
   && !colorInvalid.value
   && !props.busy
 ))
+const canMove = computed(() => (
+  existing.value
+  && props.targetSet !== props.sourceSet
+  && !setFull.value
+  && !props.busy
+))
 
-function create(): void {
+function commit(): void {
+  if (existing.value) {
+    if (canMove.value) emit('move', props.targetSet)
+    return
+  }
   if (!canCreate.value || normalizedColor.value === null) return
-  emit('create', { ...props.draft, color: normalizedColor.value })
+  emit('create', {
+    full: props.full,
+    tagSet: props.targetSet,
+    ...props.state,
+    color: normalizedColor.value,
+  })
 }
 </script>
 
 <template>
   <section class="eqt-tag-catalog eqt-taglist">
-    <div class="eqt-tag-catalog__draft">
+    <div
+      class="eqt-tag-catalog__draft"
+      :class="{ 'eqt-tag-catalog__draft--previewed': previewed }"
+    >
       <MyTagsTagBody
-        :full="draft.full"
-        :state="draft"
-        :set-color="setColors[draft.tagSet] ?? ''"
+        :full="full"
+        :state="state"
+        :set-color="setColors[sourceSet ?? targetSet] ?? ''"
         :impact="impact"
+        :selectable="!!full"
         show-impact
-        @patch="patch"
+        @patch="emit('patch', $event)"
+        @select="emit('preview')"
       />
 
       <div class="eqt-tag-catalog__create-row">
         <select
           class="eqt-panel__setpick"
-          :value="draft.tagSet"
-          :aria-label="t('manage.targetSet')"
-          @change="patch({ tagSet: ($event.target as HTMLSelectElement).value })"
+          :value="targetSet"
+          :aria-label="t(existing ? 'manage.moveTarget' : 'manage.targetSet')"
+          @change="emit('update:targetSet', ($event.target as HTMLSelectElement).value)"
         >
           <option
             v-for="set in sets"
             :key="set.value"
             :value="set.value"
-            :disabled="(set.used ?? 0) >= TAGSET_CAPACITY"
+            :disabled="(set.used ?? 0) >= TAGSET_CAPACITY && set.value !== sourceSet"
           >{{ set.name }} · {{ set.used ?? '?' }}/{{ TAGSET_CAPACITY }}</option>
         </select>
         <button
           type="button"
           class="eqt-tag-catalog__create eqt-panel__btn eqt-panel__btn--primary"
-          :disabled="!canCreate"
-          @click="create"
-        >{{ busy ? t('panel.working') : t('taglist.addTag') }}</button>
+          :disabled="existing ? !canMove : !canCreate"
+          @click="commit"
+        >{{ busy ? t('panel.working') : t(existing ? 'manage.moveTag' : 'taglist.addTag') }}</button>
       </div>
 
-      <p v-if="draft.full && alreadyAdded" class="eqt-tag-catalog__error">{{ t('manage.alreadyAdded') }}</p>
-      <p v-else-if="draft.full && setFull" class="eqt-tag-catalog__error">{{ t('manage.setFull') }}</p>
-      <p v-else-if="draft.full && colorInvalid" class="eqt-tag-catalog__error">{{ t('manage.colorInvalid') }}</p>
+      <p v-if="full && setFull && targetSet !== sourceSet" class="eqt-tag-catalog__error">
+        {{ t('manage.setFull') }}
+      </p>
+      <p v-else-if="full && !existing && colorInvalid" class="eqt-tag-catalog__error">
+        {{ t('manage.colorInvalid') }}
+      </p>
     </div>
 
     <div class="eqt-tag-catalog__browser">
@@ -194,6 +217,10 @@ function create(): void {
     border: var(--eqt-border-width) solid var(--eqt-divider);
     border-radius: var(--eqt-radius-md);
     background: var(--eqt-bg-stripe);
+
+    &--previewed {
+      background: var(--eqt-bg-active);
+    }
   }
 
 

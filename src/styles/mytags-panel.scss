@@ -1,11 +1,7 @@
 @use 'buttons' as *;
 
-// /mytags 面板。頂部的模式列與套用列、左邊的標籤清單、右邊的兩欄預覽。
-
-// ⭐ 面板鋪滿整個視窗，不是頁面裡的一塊。
-//
-// 捲動只發生在該捲的地方（清單、兩欄、攤開的畫廊），頁面本身完全不捲——EH 原生的
-// nav 還在文檔流裡，但被整片蓋掉，所以它的高度不再影響任何東西。
+// /mytags 面板。頂部 control bar 在插件控制與 EH 原生導覽之間切換；下方工作區保持
+// 掛載，標籤清單、可收合的新增欄與預覽各自捲動。
 .eqt-panel {
   position: fixed;
   inset: 0;
@@ -20,34 +16,58 @@
   font-size: var(--eqt-fs-md);
 }
 
-.eqt-panel__modestrip,
-.eqt-panel__commit {
+
+.eqt-panel__topbar {
+  position: relative;
+  z-index: 30;
   display: flex;
+  flex: 0 0 auto;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
-}
+  gap: calc(var(--eqt-checkbox-size) / 4);
+  margin-bottom: calc(var(--eqt-checkbox-size) / 3);
 
-.eqt-panel__modestrip {
-  @include btn-split-group;
-  flex: 0 0 auto;
-  flex-wrap: nowrap;
-  align-self: center;
-  gap: 0;
-  margin-bottom: 8px;
-}
-
-.eqt-panel__mode {
-  @include btn-split-item;
-  min-width: calc(var(--eqt-checkbox-size) * 5);
-
-  &--on {
-    background: var(--eqt-bg-active);
-    color: var(--eqt-text);
-    font-weight: 700;
+  > .eqt-panel__btn {
+    flex: 0 0 auto;
+    height: calc(var(--eqt-checkbox-size) + var(--eqt-border-width) * 2);
+    box-sizing: border-box;
   }
 }
 
+
+.eqt-panel__eh-toggle,
+.eqt-panel__create-toggle {
+  border-color: var(--eqt-border);
+}
+
+.eqt-panel__eh-toggle {
+  font-weight: 700;
+}
+
+// 搬進來的是 EH 現場的 #nb / #lb 節點。這塊只是 E站頂部欄在插件頁首裡的顯示位置；
+// 它脫離 layout 覆蓋工作區，原生連結、handler 與內部視覺規則仍由宿主管。
+.eqt-panel__eh-topbar {
+  position: absolute;
+  z-index: 1;
+  top: calc(100% + var(--eqt-checkbox-size) / 3);
+  right: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: calc(var(--eqt-checkbox-size) / 3);
+  border: var(--eqt-border-width) solid var(--eqt-text);
+  border-radius: var(--eqt-radius-md);
+  background: var(--eqt-bg);
+
+  > #nb,
+  > #lb {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    margin-inline: 0;
+  }
+}
 .eqt-panel__spacer { margin-left: auto; }
 
 .eqt-panel__hint {
@@ -63,32 +83,14 @@
 
 .eqt-panel__field {
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
   gap: 5px;
+  white-space: nowrap;
   font-size: var(--eqt-fs-sm);
   color: var(--eqt-text-hint);
-
 }
 
-// 編輯散在三個分頁裡，套用的入口不能跟著捲走
-.eqt-panel__commit {
-  position: sticky;
-  z-index: 20;
-  top: 4px;
-  justify-content: space-between;
-  margin: 8px 0;
-  padding: 8px 10px;
-  border: var(--eqt-border-width) solid var(--eqt-status-include);
-  border-radius: var(--eqt-radius-sm);
-  background: var(--eqt-bg-stripe);
-  font-size: var(--eqt-fs-sm);
-  backdrop-filter: blur(3px);
-}
-
-.eqt-panel__commitactions {
-  display: flex;
-  gap: 6px;
-}
 
 // 高度由 workspace 給（grid 的預設 stretch）。min-height: 0 讓裡面的捲動區能真的
 // 收縮——沒有它 flex item 會被內容撐開
@@ -137,8 +139,7 @@
   font-weight: 700;
 }
 
-// ⛔ 不要加 align-items: start。兩欄要吃滿 workspace 的高度，各自在內部捲；
-// 加了的話兩欄會各自縮成自己的內容高度，dock 就浮在半空中
+// ⛔ 不要加 align-items: start。每一欄要吃滿 workspace 的高度，各自在內部捲。
 .eqt-panel__workspace {
   display: grid;
   flex: 1 1 auto;
@@ -147,6 +148,13 @@
     minmax(0, 2fr);
   gap: 12px;
   min-height: 0;
+
+  &--create {
+    grid-template-columns:
+      minmax(calc(var(--eqt-checkbox-size) * 14), 0.8fr)
+      minmax(0, 1.3fr)
+      minmax(0, 1.45fr);
+  }
 }
 
 .eqt-panel__btn {
@@ -222,18 +230,11 @@
 }
 
 .eqt-taglist__head-main,
-.eqt-taglist__head-meta,
 .eqt-taglist__head-filters {
   display: flex;
   align-items: center;
   gap: 4px;
   min-width: 0;
-}
-
-
-.eqt-taglist__head-main,
-.eqt-taglist__head-meta,
-.eqt-taglist__head-filters {
   padding-left: 7px;
 }
 
@@ -556,12 +557,12 @@
 
 .eqt-preview__grid {
   display: grid;
-  // 固定四欄。跟著寬度浮動的話，切換模式時整片封面會重新排版，很難看
+  // 新增欄打開時每側兩欄，收起後每側四欄。新增欄只改可用寬度，不換預覽 instance。
   grid-template-columns: repeat(4, 1fr);
   gap: 6px;
 }
 
-.eqt-preview--manage .eqt-preview__grid {
+.eqt-preview--create .eqt-preview__grid {
   grid-template-columns: repeat(2, 1fr);
 }
 
@@ -677,22 +678,6 @@
 .eqt-preview__neg { color: var(--eqt-danger); font-variant-numeric: tabular-nums; }
 .eqt-preview__pos { color: var(--eqt-green); font-variant-numeric: tabular-nums; }
 
-// ---- 攤開的整本畫廊 ----
-
-// 右欄在預覽模式是單一 stack；管理模式切成候選池與同一套 gallery preview。
-.eqt-panel__right {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-width: 0;
-  min-height: 0;
-
-  &--manage {
-    display: grid;
-    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.45fr);
-  }
-}
-
 @media (max-width: 900px) {
   .eqt-panel {
     overflow-y: auto;
@@ -706,9 +691,19 @@
   }
 
   .eqt-panel__side,
-  .eqt-panel__right {
+  .eqt-tag-catalog,
+  .eqt-panel__preview-stack {
     flex: 0 0 calc(100dvh - var(--eqt-checkbox-size) * 3);
     min-height: calc(var(--eqt-checkbox-size) * 16);
+  }
+}
+
+@media (max-width: 700px) {
+  .eqt-panel__topbar > .eqt-panel__spacer { display: none; }
+
+  .eqt-panel__field {
+    flex-basis: 100%;
+    justify-content: flex-end;
   }
 }
 

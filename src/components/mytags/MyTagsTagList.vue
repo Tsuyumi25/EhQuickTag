@@ -170,9 +170,6 @@ watch(
 <template>
   <div class="eqt-taglist">
     <div class="eqt-taglist__head">
-      <div class="eqt-taglist__head-meta">
-        <slot name="head-meta" />
-      </div>
       <div class="eqt-taglist__head-main">
         <label class="eqt-taglist__check-all" :title="t('taglist.headLeft', { n: visible.length })">
           <input
