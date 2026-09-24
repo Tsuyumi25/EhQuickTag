@@ -4,7 +4,7 @@ import { t } from '@/composables/useI18n'
 import { useTagLabel } from '@/composables/useTagLabel'
 import type { SampleGallery, Verdict } from '@/services/mytagsSamples'
 import { mismatchOf, type PreviewItem } from '@/services/mytagsScore'
-import { myTagsPreviewCoverScale } from '@/services/store'
+import { myTagsPreviewCoverScale, myTagsPreviewLayout } from '@/services/store'
 
 const props = defineProps<{
   left: PreviewItem[]
@@ -139,7 +139,7 @@ function metric(item: PreviewItem): string {
              共用一條捲軸的話短的那邊早就到底了還被拖著走 -->
         <div class="eqt-preview__colbody">
           <p v-if="!items(side).length" class="eqt-panel__hint">{{ t('preview.sideEmpty') }}</p>
-          <div v-else class="eqt-preview__grid">
+          <div v-else class="eqt-preview__grid" :class="`eqt-preview__grid--${myTagsPreviewLayout}`">
             <div
               v-for="item in shown(side)"
               :key="item.gallery.gid"

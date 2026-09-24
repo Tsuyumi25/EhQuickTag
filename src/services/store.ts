@@ -60,6 +60,12 @@ export const INTRO_PANEL_PRIMARY_LANGS = [
 ] as const
 export type IntroPanelPrimaryLang = typeof INTRO_PANEL_PRIMARY_LANGS[number]['id']
 
+export const MY_TAGS_PREVIEW_LAYOUTS = [
+  { id: 'masonry', labelKey: 'preview.layoutMasonry' },
+  { id: 'grid',    labelKey: 'preview.layoutGrid' },
+] as const
+export type MyTagsPreviewLayout = typeof MY_TAGS_PREVIEW_LAYOUTS[number]['id']
+
 // Gallery taglist 專屬 dblclick action。跟 tagbar 的 DblClickAction 分開——tagbar
 // 對 search 表單／編輯模式操作，gallery 對選取 chip 集合／vote／picker 操作，
 // 動作集合本質上不同（雖然 search / searchNewTab / none 名稱一致但實作路徑走
@@ -162,6 +168,7 @@ const INITIAL_SETTINGS = {
   wikiPreludeExpanded: false,
   followCurrentSite: true,
   myTagsPreviewCoverScale: 100,
+  myTagsPreviewLayout: 'masonry' as MyTagsPreviewLayout,
 }
 
 type Settings = typeof INITIAL_SETTINGS
@@ -207,6 +214,7 @@ export const galleryDblClickRightNewTabActive = refs.galleryDblClickRightNewTabA
 export const wikiPreludeExpanded = refs.wikiPreludeExpanded
 export const followCurrentSite  = refs.followCurrentSite
 export const myTagsPreviewCoverScale = refs.myTagsPreviewCoverScale
+export const myTagsPreviewLayout = refs.myTagsPreviewLayout
 
 // enum-shape setting 的合法 id 集合。壞值 silently fallback 到 INITIAL_SETTINGS 預設——
 // 沒這層守門 GM storage 被竄改塞個壞字串會直接灌進 ref，UI 永久卡在「無 active button、
@@ -219,7 +227,7 @@ const SETTING_VALIDATORS: Partial<{ [K in SettingKey]: (v: unknown) => boolean }
   introPanelPrimaryLang:  v => INTRO_PANEL_PRIMARY_LANGS.some(m => m.id === v),
   galleryDblClickLeft:    v => GALLERY_DBL_CLICK_ACTIONS.some(a => a.id === v),
   galleryDblClickRight:   v => GALLERY_DBL_CLICK_ACTIONS.some(a => a.id === v),
-  galleryTaglistHeight:   v => typeof v === 'number' && Number.isFinite(v) && v > 0,
+  myTagsPreviewLayout:    v => MY_TAGS_PREVIEW_LAYOUTS.some(m => m.id === v),
   galleryTaglistZoom:     v => typeof v === 'number' && Number.isFinite(v) && v >= 50 && v <= 200,
   buttonLineTextAlign:    v => v === 'left' || v === 'center' || v === 'right',
   separatorLineTextAlign: v => v === 'left' || v === 'center' || v === 'right',

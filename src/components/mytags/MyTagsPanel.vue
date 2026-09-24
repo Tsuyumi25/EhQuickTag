@@ -43,7 +43,7 @@ import {
 import { setUserTag, canWrite } from '@/services/mytagsApi'
 import { patchConfig } from '@/services/ehConfig'
 import { serializeEntry } from '@/services/searchSyntax'
-import { nsFormat, myTagsPreviewCoverScale } from '@/services/store'
+import { nsFormat, myTagsPreviewCoverScale, myTagsPreviewLayout, MY_TAGS_PREVIEW_LAYOUTS } from '@/services/store'
 import { tagChipStyle } from '@/services/mytagsColors'
 import type { TagEntry } from '@/services/tagDb'
 
@@ -755,6 +755,16 @@ watch(edits, () => { void flush() }, { deep: true })
           >
           <output class="eqt-panel__cover-value">{{ myTagsPreviewCoverScale }}%</output>
         </label>
+        <div class="eqt-panel__layout-pick" role="group" :aria-label="t('preview.layout')">
+          <button
+            v-for="mode in MY_TAGS_PREVIEW_LAYOUTS"
+            :key="mode.id"
+            type="button"
+            class="eqt-panel__btn"
+            :aria-pressed="myTagsPreviewLayout === mode.id"
+            @click="myTagsPreviewLayout = mode.id"
+          >{{ t(mode.labelKey) }}</button>
+        </div>
       </div>
 
       <MyTagsEhTopbar v-if="ehTopbarOpen" :host="host" />

@@ -254,8 +254,11 @@ test('編輯區可拖曳收合並保留草稿與預覽', async ({ page }) => {
   const preview = page.locator('.eqt-panel__preview-stack')
   const sidebar = page.locator('.eqt-panel__side')
   const grid = page.locator('.eqt-preview__col--left .eqt-preview__grid')
-  const columnsBefore = await grid.evaluate((element) =>
-    getComputedStyle(element).gridTemplateColumns.split(' ').length)
+  const countColumns = () => grid.evaluate((element) => {
+    const tile = element.querySelector('.eqt-preview__tile')
+    return tile ? Math.round(element.clientWidth / tile.getBoundingClientRect().width) : 0
+  })
+  const columnsBefore = await countColumns()
   const groupBox = (await page.locator('.eqt-panel__splitter').boundingBox())!
   const sidebarBefore = (await sidebar.boundingBox())!
   const previewBefore = (await preview.boundingBox())!
@@ -286,17 +289,14 @@ test('編輯區可拖曳收合並保留草稿與預覽', async ({ page }) => {
   await expect(initialDraft.locator('.eqt-tag-catalog__name')).not.toBeFocused()
   expect((await sidebar.boundingBox())!.width).toBe(sidebarBefore.width)
   expect((await preview.boundingBox())!.width).toBeGreaterThan(previewBefore.width)
-  await expect.poll(() => grid.evaluate((element) =>
-    getComputedStyle(element).gridTemplateColumns.split(' ').length)).toBeGreaterThan(columnsBefore)
+  await expect.poll(countColumns).toBeGreaterThan(columnsBefore)
   await expect(page.locator('.eqt-preview__titlerow .eqt-taglist__chip')).toHaveAttribute('title', 'female:sample tag')
 
   const coverSize = page.getByRole('slider', { name: '封面大小' })
   await coverSize.press('Home')
-  const smallColumns = await grid.evaluate((element) =>
-    getComputedStyle(element).gridTemplateColumns.split(' ').length)
+  const smallColumns = await countColumns()
   await coverSize.press('End')
-  await expect.poll(() => grid.evaluate((element) =>
-    getComputedStyle(element).gridTemplateColumns.split(' ').length)).toBeLessThan(smallColumns)
+  await expect.poll(countColumns).toBeLessThan(smallColumns)
 
   const collapsedHandle = (await handle.boundingBox())!
   await page.mouse.move(collapsedHandle.x + collapsedHandle.width / 2, dragY)

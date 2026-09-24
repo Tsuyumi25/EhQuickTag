@@ -790,14 +790,38 @@
   padding-right: 4px;
 }
 
-.eqt-preview__grid {
+.eqt-preview__grid--masonry {
+  columns: var(--eqt-preview-cover-min-width);
+  column-gap: 6px;
+}
+
+.eqt-preview__grid--grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--eqt-preview-cover-min-width)), 1fr));
   gap: 6px;
+
+  .eqt-preview__tile { margin-bottom: 0; }
+
+  .eqt-preview__cover img {
+    aspect-ratio: 3 / 4;
+    object-fit: cover;
+  }
 }
 
+.eqt-panel__layout-pick {
+  display: flex;
+  gap: calc(var(--eqt-checkbox-size) / 4);
+
+  .eqt-panel__btn[aria-pressed='true'] {
+    border-color: var(--eqt-status-include);
+    background: var(--eqt-bg-btn-hover);
+  }
+}
 
 .eqt-preview__tile {
+  break-inside: avoid;
+  width: 100%;
+  margin-bottom: 6px;
   display: flex;
   flex-direction: column;
   // 預設就有一圈灰框。全透明的話「還沒判」看起來像是缺了什麼，而那是最常見的狀態
@@ -865,9 +889,7 @@
   img {
     display: block;
     width: 100%;
-    // 固定高度的話，格子一變寬封面就被拉扁。用長寬比綁住，同人誌封面大致是 3:4
-    aspect-ratio: 3 / 4;
-    object-fit: cover;
+    height: auto;
   }
 }
 
