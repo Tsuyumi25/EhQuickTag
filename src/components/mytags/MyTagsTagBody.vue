@@ -69,19 +69,21 @@ function impactTitle(): string {
 <template>
   <div class="eqt-taglist__body">
     <div class="eqt-taglist__top">
-      <component
-        :is="selectable ? 'button' : 'span'"
-        :type="selectable ? 'button' : undefined"
-        class="eqt-taglist__chip"
-        :class="{ 'eqt-taglist__chip--static': !selectable }"
-        :style="chipStyle()"
-        :title="full"
-        @click="selectable && emit('select')"
-      >
-        <span v-if="full" class="eqt-taglist__ns">{{ label(full).nsLabel }}:</span>
-        <span v-if="full" class="eqt-taglist__label">{{ label(full).display }}</span>
-        <span v-else class="eqt-taglist__label">{{ t('manage.newTag') }}</span>
-      </component>
+      <slot name="tag">
+        <component
+          :is="selectable ? 'button' : 'span'"
+          :type="selectable ? 'button' : undefined"
+          class="eqt-taglist__chip"
+          :class="{ 'eqt-taglist__chip--static': !selectable }"
+          :style="chipStyle()"
+          :title="full"
+          @click="selectable && emit('select')"
+        >
+          <span v-if="full" class="eqt-taglist__ns">{{ label(full).nsLabel }}:</span>
+          <span v-if="full" class="eqt-taglist__label">{{ label(full).display }}</span>
+          <span v-else class="eqt-taglist__label">{{ t('manage.newTag') }}</span>
+        </component>
+      </slot>
       <span class="eqt-taglist__color-control">
         <LineColorSwatch
           class="eqt-taglist__color-swatch"

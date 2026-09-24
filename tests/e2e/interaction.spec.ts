@@ -275,10 +275,11 @@ test('編輯模式的 tag context menu 支援相鄰副本、顏色與刪除', as
   await expect(copies).toHaveCount(2)
   await copies.nth(1).click({ button: 'right' })
   await menu.getByRole('button', { name: '按鈕顏色' }).click()
+  await expect(menu.locator('hex-alpha-color-picker').getByRole('slider', { name: 'Alpha' })).toBeVisible()
   const hex = menu.locator('.eqt-color-picker__input').first()
-  await hex.fill('#00ff00')
+  await hex.fill('#00ff0080')
   await hex.press('Enter')
-  await expect(copies.nth(1)).toHaveAttribute('style', /#00ff00ff/)
+  await expect(copies.nth(1)).toHaveAttribute('style', /#00ff0080/)
 
   await page.keyboard.press('Escape')
   await copies.nth(1).click({ button: 'right' })

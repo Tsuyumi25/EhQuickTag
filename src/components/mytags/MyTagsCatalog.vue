@@ -28,14 +28,20 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:targetSet': [value: string]
+  'update:full': [value: string]
   patch: [change: Partial<TagState>]
   pick: [entry: TagEntry]
   create: [submission: NewTagSubmission]
   move: [target: string]
   preview: []
+  confirm: []
 }>()
 
 const query = ref('')
+const name = ref(props.full)
+watch(() => props.full, (full) => {
+  if (name.value.trim() !== full) name.value = full
+})
 const inputEl = ref<HTMLInputElement | null>(null)
 const selectedIdx = ref(0)
 const fallbackEntries = shallowRef<TagEntry[]>([])
@@ -130,11 +136,24 @@ function commit(): void {
         :state="state"
         :set-color="setColors[sourceSet ?? targetSet] ?? ''"
         :impact="impact"
-        :selectable="!!full"
         show-impact
         @patch="emit('patch', $event)"
-        @select="emit('preview')"
-      />
+      >
+        <template #tag>
+          <input
+            v-model="name"
+            class="eqt-taglist__input eqt-tag-catalog__name"
+            type="text"
+            :aria-label="t('manage.newTag')"
+            :placeholder="t('manage.newTag')"
+            autocomplete="off"
+            spellcheck="false"
+            @input="emit('update:full', name.trim())"
+            @focus="emit('preview')"
+            @keydown.enter.prevent="!$event.isComposing && full && emit('confirm')"
+          >
+        </template>
+      </MyTagsTagBody>
 
       <div class="eqt-tag-catalog__create-row">
         <select
@@ -221,6 +240,11 @@ function commit(): void {
     &--previewed {
       background: var(--eqt-bg-active);
     }
+  }
+
+  &__name {
+    flex: 1;
+    min-width: 0;
   }
 
 

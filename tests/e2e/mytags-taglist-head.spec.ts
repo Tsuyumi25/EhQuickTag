@@ -163,7 +163,7 @@ test('新增欄從候選建立草稿，左右兩欄都能接管同一份預覽',
   await expect(search).toBeEnabled()
   const initialDraft = page.locator('.eqt-tag-catalog__draft')
   await expect(initialDraft.locator('.eqt-taglist__body')).toBeVisible()
-  await expect(initialDraft.locator('.eqt-taglist__chip')).toHaveText('新增標籤')
+  await expect(initialDraft.locator('.eqt-tag-catalog__name')).toBeEditable()
   await expect(initialDraft.locator('.eqt-taglist__bar')).toBeVisible()
   await expect(initialDraft.locator('.eqt-tag-catalog__create')).toBeDisabled()
   await expect(initialDraft.locator('.eqt-tag-catalog__create')).toHaveClass(/eqt-panel__btn--primary/)
@@ -181,7 +181,7 @@ test('新增欄從候選建立草稿，左右兩欄都能接管同一份預覽',
 
   const draftBody = page.locator('.eqt-tag-catalog__draft .eqt-taglist__body')
   await expect(draftBody).toBeVisible()
-  await expect(draftBody.locator('.eqt-taglist__chip')).toHaveAttribute('title', 'female:sample tag')
+  await expect(draftBody.locator('.eqt-tag-catalog__name')).toHaveValue('female:sample tag')
   await expect(initialDraft).toHaveClass(/eqt-tag-catalog__draft--previewed/)
   const draftColors = await initialDraft.evaluate((element) => {
     const probe = document.createElement('span')
@@ -203,10 +203,7 @@ test('新增欄從候選建立草稿，左右兩欄都能接管同一份預覽',
   await expect(positiveRow).toHaveClass(/eqt-taglist__row--on/)
   await expect(page.locator('.eqt-tag-catalog')).toBeVisible()
   await expect(initialDraft).toHaveClass(/eqt-tag-catalog__draft--previewed/)
-  await expect(initialDraft.locator('.eqt-taglist__chip')).toHaveAttribute(
-    'title',
-    'male:positive-sample',
-  )
+  await expect(initialDraft.locator('.eqt-tag-catalog__name')).toHaveValue('male:positive-sample')
   await expect(initialDraft.locator('.eqt-number-field__input')).toHaveValue('40')
   await expect(initialDraft.locator('.eqt-taglist__color')).toHaveValue('#00cc00')
   await expect(initialDraft.locator('.eqt-taglist__flag input').nth(0)).toBeChecked()
@@ -217,7 +214,7 @@ test('新增欄從候選建立草稿，左右兩欄都能接管同一份預覽',
   await expect(moveButton).toBeEnabled()
 
   await page.locator('.eqt-popup__suggestion').filter({ hasText: 'female:sample tag' }).click()
-  await expect(initialDraft.locator('.eqt-taglist__chip')).toHaveAttribute('title', 'female:sample tag')
+  await expect(initialDraft.locator('.eqt-tag-catalog__name')).toHaveValue('female:sample tag')
   await expect(initialDraft.locator('.eqt-tag-catalog__create')).toHaveText('新增標籤')
   await expect(initialDraft).toHaveClass(/eqt-tag-catalog__draft--previewed/)
   await expect(page.locator('.eqt-preview__col--left .eqt-preview__tile')).toHaveCount(1)
@@ -294,7 +291,7 @@ test('Catalog 搜尋結果與左欄解析成同一個既有標籤實體', async 
   const listRow = page.locator('.eqt-taglist__row').filter({
     has: page.locator('.eqt-taglist__chip[title="female:negative-sample"]'),
   })
-  await expect(catalog.locator('.eqt-taglist__chip')).toHaveAttribute('title', 'female:negative-sample')
+  await expect(catalog.locator('.eqt-tag-catalog__name')).toHaveValue('female:negative-sample')
   await expect(catalog.locator('.eqt-number-field__input')).toHaveValue('-20')
   await expect(catalog.locator('.eqt-taglist__color')).toHaveValue('#cc0000')
   await expect(catalog.locator('.eqt-tag-catalog__create')).toHaveText('移動標籤')
@@ -358,4 +355,79 @@ test('新增草稿會送到指定 tag set 並保留設定', async ({ page }) => 
   expect(form.get('tagcolor_0')).toBe('#123ABC')
   expect(form.get('tagwatch_0')).toBe('on')
   expect(form.has('taghide_0')).toBe(false)
+})
+
+test('名稱 input 可新增候選清單外的 tag，送出前保留完整名稱與設定', async ({ page }) => {
+  await page.locator('.eqt-panel__create-toggle').click()
+  const catalog = page.locator('.eqt-tag-catalog__draft')
+  const name = catalog.locator('.eqt-tag-catalog__name')
+  const create = catalog.locator('.eqt-tag-catalog__create')
+  await expect(name).toBeEditable()
+  await name.fill('parody:unlisted')
+  await name.press('End')
+  await name.press('Space')
+  await name.press('t')
+  await name.press('a')
+  await name.press('g')
+  await expect(name).toHaveValue('parody:unlisted tag')
+  await expect(create).toBeEnabled()
+  await catalog.locator('select').selectOption('2')
+  await catalog.locator('.eqt-number-field__input').fill('25')
+  await catalog.locator('.eqt-number-field__input').press('Enter')
+  const requestPromise = page.waitForRequest((request) => (
+    request.url() === 'https://e-hentai.org/mytags?tagset=2'
+    && request.method() === 'POST'
+  ))
+  await create.click()
+  const form = new URLSearchParams((await requestPromise).postData() ?? '')
+  expect(form.get('usertag_action')).toBe('add')
+  expect(form.get('tagname_new')).toBe('parody:unlisted tag')
+  expect(form.get('tagweight_0')).toBe('25')
+})
+
+test('名稱 input 在既有 tag 與草稿間切換，focus 接管預覽且輸入不寫回 EH', async ({ page }) => {
+  const writes: string[] = []
+  const samples: string[] = []
+  page.on('request', (request) => {
+    if (request.method() === 'POST' && new URL(request.url()).pathname === '/mytags') {
+      writes.push(request.url())
+    }
+    if (new URL(request.url()).searchParams.has('f_search')) samples.push(request.url())
+  })
+  await page.locator('.eqt-panel__create-toggle').click()
+  const catalog = page.locator('.eqt-tag-catalog__draft')
+  const name = catalog.locator('.eqt-tag-catalog__name')
+  const create = catalog.locator('.eqt-tag-catalog__create')
+  const saved = page.locator('.eqt-taglist__row').filter({
+    has: page.locator('.eqt-taglist__chip[title="female:negative-sample"]'),
+  })
+  await name.fill('female:negative-sample')
+  await expect(name).toBeEditable()
+  await expect(catalog.locator('.eqt-number-field__input')).toHaveValue('-20')
+  await expect(create).toHaveText('移動標籤')
+  await expect(create).toBeDisabled()
+  await catalog.locator('select').selectOption('2')
+  await expect(create).toBeEnabled()
+  await name.fill('parody:unlisted tag')
+  await expect(create).toHaveText('新增標籤')
+  await expect(create).toBeEnabled()
+  await expect(saved.locator('.eqt-number-field__input')).toHaveValue('-20')
+  await expect(saved.locator('.eqt-taglist__chip')).toHaveAttribute('title', 'female:negative-sample')
+  expect(samples).toEqual([])
+  expect(writes).toEqual([])
+
+  await name.fill('')
+  await expect(create).toBeDisabled()
+  await expect(catalog).not.toHaveClass(/eqt-tag-catalog__draft--previewed/)
+  await name.fill('female:negative-sample')
+  await saved.locator('.eqt-taglist__chip').click()
+  await expect(catalog).not.toHaveClass(/eqt-tag-catalog__draft--previewed/)
+  await name.focus()
+  await expect(catalog).toHaveClass(/eqt-tag-catalog__draft--previewed/)
+  const sampleRequest = page.waitForRequest((request) => (
+    new URL(request.url()).searchParams.has('f_search')
+  ))
+  await name.press('Enter')
+  await sampleRequest
+  expect(writes).toEqual([])
 })

@@ -477,19 +477,23 @@ function select(tag: string): void {
   if (previewTarget.value && !fetchedPages.value[tag]) void grabTag(tag)
 }
 
-function pickCandidate(entry: TagEntry): void {
-  catalogTag.value = entry.fullTag
-  const row = rowMap.value.get(entry.fullTag)
+function setCatalogFull(full: string): void {
+  catalogTag.value = full
+  const row = rowMap.value.get(full)
   if (row) moveTarget.value = row.tagSet
-  previewTarget.value = { kind: row ? 'saved' : 'draft', full: entry.fullTag }
-  openedGallery.value = null
+  previewCatalog()
+}
+
+function pickCandidate(entry: TagEntry): void {
+  setCatalogFull(entry.fullTag)
   if (!fetchedPages.value[entry.fullTag]) void grabTag(entry.fullTag)
 }
 
 function previewCatalog(): void {
   const full = catalogTag.value
-  if (!full) return
-  previewTarget.value = { kind: catalogRow.value ? 'saved' : 'draft', full }
+  previewTarget.value = full
+    ? { kind: catalogRow.value ? 'saved' : 'draft', full }
+    : null
   openedGallery.value = null
 }
 
@@ -677,11 +681,13 @@ watch(edits, () => { void flush() }, { deep: true })
         :set-colors="setColors"
         :focus-request="catalogFocusRequest"
         :busy="createBusy || !!writeBusy"
-        :previewed="previewTarget?.full === catalogTag"
+        :previewed="!!catalogTag && previewTarget?.full === catalogTag"
         @update:target-set="setCatalogTarget"
+        @update:full="setCatalogFull"
         @patch="patchCatalog"
         @pick="pickCandidate"
         @preview="previewCatalog"
+        @confirm="refreshPreview"
         @move="moveCatalogTag"
         @create="createNewTag"
       />

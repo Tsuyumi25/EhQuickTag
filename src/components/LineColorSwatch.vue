@@ -5,12 +5,14 @@ import AnchoredPopover from '@/components/AnchoredPopover.vue'
 import ColorPicker from '@/components/ColorPicker.vue'
 import { t } from '@/composables/useI18n'
 
-defineProps<{
+withDefaults(defineProps<{
   modelValue: string | undefined
   title?: string
   embedded?: boolean
   alpha?: boolean
-}>()
+}>(), {
+  alpha: true,
+})
 const emit = defineEmits<{ 'update:modelValue': [value: string | undefined] }>()
 
 const open = ref(false)
