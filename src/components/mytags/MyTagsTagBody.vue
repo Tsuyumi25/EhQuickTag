@@ -141,15 +141,25 @@ function impactTitle(): string {
       />
     </div>
 
-    <span v-if="showImpact" class="eqt-taglist__bar" :title="impactTitle()">
-      <i
-        class="eqt-taglist__neg"
-        :style="{ width: pct(impact?.left ?? 0, impact?.total ?? 0) }"
-      />
-      <i
-        class="eqt-taglist__pos"
-        :style="{ width: pct(impact?.right ?? 0, impact?.total ?? 0) }"
-      />
+    <span
+      v-if="showImpact"
+      class="eqt-taglist__impact"
+      role="img"
+      :aria-label="impactTitle()"
+      :title="impactTitle()"
+    >
+      <span class="eqt-taglist__impact-count" aria-hidden="true">{{ impact?.left ?? 0 }}</span>
+      <span class="eqt-taglist__bar" aria-hidden="true">
+        <i
+          class="eqt-taglist__neg"
+          :style="{ width: pct(impact?.left ?? 0, impact?.total ?? 0) }"
+        />
+        <i
+          class="eqt-taglist__pos"
+          :style="{ width: pct(impact?.right ?? 0, impact?.total ?? 0) }"
+        />
+      </span>
+      <span class="eqt-taglist__impact-count" aria-hidden="true">{{ impact?.right ?? 0 }}</span>
     </span>
   </div>
 </template>

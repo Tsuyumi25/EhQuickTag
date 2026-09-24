@@ -36,7 +36,7 @@ const picked = ref<Set<number>>(new Set())
  * 每一列的高度。JS 和 CSS 只有這一個來源——虛擬捲動要靠它換算位置，對不上就會
  * 抖動或空一塊。三行：標籤 / 旗標與權重 / 比率條。
  */
-const ROW_H = 80
+const ROW_H = 84
 /** 上下各多畫幾列，快速捲動時才不會看到空白 */
 const OVERSCAN = 4
 

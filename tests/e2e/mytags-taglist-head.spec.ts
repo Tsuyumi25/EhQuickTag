@@ -117,6 +117,7 @@ test('編輯區可拖曳收合並保留草稿與預覽', async ({ page }) => {
   await expect(initialDraft.locator('.eqt-taglist__body')).toBeVisible()
   await expect(initialDraft.locator('.eqt-tag-catalog__name')).toBeEditable()
   await expect(initialDraft.locator('.eqt-taglist__bar')).toBeVisible()
+  await expect(initialDraft.locator('.eqt-taglist__impact-count')).toHaveText(['0', '0'])
   await expect(initialDraft.locator('.eqt-tag-catalog__create')).toBeDisabled()
   await expect(initialDraft.locator('.eqt-tag-catalog__create')).toHaveClass(/eqt-panel__btn--primary/)
   await expect(initialDraft.locator('select')).toHaveClass(/eqt-panel__setpick/)
@@ -171,6 +172,7 @@ test('編輯區可拖曳收合並保留草稿與預覽', async ({ page }) => {
   await expect(initialDraft).toHaveClass(/eqt-tag-catalog__draft--previewed/)
   await expect(page.locator('.eqt-preview__col--left .eqt-preview__tile')).toHaveCount(1)
   await expect(page.locator('.eqt-preview__col--right .eqt-preview__tile')).toHaveCount(1)
+  await expect(initialDraft.locator('.eqt-taglist__impact-count')).toHaveText(['1', '1'])
   await page.setViewportSize({ width: 960, height: 600 })
   const refresh = await page.locator('.eqt-preview__controls .eqt-panel__btn').boundingBox()
   expect(refresh).not.toBeNull()
@@ -182,6 +184,7 @@ test('編輯區可拖曳收合並保留草稿與預覽', async ({ page }) => {
   await positiveRow.locator('.eqt-number-field__input').press('Enter')
   await expect(page.locator('.eqt-preview__col--left .eqt-preview__tile')).toHaveCount(2)
   await expect(page.locator('.eqt-preview__col--right .eqt-preview__tile')).toHaveCount(0)
+  await expect(initialDraft.locator('.eqt-taglist__impact-count')).toHaveText(['2', '0'])
 
   await initialDraft.locator('.eqt-number-field__input').fill('25')
   await initialDraft.locator('.eqt-number-field__input').press('Enter')

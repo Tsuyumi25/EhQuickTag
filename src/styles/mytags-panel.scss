@@ -561,6 +561,21 @@
 
 .eqt-taglist__ns { font-size: var(--eqt-fs-xs); opacity: 0.7; }
 
+.eqt-taglist__impact {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: calc(var(--eqt-border-width) * 2);
+  min-width: 0;
+}
+
+.eqt-taglist__impact-count {
+  color: var(--eqt-text);
+  font-size: var(--eqt-fs-sm);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
 .eqt-taglist__bar {
   display: flex;
   overflow: hidden;
