@@ -802,9 +802,13 @@
 
   .eqt-preview__tile { margin-bottom: 0; }
 
+  .eqt-preview__cover {
+    background: #000;
+  }
+
   .eqt-preview__cover img {
     aspect-ratio: 3 / 4;
-    object-fit: cover;
+    object-fit: contain;
   }
 }
 
