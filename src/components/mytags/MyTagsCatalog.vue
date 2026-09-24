@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, shallowRef, watch } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 import { getFallbackEntries, type TagEntry } from '@/services/tagDb'
 import { useTagSuggestions } from '@/composables/useTagSuggestions'
 import { t } from '@/composables/useI18n'
@@ -22,7 +22,6 @@ const props = defineProps<{
   impact: TagImpact
   setColors: Record<string, string>
   busy: boolean
-  focusRequest: number
   previewed: boolean
 }>()
 
@@ -42,7 +41,6 @@ const name = ref(props.full)
 watch(() => props.full, (full) => {
   if (name.value.trim() !== full) name.value = full
 })
-const inputEl = ref<HTMLInputElement | null>(null)
 const selectedIdx = ref(0)
 const fallbackEntries = shallowRef<TagEntry[]>([])
 const selectedNs = ref<string | null>(null)
@@ -56,11 +54,10 @@ const { dbReady, suggestions } = useTagSuggestions({
 
 watch(suggestions, () => { selectedIdx.value = 0 })
 watch(
-  () => [props.focusRequest, dbReady.value] as const,
-  ([request, ready]) => {
+  dbReady,
+  (ready) => {
     if (!ready) return
     if (!fallbackEntries.value.length) fallbackEntries.value = getFallbackEntries()
-    if (request) void nextTick(() => inputEl.value?.focus())
   },
   { immediate: true },
 )
@@ -191,7 +188,6 @@ function commit(): void {
       <div class="eqt-tag-catalog__candidates">
         <div class="eqt-tag-catalog__search">
           <input
-            ref="inputEl"
             v-model="query"
             class="eqt-tag-catalog__search-input"
             type="text"

@@ -1,7 +1,7 @@
 @use 'buttons' as *;
 
 // /mytags 面板。頂部 control bar 在插件控制與 EH 原生導覽之間切換；下方工作區保持
-// 掛載，標籤清單、可收合的新增欄與預覽各自捲動。
+// 掛載，標籤清單、可收合的編輯區與預覽各自捲動。
 .eqt-panel {
   position: fixed;
   inset: 0;
@@ -20,23 +20,34 @@
 .eqt-panel__topbar {
   position: relative;
   z-index: 30;
-  display: flex;
+  display: grid;
   flex: 0 0 auto;
-  flex-wrap: wrap;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: calc(var(--eqt-checkbox-size) / 4);
   margin-bottom: calc(var(--eqt-checkbox-size) / 3);
 
-  > .eqt-panel__btn {
+  .eqt-panel__btn {
     flex: 0 0 auto;
     height: calc(var(--eqt-checkbox-size) + var(--eqt-border-width) * 2);
     box-sizing: border-box;
   }
+
+  > .eqt-panel__field {
+    justify-self: end;
+  }
+}
+
+.eqt-panel__tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--eqt-checkbox-size) / 4);
+  min-width: 0;
 }
 
 
-.eqt-panel__eh-toggle,
-.eqt-panel__create-toggle {
+.eqt-panel__eh-toggle {
   border-color: var(--eqt-border);
 }
 
@@ -92,13 +103,13 @@
 }
 
 
-// 高度由 workspace 給（grid 的預設 stretch）。min-height: 0 讓裡面的捲動區能真的
-// 收縮——沒有它 flex item 會被內容撐開
+// min-height: 0 讓清單的捲動區能在 splitter 分配的高度內收縮。
 .eqt-panel__side {
   display: flex;
   flex-direction: column;
   gap: 8px;
   min-width: 0;
+  height: 100%;
   min-height: 0;
   padding: 8px;
   border: var(--eqt-border-width) solid var(--eqt-divider);
@@ -141,19 +152,112 @@
 
 // ⛔ 不要加 align-items: start。每一欄要吃滿 workspace 的高度，各自在內部捲。
 .eqt-panel__workspace {
-  display: grid;
   flex: 1 1 auto;
-  grid-template-columns:
-    minmax(calc(var(--eqt-checkbox-size) * 14), 0.8fr)
-    minmax(0, 2fr);
-  gap: 12px;
+  min-width: 0;
+  min-height: 0;
+}
+
+.eqt-panel__side-panel,
+.eqt-panel__main-panel,
+.eqt-panel__splitter,
+.eqt-panel__editor-panel {
+  min-width: 0;
+  min-height: 0;
+}
+
+.eqt-panel__editor-panel > .eqt-tag-catalog {
+  height: 100%;
+}
+
+.eqt-panel__divider {
+  display: flex;
+  flex: 0 0 var(--eqt-checkbox-size);
+  flex-direction: column;
+  gap: calc(var(--eqt-checkbox-size) / 4);
   min-height: 0;
 
-  &--create {
-    grid-template-columns:
-      minmax(calc(var(--eqt-checkbox-size) * 14), 0.8fr)
-      minmax(0, 1.3fr)
-      minmax(0, 1.45fr);
+  &[data-orientation='vertical'] {
+    flex-direction: row;
+
+    .eqt-panel__panel-toggle > svg { transform: rotate(90deg); }
+  }
+}
+
+.eqt-panel__panel-toggle {
+  @include btn-ghost;
+  flex: 0 0 var(--eqt-checkbox-size);
+  width: var(--eqt-checkbox-size);
+  height: var(--eqt-checkbox-size);
+  padding: var(--eqt-border-width);
+
+  &,
+  &:hover:not(:disabled) {
+    background-clip: content-box;
+  }
+}
+
+.eqt-panel__resize-handle {
+  --eqt-splitter-border-color: var(--eqt-border);
+  --eqt-splitter-thumb-color: var(--eqt-grip);
+  --eqt-splitter-thumb-size: calc(var(--eqt-checkbox-size) / 3);
+
+  position: relative;
+  display: grid;
+  flex: 1 1 auto;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: col-resize;
+  outline: none;
+
+  &:focus-visible,
+  &[data-state='drag'] {
+    --eqt-splitter-border-color: var(--eqt-text);
+    --eqt-splitter-thumb-color: var(--eqt-text-hint);
+  }
+
+  &::before {
+    position: absolute;
+    inset-block: 0;
+    width: var(--eqt-border-width);
+    background: var(--eqt-splitter-border-color);
+    content: '';
+  }
+
+  .eqt-panel__resize-grip {
+    position: relative;
+    z-index: 1;
+    width: var(--eqt-splitter-thumb-size);
+    height: var(--eqt-checkbox-size);
+    border: calc(var(--eqt-border-width) / 2) solid var(--eqt-border);
+    border-radius: var(--eqt-checkbox-size);
+    background: var(--eqt-splitter-thumb-color);
+    box-shadow: var(--eqt-shadow-popover);
+  }
+
+  &[data-disabled] {
+    cursor: default;
+
+    .eqt-panel__resize-grip { visibility: hidden; }
+  }
+
+  &[data-orientation='vertical'] {
+    cursor: row-resize;
+
+    &::before {
+      inset-block: auto;
+      inset-inline: 0;
+      width: auto;
+      height: var(--eqt-border-width);
+    }
+
+    .eqt-panel__resize-grip {
+      width: var(--eqt-checkbox-size);
+      height: var(--eqt-splitter-thumb-size);
+    }
   }
 }
 
@@ -515,6 +619,7 @@
   flex: 1 1 auto;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+  min-width: 0;
   min-height: 0;
 
 }
@@ -522,6 +627,7 @@
 .eqt-preview__col {
   display: flex;
   flex-direction: column;
+  min-width: 0;
   min-height: 0;
   padding: 6px 8px;
   border-radius: var(--eqt-radius-sm);
@@ -557,14 +663,10 @@
 
 .eqt-preview__grid {
   display: grid;
-  // 新增欄打開時每側兩欄，收起後每側四欄。新增欄只改可用寬度，不換預覽 instance。
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, calc(var(--eqt-checkbox-size) * 5)), 1fr));
   gap: 6px;
 }
 
-.eqt-preview--create .eqt-preview__grid {
-  grid-template-columns: repeat(2, 1fr);
-}
 
 .eqt-preview__tile {
   display: flex;
@@ -678,29 +780,8 @@
 .eqt-preview__neg { color: var(--eqt-danger); font-variant-numeric: tabular-nums; }
 .eqt-preview__pos { color: var(--eqt-green); font-variant-numeric: tabular-nums; }
 
-@media (max-width: 900px) {
-  .eqt-panel {
-    overflow-y: auto;
-  }
-
-  .eqt-panel__workspace {
-    display: flex;
-    flex: 0 0 auto;
-    flex-direction: column;
-    min-height: auto;
-  }
-
-  .eqt-panel__side,
-  .eqt-tag-catalog,
-  .eqt-panel__preview-stack {
-    flex: 0 0 calc(100dvh - var(--eqt-checkbox-size) * 3);
-    min-height: calc(var(--eqt-checkbox-size) * 16);
-  }
-}
 
 @media (max-width: 700px) {
-  .eqt-panel__topbar > .eqt-panel__spacer { display: none; }
-
   .eqt-panel__field {
     flex-basis: 100%;
     justify-content: flex-end;

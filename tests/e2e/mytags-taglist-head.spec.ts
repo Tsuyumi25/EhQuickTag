@@ -11,50 +11,6 @@ test.beforeEach(async ({ page }) => {
   await expect(page.locator('.eqt-panel__side > .eqt-taglist')).toBeVisible()
 })
 
-test('全域控制列在工作區上方，標籤清單保留兩行自己的控制', async ({ page }) => {
-  const topbar = page.locator('.eqt-panel__topbar')
-  const actions = topbar.locator(':scope > .eqt-panel__btn')
-  await expect(actions).toHaveCount(3)
-  await expect(actions.nth(0)).toHaveAccessibleName('設定')
-  await expect(actions.nth(1)).toHaveAccessibleName('E站頂部欄')
-  await expect(actions.nth(2)).toHaveAccessibleName('新增標籤 >')
-  const [ehBorder, createBorder, standardBorder] = await topbar.evaluate((element) => {
-    const probe = document.createElement('span')
-    probe.style.color = 'var(--eqt-border)'
-    document.body.appendChild(probe)
-    const resolved = getComputedStyle(probe).color
-    probe.remove()
-    const buttons = element.querySelectorAll('.eqt-panel__eh-toggle, .eqt-panel__create-toggle')
-    return [
-      getComputedStyle(buttons[0]).borderTopColor,
-      getComputedStyle(buttons[1]).borderTopColor,
-      resolved,
-    ]
-  })
-  expect(ehBorder).toBe(standardBorder)
-  expect(createBorder).toBe(standardBorder)
-  const addBox = await actions.nth(2).boundingBox()
-  const thresholdBox = await topbar.locator('.eqt-panel__field').boundingBox()
-  expect(addBox).not.toBeNull()
-  expect(thresholdBox).not.toBeNull()
-  expect(thresholdBox!.x).toBeGreaterThanOrEqual(addBox!.x + addBox!.width)
-  expect(thresholdBox!.x).toBeLessThan((await topbar.boundingBox())!.width / 2)
-  await expect(topbar.locator('.eqt-panel__field')).toContainText('軟過濾閾值')
-
-  await expect(page.locator('.eqt-taglist__head > div')).toHaveCount(2)
-  await expect(page.locator('.eqt-taglist__head-main > *')).toHaveCount(2)
-  await expect(page.locator('.eqt-taglist__head-main > *').nth(0)).toHaveClass(/eqt-taglist__check-all/)
-  await expect(page.locator('.eqt-taglist__head-main > *').nth(1)).toHaveClass(/eqt-panel__setpick/)
-  await expect(page.locator('.eqt-taglist__add-tag')).toHaveCount(0)
-
-  const filters = page.locator('.eqt-taglist__head-filters > *')
-  await expect(filters).toHaveCount(4)
-  await expect(filters.nth(0)).toHaveText('關注')
-  await expect(filters.nth(1)).toHaveText('隱藏')
-  await expect(filters.nth(2)).toHaveClass(/eqt-taglist__sortpick/)
-  await expect(filters.nth(3)).toHaveClass(/eqt-taglist__statuspick/)
-})
-
 test('E站頂部欄借入現場 #nb 與 #lb，插件控制與工作區維持原位', async ({ page }) => {
   const outer = page.locator('#outer')
   const workspace = page.locator('.eqt-panel__workspace')
@@ -96,7 +52,7 @@ test('E站頂部欄借入現場 #nb 與 #lb，插件控制與工作區維持原�
   expect(workspaceAfter!.y).toBe(workspaceBefore!.y)
   expect(overlay!.y + overlay!.height).toBeGreaterThan(workspaceAfter!.y)
   await expect(page.locator('.eqt-panel__btn--settings')).toBeVisible()
-  await expect(page.locator('.eqt-panel__create-toggle')).toBeVisible()
+  await expect(page.locator('.eqt-panel__resize-handle--editor')).toBeVisible()
   await expect(page.locator('.eqt-panel__topbar > .eqt-panel__field')).toBeVisible()
   await ehTopbar.locator('#nb a').first().click()
   expect(await page.evaluate(() => (
@@ -154,11 +110,7 @@ test('排序選單切換負權重、正權重與有效顏色順序', async ({ pa
 })
 
 
-test('新增欄從候選建立草稿，左右兩欄都能接管同一份預覽', async ({ page }) => {
-  const openCreate = page.getByRole('button', { name: '新增標籤 >', exact: true })
-  await openCreate.click()
-  const createToggle = page.getByRole('button', { name: '新增標籤 v', exact: true })
-  await expect(createToggle).toHaveAttribute('aria-expanded', 'true')
+test('編輯區可拖曳收合並保留草稿與預覽', async ({ page }) => {
   const search = page.locator('.eqt-tag-catalog__search-input')
   await expect(search).toBeEnabled()
   const initialDraft = page.locator('.eqt-tag-catalog__draft')
@@ -219,9 +171,6 @@ test('新增欄從候選建立草稿，左右兩欄都能接管同一份預覽',
   await expect(initialDraft).toHaveClass(/eqt-tag-catalog__draft--previewed/)
   await expect(page.locator('.eqt-preview__col--left .eqt-preview__tile')).toHaveCount(1)
   await expect(page.locator('.eqt-preview__col--right .eqt-preview__tile')).toHaveCount(1)
-  await expect.poll(() => page.locator('.eqt-preview__col--left .eqt-preview__grid').evaluate(
-    (element) => getComputedStyle(element).gridTemplateColumns.split(' ').length,
-  )).toBe(2)
   await page.setViewportSize({ width: 960, height: 600 })
   const refresh = await page.locator('.eqt-preview__controls .eqt-panel__btn').boundingBox()
   expect(refresh).not.toBeNull()
@@ -234,19 +183,115 @@ test('新增欄從候選建立草稿，左右兩欄都能接管同一份預覽',
   await expect(page.locator('.eqt-preview__col--left .eqt-preview__tile')).toHaveCount(2)
   await expect(page.locator('.eqt-preview__col--right .eqt-preview__tile')).toHaveCount(0)
 
-  await createToggle.click()
-  await expect(page.locator('.eqt-tag-catalog')).toBeHidden()
-  await expect.poll(() => page.locator('.eqt-preview__col--left .eqt-preview__grid').evaluate(
-    (element) => getComputedStyle(element).gridTemplateColumns.split(' ').length,
-  )).toBe(4)
-  const reopen = page.getByRole('button', { name: '新增標籤 >', exact: true })
-  await reopen.click()
-  await expect(page.locator('.eqt-tag-catalog')).toBeVisible()
-  await expect(search).toBeFocused()
+  await initialDraft.locator('.eqt-number-field__input').fill('25')
+  await initialDraft.locator('.eqt-number-field__input').press('Enter')
+  const handle = page.locator('.eqt-panel__resize-handle--editor')
+  const editor = page.locator('.eqt-panel__editor-panel')
+  const preview = page.locator('.eqt-panel__preview-stack')
+  const sidebar = page.locator('.eqt-panel__side')
+  const grid = page.locator('.eqt-preview__col--left .eqt-preview__grid')
+  const columnsBefore = await grid.evaluate((element) =>
+    getComputedStyle(element).gridTemplateColumns.split(' ').length)
+  const groupBox = (await page.locator('.eqt-panel__splitter').boundingBox())!
+  const sidebarBefore = (await sidebar.boundingBox())!
+  const previewBefore = (await preview.boundingBox())!
+  const handleBefore = (await handle.boundingBox())!
+  const dragY = handleBefore.y + handleBefore.height / 2
+  await page.mouse.move(handleBefore.x + handleBefore.width / 2, dragY)
+  await page.mouse.down()
+  await page.mouse.move(groupBox.x + groupBox.width * 0.2, dragY, { steps: 8 })
+  await expect.poll(async () => (await editor.boundingBox())!.width).toBeGreaterThan(groupBox.width * 0.15)
+  await expect.poll(async () => (await editor.boundingBox())!.width).toBeLessThan(groupBox.width * 0.25)
+  expect((await page.locator('.eqt-tag-catalog').boundingBox())!.width).toBe((await editor.boundingBox())!.width)
+  await page.mouse.move(groupBox.x + groupBox.width * 0.05, dragY, { steps: 8 })
+  await expect.poll(async () => (await editor.boundingBox())!.width).toBeGreaterThan(0)
+  await expect.poll(async () => (await editor.boundingBox())!.width).toBeLessThan(groupBox.width * 0.1)
+  expect((await page.locator('.eqt-tag-catalog').boundingBox())!.width).toBe((await editor.boundingBox())!.width)
+  const visibleEditor = (await editor.boundingBox())!
+  expect(await page.locator('.eqt-tag-catalog').evaluate((element, point) =>
+    element.contains(document.elementFromPoint(point.x, point.y)), {
+    x: visibleEditor.x + visibleEditor.width + handleBefore.width + 2,
+    y: dragY,
+  })).toBe(false)
+  await page.mouse.move(groupBox.x, dragY, { steps: 12 })
+  await page.mouse.up()
+  await expect.poll(async () => (await editor.boundingBox())!.width).toBe(0)
+  await expect(handle).toBeVisible()
+  await expect(page.locator('.eqt-tag-catalog')).toHaveAttribute('inert', '')
+  await initialDraft.locator('.eqt-tag-catalog__name').evaluate((element) => (element as HTMLElement).focus())
+  await expect(initialDraft.locator('.eqt-tag-catalog__name')).not.toBeFocused()
+  expect((await sidebar.boundingBox())!.width).toBe(sidebarBefore.width)
+  expect((await preview.boundingBox())!.width).toBeGreaterThan(previewBefore.width)
+  await expect.poll(() => grid.evaluate((element) =>
+    getComputedStyle(element).gridTemplateColumns.split(' ').length)).toBeGreaterThan(columnsBefore)
+  await expect(page.locator('.eqt-preview__titlerow .eqt-taglist__chip')).toHaveAttribute('title', 'female:sample tag')
+
+  const collapsedHandle = (await handle.boundingBox())!
+  await page.mouse.move(collapsedHandle.x + collapsedHandle.width / 2, dragY)
+  await page.mouse.down()
+  await page.mouse.move(groupBox.x + groupBox.width * 0.05, dragY, { steps: 8 })
+  await expect.poll(async () => (await editor.boundingBox())!.width).toBeGreaterThan(0)
+  await expect.poll(async () => (await editor.boundingBox())!.width).toBeLessThan(groupBox.width * 0.1)
+  await page.mouse.move(groupBox.x + groupBox.width * 0.45, dragY, { steps: 12 })
+  await page.mouse.up()
+  await expect.poll(async () => (await editor.boundingBox())!.width).toBeGreaterThan(0)
+  await expect(page.locator('.eqt-tag-catalog')).not.toHaveAttribute('inert', '')
+  await expect(search).toHaveValue('sample tag')
+  await expect(initialDraft.locator('.eqt-tag-catalog__name')).toHaveValue('female:sample tag')
+  await expect(initialDraft.locator('.eqt-number-field__input')).toHaveValue('25')
+  expect((await sidebar.boundingBox())!.width).toBe(sidebarBefore.width)
+})
+
+test('標籤清單可獨立拖曳收合，恢復後保留目前編輯對象', async ({ page }) => {
+  const name = page.locator('.eqt-tag-catalog__name')
+  await name.fill('parody:unlisted tag')
+  const handle = page.locator('.eqt-panel__resize-handle--side')
+  const side = page.locator('.eqt-panel__side-panel')
+  const main = page.locator('.eqt-panel__main-panel')
+  const workspace = (await page.locator('.eqt-panel__workspace').boundingBox())!
+  const start = (await handle.boundingBox())!
+  const sideBefore = (await side.boundingBox())!.width
+  const mainBefore = (await main.boundingBox())!.width
+  const y = start.y + start.height / 2
+  await page.mouse.move(start.x + start.width / 2, y)
+  await page.mouse.down()
+  await page.mouse.move(workspace.x + workspace.width * 0.4, y, { steps: 8 })
+  await expect.poll(async () => (await side.boundingBox())!.width).toBeGreaterThan(sideBefore)
+  expect((await main.boundingBox())!.width).toBeLessThan(mainBefore)
+  await page.mouse.move(workspace.x + workspace.width * 0.05, y, { steps: 8 })
+  await expect.poll(async () => (await side.boundingBox())!.width).toBeGreaterThan(0)
+  await expect.poll(async () => (await side.boundingBox())!.width).toBeLessThan(workspace.width * 0.1)
+  expect((await page.locator('.eqt-panel__side').boundingBox())!.width).toBe((await side.boundingBox())!.width)
+  await page.mouse.move(workspace.x, y, { steps: 8 })
+  await page.mouse.up()
+  await expect.poll(async () => (await side.boundingBox())!.width).toBe(0)
+  await expect(handle).toBeVisible()
+  await expect(page.locator('.eqt-panel__side')).toHaveAttribute('inert', '')
+  await expect(name).toHaveValue('parody:unlisted tag')
+
+  const collapsed = (await handle.boundingBox())!
+  await page.mouse.move(collapsed.x + collapsed.width / 2, y)
+  await page.mouse.down()
+  await page.mouse.move(workspace.x + workspace.width * 0.28, y, { steps: 8 })
+  await page.mouse.up()
+  await expect.poll(async () => (await side.boundingBox())!.width).toBeGreaterThan(0)
+  await expect(page.locator('.eqt-panel__side')).not.toHaveAttribute('inert', '')
+  await expect(name).toHaveValue('parody:unlisted tag')
+
+  await page.setViewportSize({ width: 800, height: 800 })
+  await expect(handle).toHaveAttribute('data-orientation', 'vertical')
+  const verticalHandle = (await handle.boundingBox())!
+  const heightBefore = (await side.boundingBox())!.height
+  const x = verticalHandle.x + verticalHandle.width / 2
+  await page.mouse.move(x, verticalHandle.y + verticalHandle.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(x, verticalHandle.y + 80, { steps: 8 })
+  await page.mouse.up()
+  await expect.poll(async () => (await side.boundingBox())!.height).toBeGreaterThan(heightBefore)
+  await expect(name).toHaveValue('parody:unlisted tag')
 })
 
 test('Gallery 操作列固定在捲動區外，標題緊接封面', async ({ page }) => {
-  await page.getByRole('button', { name: '新增標籤 >', exact: true }).click()
   const search = page.locator('.eqt-tag-catalog__search-input')
   await search.fill('sample tag')
   await page.locator('.eqt-popup__suggestion').filter({ hasText: 'female:sample tag' }).click()
@@ -280,7 +325,6 @@ test('Gallery 操作列固定在捲動區外，標題緊接封面', async ({ pag
 })
 
 test('Catalog 搜尋結果與左欄解析成同一個既有標籤實體', async ({ page }) => {
-  await page.getByRole('button', { name: '新增標籤 >', exact: true }).click()
   const search = page.locator('.eqt-tag-catalog__search-input')
   await search.fill('negative-sample')
   await page.locator('.eqt-popup__suggestion').filter({
@@ -306,7 +350,6 @@ test('Catalog 搜尋結果與左欄解析成同一個既有標籤實體', async 
 })
 
 test('既有標籤從 Catalog 送出移動動作', async ({ page }) => {
-  await page.getByRole('button', { name: '新增標籤 >', exact: true }).click()
   const positiveRow = page.locator('.eqt-taglist__row').filter({
     has: page.locator('.eqt-taglist__chip[title="male:positive-sample"]'),
   })
@@ -329,7 +372,6 @@ test('既有標籤從 Catalog 送出移動動作', async ({ page }) => {
 
 test('新增草稿會送到指定 tag set 並保留設定', async ({ page }) => {
   const search = page.locator('.eqt-tag-catalog__search-input')
-  await page.getByRole('button', { name: '新增標籤 >', exact: true }).click()
   await expect(search).toBeEnabled()
   await search.fill('sample tag')
   await page.locator('.eqt-popup__suggestion').filter({ hasText: 'female:sample tag' }).click()
@@ -358,7 +400,6 @@ test('新增草稿會送到指定 tag set 並保留設定', async ({ page }) => 
 })
 
 test('名稱 input 可新增候選清單外的 tag，送出前保留完整名稱與設定', async ({ page }) => {
-  await page.locator('.eqt-panel__create-toggle').click()
   const catalog = page.locator('.eqt-tag-catalog__draft')
   const name = catalog.locator('.eqt-tag-catalog__name')
   const create = catalog.locator('.eqt-tag-catalog__create')
@@ -394,7 +435,6 @@ test('名稱 input 在既有 tag 與草稿間切換，focus 接管預覽且輸�
     }
     if (new URL(request.url()).searchParams.has('f_search')) samples.push(request.url())
   })
-  await page.locator('.eqt-panel__create-toggle').click()
   const catalog = page.locator('.eqt-tag-catalog__draft')
   const name = catalog.locator('.eqt-tag-catalog__name')
   const create = catalog.locator('.eqt-tag-catalog__create')
@@ -430,4 +470,33 @@ test('名稱 input 在既有 tag 與草稿間切換，focus 接管預覽且輸�
   await name.press('Enter')
   await sampleRequest
   expect(writes).toEqual([])
+})
+
+test('splitter 頂端按鈕展開回預設比例，拖曳後仍可用滑鼠與鍵盤收合', async ({ page }) => {
+  for (const area of ['side', 'editor']) {
+    const panel = page.locator(`.eqt-panel__${area}-panel`)
+    const handle = page.locator(`.eqt-panel__resize-handle--${area}`)
+    const toggle = page.locator(`.eqt-panel__panel-toggle--${area}`)
+    const defaultWidth = (await panel.boundingBox())!.width
+    const handleBox = (await handle.boundingBox())!
+    const x = handleBox.x + handleBox.width / 2
+    const y = handleBox.y + handleBox.height / 2
+    await page.mouse.move(x, y)
+    await page.mouse.down()
+    await page.mouse.move(x + 80, y, { steps: 8 })
+    await page.mouse.up()
+    await expect.poll(async () => (await panel.boundingBox())!.width).toBeGreaterThan(defaultWidth)
+
+    await toggle.click()
+    await expect.poll(async () => (await panel.boundingBox())!.width).toBe(0)
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    await toggle.click()
+    await expect.poll(async () => Math.abs((await panel.boundingBox())!.width - defaultWidth)).toBeLessThan(1)
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true')
+
+    await toggle.press('Enter')
+    await expect.poll(async () => (await panel.boundingBox())!.width).toBe(0)
+    await toggle.press('Space')
+    await expect.poll(async () => Math.abs((await panel.boundingBox())!.width - defaultWidth)).toBeLessThan(1)
+  }
 })

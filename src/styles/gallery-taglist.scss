@@ -163,7 +163,6 @@ $eqt-gallery-height: 330px;
   color: #FF3333;
 }
 
-// === Action 區 ===
 // 4 欄 × 2 列 grid：search 跨 col 1 / row 1-2、vote 跨 col 4 / row 1-2，兩個大方塊
 // 把誤觸代價較高的 vote 從 search 拉開。中間欄第 1 列 add（跨兩 col 撐滿）、
 // 第 2 列 clear + settings
@@ -236,4 +235,5 @@ $eqt-gallery-height: 330px;
     grid-column: 3;
     grid-row: 2;
   }
+
 }

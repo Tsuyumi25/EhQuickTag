@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { Settings } from '@lucide/vue'
+import { useMediaQuery } from '@vueuse/core'
+import { ArrowLeftFromLine, ArrowRightFromLine, Settings } from '@lucide/vue'
+import { SplitterGroup, SplitterPanel, SplitterResizeHandle } from 'reka-ui'
 import { t } from '@/composables/useI18n'
 import { useEqtToast } from '@/composables/useEqtToast'
 import MyTagsTagList from '@/components/mytags/MyTagsTagList.vue'
@@ -48,8 +50,10 @@ const props = defineProps<{ host: EhMyTagsHost }>()
 
 const toast = useEqtToast()
 
-/** 一次「更新樣本」最多翻幾頁 EH */
+/** 一次「抓取樣本」最多翻幾頁 EH */
 const MAX_FETCH = 6
+const SIDE_DEFAULT_SIZE = 28
+const EDITOR_DEFAULT_SIZE = 45
 type PreviewTarget = { kind: 'saved' | 'draft'; full: string } | null
 type NewTagDraft = Omit<NewTagInput, 'full'> & { tagSet: string }
 type NewTagSubmission = NewTagInput & { tagSet: string }
@@ -69,13 +73,14 @@ const otherSets = ref<TagSetSnapshot[]>([])
 const edits = ref<EditMap>({})
 const store = ref<SampleStore>(emptyStore())
 const ehTopbarOpen = ref(false)
-const createOpen = ref(false)
+const narrowLayout = useMediaQuery('(max-width: 900px)')
+const sidePanel = ref<InstanceType<typeof SplitterPanel> | null>(null)
+const editorPanel = ref<InstanceType<typeof SplitterPanel> | null>(null)
 const catalogTag = ref('')
 const previewTarget = ref<PreviewTarget>(null)
 const draft = ref<NewTagDraft>(emptyDraft())
 const moveTarget = ref(props.host.currentSet)
 const createBusy = ref(false)
-const catalogFocusRequest = ref(0)
 
 const filterThreshold = ref<number | null>(null)
 /** EH 上現在的門檻。跟 filterThreshold 不一樣就代表這格也還沒送出去 */
@@ -529,11 +534,6 @@ function toggleEhTopbar(): void {
   ehTopbarOpen.value = !ehTopbarOpen.value
 }
 
-function toggleCreate(): void {
-  createOpen.value = !createOpen.value
-  if (createOpen.value) catalogFocusRequest.value += 1
-}
-
 async function createNewTag(current: NewTagSubmission): Promise<void> {
   if (createBusy.value) return
   createBusy.value = true
@@ -603,30 +603,25 @@ watch(edits, () => { void flush() }, { deep: true })
 <template>
   <section class="eqt-panel">
     <header class="eqt-panel__topbar" :aria-label="t('panel.navLabel')">
-      <button
-        type="button" class="eqt-panel__btn eqt-panel__btn--settings"
-        @click="emit('openSettings')"
-      >
-        <Settings :size="14" aria-hidden="true" />
-        {{ t('settings.title') }}
-      </button>
-      <button
-        type="button"
-        class="eqt-panel__btn eqt-panel__eh-toggle"
-        :aria-expanded="ehTopbarOpen"
-        aria-controls="eqt-eh-topbar"
-        @click="toggleEhTopbar"
-      >{{ t('panel.ehTopbar') }}</button>
+      <div class="eqt-panel__tools">
+        <button
+          type="button" class="eqt-panel__btn eqt-panel__btn--settings"
+          @click="emit('openSettings')"
+        >
+          <Settings :size="14" aria-hidden="true" />
+          {{ t('settings.title') }}
+        </button>
+        <button
+          type="button"
+          class="eqt-panel__btn eqt-panel__eh-toggle"
+          :aria-expanded="ehTopbarOpen"
+          aria-controls="eqt-eh-topbar"
+          @click="toggleEhTopbar"
+        >{{ t('panel.ehTopbar') }}</button>
+      </div>
 
       <MyTagsEhTopbar v-if="ehTopbarOpen" :host="host" />
 
-      <button
-        type="button"
-        class="eqt-panel__btn eqt-panel__create-toggle"
-        :aria-expanded="createOpen"
-        aria-controls="eqt-tag-catalog"
-        @click="toggleCreate"
-      >{{ t('taglist.addTag') }} {{ createOpen ? 'v' : '>' }}</button>
       <label class="eqt-panel__field" :class="{ 'eqt-panel__field--dirty': thresholdDirty }">
         {{ t('bars.threshold') }}
         <EqtNumberField
@@ -637,11 +632,17 @@ watch(edits, () => { void flush() }, { deep: true })
       </label>
     </header>
 
-    <div
-      class="eqt-panel__workspace"
-      :class="{ 'eqt-panel__workspace--create': createOpen }"
-    >
-      <aside class="eqt-panel__side">
+    <SplitterGroup :direction="narrowLayout ? 'vertical' : 'horizontal'" class="eqt-panel__workspace">
+      <SplitterPanel
+        ref="sidePanel"
+        v-slot="{ isCollapsed }"
+        class="eqt-panel__side-panel"
+        collapsible
+        :collapsed-size="0"
+        :min-size="0"
+        :default-size="SIDE_DEFAULT_SIZE"
+      >
+      <aside class="eqt-panel__side" :inert="isCollapsed" :aria-hidden="isCollapsed || undefined">
         <!-- 清單吃掉側欄剩下的高度，自己捲。側欄本身貼著視窗，所以底下那條永遠在 -->
         <MyTagsTagList
           v-model:filter="filter"
@@ -668,53 +669,110 @@ watch(edits, () => { void flush() }, { deep: true })
           </div>
         </footer>
       </aside>
-
-      <MyTagsCatalog
-        v-if="createOpen"
-        id="eqt-tag-catalog"
-        :full="catalogTag"
-        :state="catalogState"
-        :target-set="catalogRow ? moveTarget : draft.tagSet"
-        :source-set="catalogRow?.tagSet ?? null"
-        :sets="host.tagSets"
-        :impact="catalogImpact"
-        :set-colors="setColors"
-        :focus-request="catalogFocusRequest"
-        :busy="createBusy || !!writeBusy"
-        :previewed="!!catalogTag && previewTarget?.full === catalogTag"
-        @update:target-set="setCatalogTarget"
-        @update:full="setCatalogFull"
-        @patch="patchCatalog"
-        @pick="pickCandidate"
-        @preview="previewCatalog"
-        @confirm="refreshPreview"
-        @move="moveCatalogTag"
-        @create="createNewTag"
-      />
-
-      <div class="eqt-panel__preview-stack">
-        <MyTagsPreview
-          :class="{ 'eqt-preview--create': createOpen }"
-          v-model:marked-only="markedOnly"
-          :left="previewLeftItems" :right="previewRightItems"
-          :verdicts="store.verdicts"
-          :selected="previewTarget?.full ?? null" :selected-style="previewSelectedStyle"
-          :refresh-busy="sampleBusy" :threshold="activeThreshold"
-          :opened-gid="openedGallery?.gid ?? null"
-          @clear-tag="clearPreviewTarget" @refresh="refreshPreview" @set-verdict="setVerdict"
-          @open="openGallery"
-        />
-
-        <MyTagsGallery
-          v-if="openedGallery"
-          :detail="openedGallery" :outcome="openedOutcome"
-          :verdict="store.verdicts[String(openedGallery.gid)]" :loading="galleryBusy"
-          :threshold="activeThreshold"
-          @close="openedGallery = null"
-          @pick-tag="select"
-          @set-verdict="(v) => openedGallery && setVerdict(openedGallery.gid, v)"
-        />
+      </SplitterPanel>
+      <div class="eqt-panel__divider" :data-orientation="narrowLayout ? 'vertical' : 'horizontal'">
+        <button
+          type="button"
+          class="eqt-panel__panel-toggle eqt-panel__panel-toggle--side"
+          :aria-expanded="!sidePanel?.isCollapsed"
+          :aria-label="t(sidePanel?.isCollapsed ? 'panel.expandTagList' : 'panel.collapseTagList')"
+          :title="t(sidePanel?.isCollapsed ? 'panel.expandTagList' : 'panel.collapseTagList')"
+          @mousedown.stop
+          @touchstart.stop
+          @click="sidePanel?.isCollapsed ? sidePanel.resize(SIDE_DEFAULT_SIZE) : sidePanel?.collapse()"
+        >
+          <ArrowRightFromLine v-if="sidePanel?.isCollapsed" :size="14" aria-hidden="true" />
+          <ArrowLeftFromLine v-else :size="14" aria-hidden="true" />
+        </button>
+        <SplitterResizeHandle
+          class="eqt-panel__resize-handle eqt-panel__resize-handle--side"
+          :aria-label="t('panel.resizeTagList')"
+          :title="t('panel.resizeTagList')"
+        >
+          <span class="eqt-panel__resize-grip" aria-hidden="true" />
+        </SplitterResizeHandle>
       </div>
-    </div>
+
+      <SplitterPanel :min-size="30" :default-size="100 - SIDE_DEFAULT_SIZE" class="eqt-panel__main-panel">
+      <SplitterGroup direction="horizontal" class="eqt-panel__splitter">
+        <SplitterPanel
+          ref="editorPanel"
+          v-slot="{ isCollapsed }"
+          class="eqt-panel__editor-panel"
+          collapsible
+          :collapsed-size="0"
+          :min-size="0"
+          :default-size="EDITOR_DEFAULT_SIZE"
+        >
+          <MyTagsCatalog
+            id="eqt-tag-catalog"
+            :inert="isCollapsed"
+            :aria-hidden="isCollapsed || undefined"
+            :full="catalogTag"
+            :state="catalogState"
+            :target-set="catalogRow ? moveTarget : draft.tagSet"
+            :source-set="catalogRow?.tagSet ?? null"
+            :sets="host.tagSets"
+            :impact="catalogImpact"
+            :set-colors="setColors"
+            :busy="createBusy || !!writeBusy"
+            :previewed="!!catalogTag && previewTarget?.full === catalogTag"
+            @update:target-set="setCatalogTarget"
+            @update:full="setCatalogFull"
+            @patch="patchCatalog"
+            @pick="pickCandidate"
+            @preview="previewCatalog"
+            @confirm="refreshPreview"
+            @move="moveCatalogTag"
+            @create="createNewTag"
+          />
+        </SplitterPanel>
+        <div class="eqt-panel__divider">
+          <button
+            type="button"
+            class="eqt-panel__panel-toggle eqt-panel__panel-toggle--editor"
+            :aria-expanded="!editorPanel?.isCollapsed"
+            :aria-label="t(editorPanel?.isCollapsed ? 'panel.expandEditor' : 'panel.collapseEditor')"
+            :title="t(editorPanel?.isCollapsed ? 'panel.expandEditor' : 'panel.collapseEditor')"
+            @mousedown.stop
+            @touchstart.stop
+            @click="editorPanel?.isCollapsed ? editorPanel.resize(EDITOR_DEFAULT_SIZE) : editorPanel?.collapse()"
+          >
+            <ArrowRightFromLine v-if="editorPanel?.isCollapsed" :size="14" aria-hidden="true" />
+            <ArrowLeftFromLine v-else :size="14" aria-hidden="true" />
+          </button>
+          <SplitterResizeHandle
+            class="eqt-panel__resize-handle eqt-panel__resize-handle--editor"
+            :aria-label="t('panel.resizeEditor')"
+            :title="t('panel.resizeEditor')"
+          >
+            <span class="eqt-panel__resize-grip" aria-hidden="true" />
+          </SplitterResizeHandle>
+        </div>
+        <SplitterPanel :min-size="30" :default-size="100 - EDITOR_DEFAULT_SIZE" class="eqt-panel__preview-stack">
+          <MyTagsPreview
+            v-model:marked-only="markedOnly"
+            :left="previewLeftItems" :right="previewRightItems"
+            :verdicts="store.verdicts"
+            :selected="previewTarget?.full ?? null" :selected-style="previewSelectedStyle"
+            :refresh-busy="sampleBusy" :threshold="activeThreshold"
+            :opened-gid="openedGallery?.gid ?? null"
+            @clear-tag="clearPreviewTarget" @refresh="refreshPreview" @set-verdict="setVerdict"
+            @open="openGallery"
+          />
+
+          <MyTagsGallery
+            v-if="openedGallery"
+            :detail="openedGallery" :outcome="openedOutcome"
+            :verdict="store.verdicts[String(openedGallery.gid)]" :loading="galleryBusy"
+            :threshold="activeThreshold"
+            @close="openedGallery = null"
+            @pick-tag="select"
+            @set-verdict="(v) => openedGallery && setVerdict(openedGallery.gid, v)"
+          />
+        </SplitterPanel>
+      </SplitterGroup>
+      </SplitterPanel>
+    </SplitterGroup>
   </section>
 </template>
