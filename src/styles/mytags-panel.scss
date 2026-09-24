@@ -14,6 +14,10 @@
   background: var(--eqt-bg);
   color: var(--eqt-text);
   font-size: var(--eqt-fs-md);
+
+  button {
+    font-weight: var(--eqt-font-weight, inherit);
+  }
 }
 
 
@@ -65,10 +69,6 @@
 
 .eqt-panel__eh-toggle {
   border-color: var(--eqt-border);
-}
-
-.eqt-panel__eh-toggle {
-  font-weight: 700;
 }
 
 // 搬進來的是 EH 現場的 #nb / #lb 節點。這塊只是 E站頂部欄在插件頁首裡的顯示位置；
@@ -302,7 +302,6 @@
     border-color: var(--eqt-danger);
     background: var(--eqt-danger);
     color: var(--eqt-text-on-color);
-    font-weight: 700;
 
     &:hover:not(:disabled) { background: var(--eqt-danger-hover); }
   }
@@ -331,12 +330,6 @@
   min-height: 0;
 }
 
-.eqt-taglist__bulk {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-}
 
 .eqt-taglist__head {
   display: flex;
@@ -386,7 +379,6 @@
 
   &--on {
     background: var(--eqt-bg-active);
-    font-weight: 700;
   }
 }
 
@@ -593,11 +585,59 @@
 .eqt-taglist__bulk {
   position: sticky;
   bottom: 0;
+  display: grid;
+  flex-shrink: 0;
+  gap: calc(var(--eqt-checkbox-size) / 4);
   padding: 7px 8px;
   border: var(--eqt-border-width) solid var(--eqt-border);
   border-radius: var(--eqt-radius-sm);
   background: var(--eqt-bg-active);
   font-size: var(--eqt-fs-sm);
+
+  button,
+  select {
+    min-width: 0;
+    height: calc(var(--eqt-checkbox-size) + var(--eqt-border-width) * 2);
+    box-sizing: border-box;
+    margin: 0;
+    padding-block: 0;
+  }
+}
+
+.eqt-taglist__bulk-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: calc(var(--eqt-checkbox-size) / 4);
+}
+
+.eqt-taglist__bulk-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: calc(var(--eqt-checkbox-size) / 4);
+
+  > .eqt-panel__btn[aria-pressed='true'] {
+    border-color: var(--eqt-bulk-on-border, var(--eqt-status-include));
+    background: var(--eqt-bulk-on-bg, var(--eqt-bg-btn-hover));
+    color: var(--eqt-bulk-on-text, inherit);
+
+    &:hover:not(:disabled) {
+      background: var(--eqt-bulk-on-bg-hover, var(--eqt-bg-btn-hover));
+    }
+  }
+}
+
+.eqt-taglist__bulk-move {
+  display: grid;
+}
+
+.eqt-taglist__bulk-delete {
+  --eqt-bulk-on-border: var(--eqt-danger);
+  --eqt-bulk-on-bg: var(--eqt-danger);
+  --eqt-bulk-on-bg-hover: var(--eqt-danger-hover);
+  --eqt-bulk-on-text: var(--eqt-text-on-color);
+
+  color: var(--eqt-danger);
 }
 
 // ---- 兩欄預覽 ----
@@ -746,13 +786,11 @@
   button:first-child.eqt-preview__pick--on {
     background: var(--eqt-danger);
     color: var(--eqt-text-on-color);
-    font-weight: 700;
   }
 
   button:last-child.eqt-preview__pick--on {
     background: var(--eqt-green);
     color: var(--eqt-text-on-color);
-    font-weight: 700;
   }
 }
 
@@ -913,13 +951,11 @@
   &--block {
     background: var(--eqt-danger);
     color: var(--eqt-text-on-color);
-    font-weight: 700;
   }
 
   &--keep {
     background: var(--eqt-green);
     color: var(--eqt-text-on-color);
-    font-weight: 700;
   }
 }
 

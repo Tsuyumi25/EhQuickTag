@@ -3,8 +3,9 @@ import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import MyTagsTagBody from '@/components/mytags/MyTagsTagBody.vue'
 import { t } from '@/composables/useI18n'
 import { TAGSET_CAPACITY, type MyTagRow, type TagSetRef } from '@/composables/useEhMyTagsHost'
-import type { EditMap, TagState } from '@/services/mytagsEdits'
+import type { EditMap, TagPatch, TagState } from '@/services/mytagsEdits'
 import { effective } from '@/services/mytagsEdits'
+import { emptyBulkDraft, type BulkDraft } from '@/services/mytagsBulk'
 import type { TagImpact } from '@/services/mytagsScore'
 import type { TagFilter } from '@/services/mytagsEditStore'
 
@@ -19,18 +20,16 @@ const props = defineProps<{
   impact: Map<string, TagImpact>
   setColors: Record<string, string>
   filter: TagFilter
+  bulkDraft: BulkDraft
+  busy: boolean
 }>()
 
 const emit = defineEmits<{
   patch: [MyTagRow, Partial<TagState>]
-  bulk: [MyTagRow[], Partial<TagState>]
   select: [string]
-  remove: [MyTagRow[]]
-  move: [MyTagRow[], string]
   'update:filter': [TagFilter]
+  'update:bulkDraft': [BulkDraft]
 }>()
-
-const picked = ref<Set<number>>(new Set())
 
 /**
  * 每一列的高度。JS 和 CSS 只有這一個來源——虛擬捲動要靠它換算位置，對不上就會
@@ -109,25 +108,67 @@ const visible = computed(() => {
   }).sort((a, b) => (at.get(a.id) ?? Infinity) - (at.get(b.id) ?? Infinity))
 })
 
-const pickedRows = computed(() => props.rows.filter((r) => picked.value.has(r.id)))
+const pickedIds = computed(() => new Set(props.bulkDraft.ids))
 
 const allPicked = computed(() =>
-  visible.value.length > 0 && visible.value.every((r) => picked.value.has(r.id)))
+  visible.value.length > 0 && visible.value.every((r) => pickedIds.value.has(r.id)))
+
+function stageDraft(change: Partial<BulkDraft>): void {
+  emit('update:bulkDraft', { ...props.bulkDraft, ...change })
+}
+
+function stageIds(next: Set<number>): void {
+  if (next.size) stageDraft({ ids: [...next] })
+  else emit('update:bulkDraft', emptyBulkDraft())
+}
 
 function togglePick(row: MyTagRow, on: boolean): void {
-  const next = new Set(picked.value)
+  const next = new Set(props.bulkDraft.ids)
   if (on) next.add(row.id)
   else next.delete(row.id)
-  picked.value = next
+  stageIds(next)
+}
+
+function clearPicks(): void {
+  emit('update:bulkDraft', emptyBulkDraft())
 }
 
 function toggleAll(on: boolean): void {
-  const next = new Set(picked.value)
+  const next = new Set(props.bulkDraft.ids)
   for (const row of visible.value) {
     if (on) next.add(row.id)
     else next.delete(row.id)
   }
-  picked.value = next
+  stageIds(next)
+}
+
+const bulkFlag = computed<'watch' | 'hidden' | null>(() => {
+  if (props.bulkDraft.patch.watch) return 'watch'
+  if (props.bulkDraft.patch.hidden) return 'hidden'
+  return null
+})
+
+function toggleFlag(flag: 'watch' | 'hidden'): void {
+  const patch: TagPatch = bulkFlag.value === flag
+    ? {}
+    : flag === 'watch'
+      ? { watch: true, hidden: false }
+      : { hidden: true, watch: false }
+  stageDraft({ patch })
+}
+
+const deleting = computed(() => props.bulkDraft.action?.kind === 'delete')
+
+const moveTarget = computed(() =>
+  props.bulkDraft.action?.kind === 'move' ? props.bulkDraft.action.tagSet : '')
+
+function toggleDelete(): void {
+  stageDraft({ action: deleting.value ? null : { kind: 'delete' } })
+}
+
+// 這裡只排草稿，送不送由底部的套用決定——選一個目的地不該打到伺服器
+function pickMove(tagSet: string): void {
+  stageDraft({ action: tagSet ? { kind: 'move', tagSet } : null })
 }
 
 /**
@@ -173,7 +214,7 @@ watch(
       <div class="eqt-taglist__head-main">
         <label class="eqt-taglist__check-all" :title="t('taglist.headLeft', { n: visible.length })">
           <input
-            type="checkbox" :checked="allPicked"
+            type="checkbox" :checked="allPicked" :disabled="busy"
             :aria-label="t('taglist.headLeft', { n: visible.length })"
             @change="toggleAll(($event.target as HTMLInputElement).checked)"
           >
@@ -248,7 +289,7 @@ watch(
       >
         <label class="eqt-taglist__check">
           <input
-            type="checkbox" :checked="picked.has(row.id)"
+            type="checkbox" :checked="pickedIds.has(row.id)" :disabled="busy"
             @change="togglePick(row, ($event.target as HTMLInputElement).checked)"
           >
         </label>
@@ -267,31 +308,47 @@ watch(
       </div>
     </div>
 
-    <div v-if="pickedRows.length" class="eqt-taglist__bulk">
-      <strong>{{ t('taglist.picked', { n: pickedRows.length }) }}</strong>
-      <select
-        :value="''"
-        @change="emit('move', pickedRows, ($event.target as HTMLSelectElement).value)"
-      >
-        <option value="">{{ t('taglist.moveTo') }}</option>
-        <option v-for="s in sets.filter((x) => x.value !== currentSet)" :key="s.value" :value="s.value">
-          {{ s.name }}
-        </option>
-      </select>
-      <button type="button" class="eqt-panel__btn" @click="emit('bulk', pickedRows, { watch: true })">
-        {{ t('taglist.bulkWatch') }}
-      </button>
-      <button type="button" class="eqt-panel__btn" @click="emit('bulk', pickedRows, { hidden: true })">
-        {{ t('taglist.bulkHide') }}
-      </button>
-      <span class="eqt-panel__spacer" />
-      <button
-        type="button" class="eqt-panel__btn"
-        @click="emit('remove', pickedRows)"
-      >{{ t('panel.labelDelete') }}</button>
-      <button type="button" class="eqt-panel__link" @click="picked = new Set()">
-        {{ t('taglist.clearPicks') }}
-      </button>
+    <div v-if="bulkDraft.ids.length" class="eqt-taglist__bulk">
+      <div class="eqt-taglist__bulk-head">
+        <strong>{{ t('taglist.picked', { n: bulkDraft.ids.length }) }}</strong>
+        <button type="button" class="eqt-panel__btn" :disabled="busy" @click="clearPicks">
+          {{ t('taglist.clearPicks') }}
+        </button>
+      </div>
+      <div class="eqt-taglist__bulk-actions">
+        <button
+          type="button" class="eqt-panel__btn"
+          :aria-pressed="bulkFlag === 'watch'"
+          :disabled="busy"
+          @click="toggleFlag('watch')"
+        >{{ t('taglist.bulkWatch') }}</button>
+        <button
+          type="button" class="eqt-panel__btn"
+          :aria-pressed="bulkFlag === 'hidden'"
+          :disabled="busy"
+          @click="toggleFlag('hidden')"
+        >{{ t('taglist.bulkHide') }}</button>
+        <button
+          type="button" class="eqt-panel__btn eqt-taglist__bulk-delete"
+          :aria-pressed="deleting"
+          :disabled="busy"
+          @click="toggleDelete"
+        >{{ t('panel.labelDelete') }}</button>
+      </div>
+      <div class="eqt-taglist__bulk-move">
+        <select
+          class="eqt-panel__setpick"
+          :value="moveTarget"
+          :disabled="busy"
+          :aria-label="t('taglist.moveTo')"
+          @change="pickMove(($event.target as HTMLSelectElement).value)"
+        >
+          <option value="">{{ t('taglist.moveTo') }}</option>
+          <option v-for="s in sets.filter((x) => x.value !== currentSet)" :key="s.value" :value="s.value">
+            {{ s.name }}
+          </option>
+        </select>
+      </div>
     </div>
   </div>
 </template>

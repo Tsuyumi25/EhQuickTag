@@ -31,9 +31,10 @@ import {
   saveVerdicts,
 } from '@/services/mytagsSampleStore'
 import {
-  stage, stageMany, effective, unstage,
+  stage, effective, unstage,
   type EditMap, type TagState,
 } from '@/services/mytagsEdits'
+import { emptyBulkDraft, planTagChanges } from '@/services/mytagsBulk'
 import {
   loadEdits, saveEdits, emptyFilter,
   type TagFilter,
@@ -71,6 +72,7 @@ function emptyDraft(): NewTagDraft {
 const liveRows = ref<MyTagRow[]>(props.host.readRows())
 const otherSets = ref<TagSetSnapshot[]>([])
 const edits = ref<EditMap>({})
+const bulkDraft = ref(emptyBulkDraft())
 const store = ref<SampleStore>(emptyStore())
 const ehTopbarOpen = ref(false)
 const narrowLayout = useMediaQuery('(max-width: 900px)')
@@ -127,9 +129,10 @@ function acceptWrite(id: number, state: TagState): void {
 }
 
 const rowMap = computed(() => new Map(rows.value.map((r) => [r.full, r])))
+const editPlan = computed(() => planTagChanges(rows.value, edits.value, bulkDraft.value))
 
 function view(row: MyTagRow): TagState {
-  return effective(row, edits.value)
+  return effective(row, editPlan.value.edits)
 }
 
 const catalogRow = computed(() => rowMap.value.get(catalogTag.value) ?? null)
@@ -159,13 +162,14 @@ const selectedTagStyle = computed(() => {
 
 function factsOf(tag: string): TagFacts | null {
   const r = rowMap.value.get(tag)
-  if (!r) return null
+  if (!r || editPlan.value.deletedIds.has(r.id)) return null
   const v = view(r)
   return { weight: v.weight, hidden: v.hidden, watch: v.watch }
 }
 
 function catalogFactsOf(tag: string): TagFacts | null {
   if (catalogTag.value === tag) {
+    if (catalogRow.value && editPlan.value.deletedIds.has(catalogRow.value.id)) return null
     const current = catalogState.value
     return { weight: current.weight, hidden: current.hidden, watch: current.watch }
   }
@@ -268,6 +272,7 @@ const sidebarRows = computed(() => (filter.value.set === 'all'
 /** 丟掉所有還沒送出的東西，門檻那格也要跟著回到 EH 上的值 */
 function discard(): void {
   edits.value = unstage(edits.value, Object.keys(edits.value).map(Number))
+  bulkDraft.value = emptyBulkDraft()
   filterThreshold.value = savedThreshold.value
 }
 
@@ -275,11 +280,13 @@ function patch(row: MyTagRow, p: Partial<TagState>): void {
   edits.value = stage(edits.value, row, p)
 }
 
-function bulk(rows2: MyTagRow[], p: Partial<TagState>): void {
-  edits.value = stageMany(edits.value, rows2, p)
+function retireBulk(ids: number[]): void {
+  const removed = new Set(ids)
+  const remaining = bulkDraft.value.ids.filter(id => !removed.has(id))
+  bulkDraft.value = remaining.length
+    ? { ...bulkDraft.value, ids: remaining }
+    : emptyBulkDraft()
 }
-
-const pending = computed(() => rows.value.filter((row) => edits.value[row.id] !== undefined))
 
 /**
  * 門檻也算一筆未送出的改動。
@@ -293,7 +300,7 @@ const thresholdDirty = computed(() =>
   && filterThreshold.value !== savedThreshold.value)
 
 const pendingTotal = computed(() =>
-  pending.value.length + (thresholdDirty.value ? 1 : 0))
+  editPlan.value.changes.length + (thresholdDirty.value ? 1 : 0))
 
 async function flush(): Promise<void> { await saveEdits(edits.value) }
 
@@ -308,33 +315,59 @@ async function flush(): Promise<void> { await saveEdits(edits.value) }
  */
 async function apply(): Promise<void> {
   if (writeBusy.value || !pendingTotal.value) return
-  if (pending.value.length && !canWrite()) {
+  const todo = editPlan.value.changes
+  if (todo.some(change => change.write) && !canWrite()) {
     toast.error(t('panel.noCredentials')); return
   }
-  const todo = [...pending.value]
-  const done: number[] = []
-  let failure = ''
-  for (const [i, row] of todo.entries()) {
-    writeBusy.value = t('panel.applying', { i: i + 1, n: todo.length })
-    const want = effective(row, edits.value)
-    const res = await setUserTag({ id: row.id, ...want })
-    if (!res.ok) {
-      failure = t('panel.applyFailed', { tag: row.full, error: res.error })
-      break
+  const deletes = todo.filter(change => change.remove)
+  if (deletes.length && !confirm(t('panel.deleteConfirmMany', { n: deletes.length }))) return
+
+  const done = new Set<number>()
+  let failed = false
+  writeBusy.value = t('panel.working')
+  try {
+    for (const [i, change] of todo.entries()) {
+      if (!change.write) continue
+      writeBusy.value = t('panel.applying', { i: i + 1, n: todo.length })
+      const res = await setUserTag({ id: change.row.id, ...change.state })
+      if (!res.ok) {
+        toast.error(t('panel.applyFailed', { tag: change.row.full, error: res.error }))
+        failed = true
+        break
+      }
+      acceptWrite(change.row.id, change.state)
+      edits.value = unstage(edits.value, [change.row.id])
+      if (!change.moveTo) {
+        done.add(change.row.id)
+        retireBulk([change.row.id])
+      }
     }
-    acceptWrite(row.id, want)
-    done.push(row.id)
+
+    if (!failed) {
+      const actions = new Map<string, MyTagRow[]>()
+      for (const change of todo) {
+        const target = change.remove ? '0' : change.moveTo
+        if (!target) continue
+        const batch = actions.get(target)
+        if (batch) batch.push(change.row)
+        else actions.set(target, [change.row])
+      }
+      for (const [target, batch] of actions) {
+        const result = await executeMass(batch, target)
+        result.done.forEach(id => done.add(id))
+        if (!result.ok) { failed = true; break }
+      }
+    }
+
+    if (!failed) {
+      bulkDraft.value = emptyBulkDraft()
+      if (thresholdDirty.value) await applyThreshold()
+    }
+  } finally {
+    await flush()
+    writeBusy.value = ''
   }
-  edits.value = unstage(edits.value, done)
-  await flush()
-
-  // 標籤沒送完就不要動門檻——那是兩個不同的頁面，讓失敗停在一個地方比較好收拾
-  if (!failure && thresholdDirty.value) await applyThreshold()
-  writeBusy.value = ''
-
-  // 成功的先報，失敗的後報。停在最上面的應該是還沒解決的那件事
-  if (done.length) toast.success(t('panel.applied', { n: done.length }))
-  if (failure) toast.error(failure)
+  if (done.size) toast.success(t('panel.applied', { n: done.size }))
 }
 
 /**
@@ -371,40 +404,48 @@ function absorb(tagSet: string, next: MyTagRow[]): void {
  * ⭐ 表單認的是 URL 上的 `?tagset=`，不是當前頁面——所以按組拆開分別 POST 就能一次
  * 處理跨組的選取，而且不刷新。`target` 是 `0`（刪除）或目標組。
  */
-async function runMass(rows2: MyTagRow[], target: string): Promise<void> {
-  if (writeBusy.value || !rows2.length) return
+async function executeMass(rows2: MyTagRow[], target: string): Promise<{ done: number[]; ok: boolean }> {
   await flush()
   const bySet = new Map<string, number[]>()
-  for (const r of rows2) bySet.set(r.tagSet, [...(bySet.get(r.tagSet) ?? []), r.id])
+  for (const row of rows2) {
+    const ids = bySet.get(row.tagSet)
+    if (ids) ids.push(row.id)
+    else bySet.set(row.tagSet, [row.id])
+  }
 
   writeBusy.value = t('panel.working')
-  const touched: number[] = []
+  const done: number[] = []
+  let ok = true
   for (const [set, ids] of bySet) {
     const next = target === '0'
       ? await props.host.deleteTags(ids, set)
       : await props.host.moveTags(ids, target, set)
-    if (!next) { toast.error(t('panel.massFailed')); break }
+    if (!next) {
+      toast.error(t('panel.massFailed'))
+      ok = false
+      break
+    }
     absorb(set, next)
-    touched.push(...ids)
+    done.push(...ids)
+    edits.value = unstage(edits.value, ids)
+    retireBulk(ids)
   }
-  // 搬走的標籤換了 tagid 所屬的組，目標組要重讀才看得到它們
-  if (target !== '0') {
+  if (target !== '0' && done.length) {
     const got = await fetchTagSet(target)
     if (got) absorb(target, got.rows)
   }
-  // 編輯的對象已經不在了，留著只會一直算進「還沒送出」
-  edits.value = unstage(edits.value, touched)
-  writeBusy.value = ''
+  return { done, ok }
 }
 
-function removeTags(target: MyTagRow[]): void {
-  if (!confirm(t('panel.deleteConfirmMany', { n: target.length }))) return
-  void runMass(target, '0')
-}
-
-function moveTags(target: MyTagRow[], to: string): void {
-  if (!to) return
-  void runMass(target, to)
+async function moveTags(target: MyTagRow[], to: string): Promise<void> {
+  if (!to || writeBusy.value || !target.length) return
+  writeBusy.value = t('panel.working')
+  try {
+    await executeMass(target, to)
+  } finally {
+    await flush()
+    writeBusy.value = ''
+  }
 }
 
 
@@ -659,11 +700,12 @@ watch(edits, () => { void flush() }, { deep: true })
         <!-- 清單吃掉側欄剩下的高度，自己捲。側欄本身貼著視窗，所以底下那條永遠在 -->
         <MyTagsTagList
           v-model:filter="filter"
-          :rows="sidebarRows" :total-count="rows.length" :edits="edits" :selected="selectedSaved"
+          v-model:bulk-draft="bulkDraft"
+          :rows="sidebarRows" :total-count="rows.length" :edits="editPlan.edits" :selected="selectedSaved"
           :sets="host.tagSets" :current-set="host.currentSet"
           :impact="impact" :set-colors="setColors"
-          @patch="patch" @bulk="bulk" @select="select"
-          @remove="removeTags" @move="moveTags"
+          :busy="!!writeBusy"
+          @patch="patch" @select="select"
         />
 
         <!-- 底部只留下 pending edits 的取消與套用 -->

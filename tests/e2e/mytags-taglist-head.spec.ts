@@ -450,6 +450,190 @@ test('Catalog 搜尋結果與左欄解析成同一個既有標籤實體', async 
   await expect(catalog.locator('.eqt-number-field__input')).toHaveValue('-30')
 })
 
+test('bulk 草稿合併到 dock 計數，關閉只撤銷 bulk，移動由 dock 套用', async ({ page }) => {
+  const negative = page.locator('.eqt-taglist__row').filter({
+    has: page.locator('.eqt-taglist__chip[title="female:negative-sample"]'),
+  })
+  const positive = page.locator('.eqt-taglist__row').filter({
+    has: page.locator('.eqt-taglist__chip[title="male:positive-sample"]'),
+  })
+  const plain = page.locator('.eqt-taglist__row').filter({
+    has: page.locator('.eqt-taglist__chip[title="character:plain-sample"]'),
+  })
+  const dock = page.locator('.eqt-panel__dock')
+  const apply = dock.locator('.eqt-panel__btn--primary')
+  const writes: string[] = []
+  page.on('request', request => {
+    if (request.url() === 'https://e-hentai.org/mytags' && request.method() === 'POST') {
+      writes.push(request.postData() ?? '')
+    }
+  })
+  await plain.locator('.eqt-number-field__input').fill('11')
+  await plain.locator('.eqt-number-field__input').press('Enter')
+  await expect(apply).toHaveText('套用 1 個到 EH')
+  await negative.locator('.eqt-taglist__check input').check()
+  await positive.locator('.eqt-taglist__check input').check()
+  const bulk = page.locator('.eqt-taglist__bulk')
+  await bulk.getByRole('combobox').selectOption('2')
+  await expect(apply).toHaveText('套用 3 個到 EH')
+  expect(writes).toEqual([])
+
+  await bulk.getByRole('button', { name: '設為關注' }).click()
+  await expect(negative.locator('.eqt-taglist__flag input').nth(0)).toBeChecked()
+  await bulk.getByRole('button', { name: '設為隱藏' }).click()
+  await expect(negative.locator('.eqt-taglist__flag input').nth(1)).toBeChecked()
+  await expect(positive.locator('.eqt-taglist__flag input').nth(1)).toBeChecked()
+  await expect(apply).toHaveText('套用 3 個到 EH')
+  expect(writes).toEqual([])
+
+  await bulk.getByRole('button', { name: '取消選取' }).click()
+  await expect(bulk).toHaveCount(0)
+  await expect(apply).toHaveText('套用 1 個到 EH')
+  await expect(plain.locator('.eqt-number-field__input')).toHaveValue('11')
+  await expect(negative.locator('.eqt-taglist__flag input').nth(1)).not.toBeChecked()
+  await expect(positive.locator('.eqt-taglist__flag input').nth(1)).not.toBeChecked()
+  await expect(positive.locator('.eqt-taglist__flag input').nth(0)).toBeChecked()
+  await plain.locator('.eqt-number-field__input').fill('10')
+  await plain.locator('.eqt-number-field__input').press('Enter')
+  await expect(apply).toBeDisabled()
+
+  await negative.locator('.eqt-taglist__check input').check()
+  await positive.locator('.eqt-taglist__check input').check()
+  await expect(bulk.getByRole('combobox')).toHaveValue('')
+  await bulk.getByRole('combobox').selectOption('2')
+  await expect(apply).toHaveText('套用 2 個到 EH')
+  const requestPromise = page.waitForRequest(request =>
+    request.url() === 'https://e-hentai.org/mytags' && request.method() === 'POST')
+  await apply.click()
+  const form = new URLSearchParams((await requestPromise).postData() ?? '')
+  expect(form.get('usertag_action')).toBe('mass')
+  expect(form.get('usertag_target')).toBe('2')
+  expect(form.getAll('modify_usertags[]').sort()).toEqual(['1', '2'])
+  await expect(bulk).toHaveCount(0)
+  await expect(apply).toBeDisabled()
+})
+
+test('部分套用失敗只保留未完成草稿，關閉 bulk 仍保留個別修改', async ({ page }) => {
+  await page.evaluate(() => {
+    Object.assign(window, { apiuid: 1, apikey: 'test-key', api_url: `${location.origin}/api.php` })
+  })
+  const requests: { tagid: number; tagweight: string; taghide: number }[] = []
+  let fail = true
+  await page.route('https://e-hentai.org/api.php', async route => {
+    const body = route.request().postDataJSON()
+    requests.push(body)
+    if (body.tagid === 2 && fail) {
+      fail = false
+      await route.fulfill({ json: { error: 'test-write-failure' } })
+    } else {
+      await route.fulfill({ json: {} })
+    }
+  })
+  const negative = page.locator('.eqt-taglist__row').filter({
+    has: page.locator('.eqt-taglist__chip[title="female:negative-sample"]'),
+  })
+  const positive = page.locator('.eqt-taglist__row').filter({
+    has: page.locator('.eqt-taglist__chip[title="male:positive-sample"]'),
+  })
+  const apply = page.locator('.eqt-panel__dock .eqt-panel__btn--primary')
+  const bulk = page.locator('.eqt-taglist__bulk')
+  await positive.locator('.eqt-number-field__input').fill('41')
+  await positive.locator('.eqt-number-field__input').press('Enter')
+  await negative.locator('.eqt-taglist__check input').check()
+  await positive.locator('.eqt-taglist__check input').check()
+  await bulk.getByRole('button', { name: '設為隱藏' }).click()
+  await expect(apply).toHaveText('套用 2 個到 EH')
+  await apply.click()
+  await expect(apply).toHaveText('套用 1 個到 EH')
+  expect(requests.map(request => request.tagid)).toEqual([1, 2])
+
+  await bulk.getByRole('button', { name: '取消選取' }).click()
+  await expect(negative.locator('.eqt-taglist__flag input').nth(1)).toBeChecked()
+  await expect(positive.locator('.eqt-taglist__flag input').nth(1)).not.toBeChecked()
+  await expect(positive.locator('.eqt-number-field__input')).toHaveValue('41')
+  await expect(apply).toHaveText('套用 1 個到 EH')
+  await positive.locator('.eqt-taglist__check input').check()
+  await bulk.getByRole('button', { name: '設為隱藏' }).click()
+  await apply.click()
+  await expect(apply).toBeDisabled()
+  await expect(bulk).toHaveCount(0)
+  expect(requests.map(request => request.tagid)).toEqual([1, 2, 2])
+  expect(requests[2]).toMatchObject({ tagweight: '41', taghide: 1 })
+})
+
+test('批次刪除暫存到 dock，取消確認保留草稿，確認後才送出刪除', async ({ page }) => {
+  const row = page.locator('.eqt-taglist__row').filter({
+    has: page.locator('.eqt-taglist__chip[title="female:negative-sample"]'),
+  })
+  const writes: string[] = []
+  page.on('request', request => {
+    if (request.url() === 'https://e-hentai.org/mytags' && request.method() === 'POST') {
+      writes.push(request.postData() ?? '')
+    }
+  })
+  await row.locator('.eqt-number-field__input').fill('-21')
+  await row.locator('.eqt-number-field__input').press('Enter')
+  await row.locator('.eqt-taglist__check input').check()
+  await page.locator('.eqt-taglist__bulk').getByRole('button', { name: '刪除', exact: true }).click()
+  const apply = page.locator('.eqt-panel__dock .eqt-panel__btn--primary')
+  await expect(apply).toHaveText('套用 1 個到 EH')
+  expect(writes).toEqual([])
+  page.once('dialog', dialog => dialog.dismiss())
+  await apply.click()
+  await expect(apply).toBeEnabled()
+  expect(writes).toEqual([])
+  page.once('dialog', dialog => dialog.accept())
+  const requestPromise = page.waitForRequest(request =>
+    request.url() === 'https://e-hentai.org/mytags' && request.method() === 'POST')
+  await apply.click()
+  const form = new URLSearchParams((await requestPromise).postData() ?? '')
+  expect(form.get('usertag_target')).toBe('0')
+  expect(form.getAll('modify_usertags[]')).toEqual(['1'])
+  await expect(apply).toBeDisabled()
+})
+
+test('個別修改先存再批次移動，移動失敗重試不重送已存欄位', async ({ page }) => {
+  await page.evaluate(() => {
+    Object.assign(window, { apiuid: 1, apikey: 'test-key', api_url: `${location.origin}/api.php` })
+  })
+  const operations: string[] = []
+  await page.route('https://e-hentai.org/api.php', async route => {
+    operations.push('write')
+    expect(route.request().postDataJSON()).toMatchObject({ tagid: 2, tagweight: '41' })
+    await route.fulfill({ json: {} })
+  })
+  let fail = true
+  await page.route('https://e-hentai.org/mytags', async route => {
+    if (route.request().method() !== 'POST') { await route.fallback(); return }
+    operations.push('move')
+    if (fail) {
+      fail = false
+      await route.fulfill({ status: 500, body: '' })
+    } else {
+      await route.fallback()
+    }
+  })
+  const row = page.locator('.eqt-taglist__row').filter({
+    has: page.locator('.eqt-taglist__chip[title="male:positive-sample"]'),
+  })
+  await row.locator('.eqt-number-field__input').fill('41')
+  await row.locator('.eqt-number-field__input').press('Enter')
+  await row.locator('.eqt-taglist__check input').check()
+  const bulk = page.locator('.eqt-taglist__bulk')
+  await bulk.getByRole('combobox').selectOption('2')
+  const apply = page.locator('.eqt-panel__dock .eqt-panel__btn--primary')
+  await expect(apply).toHaveText('套用 1 個到 EH')
+  await apply.click()
+  await expect(apply).toHaveText('套用 1 個到 EH')
+  await expect(apply).toBeEnabled()
+  expect(operations).toEqual(['write', 'move'])
+  await expect(row.locator('.eqt-number-field__input')).toHaveValue('41')
+  await apply.click()
+  await expect(apply).toBeDisabled()
+  await expect(bulk).toHaveCount(0)
+  expect(operations).toEqual(['write', 'move', 'move'])
+})
+
 test('既有標籤從 Catalog 送出移動動作', async ({ page }) => {
   const positiveRow = page.locator('.eqt-taglist__row').filter({
     has: page.locator('.eqt-taglist__chip[title="male:positive-sample"]'),
