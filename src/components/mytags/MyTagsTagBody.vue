@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import EqtNumberField from '@/components/EqtNumberField.vue'
 import LineColorSwatch from '@/components/LineColorSwatch.vue'
 import { t } from '@/composables/useI18n'
@@ -27,17 +28,15 @@ const emit = defineEmits<{
 
 const { label } = useTagLabel()
 
-function chipStyle(): Record<string, string> {
-  return tagChipStyle({
-    color: props.state.color,
-    setColor: props.setColor,
-    weight: props.state.weight,
-    hidden: props.state.hidden,
-  })
-}
+const chipStyle = computed(() => tagChipStyle({
+  color: props.state.color,
+  setColor: props.setColor,
+  weight: props.state.weight,
+  hidden: props.state.hidden,
+}))
 
 function colorPreview(): string {
-  return props.state.color || props.setColor || '#000000'
+  return props.state.color || props.setColor || chipStyle.value.background
 }
 
 function onColor(value: string | undefined): void {
@@ -75,7 +74,7 @@ function impactTitle(): string {
           :type="selectable ? 'button' : undefined"
           class="eqt-taglist__chip"
           :class="{ 'eqt-taglist__chip--static': !selectable }"
-          :style="chipStyle()"
+          :style="chipStyle"
           :title="full"
           @click="selectable && emit('select')"
         >
@@ -89,7 +88,7 @@ function impactTitle(): string {
           class="eqt-taglist__color-swatch"
           :model-value="state.color || undefined"
           :alpha="false"
-          :style="{ '--eqt-tag-color-preview': colorPreview() }"
+          :style="{ '--eqt-tag-color-preview': colorPreview(), '--eqt-tag-color-border': chipStyle.borderColor }"
           :title="t('panel.colorHint')"
           @update:model-value="onColor"
         />

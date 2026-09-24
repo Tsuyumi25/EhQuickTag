@@ -465,7 +465,7 @@
   width: var(--eqt-checkbox-size);
   height: var(--eqt-checkbox-size);
   box-sizing: border-box;
-  border: var(--eqt-border-width) solid var(--eqt-border);
+  border: var(--eqt-border-width) solid var(--eqt-tag-color-border);
   background: var(--eqt-tag-color-preview);
 
   &:hover:not(:disabled) {

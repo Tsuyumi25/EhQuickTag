@@ -11,6 +11,39 @@ test.beforeEach(async ({ page }) => {
   await expect(page.locator('.eqt-panel__side > .eqt-taglist')).toBeVisible()
 })
 
+test('色票沿用標籤集顏色，無設定色時隨權重與隱藏狀態使用 E 站預設色', async ({ page }) => {
+  const draft = page.locator('.eqt-tag-catalog__draft')
+  const swatch = draft.locator('.eqt-taglist__color-swatch')
+  await expect(swatch).toHaveCSS('border-top-color', 'rgb(68, 85, 102)')
+
+  await page.addInitScript(() => {
+    document.addEventListener('DOMContentLoaded', () => {
+      const color = document.querySelector<HTMLInputElement>('#tagcolor')
+      if (color) color.value = ''
+    })
+  })
+  await injectMyTagsUserscript(page)
+  await expect(swatch).toHaveCSS('border-top-color', 'rgb(51, 119, 255)')
+  await expect(swatch).toHaveCSS('background-color', 'rgb(19, 87, 223)')
+
+  const weight = draft.locator('.eqt-number-field__input')
+  await weight.fill('-1')
+  await weight.press('Enter')
+  await expect(swatch).toHaveCSS('border-top-color', 'rgb(255, 102, 102)')
+  await expect(swatch).toHaveCSS('background-color', 'rgb(223, 70, 70)')
+
+  await weight.fill('1')
+  await weight.press('Enter')
+  await expect(swatch).toHaveCSS('border-top-color', 'rgb(51, 119, 255)')
+  await draft.locator('.eqt-taglist__flag input').nth(1).check()
+  await expect(swatch).toHaveCSS('border-top-color', 'rgb(255, 102, 102)')
+  await expect(swatch).toHaveCSS('background-color', 'rgb(223, 70, 70)')
+
+  await draft.locator('.eqt-taglist__color').fill('#EEEEEE')
+  await expect(swatch).toHaveCSS('border-top-color', 'rgb(206, 206, 206)')
+  await expect(swatch).toHaveCSS('background-color', 'rgb(238, 238, 238)')
+})
+
 test('E站頂部欄借入現場 #nb 與 #lb，插件控制與工作區維持原位', async ({ page }) => {
   const outer = page.locator('#outer')
   const workspace = page.locator('.eqt-panel__workspace')
@@ -160,6 +193,13 @@ test('編輯區可拖曳收合並保留草稿與預覽', async ({ page }) => {
   await expect(initialDraft.locator('.eqt-number-field__input')).toHaveValue('40')
   await expect(initialDraft.locator('.eqt-taglist__color')).toHaveValue('#00cc00')
   await expect(initialDraft.locator('.eqt-taglist__flag input').nth(0)).toBeChecked()
+  await initialDraft.locator('.eqt-taglist__color').fill('#EEEEEE')
+  const chipBorder = await positiveRow.locator('.eqt-taglist__chip').evaluate((element) =>
+    getComputedStyle(element).borderTopColor)
+  await expect(initialDraft.locator('.eqt-taglist__color-swatch')).toHaveCSS('border-top-color', chipBorder)
+  await expect(positiveRow.locator('.eqt-taglist__color-swatch')).toHaveCSS('border-top-color', chipBorder)
+  await expect(initialDraft.locator('.eqt-taglist__color-swatch')).toHaveCSS('background-color', 'rgb(238, 238, 238)')
+  await initialDraft.locator('.eqt-taglist__color').fill('#00cc00')
   const moveButton = initialDraft.locator('.eqt-tag-catalog__create')
   await expect(moveButton).toHaveText('移動標籤')
   await expect(moveButton).toBeDisabled()
