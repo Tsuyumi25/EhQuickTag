@@ -357,6 +357,7 @@ export default {
   'panel.ehTopbar': 'EH 상단 바',
   'panel.resizeEditor': '드래그하여 편집 영역 너비 조절: 왼쪽으로 접기, 오른쪽으로 펼치기',
   'panel.resizeTagList': '드래그하여 태그 목록 크기 조절',
+  'panel.resizeGallery': '드래그하여 갤러리 상세 영역 높이 조절',
   'panel.collapseTagList': '태그 목록 접기',
   'panel.expandTagList': '태그 목록을 기본 크기로 펼치기',
   'panel.collapseEditor': '편집 영역 접기',

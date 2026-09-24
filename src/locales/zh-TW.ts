@@ -357,6 +357,7 @@ export default {
   'panel.ehTopbar': 'E站頂部欄',
   'panel.resizeEditor': '拖曳調整編輯區寬度，向左收合、向右展開',
   'panel.resizeTagList': '拖曳調整標籤清單大小',
+  'panel.resizeGallery': '拖曳調整圖庫詳情高度',
   'panel.collapseTagList': '收合標籤清單',
   'panel.expandTagList': '以預設大小展開標籤清單',
   'panel.collapseEditor': '收合編輯區',

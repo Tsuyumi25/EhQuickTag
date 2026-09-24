@@ -825,17 +825,28 @@
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
-  gap: 12px;
   min-width: 0;
   min-height: 0;
+}
+
+.eqt-panel__preview-panel,
+.eqt-panel__gallery-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.eqt-panel__resize-handle--gallery {
+  flex: 0 0 var(--eqt-checkbox-size);
 }
 
 // 攤開的那一本吃掉右欄下半；操作列固定，內部資料自己捲動。
 .eqt-gal {
   display: flex;
-  flex: 0 0 auto;
+  flex: 1 1 auto;
   flex-direction: column;
-  max-height: 45%;
+  min-height: 0;
   overflow: hidden;
   padding: 8px 10px;
   border: var(--eqt-border-width) solid var(--eqt-border);

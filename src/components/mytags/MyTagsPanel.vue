@@ -763,7 +763,18 @@ watch(edits, () => { void flush() }, { deep: true })
           </SplitterResizeHandle>
         </div>
         <SplitterPanel :min-size="30" :default-size="100 - EDITOR_DEFAULT_SIZE" class="eqt-panel__preview-stack">
+          <SplitterGroup direction="vertical" class="eqt-panel__preview-splitter">
+          <SplitterPanel
+            v-slot="{ isCollapsed }"
+            collapsible
+            :collapsed-size="0"
+            :min-size="0"
+            :default-size="55"
+            class="eqt-panel__preview-panel"
+          >
           <MyTagsPreview
+            :inert="isCollapsed"
+            :aria-hidden="isCollapsed || undefined"
             v-model:marked-only="markedOnly"
             :left="previewLeftItems" :right="previewRightItems"
             :verdicts="store.verdicts"
@@ -773,9 +784,28 @@ watch(edits, () => { void flush() }, { deep: true })
             @clear-tag="clearPreviewTarget" @refresh="refreshPreview" @set-verdict="setVerdict"
             @open="openGallery"
           />
+          </SplitterPanel>
+          <SplitterResizeHandle
+            v-if="openedGallery"
+            class="eqt-panel__resize-handle eqt-panel__resize-handle--gallery"
+            :aria-label="t('panel.resizeGallery')"
+            :title="t('panel.resizeGallery')"
+          >
+            <span class="eqt-panel__resize-grip" aria-hidden="true" />
+          </SplitterResizeHandle>
+          <SplitterPanel
+            v-if="openedGallery"
+            v-slot="{ isCollapsed }"
+            collapsible
+            :collapsed-size="0"
+            :min-size="0"
+            :default-size="45"
+            class="eqt-panel__gallery-panel"
+          >
 
           <MyTagsGallery
-            v-if="openedGallery"
+            :inert="isCollapsed"
+            :aria-hidden="isCollapsed || undefined"
             :detail="openedGallery" :outcome="openedOutcome"
             :verdict="store.verdicts[String(openedGallery.gid)]" :loading="galleryBusy"
             :threshold="activeThreshold"
@@ -783,6 +813,8 @@ watch(edits, () => { void flush() }, { deep: true })
             @pick-tag="select"
             @set-verdict="(v) => openedGallery && setVerdict(openedGallery.gid, v)"
           />
+          </SplitterPanel>
+          </SplitterGroup>
         </SplitterPanel>
       </SplitterGroup>
       </SplitterPanel>

@@ -357,6 +357,7 @@ export default {
   'panel.ehTopbar': 'EH トップバー',
   'panel.resizeEditor': 'ドラッグで編集欄の幅を調整。左で折りたたみ、右で展開',
   'panel.resizeTagList': 'ドラッグでタグ一覧のサイズを調整',
+  'panel.resizeGallery': 'ドラッグでギャラリー詳細の高さを調整',
   'panel.collapseTagList': 'タグ一覧を折りたたむ',
   'panel.expandTagList': 'タグ一覧を既定のサイズで展開',
   'panel.collapseEditor': '編集欄を折りたたむ',

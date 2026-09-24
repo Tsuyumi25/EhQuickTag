@@ -357,6 +357,7 @@ export default {
   'panel.ehTopbar': 'E站顶部栏',
   'panel.resizeEditor': '拖动调整编辑区宽度，向左收起、向右展开',
   'panel.resizeTagList': '拖动调整标签列表大小',
+  'panel.resizeGallery': '拖动调整图库详情高度',
   'panel.collapseTagList': '收起标签列表',
   'panel.expandTagList': '以默认大小展开标签列表',
   'panel.collapseEditor': '收起编辑区',

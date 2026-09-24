@@ -357,6 +357,7 @@ export default {
   'panel.ehTopbar': 'EH top bar',
   'panel.resizeEditor': 'Drag to resize the editor; left to collapse, right to expand',
   'panel.resizeTagList': 'Drag to resize the tag list',
+  'panel.resizeGallery': 'Drag to resize gallery details',
   'panel.collapseTagList': 'Collapse tag list',
   'panel.expandTagList': 'Expand tag list to default size',
   'panel.collapseEditor': 'Collapse editor',

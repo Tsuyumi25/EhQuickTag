@@ -346,6 +346,8 @@ test('Gallery 操作列固定在捲動區外，標題緊接封面', async ({ pag
   const search = page.locator('.eqt-tag-catalog__search-input')
   await search.fill('sample tag')
   await page.locator('.eqt-popup__suggestion').filter({ hasText: 'female:sample tag' }).click()
+  const preview = page.locator('.eqt-preview')
+  const fullPreviewHeight = (await preview.boundingBox())!.height
   await page.locator('.eqt-preview__cover').first().click()
 
   const gallery = page.locator('.eqt-gal')
@@ -361,6 +363,50 @@ test('Gallery 操作列固定在捲動區外，標題緊接封面', async ({ pag
   )
   await expect(controls.nth(3)).toHaveText('X')
 
+  const handle = page.locator('.eqt-panel__resize-handle--gallery')
+  await expect(handle).toHaveAttribute('data-orientation', 'vertical')
+  const start = (await handle.boundingBox())!
+  const galleryHeight = (await gallery.boundingBox())!.height
+  const previewHeight = (await preview.boundingBox())!.height
+  const x = start.x + start.width / 2
+  const y = start.y + start.height / 2
+  await page.mouse.move(x, y)
+  await page.mouse.down()
+  await page.mouse.move(x, y - 80, { steps: 8 })
+  await page.mouse.up()
+  await expect.poll(async () => (await gallery.boundingBox())!.height).toBeGreaterThan(galleryHeight)
+  await expect.poll(async () => (await preview.boundingBox())!.height).toBeLessThan(previewHeight)
+  const raised = (await handle.boundingBox())!
+  await page.mouse.move(x, raised.y + raised.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(x, y + 40, { steps: 8 })
+  await page.mouse.up()
+  await expect.poll(async () => (await gallery.boundingBox())!.height).toBeLessThan(galleryHeight)
+
+  const group = (await page.locator('.eqt-panel__preview-splitter').boundingBox())!
+  for (const edge of [
+    { y: group.y + group.height - 1, panel: '.eqt-panel__gallery-panel', content: gallery },
+    { y: group.y - start.height, panel: '.eqt-panel__preview-panel', content: preview },
+  ]) {
+    const grip = (await handle.boundingBox())!
+    await page.mouse.move(x, grip.y + grip.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(x, edge.y, { steps: 12 })
+    await page.mouse.up()
+    await expect.poll(async () => (await page.locator(edge.panel).boundingBox())!.height).toBe(0)
+    await expect(edge.content).toHaveAttribute('inert', '')
+    await expect(handle).toBeVisible()
+  }
+  const collapsed = (await handle.boundingBox())!
+  await page.mouse.move(x, collapsed.y + collapsed.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(x, y, { steps: 12 })
+  await page.mouse.up()
+  await expect(gallery).not.toHaveAttribute('inert', '')
+  await expect(preview).not.toHaveAttribute('inert', '')
+  await expect.poll(async () => (await page.locator('.eqt-panel__gallery-panel').boundingBox())!.height).toBeGreaterThan(0)
+  await expect.poll(async () => (await page.locator('.eqt-panel__preview-panel').boundingBox())!.height).toBeGreaterThan(0)
+
   const scroll = gallery.locator(':scope > .eqt-gal__scroll')
   await expect(gallery).toHaveCSS('overflow', 'hidden')
   await expect(scroll).toHaveCSS('overflow-y', 'auto')
@@ -373,6 +419,10 @@ test('Gallery 操作列固定在捲動區外，標題緊接封面', async ({ pag
     element.nextElementSibling?.classList.contains('eqt-gal__titles') ?? false
   ))).toBe(true)
   await expect(gallery.locator('.eqt-gal__titles')).toContainText('Angel Interval')
+  await controls.nth(3).click()
+  await expect(gallery).toHaveCount(0)
+  await expect(handle).toHaveCount(0)
+  await expect.poll(async () => (await preview.boundingBox())!.height).toBe(fullPreviewHeight)
 })
 
 test('Catalog 搜尋結果與左欄解析成同一個既有標籤實體', async ({ page }) => {
