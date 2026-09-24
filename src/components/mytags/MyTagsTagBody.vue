@@ -35,10 +35,6 @@ const chipStyle = computed(() => tagChipStyle({
   hidden: props.state.hidden,
 }))
 
-function colorPreview(): string {
-  return props.state.color || props.setColor || chipStyle.value.background
-}
-
 function onColor(value: string | undefined): void {
   const color = normalizeTagColor(value ?? '')
   if (color !== null) emit('patch', { color })
@@ -88,7 +84,7 @@ function impactTitle(): string {
           class="eqt-taglist__color-swatch"
           :model-value="state.color || undefined"
           :alpha="false"
-          :style="{ '--eqt-tag-color-preview': colorPreview(), '--eqt-tag-color-border': chipStyle.borderColor }"
+          :style="{ '--eqt-tag-color-preview': chipStyle.background, '--eqt-tag-color-border': chipStyle.borderColor }"
           :title="t('panel.colorHint')"
           @update:model-value="onColor"
         />

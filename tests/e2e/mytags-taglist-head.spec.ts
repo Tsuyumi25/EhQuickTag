@@ -44,6 +44,27 @@ test('色票沿用標籤集顏色，無設定色時隨權重與隱藏狀態使�
   await expect(swatch).toHaveCSS('background-color', 'rgb(238, 238, 238)')
 })
 
+test('色票背景與外框分別沿用 chip 的配色', async ({ page }) => {
+  const row = page.locator('.eqt-taglist__row').filter({
+    has: page.locator('.eqt-taglist__chip[title="male:positive-sample"]'),
+  })
+  await row.locator('.eqt-taglist__chip').click()
+  const draft = page.locator('.eqt-tag-catalog__draft')
+  await draft.locator('.eqt-taglist__color').fill('#FF3333')
+  const chip = row.locator('.eqt-taglist__chip')
+  await expect(chip).toHaveCSS('background-color', 'rgb(223, 19, 19)')
+  await expect(chip).toHaveCSS('border-top-color', 'rgb(255, 51, 51)')
+  const colors = await chip.evaluate((element) => {
+    const style = getComputedStyle(element)
+    return { background: style.backgroundColor, border: style.borderTopColor }
+  })
+  for (const body of [row, draft]) {
+    const swatch = body.locator('.eqt-taglist__color-swatch')
+    await expect(swatch).toHaveCSS('border-top-color', colors.border)
+    await expect(swatch).toHaveCSS('background-color', colors.background)
+  }
+})
+
 test('E站頂部欄借入現場 #nb 與 #lb，插件控制與工作區維持原位', async ({ page }) => {
   const outer = page.locator('#outer')
   const workspace = page.locator('.eqt-panel__workspace')
