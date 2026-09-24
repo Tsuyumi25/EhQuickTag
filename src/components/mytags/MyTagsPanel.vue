@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useMediaQuery } from '@vueuse/core'
-import { ArrowLeftFromLine, ArrowRightFromLine, Settings } from '@lucide/vue'
+import { ArrowLeftFromLine, ArrowRightFromLine, ExternalLink, Settings } from '@lucide/vue'
 import { SplitterGroup, SplitterPanel, SplitterResizeHandle } from 'reka-ui'
-import { t } from '@/composables/useI18n'
+import { isZhLocale, t } from '@/composables/useI18n'
 import { useEqtToast } from '@/composables/useEqtToast'
 import MyTagsTagList from '@/components/mytags/MyTagsTagList.vue'
 import MyTagsCatalog from '@/components/mytags/MyTagsCatalog.vue'
@@ -11,6 +11,7 @@ import MyTagsPreview from '@/components/mytags/MyTagsPreview.vue'
 import MyTagsGallery from '@/components/mytags/MyTagsGallery.vue'
 import MyTagsEhTopbar from '@/components/mytags/MyTagsEhTopbar.vue'
 import EqtNumberField from '@/components/EqtNumberField.vue'
+import AnchoredPopover from '@/components/AnchoredPopover.vue'
 import { fetchGallery, type GalleryDetail } from '@/composables/useEhGalleryPreview'
 import {
   fetchTagSet, fetchThresholds,
@@ -75,6 +76,29 @@ const edits = ref<EditMap>({})
 const bulkDraft = ref(emptyBulkDraft())
 const store = ref<SampleStore>(emptyStore())
 const ehTopbarOpen = ref(false)
+const helpOpen = ref(false)
+const helpAnchor = ref<HTMLElement | null>(null)
+const wikiUrl = computed(() => `https://ehwiki.org/wiki/My_Tags${isZhLocale() ? '/Chinese' : ''}`)
+// 說明文案的專有名詞走 placeholder，翻譯只排語序，值與樣式一律由這裡給
+const helpTerms = computed<Record<string, string>>(() => ({
+  threshold: t('bars.threshold'),
+  preview: t('preview.title'),
+  blocked: t('preview.filterLeft'),
+  shown: t('preview.filterRight'),
+  block: t('preview.shouldBlock'),
+  keep: t('preview.shouldKeep'),
+  anthology: 'other:anthology',
+  webtoon: 'other:webtoon',
+}))
+
+function helpSegments(text: string): { text: string; term: boolean }[] {
+  return text.split(/(\{\w+\})/).filter(Boolean).map((part) => {
+    const term = helpTerms.value[part.slice(1, -1)]
+    return term ? { text: term, term: true } : { text: part, term: false }
+  })
+}
+
+const helpUsageLines = computed(() => t('panel.helpUsage').split('\n').map(helpSegments))
 const narrowLayout = useMediaQuery('(max-width: 900px)')
 const sidePanel = ref<InstanceType<typeof SplitterPanel> | null>(null)
 const editorPanel = ref<InstanceType<typeof SplitterPanel> | null>(null)
@@ -659,6 +683,65 @@ watch(edits, () => { void flush() }, { deep: true })
           aria-controls="eqt-eh-topbar"
           @click="toggleEhTopbar"
         >{{ t('panel.ehTopbar') }}</button>
+        <a
+          class="eqt-panel__btn eqt-panel__btn--wiki"
+          :href="wikiUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <ExternalLink :size="12" aria-hidden="true" />
+          {{ t('panel.wiki') }}
+        </a>
+        <button
+          ref="helpAnchor"
+          type="button"
+          class="eqt-panel__btn"
+          :aria-expanded="helpOpen"
+          aria-controls="eqt-mytags-help"
+          @click="helpOpen = !helpOpen"
+          @keydown.esc="helpOpen = false"
+        >{{ t('panel.help') }}</button>
+        <AnchoredPopover v-model:open="helpOpen" :anchor="helpAnchor">
+          <section
+            id="eqt-mytags-help"
+            class="eqt-panel__help"
+            aria-labelledby="eqt-mytags-help-title"
+            @keydown.esc="helpOpen = false"
+          >
+            <header class="eqt-panel__help-head">
+              <h2 id="eqt-mytags-help-title">{{ t('panel.help') }}</h2>
+              <button type="button" class="eqt-panel__btn" @click="helpOpen = false">
+                {{ t('settings.close') }}
+              </button>
+            </header>
+            <ol>
+              <li>
+                {{ t('panel.helpFeedback') }}
+                <ul>
+                  <li v-for="(segs, i) in helpUsageLines" :key="i">
+                    <template v-for="(seg, j) in segs" :key="j">
+                      <code v-if="seg.term" class="eqt-panel__help-term">{{ seg.text }}</code>
+                      <template v-else>{{ seg.text }}</template>
+                    </template>
+                  </li>
+                </ul>
+              </li>
+              <li>{{ t('panel.helpTagSets') }}</li>
+              <li>
+                <template v-for="(seg, i) in helpSegments(t('panel.helpQueryExemption'))" :key="i">
+                  <code v-if="seg.term" class="eqt-panel__help-term">{{ seg.text }}</code>
+                  <template v-else>{{ seg.text }}</template>
+                </template>
+                <p>
+                  <template v-for="(seg, i) in helpSegments(t('panel.helpQueryExample'))" :key="i">
+                    <code v-if="seg.term" class="eqt-panel__help-term">{{ seg.text }}</code>
+                    <template v-else>{{ seg.text }}</template>
+                  </template>
+                </p>
+              </li>
+            </ol>
+          </section>
+        </AnchoredPopover>
         <label class="eqt-panel__field eqt-panel__cover-size">
           {{ t('preview.coverSize') }}
           <input

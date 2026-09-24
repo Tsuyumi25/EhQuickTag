@@ -50,6 +50,62 @@
   min-width: 0;
 }
 
+.eqt-panel__btn--wiki {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--eqt-checkbox-size) / 4);
+  text-decoration: none;
+  font-weight: var(--eqt-font-weight, inherit);
+}
+
+.eqt-panel__help {
+  box-sizing: border-box;
+  width: min(calc(var(--eqt-checkbox-size) * 24), 90vw);
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: calc(var(--eqt-checkbox-size) / 2);
+  border: var(--eqt-border-width) solid var(--eqt-border);
+  border-radius: var(--eqt-radius-md);
+  background: var(--eqt-bg);
+  color: var(--eqt-text);
+  box-shadow: var(--eqt-shadow-popover);
+  font-family: var(--eqt-font-family, inherit);
+  font-weight: var(--eqt-font-weight, inherit);
+  font-size: var(--eqt-fs-md);
+  line-height: 1.4;
+  text-align: start;
+
+  ol, ul {
+    margin: calc(var(--eqt-checkbox-size) / 2) 0 0;
+    padding-inline-start: var(--eqt-checkbox-size);
+  }
+
+  ul { list-style: disc; }
+
+  li + li { margin-top: calc(var(--eqt-checkbox-size) / 2); }
+
+  .eqt-panel__help-term {
+    padding: 0 3px;
+    border-radius: var(--eqt-radius-sm);
+    background: var(--eqt-bg-btn-hover);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: var(--eqt-fs-sm);
+  }
+  button { font-weight: var(--eqt-font-weight, inherit); }
+}
+
+.eqt-panel__help-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--eqt-checkbox-size) / 2);
+
+  h2 {
+    margin: 0;
+    font-size: inherit;
+  }
+}
+
 .eqt-panel__cover-size {
   max-width: 100%;
 }
