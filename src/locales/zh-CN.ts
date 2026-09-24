@@ -403,6 +403,7 @@ export default {
   'preview.filterRight': '会显示',
   'preview.columnCount': '{side}（{shown}/{total}）',
   'preview.markedOnly': '只看已标记',
+  'preview.coverSize': '封面大小',
   'preview.refresh': '抓取样本',
   'preview.loadMore': '继续往下看',
   'preview.sideEmpty': '这一边还没有东西',

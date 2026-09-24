@@ -403,6 +403,7 @@ export default {
   'preview.filterRight': '表示される',
   'preview.columnCount': '{side}（{shown}/{total}）',
   'preview.markedOnly': '判定済みのみ',
+  'preview.coverSize': '表紙サイズ',
   'preview.refresh': 'サンプル取得',
   'preview.loadMore': 'さらに見る',
   'preview.sideEmpty': 'この側にはまだ何もありません',

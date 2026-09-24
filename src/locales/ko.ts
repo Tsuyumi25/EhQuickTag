@@ -403,6 +403,7 @@ export default {
   'preview.filterRight': '표시',
   'preview.columnCount': '{side} ({shown}/{total})',
   'preview.markedOnly': '판정한 것만',
+  'preview.coverSize': '표지 크기',
   'preview.refresh': '표본 가져오기',
   'preview.loadMore': '더 보기',
   'preview.sideEmpty': '이쪽에는 아직 아무것도 없습니다',

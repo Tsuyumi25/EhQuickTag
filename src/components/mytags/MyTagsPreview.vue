@@ -4,6 +4,7 @@ import { t } from '@/composables/useI18n'
 import { useTagLabel } from '@/composables/useTagLabel'
 import type { SampleGallery, Verdict } from '@/services/mytagsSamples'
 import { mismatchOf, type PreviewItem } from '@/services/mytagsScore'
+import { myTagsPreviewCoverScale } from '@/services/store'
 
 const props = defineProps<{
   left: PreviewItem[]
@@ -83,7 +84,7 @@ function metric(item: PreviewItem): string {
 </script>
 
 <template>
-  <section class="eqt-preview">
+  <section class="eqt-preview" :style="{ '--eqt-preview-cover-scale': myTagsPreviewCoverScale / 100 }">
     <header class="eqt-preview__toolbar">
       <div class="eqt-preview__titlerow">
         <h3 class="eqt-preview__title">{{ t('preview.title') }}</h3>

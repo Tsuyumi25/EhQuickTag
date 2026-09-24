@@ -226,6 +226,14 @@ test('編輯區可拖曳收合並保留草稿與預覽', async ({ page }) => {
     getComputedStyle(element).gridTemplateColumns.split(' ').length)).toBeGreaterThan(columnsBefore)
   await expect(page.locator('.eqt-preview__titlerow .eqt-taglist__chip')).toHaveAttribute('title', 'female:sample tag')
 
+  const coverSize = page.getByRole('slider', { name: '封面大小' })
+  await coverSize.press('Home')
+  const smallColumns = await grid.evaluate((element) =>
+    getComputedStyle(element).gridTemplateColumns.split(' ').length)
+  await coverSize.press('End')
+  await expect.poll(() => grid.evaluate((element) =>
+    getComputedStyle(element).gridTemplateColumns.split(' ').length)).toBeLessThan(smallColumns)
+
   const collapsedHandle = (await handle.boundingBox())!
   await page.mouse.move(collapsedHandle.x + collapsedHandle.width / 2, dragY)
   await page.mouse.down()

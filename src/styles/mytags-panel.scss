@@ -46,6 +46,22 @@
   min-width: 0;
 }
 
+.eqt-panel__cover-size {
+  max-width: 100%;
+}
+
+.eqt-panel__cover-slider {
+  width: calc(var(--eqt-checkbox-size) * 5);
+  min-width: 0;
+  margin: 0;
+}
+
+.eqt-panel__cover-value {
+  min-width: calc(var(--eqt-checkbox-size) * 2);
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
 
 .eqt-panel__eh-toggle {
   border-color: var(--eqt-border);
@@ -572,6 +588,8 @@
 // ---- 兩欄預覽 ----
 
 .eqt-preview {
+  --eqt-preview-cover-min-width: calc(var(--eqt-checkbox-size) * 5 * var(--eqt-preview-cover-scale));
+
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
@@ -663,7 +681,7 @@
 
 .eqt-preview__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, calc(var(--eqt-checkbox-size) * 5)), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--eqt-preview-cover-min-width)), 1fr));
   gap: 6px;
 }
 

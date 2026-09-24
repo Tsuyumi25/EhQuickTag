@@ -403,6 +403,7 @@ export default {
   'preview.filterRight': 'shown',
   'preview.columnCount': '{side} ({shown}/{total})',
   'preview.markedOnly': 'Marked only',
+  'preview.coverSize': 'Cover size',
   'preview.refresh': 'Fetch samples',
   'preview.loadMore': 'Keep going',
   'preview.sideEmpty': 'Nothing on this side yet',
