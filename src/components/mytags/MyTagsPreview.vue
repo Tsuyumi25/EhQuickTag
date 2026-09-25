@@ -1,10 +1,24 @@
 <script setup lang="ts">
 import { computed, ref, watch, onBeforeUnmount } from 'vue'
+import { Eye, EyeOff } from '@lucide/vue'
+import AnchoredPopover from '@/components/AnchoredPopover.vue'
 import { t } from '@/composables/useI18n'
 import { useTagLabel } from '@/composables/useTagLabel'
 import type { SampleGallery, Verdict } from '@/services/mytagsSamples'
+import { EH_CATEGORIES } from '@/services/ehSearchParams'
 import { mismatchOf, type PreviewItem } from '@/services/mytagsScore'
 import { myTagsPreviewCoverScale } from '@/services/store'
+
+/**
+ * EH API 回傳的 category 顯示名稱。key 與 `EH_CATEGORIES` 的 `key` 一致，
+ * value 是 gdata API 實際回傳的字串（不保證跟 camelCase 拆開相同）。
+ */
+const CAT_NAME_OF: Record<string, string> = {
+  doujinshi: 'Doujinshi', manga: 'Manga', artistCg: 'Artist CG',
+  gameCg: 'Game CG', western: 'Western', nonH: 'Non-H',
+  imageSet: 'Image Set', cosplay: 'Cosplay', asianPorn: 'Asian Porn',
+  misc: 'Misc',
+}
 
 const props = defineProps<{
   left: PreviewItem[]
@@ -33,8 +47,36 @@ const FLOW_STEP = 12
 
 const limit = ref({ left: FLOW_STEP, right: FLOW_STEP })
 
+// ---- 分類篩選 ----
+
+const catPopupOpen = ref(false)
+const catPopupAnchor = ref<HTMLElement | null>(null)
+/** 被排除的分類名稱（API 字串）。預設全選 = 空集合 */
+const excludedCategories = ref(new Set<string>())
+
+const allCatsIncluded = computed(() => excludedCategories.value.size === 0)
+
+function toggleCategory(name: string): void {
+  const next = new Set(excludedCategories.value)
+  if (next.has(name)) next.delete(name)
+  else next.add(name)
+  excludedCategories.value = next
+}
+
+
+// ---- 語言篩選 ----
+
+const allLanguages = ref(true)
+
+// ---- 篩選與分頁 ----
+
+function filterByCategory(list: PreviewItem[]): PreviewItem[] {
+  if (allCatsIncluded.value) return list
+  return list.filter((item) => !excludedCategories.value.has(item.gallery.category))
+}
+
 // 換標籤、換篩選之後從頭看起——已經展開的那幾十本跟新的一批沒有關係
-watch(() => [props.selected, props.markedOnly], () => {
+watch(() => [props.selected, props.markedOnly, excludedCategories.value, allLanguages.value], () => {
   limit.value = { left: FLOW_STEP, right: FLOW_STEP }
 })
 
@@ -47,7 +89,7 @@ const { label } = useTagLabel()
 const selectedLabel = computed(() => props.selected ? label.value(props.selected) : null)
 
 function items(side: 'left' | 'right'): PreviewItem[] {
-  return side === 'left' ? props.left : props.right
+  return filterByCategory(side === 'left' ? props.left : props.right)
 }
 
 function shown(side: 'left' | 'right'): PreviewItem[] {
@@ -110,6 +152,43 @@ function metric(item: PreviewItem): string {
           >
           {{ t('preview.markedOnly') }}
         </label>
+
+        <button
+          ref="catPopupAnchor"
+          type="button"
+          class="eqt-panel__btn"
+          :class="{ 'eqt-preview__filter--active': !allCatsIncluded }"
+          @click="catPopupOpen = !catPopupOpen"
+        >{{ t('preview.categories') }}</button>
+        <AnchoredPopover v-model:open="catPopupOpen" :anchor="catPopupAnchor">
+          <div class="eqt-preview__cat-popup">
+            <div class="eqt-url-builder__cats">
+              <button
+                v-for="c in EH_CATEGORIES"
+                :key="c.bit"
+                class="eqt-url-builder__cat cs"
+                :class="c.nativeClass"
+                :data-disabled="excludedCategories.has(CAT_NAME_OF[c.key]) ? '1' : undefined"
+                type="button"
+                :aria-pressed="!excludedCategories.has(CAT_NAME_OF[c.key])"
+                @click="toggleCategory(CAT_NAME_OF[c.key])"
+              >{{ t(`category.${c.key}`) }}</button>
+            </div>
+          </div>
+        </AnchoredPopover>
+
+        <label class="eqt-panel__field eqt-preview__lang-toggle">
+          <input
+            class="eqt-preview__lang-check"
+            type="checkbox"
+            :checked="allLanguages"
+            @change="allLanguages = ($event.target as HTMLInputElement).checked"
+          >
+          <Eye v-if="allLanguages" :size="14" aria-hidden="true" />
+          <EyeOff v-else :size="14" aria-hidden="true" />
+          {{ t('preview.allLanguages') }}
+        </label>
+
         <button type="button" class="eqt-panel__btn" :disabled="!!refreshBusy" @click="emit('refresh')">
           {{ refreshBusy || t('preview.refresh') }}
         </button>

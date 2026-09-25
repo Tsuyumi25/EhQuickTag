@@ -746,6 +746,29 @@
   gap: 8px;
 }
 
+.eqt-preview__filter--active {
+  border-color: var(--eqt-status-include);
+  background: var(--eqt-bg-btn-hover);
+}
+
+.eqt-preview__cat-popup {
+  padding: 8px;
+  border: var(--eqt-border-width) solid var(--eqt-border);
+  border-radius: var(--eqt-radius-md);
+  background: var(--eqt-bg);
+  box-shadow: var(--eqt-shadow-popover);
+}
+
+.eqt-preview__lang-check {
+  // 原生 checkbox 視覺由 eye icon 取代，但保留在 DOM 裡讓 label 的 click 與
+  // 鍵盤操作繼續走原生路徑
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
 
 .eqt-preview__cols {
   display: grid;
