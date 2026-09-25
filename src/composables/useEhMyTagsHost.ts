@@ -8,6 +8,8 @@
 // 使用者的編輯住在我們自己的 pending 裡，兩者比對就知道有什麼還沒套用。
 
 import { postMassAction } from '@/services/mytagsApi'
+import { createPageContext } from '@/composables/createPageContext'
+import { createAnchor } from '@/utils/createAnchor'
 
 /** 一組的容量。Gold Star+ 可開 10 組，每組都是這個數 */
 export const TAGSET_CAPACITY = 100
@@ -176,7 +178,7 @@ export function tagSetUrl(value: string): string {
     : `${location.origin}/mytags`
 }
 
-export function useEhMyTagsHost(): EhMyTagsHost | null {
+function setupEhMyTagsHost(): EhMyTagsHost | null {
   if (location.pathname !== '/mytags') return null
   const form = document.querySelector<HTMLFormElement>('#usertag_form')
   const outer = document.querySelector<HTMLElement>('#usertags_outer')
@@ -214,9 +216,7 @@ export function useEhMyTagsHost(): EhMyTagsHost | null {
     return [{ node, marker }]
   })
 
-  const anchor = document.createElement('div')
-  anchor.id = 'eqt-mytags-anchor'
-  anchor.setAttribute('translate', 'no')
+  const anchor = createAnchor('eqt-mytags-anchor')
   // ⚠️ #outer 是整頁的外框，跟上面那個 #usertags_outer（標籤列容器）是不同的東西
   const pageBox = document.querySelector('#outer')
   if (pageBox) pageBox.after(anchor)
@@ -303,3 +303,5 @@ export function useEhMyTagsHost(): EhMyTagsHost | null {
     },
   }
 }
+
+export const useEhMyTagsHost = createPageContext(setupEhMyTagsHost)

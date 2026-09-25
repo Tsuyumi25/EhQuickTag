@@ -14,8 +14,8 @@ import EqtNumberField from '@/components/EqtNumberField.vue'
 import AnchoredPopover from '@/components/AnchoredPopover.vue'
 import { fetchGallery, type GalleryDetail } from '@/composables/useEhGalleryPreview'
 import {
-  fetchTagSet, fetchThresholds,
-  type EhMyTagsHost, type MyTagRow, type NewTagInput, type TagSetSnapshot,
+  useEhMyTagsHost, fetchTagSet, fetchThresholds,
+  type MyTagRow, type NewTagInput, type TagSetSnapshot,
 } from '@/composables/useEhMyTagsHost'
 import { fetchListing } from '@/composables/useEhSearchListing'
 import { useMyTagsSampleFetcher } from '@/composables/useMyTagsSampleFetcher'
@@ -45,11 +45,11 @@ import { setUserTag, canWrite } from '@/services/mytagsApi'
 import { patchConfig } from '@/services/ehConfig'
 import { serializeEntry } from '@/services/searchSyntax'
 import { myTagsPanelZoom, nsFormat } from '@/services/store'
+import { openSettings } from '@/services/appOverlays'
 import { tagChipStyle } from '@/services/mytagsColors'
 import type { TagEntry } from '@/services/tagDb'
 
-const emit = defineEmits<{ openSettings: [] }>()
-const props = defineProps<{ host: EhMyTagsHost }>()
+const host = useEhMyTagsHost()!
 
 const toast = useEqtToast()
 
@@ -63,7 +63,7 @@ type NewTagSubmission = NewTagInput & { tagSet: string }
 
 function emptyDraft(): NewTagDraft {
   return {
-    tagSet: props.host.currentSet,
+    tagSet: host.currentSet,
     weight: 10,
     color: '',
     watch: false,
@@ -71,7 +71,7 @@ function emptyDraft(): NewTagDraft {
   }
 }
 
-const liveRows = ref<MyTagRow[]>(props.host.readRows())
+const liveRows = ref<MyTagRow[]>(host.readRows())
 const otherSets = ref<TagSetSnapshot[]>([])
 const edits = ref<EditMap>({})
 const bulkDraft = ref(emptyBulkDraft())
@@ -108,7 +108,7 @@ const editorPanel = ref<InstanceType<typeof SplitterPanel> | null>(null)
 const catalogTag = ref('')
 const previewTarget = ref<PreviewTarget>(null)
 const draft = ref<NewTagDraft>(emptyDraft())
-const moveTarget = ref(props.host.currentSet)
+const moveTarget = ref(host.currentSet)
 const createBusy = ref(false)
 
 const filterThreshold = ref<number | null>(null)
@@ -155,7 +155,7 @@ const rows = computed<MyTagRow[]>(() => {
 })
 
 const setColors = computed<Record<string, string>>(() => {
-  const out: Record<string, string> = { [props.host.currentSet]: props.host.defaultColor }
+  const out: Record<string, string> = { [host.currentSet]: host.defaultColor }
   for (const s of otherSets.value) out[s.value] = s.defaultColor
   return out
 })
@@ -437,7 +437,7 @@ async function applyThreshold(): Promise<void> {
 
 /** 送出後把那一組的標籤列換成最新的。當前組住在 liveRows，其餘住在 otherSets */
 function absorb(tagSet: string, next: MyTagRow[]): void {
-  if (tagSet === props.host.currentSet) { liveRows.value = next; return }
+  if (tagSet === host.currentSet) { liveRows.value = next; return }
   otherSets.value = otherSets.value.map((s) => (s.value === tagSet ? { ...s, rows: next } : s))
 }
 
@@ -461,8 +461,8 @@ async function executeMass(rows2: MyTagRow[], target: string): Promise<{ done: n
   let ok = true
   for (const [set, ids] of bySet) {
     const next = target === '0'
-      ? await props.host.deleteTags(ids, set)
-      : await props.host.moveTags(ids, target, set)
+      ? await host.deleteTags(ids, set)
+      : await host.moveTags(ids, target, set)
     if (!next) {
       toast.error(t('panel.massFailed'))
       ok = false
@@ -610,7 +610,7 @@ async function createNewTag(current: NewTagSubmission): Promise<void> {
   try {
     // 原生新增會立刻刷新；先等既有 pending edits 真正落進 gmStorage。
     await flush()
-    if (props.host.createTag(current.tagSet, current)) return
+    if (host.createTag(current.tagSet, current)) return
     toast.error(t('panel.createFailed'))
   } catch (error) {
     console.error('createTag failed', error)
@@ -633,7 +633,7 @@ watch([previewLeftItems, previewRightItems], ([l, r]) => {
 
 // ---- 生命週期 ----
 
-function reread(): void { liveRows.value = props.host.readRows() }
+function reread(): void { liveRows.value = host.readRows() }
 
 /**
  * 面板接管原生表單；MyTagsEhTopbar 自己管理 #nb / #lb 的借位與歸還。
@@ -641,15 +641,15 @@ function reread(): void { liveRows.value = props.host.readRows() }
  * ⚠️ `overflow: hidden` 動的是宿主頁面的全域狀態，一定要還原乾淨。
  */
 function setAppMode(on: boolean): void {
-  if (!on) props.host.restoreEhTopbar()
-  props.host.coverNative(on)
+  if (!on) host.restoreEhTopbar()
+  host.coverNative(on)
   for (const el of [document.documentElement, document.body]) el.style.overflow = on ? 'hidden' : ''
 }
 
 let unbind: (() => void) | null = null
 
 onMounted(async () => {
-  unbind = props.host.onChange(reread)
+  unbind = host.onChange(reread)
   setAppMode(true)
   store.value = await loadSamples()
   edits.value = await loadEdits()
@@ -657,7 +657,7 @@ onMounted(async () => {
   savedThreshold.value = filterThreshold.value
 
   const got = await Promise.all(
-    props.host.tagSets.filter((s) => s.value !== props.host.currentSet)
+    host.tagSets.filter((s) => s.value !== host.currentSet)
       .map((s) => fetchTagSet(s.value)))
   // 沒啟用的組不進計分，所以連讀都不讀進來
   otherSets.value = got.filter((s): s is TagSetSnapshot => !!s && s.enabled)
@@ -686,7 +686,7 @@ watch(edits, () => { void flush() }, { deep: true })
       <div class="eqt-panel__tools">
         <button
           type="button" class="eqt-panel__btn eqt-panel__btn--settings"
-          @click="emit('openSettings')"
+          @click="openSettings()"
         >
           <Settings :size="14" aria-hidden="true" />
           {{ t('settings.title') }}

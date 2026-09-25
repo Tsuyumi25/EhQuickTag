@@ -31,7 +31,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:modelValue': [value: string]
-  // 帶 action payload：背景雙擊路徑要區分 search / searchNewTab，App.onSearch
+  // 帶 action payload：背景雙擊路徑要區分 search / searchNewTab，搜尋送出端
   // 才能走對 branch。SearchControls submit 永遠送 'search'。
   // newTabActive 只在 searchNewTab 有意義：帶觸發側的「切換過去」開關
   search: [action: DblClickAction, newTabActive?: boolean]

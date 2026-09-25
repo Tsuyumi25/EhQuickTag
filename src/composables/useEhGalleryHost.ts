@@ -1,7 +1,12 @@
 // Gallery 詳情頁（/g/xxx/xxx）host：偵測 → 抓 #taglist tags（含 tagid 給 vote 路徑用）
 // → 隱藏原生 taglist 和 tag_menu → 在 #gd4 內 inject anchor。
 //
-// 跟 useEhFormHost 同樣只負責 DOM 邊界，回 handle 給 App.vue 接
+// 跟 useEhFormHost 同樣只負責 DOM 邊界，回 handle 給呼叫端接
+
+import { onMounted, watch } from 'vue'
+import { galleryTaglistExpand, galleryTaglistHeight } from '@/services/store'
+import { createPageContext } from '@/composables/createPageContext'
+import { createAnchor } from '@/utils/createAnchor'
 
 export interface GalleryTag {
   /** e站內部 tag id（譬如 98020）——voteUp/voteDown 走 native window function 需要 */
@@ -80,7 +85,7 @@ export function parseTaglistRoot(root: Element): GalleryTag[] {
   return tags
 }
 
-export function useEhGalleryHost(): EhGalleryHost | null {
+function setupEhGalleryHost(): EhGalleryHost | null {
   const tagList = document.querySelector<HTMLElement>('#taglist')
   const gd4 = document.querySelector<HTMLElement>('#gd4')
   if (!tagList || !gd4) return null
@@ -100,10 +105,20 @@ export function useEhGalleryHost(): EhGalleryHost | null {
   while (gd4.firstChild) nativeWrap.appendChild(gd4.firstChild)
   gd4.appendChild(nativeWrap)
 
-  const anchor = document.createElement('div')
-  anchor.id = 'eqt-gallery-anchor'
-  anchor.setAttribute('translate', 'no')
+  const anchor = createAnchor('eqt-gallery-anchor')
   gd4.appendChild(anchor)
+
+  // --eqt-gallery-height 設在 #gmid（anchor 的祖先）：gmid 自己也要讀取，後代再繼承。
+  function applyGalleryLayout(): void {
+    anchor.classList.toggle('is-expand', galleryTaglistExpand.value)
+    const gmid = anchor.closest<HTMLElement>('#gmid')
+    // 固定模式讀作高度，展開模式讀作最低高度，兩種模式都需要寫入。
+    gmid?.style.setProperty('--eqt-gallery-height', `${galleryTaglistHeight.value}px`)
+  }
+  watch([galleryTaglistExpand, galleryTaglistHeight], applyGalleryLayout)
+  onMounted(applyGalleryLayout)
 
   return { tags, anchor, taglistEl: tagList }
 }
+
+export const useEhGalleryHost = createPageContext(setupEhGalleryHost)

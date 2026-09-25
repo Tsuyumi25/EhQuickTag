@@ -8,14 +8,20 @@ import LineColorSwatch from '@/components/LineColorSwatch.vue'
 import SeparatorSettingsPopup from '@/components/SeparatorSettingsPopup.vue'
 import ContextMenu from '@/components/ContextMenu.vue'
 import SearchPanel from '@/components/search/SearchPanel.vue'
+import TagConfigPopup from '@/components/TagConfigPopup.vue'
+import UrlConfigPopup from '@/components/UrlConfigPopup.vue'
 import { TagState, type Line, type Button, type ButtonLine, type TagButton, type SpacerButton, type LineTextAlign } from '@/types'
 import { tokenize, buildIdentityIndex, getState as _getState, setTagState, getNextRightClickState } from '@/services/tagState'
-import { lines, profiles, activeProfileIdx, moveLineToProfile, moveButtonToProfile, buttonLineTextAlign, separatorLineTextAlign, dblClickLeft, dblClickRight, dblClickLeftNewTabActive, dblClickRightNewTabActive, useAccentOnInclude, showSearchPanel, followCurrentSite, type DblClickAction } from '@/services/store'
+import { lines, profiles, activeProfileIdx, switchProfile, renameProfile, createProfile, deleteProfile, moveLineToProfile, moveButtonToProfile, buttonLineTextAlign, separatorLineTextAlign, dblClickLeft, dblClickRight, dblClickLeftNewTabActive, dblClickRightNewTabActive, useAccentOnInclude, showSearchPanel, followCurrentSite, nsFormat, defaultExactMatch, type DblClickAction } from '@/services/store'
+import { openSettings, openSearchPopup } from '@/services/appOverlays'
 import { baseDragOptions, EQT_TAGS_GROUP, EQT_LINES_GROUP } from '@/utils/drag'
 import { resolveButtonUrl } from '@/utils/ehUrl'
 import { dismissTerms, recordSubmitAndFlush } from '@/services/search/searchSession'
 import { t } from '@/composables/useI18n'
 import { currentTagStyleClass } from '@/composables/useTagStyle'
+import { useTagButtonEditor } from '@/composables/useTagButtonEditor'
+import { useEhFormHost } from '@/composables/useEhFormHost'
+import { usePageSearch } from '@/composables/usePageSearch'
 import { computeSpacerResize, edgeSensitivity, DEFAULT_SPACER_WIDTH } from '@/services/spacerResize'
 
 const ACTION_KEYS: Record<DblClickAction, string> = {
@@ -37,34 +43,19 @@ const STATE_CLASS: Record<TagState, string> = {
   [TagState.Off]:     'eqt-tag-bar__btn--off',
 }
 
-const props = defineProps<{
-  searchText: string
-  profileName: string
-  profileIdx: number
-  profileCount: number
-  prevProfileName: string
-  nextProfileName: string
-}>()
+const host = useEhFormHost()!
+const { searchText, search } = usePageSearch()
 
-const emit = defineEmits<{
-  'update:searchText': [value: string]
-  'configure': [lineIdx: number, tagIdx: number]
-  'add': []
-  'addUrl': []
-  'addToSearch': []
-  'settings': []
-  'prevProfile': []
-  'nextProfile': []
-  'renameProfile': [name: string]
-  'createProfile': [name: string]
-  'deleteProfile': []
-  // newTabActive 只在 action === 'searchNewTab' 有意義：雙擊路徑帶觸發側的
-  // 「切換過去」開關，非雙擊 caller 不帶（App 端 fallback 為切換）
-  'search': [action: DblClickAction, newTabActive?: boolean]
-  // 量到的 line-controls 寬度——App.vue 拿來在 EH form 父層設 --eqt-controls-w，
-  // 讓原生 search row 的 wrapper 跟 __lines 用同一條置中縮窄公式
-  'controlsWidth': [width: number]
-}>()
+const {
+  tagPopupValue,
+  urlPopupValue,
+  editingLineColor,
+  pendingAdd,
+  onConfigure: openButtonEditor,
+  onAdd,
+  onSave,
+  onClose,
+} = useTagButtonEditor()
 
 const editing = ref(false)
 
@@ -73,7 +64,7 @@ const editToggleEl = ref<HTMLButtonElement | null>(null)
 
 const controlsEl = ref<HTMLElement | null>(null)
 useResizeObserver(controlsEl, ([entry]) => {
-  emit('controlsWidth', entry.contentRect.width)
+  host.setControlsWidth(entry.contentRect.width)
 })
 function captureControlsEl(el: unknown, li: number) {
   if (li === 0) controlsEl.value = (el as HTMLElement) ?? null
@@ -128,47 +119,55 @@ async function execDblClickAction(action: DblClickAction, newTabActive?: boolean
     return
   }
   if (action === 'openSearchPopup') {
-    // 重用既有的 + 鈕 event chain：TagBar emit → App.onAddToSearch → showSearchPopup
-    emit('addToSearch')
+    openSearchPopup()
     return
   }
   if (action === 'clearSearch') {
-    emit('update:searchText', '')
+    searchText.value = ''
   } else {
-    // 跟 SearchPanel.onSearchClick 同邏輯：先 recordSubmit + flush 再 emit。
-    // await flush 確保 navigate 前 GM_setValue resolve（finding #3）
+    // await flush 確保 navigate 前 GM_setValue resolve。
     await recordSubmitAndFlush()
     // 旗標只跟 searchNewTab 走：其他 action 不帶，避免隱藏的側設定值漏進
-    // App 端 fallback（那裡收不到旗標時走寫死的切換）
-    emit('search', action, action === 'searchNewTab' ? newTabActive : undefined)
+    // 搜尋送出端（那裡收不到旗標時走寫死的切換）
+    search(action, action === 'searchNewTab' ? newTabActive : undefined)
   }
 }
 
 // --- profile carousel ---
 
+const prevProfileName = computed(() => {
+  const idx = activeProfileIdx.value - 1
+  return idx >= 0 ? profiles[idx].name : ''
+})
+
+const nextProfileName = computed(() => {
+  const idx = activeProfileIdx.value + 1
+  return idx < profiles.length ? profiles[idx].name : ''
+})
 const onCreationPage = ref(false)
 const renamingProfile = ref(false)
 const renameValue = ref('')
 const renameInput = ref<HTMLInputElement | null>(null)
+const profileName = computed(() => profiles[activeProfileIdx.value]?.name ?? '')
 
 function onPrev() {
   if (onCreationPage.value) {
     onCreationPage.value = false
   } else {
-    emit('prevProfile')
+    switchProfile(activeProfileIdx.value - 1)
   }
 }
 
 function onNext() {
-  if (props.profileIdx === props.profileCount - 1) {
+  if (activeProfileIdx.value === profiles.length - 1) {
     onCreationPage.value = true
   } else {
-    emit('nextProfile')
+    switchProfile(activeProfileIdx.value + 1)
   }
 }
 
 function startRenameOrCreate() {
-  renameValue.value = onCreationPage.value ? '' : props.profileName
+  renameValue.value = onCreationPage.value ? '' : profileName.value
   renamingProfile.value = true
   nextTick(() => renameInput.value?.select())
 }
@@ -177,11 +176,11 @@ function finishRenameOrCreate() {
   const trimmed = renameValue.value.trim()
   if (onCreationPage.value) {
     if (trimmed) {
-      emit('createProfile', trimmed)
+      createProfile(trimmed)
       onCreationPage.value = false
     }
-  } else if (trimmed && trimmed !== props.profileName) {
-    emit('renameProfile', trimmed)
+  } else if (trimmed && trimmed !== profileName.value) {
+    renameProfile(activeProfileIdx.value, trimmed)
   }
   renamingProfile.value = false
 }
@@ -648,7 +647,7 @@ watch(tagMenuOpen, (open) => {
 
 function onConfigure(li: number, ti: number) {
   if (tagDragging) return
-  emit('configure', li, ti)
+  openButtonEditor(li, ti)
 }
 
 // Vue v-for / vuedraggable :item-key 需要的是 instance identity，不是 content。
@@ -690,7 +689,7 @@ const tagDragOptions = {
 
 // 整個按鈕牆共用一張身份索引表，只在 searchText 變時重算。
 // 拆 computed（而非塞進 getState 內）避免 N 顆按鈕各自重建一次。
-const identityIndex = computed(() => buildIdentityIndex(tokenize(props.searchText)))
+const identityIndex = computed(() => buildIdentityIndex(tokenize(searchText.value)))
 
 function getState(b: TagButton): TagState {
   return _getState(b.tags, identityIndex.value)
@@ -705,7 +704,7 @@ function dispatchTransition(tags: string[], next: TagState): void {
   if (next === TagState.Off) {
     dismissTerms(tags)
   } else {
-    emit('update:searchText', setTagState(props.searchText, tags, next))
+    searchText.value = setTagState(searchText.value, tags, next)
   }
 }
 
@@ -755,7 +754,7 @@ function onRightClick(event: MouseEvent, b: TagButton) {
         <button
           class="eqt-tag-bar__profile-nav eqt-tag-bar__profile-nav--prev"
           type="button"
-          :disabled="profileIdx === 0 && !onCreationPage"
+          :disabled="activeProfileIdx === 0 && !onCreationPage"
           @click="onPrev"
         >{{ onCreationPage ? profileName : prevProfileName }} <ChevronLeft :size="12" /></button>
         <input
@@ -778,8 +777,8 @@ function onRightClick(event: MouseEvent, b: TagButton) {
             :class="{ 'eqt-tag-bar__profile-split-delete--hidden': !editing || onCreationPage }"
             type="button"
             :tabindex="(!editing || onCreationPage) ? -1 : undefined"
-            :disabled="profileCount <= 1"
-            @click="emit('deleteProfile')"
+            :disabled="profiles.length <= 1"
+            @click="deleteProfile(activeProfileIdx)"
           ><Trash2 :size="12" /></button>
         </div>
         <button
@@ -1065,11 +1064,10 @@ function onRightClick(event: MouseEvent, b: TagButton) {
       <div v-if="showSearchPanel" class="eqt-tag-bar__search-area">
         <span class="eqt-tag-bar__search-area-label">{{ t('tagbar.searchPanel') }}</span>
         <SearchPanel
-          :model-value="searchText"
+          v-model="searchText"
           :editing="editing"
-          @update:model-value="emit('update:searchText', $event)"
-          @add-to-search="emit('addToSearch')"
-          @search="emit('search', 'search')"
+          @add-to-search="openSearchPopup"
+          @search="search('search')"
           @drag-start="onTagStart"
           @drag-end="onTagEnd"
         />
@@ -1113,12 +1111,12 @@ function onRightClick(event: MouseEvent, b: TagButton) {
             <button
               class="eqt-tag-bar__ctrl-split-btn"
               type="button"
-              @click="emit('add')"
+              @click="onAdd('tag')"
             ><Plus :size="12" /> {{ t('tagbar.addTag') }}</button>
             <button
               class="eqt-tag-bar__ctrl-split-btn"
               type="button"
-              @click="emit('addUrl')"
+              @click="onAdd('url')"
             ><ExternalLink :size="12" /> {{ t('tagbar.addUrl') }}</button>
           </div>
 
@@ -1133,12 +1131,36 @@ function onRightClick(event: MouseEvent, b: TagButton) {
           <button
             class="eqt-tag-bar__ctrl"
             type="button"
-            @click="emit('settings')"
+            @click="openSettings()"
           ><Settings :size="12" /> {{ t('tagbar.settings') }}</button>
         </div>
       </div>
     </div>
   </div>
+
+  <!-- TagBar 整棵樹被 teleport 到 host 的 #eqt-bar-anchor，那裡的 stacking
+       context 與字體 reset 都跟著 host search row 走。popup 再 teleport 回
+       #eqt-app，維持與其他 overlay 相同的定位基準、字體與 translate=no 保護。 -->
+  <Teleport to="#eqt-app">
+    <TagConfigPopup
+      v-if="tagPopupValue"
+      :tag="tagPopupValue"
+      :line-color="editingLineColor"
+      :is-add="pendingAdd"
+      :ns-format="nsFormat"
+      :default-exact-match="defaultExactMatch"
+      @save="onSave"
+      @close="onClose"
+    />
+
+    <UrlConfigPopup
+      v-if="urlPopupValue"
+      :tag="urlPopupValue"
+      :line-color="editingLineColor"
+      @save="onSave"
+      @close="onClose"
+    />
+  </Teleport>
 </template>
 
 <style lang="scss">

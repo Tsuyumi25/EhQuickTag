@@ -1,8 +1,14 @@
-import { createApp } from 'vue'
+import { createApp, effectScope } from 'vue'
 import Toast, { POSITION } from 'vue-toastification'
 import App from '@/App.vue'
-import { loadStore, startAutoSave } from '@/services/store'
+import { loadStore, startAutoSave, tagDbMirror, tagDbTtlDays, tagCountMirror, tagCountTtlDays, tagWikiMirror, tagWikiTtlDays } from '@/services/store'
 import { loadSessionHistory } from '@/services/search/searchSession'
+import { createAnchor } from '@/utils/createAnchor'
+import { loadTagDb } from '@/services/tagDb'
+import { loadTagCount } from '@/services/tagCount'
+import { loadTagWiki, WikiSchemaMismatchError } from '@/services/tagWiki'
+import { useEqtToast } from '@/composables/useEqtToast'
+import { t } from '@/composables/useI18n'
 import '@/styles/theme.scss'
 import '@/styles/popup.scss'
 import '@/styles/tag-style.scss'
@@ -26,12 +32,12 @@ import '@/styles/toast-overrides.scss'
   toastContainer.id = 'eqt-toast'
   document.body.append(toastContainer)
 
-  const appContainer = document.createElement('div')
-  appContainer.id = 'eqt-app'
-  appContainer.setAttribute('translate', 'no')
+  const anchorScope = effectScope()
+  const appContainer = anchorScope.run(() => createAnchor('eqt-app'))!
   document.body.append(appContainer)
 
   const app = createApp(App)
+  app.onUnmount(() => anchorScope.stop())
   app.use(Toast, {
     container: toastContainer,
     position: POSITION.TOP_RIGHT,
@@ -41,6 +47,20 @@ import '@/styles/toast-overrides.scss'
     pauseOnHover: true,
     draggable: true,
   })
+
+  const toast = useEqtToast()
+  loadTagDb({ mirror: tagDbMirror.value, ttlDays: tagDbTtlDays.value })
+  loadTagCount({ mirror: tagCountMirror.value, ttlDays: tagCountTtlDays.value })
+  loadTagWiki({ mirror: tagWikiMirror.value, ttlDays: tagWikiTtlDays.value })
+    .catch((e) => {
+      // 初次載入時失敗——schema 錯 (CDN 遲滯) 用專屬提示引導切 mirror；其他錯默默
+      // console 不打擾使用者 (單純網路瞬斷之類的下次載入自然重試)
+      if (e instanceof WikiSchemaMismatchError) {
+        toast.error(t('settings.tagWikiSchemaMismatch'))
+      }
+      console.error('[tagWiki] load failed:', e)
+    })
+
   app.mount(appContainer)
 
   startAutoSave()

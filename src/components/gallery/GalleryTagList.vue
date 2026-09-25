@@ -14,32 +14,27 @@ import { GM } from '$'
 import { serializeEntry } from '@/services/searchSyntax'
 import { findEntryByNsTag, DEFAULT_NS_ORDER, tagDbVersion } from '@/services/tagDb'
 import { nsFormat, defaultExactMatch, galleryDragSelectEnabled, galleryDblClickLeft, galleryDblClickRight, galleryDblClickLeftNewTabActive, galleryDblClickRightNewTabActive, galleryTaglistZoom, type GalleryDblClickAction } from '@/services/store'
+import { openSettings } from '@/services/appOverlays'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
 import { t, isZhLocale, locale } from '@/composables/useI18n'
 import { batchVote, type VoteState } from '@/services/galleryVote'
 import { useEqtToast } from '@/composables/useEqtToast'
-import { parseTaglistRoot, type GalleryTag } from '@/composables/useEhGalleryHost'
+import { useEhGalleryHost, parseTaglistRoot, type GalleryTag } from '@/composables/useEhGalleryHost'
 import { useIntroPanel } from '@/composables/useIntroPanel'
 import { Settings, Search, BookOpen } from '@lucide/vue'
 import { useDragSelect } from '@/composables/useDragSelect'
 import type { ChipRef, TriState, Selection } from '@/services/gallery/dragSelectMachine'
 import GalleryAddInline from './GalleryAddInline.vue'
+import GalleryIntroPanel from './GalleryIntroPanel.vue'
 import type { TagEntry } from '@/services/tagDb'
 
 type TagTier = 'gt' | 'gtl' | 'gtw'
 
-const props = defineProps<{
-  tags: GalleryTag[]
-  taglistEl: HTMLElement
-}>()
-
-const emit = defineEmits<{
-  'open-settings': []
-}>()
+const host = useEhGalleryHost()!
 
 const toast = useEqtToast()
 
-const currentTags = ref<GalleryTag[]>([...props.tags])
+const currentTags = ref<GalleryTag[]>([...host.tags])
 const userVotes = ref<Record<string, VoteState>>({})
 
 function syncUserVotesFromTags(): void {
@@ -66,10 +61,10 @@ onMounted(() => {
     // 觸發 mutation，此時 syncUserVotesFromTags 會把第二封 (downs) 的 optimistic
     // 狀態抹掉，造成 UI 短暫閃爍。batch 結束後 finally 會手動補一次 sync
     if (votePending.value) return
-    currentTags.value = parseTaglistRoot(props.taglistEl)
+    currentTags.value = parseTaglistRoot(host.taglistEl)
     syncUserVotesFromTags()
   })
-  taglistObserver.observe(props.taglistEl, {
+  taglistObserver.observe(host.taglistEl, {
     childList: true,
     subtree: true,
     attributes: true,
@@ -412,7 +407,7 @@ async function onSendBatchVotes(): Promise<void> {
   } finally {
     votePending.value = false
     // batch 期間 MutationObserver 都 skip 了，補一次把 server 最終狀態收回來
-    currentTags.value = parseTaglistRoot(props.taglistEl)
+    currentTags.value = parseTaglistRoot(host.taglistEl)
     syncUserVotesFromTags()
   }
 }
@@ -420,7 +415,7 @@ async function onSendBatchVotes(): Promise<void> {
 async function dispatchBatch(tags: GalleryTag[], voteValue: 1 | -1): Promise<boolean> {
   const response = await batchVote(tags, voteValue)
   if (response.tagpaneHtml) {
-    props.taglistEl.innerHTML = response.tagpaneHtml
+    host.taglistEl.innerHTML = response.tagpaneHtml
   } else if (response.error) {
     syncUserVotesFromTags()
   }
@@ -526,7 +521,7 @@ watch(selection, () => {
       type="button"
       class="eqt-gallery-actions__btn eqt-gallery-actions__btn--settings"
       :title="t('settings.title')"
-      @click="emit('open-settings')"
+      @click="openSettings('gallery')"
     >
       <Settings :size="14" />
       <span>{{ t('settings.title') }}</span>
@@ -549,4 +544,5 @@ watch(selection, () => {
     @pick="onPickFromAdd"
     @close="showAddPopup = false"
   />
+  <GalleryIntroPanel />
 </template>
