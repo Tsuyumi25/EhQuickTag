@@ -54,12 +54,12 @@ describe('accuracy', () => {
 })
 
 describe('listingUrl', () => {
-  it('使用者設定的過濾器全部停用——不停用的話被排除的分類和硬隱藏的標籤會缺席', () => {
+  it('保留語言排除，同時停用分類、標籤與上傳者過濾', () => {
     const url = new URL(listingUrl('male:"example$"', 'https://e-hentai.org'))
     expect(url.searchParams.get('f_cats')).toBe('0')
     expect(url.searchParams.get('f_sft')).toBe('on')
     expect(url.searchParams.get('f_sfu')).toBe('on')
-    expect(url.searchParams.get('f_sfl')).toBe('on')
+    expect(url.searchParams.has('f_sfl')).toBe(false)
     expect(url.searchParams.get('f_search')).toBe('male:"example$"')
     expect(url.searchParams.has('next')).toBe(false)
   })
@@ -72,6 +72,7 @@ describe('listingUrl', () => {
   it('翻頁走游標，不是 page——EH 會忽略 page，每一頁都回第一頁', () => {
     const url = new URL(listingUrl('x', 'https://e-hentai.org', '1000000'))
     expect(url.searchParams.get('next')).toBe('1000000')
+    expect(url.searchParams.has('f_sfl')).toBe(false)
     expect(url.searchParams.has('page')).toBe(false)
   })
 

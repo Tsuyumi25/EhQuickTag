@@ -59,11 +59,6 @@ function toggleCategory(name: string): void {
   excludedCategories.value = next
 }
 
-
-// ---- 語言篩選 ----
-
-const allLanguages = ref(true)
-
 // ---- 篩選與分頁 ----
 
 function filterByCategory(list: PreviewItem[]): PreviewItem[] {
@@ -72,7 +67,7 @@ function filterByCategory(list: PreviewItem[]): PreviewItem[] {
 }
 
 // 換標籤、換篩選之後從頭看起——已經展開的那幾十本跟新的一批沒有關係
-watch(() => [props.selected, props.markedOnly, excludedCategories.value, allLanguages.value], () => {
+watch(() => [props.selected, props.markedOnly, excludedCategories.value], () => {
   limit.value = { left: FLOW_STEP, right: FLOW_STEP }
 })
 
@@ -155,15 +150,6 @@ function metric(item: PreviewItem): string {
       </div>
 
       <div class="eqt-preview__controls">
-        <label class="eqt-panel__field">
-          <input
-            type="checkbox"
-            :checked="allLanguages"
-            @change="allLanguages = ($event.target as HTMLInputElement).checked"
-          >
-          {{ t('preview.allLanguages') }}
-        </label>
-
         <label class="eqt-panel__field">
           <input
             type="checkbox" :checked="markedOnly"

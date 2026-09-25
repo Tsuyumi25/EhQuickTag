@@ -731,6 +731,14 @@ watch(edits, () => { void flush() }, { deep: true })
               </li>
               <li>{{ t('panel.helpTagSets') }}</li>
               <li>
+                <template v-for="(part, i) in t('panel.helpLanguageFiltering').split(/(\{settings\})/)" :key="i">
+                  <a v-if="part === '{settings}'" href="/uconfig.php" target="_blank" rel="noopener noreferrer">
+                    {{ t('panel.helpSettingsPage') }}
+                  </a>
+                  <template v-else>{{ part }}</template>
+                </template>
+              </li>
+              <li>
                 <template v-for="(seg, i) in helpSegments(t('panel.helpQueryExemption'))" :key="i">
                   <code v-if="seg.term" class="eqt-panel__help-term">{{ seg.text }}</code>
                   <template v-else>{{ seg.text }}</template>
