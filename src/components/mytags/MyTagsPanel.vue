@@ -843,60 +843,6 @@ watch(edits, () => { void flush() }, { deep: true })
 
       <SplitterPanel :min-size="30" :default-size="100 - SIDE_DEFAULT_SIZE" class="eqt-panel__main-panel">
       <SplitterGroup direction="horizontal" class="eqt-panel__splitter">
-        <SplitterPanel
-          ref="editorPanel"
-          v-slot="{ isCollapsed }"
-          class="eqt-panel__editor-panel"
-          collapsible
-          :collapsed-size="0"
-          :min-size="0"
-          :default-size="EDITOR_DEFAULT_SIZE"
-        >
-          <MyTagsCatalog
-            id="eqt-tag-catalog"
-            :inert="isCollapsed"
-            :aria-hidden="isCollapsed || undefined"
-            :full="catalogTag"
-            :state="catalogState"
-            :target-set="catalogRow ? moveTarget : draft.tagSet"
-            :source-set="catalogRow?.tagSet ?? null"
-            :sets="host.tagSets"
-            :impact="catalogImpact"
-            :set-colors="setColors"
-            :busy="createBusy || !!writeBusy"
-            :previewed="!!catalogTag && previewTarget?.full === catalogTag"
-            @update:target-set="setCatalogTarget"
-            @update:full="setCatalogFull"
-            @patch="patchCatalog"
-            @pick="pickCandidate"
-            @preview="previewCatalog"
-            @confirm="refreshPreview"
-            @move="moveCatalogTag"
-            @create="createNewTag"
-          />
-        </SplitterPanel>
-        <div class="eqt-panel__divider">
-          <button
-            type="button"
-            class="eqt-panel__panel-toggle eqt-panel__panel-toggle--editor"
-            :aria-expanded="!editorPanel?.isCollapsed"
-            :aria-label="t(editorPanel?.isCollapsed ? 'panel.expandEditor' : 'panel.collapseEditor')"
-            :title="t(editorPanel?.isCollapsed ? 'panel.expandEditor' : 'panel.collapseEditor')"
-            @mousedown.stop
-            @touchstart.stop
-            @click="editorPanel?.isCollapsed ? editorPanel.resize(EDITOR_DEFAULT_SIZE) : editorPanel?.collapse()"
-          >
-            <ArrowRightFromLine v-if="editorPanel?.isCollapsed" :size="14" aria-hidden="true" />
-            <ArrowLeftFromLine v-else :size="14" aria-hidden="true" />
-          </button>
-          <SplitterResizeHandle
-            class="eqt-panel__resize-handle eqt-panel__resize-handle--editor"
-            :aria-label="t('panel.resizeEditor')"
-            :title="t('panel.resizeEditor')"
-          >
-            <span class="eqt-panel__resize-grip" aria-hidden="true" />
-          </SplitterResizeHandle>
-        </div>
         <SplitterPanel :min-size="30" :default-size="100 - EDITOR_DEFAULT_SIZE" class="eqt-panel__preview-stack">
           <SplitterGroup direction="vertical" class="eqt-panel__preview-splitter">
           <SplitterPanel
@@ -950,6 +896,60 @@ watch(edits, () => { void flush() }, { deep: true })
           />
           </SplitterPanel>
           </SplitterGroup>
+        </SplitterPanel>
+        <div class="eqt-panel__divider">
+          <button
+            type="button"
+            class="eqt-panel__panel-toggle eqt-panel__panel-toggle--editor"
+            :aria-expanded="!editorPanel?.isCollapsed"
+            :aria-label="t(editorPanel?.isCollapsed ? 'panel.expandEditor' : 'panel.collapseEditor')"
+            :title="t(editorPanel?.isCollapsed ? 'panel.expandEditor' : 'panel.collapseEditor')"
+            @mousedown.stop
+            @touchstart.stop
+            @click="editorPanel?.isCollapsed ? editorPanel.resize(EDITOR_DEFAULT_SIZE) : editorPanel?.collapse()"
+          >
+            <ArrowLeftFromLine v-if="editorPanel?.isCollapsed" :size="14" aria-hidden="true" />
+            <ArrowRightFromLine v-else :size="14" aria-hidden="true" />
+          </button>
+          <SplitterResizeHandle
+            class="eqt-panel__resize-handle eqt-panel__resize-handle--editor"
+            :aria-label="t('panel.resizeEditor')"
+            :title="t('panel.resizeEditor')"
+          >
+            <span class="eqt-panel__resize-grip" aria-hidden="true" />
+          </SplitterResizeHandle>
+        </div>
+        <SplitterPanel
+          ref="editorPanel"
+          v-slot="{ isCollapsed }"
+          class="eqt-panel__editor-panel"
+          collapsible
+          :collapsed-size="0"
+          :min-size="0"
+          :default-size="EDITOR_DEFAULT_SIZE"
+        >
+          <MyTagsCatalog
+            id="eqt-tag-catalog"
+            :inert="isCollapsed"
+            :aria-hidden="isCollapsed || undefined"
+            :full="catalogTag"
+            :state="catalogState"
+            :target-set="catalogRow ? moveTarget : draft.tagSet"
+            :source-set="catalogRow?.tagSet ?? null"
+            :sets="host.tagSets"
+            :impact="catalogImpact"
+            :set-colors="setColors"
+            :busy="createBusy || !!writeBusy"
+            :previewed="!!catalogTag && previewTarget?.full === catalogTag"
+            @update:target-set="setCatalogTarget"
+            @update:full="setCatalogFull"
+            @patch="patchCatalog"
+            @pick="pickCandidate"
+            @preview="previewCatalog"
+            @confirm="refreshPreview"
+            @move="moveCatalogTag"
+            @create="createNewTag"
+          />
         </SplitterPanel>
       </SplitterGroup>
       </SplitterPanel>
