@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { useMediaQuery } from '@vueuse/core'
+import { useElementBounding, useMediaQuery } from '@vueuse/core'
 import { ArrowLeftFromLine, ArrowRightFromLine, ExternalLink, Settings } from '@lucide/vue'
 import { SplitterGroup, SplitterPanel, SplitterResizeHandle } from 'reka-ui'
 import { isZhLocale, t } from '@/composables/useI18n'
@@ -78,6 +78,8 @@ const store = ref<SampleStore>(emptyStore())
 const ehTopbarOpen = ref(false)
 const helpOpen = ref(false)
 const helpAnchor = ref<HTMLElement | null>(null)
+const topbar = ref<HTMLElement | null>(null)
+const { bottom: topbarBottom } = useElementBounding(topbar)
 const wikiUrl = computed(() => `https://ehwiki.org/wiki/My_Tags${isZhLocale() ? '/Chinese' : ''}`)
 // 說明文案的專有名詞走 placeholder，翻譯只排語序，值與樣式一律由這裡給
 const helpTerms = computed<Record<string, string>>(() => ({
@@ -667,7 +669,17 @@ watch(edits, () => { void flush() }, { deep: true })
 
 <template>
   <section class="eqt-panel">
-    <header class="eqt-panel__topbar" :aria-label="t('panel.navLabel')">
+    <SplitterGroup :direction="narrowLayout ? 'vertical' : 'horizontal'" class="eqt-panel__workspace">
+      <SplitterPanel
+        ref="sidePanel"
+        v-slot="{ isCollapsed }"
+        class="eqt-panel__side-panel"
+        collapsible
+        :collapsed-size="0"
+        :min-size="0"
+        :default-size="SIDE_DEFAULT_SIZE"
+      >
+    <header ref="topbar" class="eqt-panel__topbar" :aria-label="t('panel.navLabel')" :inert="isCollapsed" :aria-hidden="isCollapsed || undefined">
       <div class="eqt-panel__tools">
         <button
           type="button" class="eqt-panel__btn eqt-panel__btn--settings"
@@ -683,15 +695,6 @@ watch(edits, () => { void flush() }, { deep: true })
           aria-controls="eqt-eh-topbar"
           @click="toggleEhTopbar"
         >{{ t('panel.ehTopbar') }}</button>
-        <a
-          class="eqt-panel__btn eqt-panel__btn--wiki"
-          :href="wikiUrl"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <ExternalLink :size="12" aria-hidden="true" />
-          {{ t('panel.wiki') }}
-        </a>
         <button
           ref="helpAnchor"
           type="button"
@@ -740,11 +743,19 @@ watch(edits, () => { void flush() }, { deep: true })
                 </p>
               </li>
             </ol>
+        <a
+          class="eqt-panel__btn eqt-panel__btn--wiki"
+          :href="wikiUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <ExternalLink :size="12" aria-hidden="true" />
+          {{ t('panel.wiki') }}
+        </a>
           </section>
         </AnchoredPopover>
       </div>
 
-      <MyTagsEhTopbar v-if="ehTopbarOpen" :host="host" />
 
       <label class="eqt-panel__field" :class="{ 'eqt-panel__field--dirty': thresholdDirty }">
         {{ t('bars.threshold') }}
@@ -756,16 +767,6 @@ watch(edits, () => { void flush() }, { deep: true })
       </label>
     </header>
 
-    <SplitterGroup :direction="narrowLayout ? 'vertical' : 'horizontal'" class="eqt-panel__workspace">
-      <SplitterPanel
-        ref="sidePanel"
-        v-slot="{ isCollapsed }"
-        class="eqt-panel__side-panel"
-        collapsible
-        :collapsed-size="0"
-        :min-size="0"
-        :default-size="SIDE_DEFAULT_SIZE"
-      >
       <aside class="eqt-panel__side" :inert="isCollapsed" :aria-hidden="isCollapsed || undefined">
         <!-- 清單吃掉側欄剩下的高度，自己捲。側欄本身貼著視窗，所以底下那條永遠在 -->
         <MyTagsTagList
@@ -931,5 +932,10 @@ watch(edits, () => { void flush() }, { deep: true })
       </SplitterGroup>
       </SplitterPanel>
     </SplitterGroup>
+    <MyTagsEhTopbar
+      v-if="ehTopbarOpen"
+      :host="host"
+      :style="{ '--eqt-eh-topbar-top': `${topbarBottom}px` }"
+    />
   </section>
 </template>
