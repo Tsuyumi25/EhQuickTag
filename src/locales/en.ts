@@ -362,6 +362,7 @@ export default {
   'panel.helpTagSets': 'Tag sets cannot be created or renamed here, since those tasks are rarely needed. Disable the userscript and use the original E-Hentai My Tags page for those actions.',
   'panel.helpLanguageFiltering': 'Fetched samples are results after applying the Excluded Languages settings on the {settings}.',
   'panel.helpSettingsPage': 'settings page',
+  'preview.panelZoom': 'UI zoom',
   'panel.helpQueryExemption': 'E-Hentai exempts tags that you explicitly search for from My Tags filtering: their weights do not count towards the filter score, and their Hide settings do not apply. All other tags still apply normally, so this preview may not match the actual search results. Language and uploader exclusions are unaffected by this behaviour.',
   'panel.helpQueryExample': 'For example, set {anthology} to Hide and give {webtoon} a negative weight. When you search for {anthology}, its Hide setting is ignored, while the negative weight of {webtoon} still counts. If you search for both tags, both are exempt, while all other tags continue to apply normally.',
   'panel.resizeEditor': 'Drag to resize the editor; right to collapse, left to expand',

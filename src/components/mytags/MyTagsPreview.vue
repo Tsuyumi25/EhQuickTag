@@ -5,7 +5,8 @@ import { useTagLabel } from '@/composables/useTagLabel'
 import type { SampleGallery, Verdict } from '@/services/mytagsSamples'
 import { EH_CATEGORIES } from '@/services/ehSearchParams'
 import { mismatchOf, type PreviewItem } from '@/services/mytagsScore'
-import { myTagsPreviewCoverScale } from '@/services/store'
+import { myTagsPanelZoom, myTagsPreviewCoverScale } from '@/services/store'
+import EqtNumberField from '@/components/EqtNumberField.vue'
 
 /**
  * EH API 回傳的 category 顯示名稱。key 與 `EH_CATEGORIES` 的 `key` 一致，
@@ -244,8 +245,19 @@ function metric(item: PreviewItem): string {
       </section>
     </div>
 
-    <!-- 封面大小放最底部 -->
-    <label class="eqt-panel__field eqt-preview__cover-size">
+    <div class="eqt-preview__cover-size">
+      <label class="eqt-panel__field">
+        {{ t('preview.panelZoom') }}
+        <EqtNumberField
+          v-model="myTagsPanelZoom"
+          :min="50"
+          :max="150"
+          :step="5"
+          :label="t('preview.panelZoom')"
+        />
+        <span>%</span>
+      </label>
+      <label class="eqt-panel__field">
       {{ t('preview.coverSize') }}
       <input
         v-model.number="myTagsPreviewCoverScale"
@@ -258,5 +270,6 @@ function metric(item: PreviewItem): string {
       >
       <output class="eqt-panel__cover-value">{{ myTagsPreviewCoverScale }}%</output>
     </label>
+    </div>
   </section>
 </template>

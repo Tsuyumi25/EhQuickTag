@@ -362,6 +362,7 @@ export default {
   'panel.helpTagSets': '创建与重命名标签集属于低频操作，本页不提供这两项功能。请停用插件后，到 E-Hentai 原生 My Tags 页面操作。',
   'panel.helpLanguageFiltering': '抓取的样本是套用{settings}的「排除语言」后的结果。',
   'panel.helpSettingsPage': '设置页面',
+  'preview.panelZoom': '界面缩放',
   'panel.helpQueryExemption': '搜索时明确指定的标签会获得 E-Hentai 的 My Tags 过滤豁免：它们的权重不计入总和，隐藏设置也不生效；其他标签仍照常过滤。因此，本页预览可能与搜索结果不同。排除语言与排除上传者不受这项豁免影响。',
   'panel.helpQueryExample': '例如，把 {anthology} 设为隐藏、{webtoon} 设为负权重。搜索 {anthology} 时，它的隐藏设置会被略过，{webtoon} 的负权重仍会计入；同时搜索两者时，两者都会被豁免，其他标签仍照常过滤。',
   'panel.resizeEditor': '拖动调整编辑区宽度，向右收起、向左展开',

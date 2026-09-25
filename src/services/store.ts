@@ -163,6 +163,7 @@ const INITIAL_SETTINGS = {
   wikiPreludeExpanded: false,
   followCurrentSite: true,
   myTagsPreviewCoverScale: 100,
+  myTagsPanelZoom: 100,
 }
 
 type Settings = typeof INITIAL_SETTINGS
@@ -208,6 +209,7 @@ export const galleryDblClickRightNewTabActive = refs.galleryDblClickRightNewTabA
 export const wikiPreludeExpanded = refs.wikiPreludeExpanded
 export const followCurrentSite  = refs.followCurrentSite
 export const myTagsPreviewCoverScale = refs.myTagsPreviewCoverScale
+export const myTagsPanelZoom = refs.myTagsPanelZoom
 
 // enum-shape setting 的合法 id 集合。壞值 silently fallback 到 INITIAL_SETTINGS 預設——
 // 沒這層守門 GM storage 被竄改塞個壞字串會直接灌進 ref，UI 永久卡在「無 active button、
@@ -215,6 +217,7 @@ export const myTagsPreviewCoverScale = refs.myTagsPreviewCoverScale
 // 加新 enum-shape setting 時順手在這註冊一條，validation 自動接管。
 const SETTING_VALIDATORS: Partial<{ [K in SettingKey]: (v: unknown) => boolean }> = {
   myTagsPreviewCoverScale: v => typeof v === 'number' && Number.isFinite(v) && v >= 60 && v <= 130,
+  myTagsPanelZoom:        v => typeof v === 'number' && Number.isFinite(v) && v >= 50 && v <= 150,
   searchPanelLangMode:    v => SEARCH_PANEL_LANG_MODES.some(m => m.id === v),
   convertToTraditional:   v => CONVERT_TO_TRADITIONAL_MODES.some(m => m.id === v),
   introPanelPrimaryLang:  v => INTRO_PANEL_PRIMARY_LANGS.some(m => m.id === v),

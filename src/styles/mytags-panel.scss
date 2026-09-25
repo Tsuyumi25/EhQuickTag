@@ -117,8 +117,7 @@
 }
 
 .eqt-panel__cover-value {
-  min-width: calc(var(--eqt-checkbox-size) * 2);
-  text-align: end;
+  flex: 0 0 auto;
   font-variant-numeric: tabular-nums;
 }
 
@@ -769,8 +768,11 @@
   }
 }
 
-// 封面大小 slider 貼底
 .eqt-preview__cover-size {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--eqt-checkbox-size) / 2);
   flex-shrink: 0;
   margin-top: 6px;
 }

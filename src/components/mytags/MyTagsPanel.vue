@@ -43,7 +43,7 @@ import {
 import { setUserTag, canWrite } from '@/services/mytagsApi'
 import { patchConfig } from '@/services/ehConfig'
 import { serializeEntry } from '@/services/searchSyntax'
-import { nsFormat } from '@/services/store'
+import { myTagsPanelZoom, nsFormat } from '@/services/store'
 import { tagChipStyle } from '@/services/mytagsColors'
 import type { TagEntry } from '@/services/tagDb'
 
@@ -668,7 +668,7 @@ watch(edits, () => { void flush() }, { deep: true })
 </script>
 
 <template>
-  <section class="eqt-panel">
+  <section class="eqt-panel" :style="{ zoom: myTagsPanelZoom / 100 }">
     <SplitterGroup :direction="narrowLayout ? 'vertical' : 'horizontal'" class="eqt-panel__workspace">
       <SplitterPanel
         ref="sidePanel"
@@ -943,7 +943,7 @@ watch(edits, () => { void flush() }, { deep: true })
     <MyTagsEhTopbar
       v-if="ehTopbarOpen"
       :host="host"
-      :style="{ '--eqt-eh-topbar-top': `${topbarBottom}px` }"
+      :style="{ '--eqt-eh-topbar-top': `${topbarBottom / (myTagsPanelZoom / 100)}px` }"
     />
   </section>
 </template>
