@@ -669,7 +669,7 @@
 
 .eqt-taglist__bulk-actions {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: calc(var(--eqt-checkbox-size) / 4);
 
   > .eqt-panel__btn[aria-pressed='true'] {
@@ -688,12 +688,16 @@
 }
 
 .eqt-taglist__bulk-delete {
-  --eqt-bulk-on-border: var(--eqt-danger);
-  --eqt-bulk-on-bg: var(--eqt-danger);
-  --eqt-bulk-on-bg-hover: var(--eqt-danger-hover);
-  --eqt-bulk-on-text: var(--eqt-text-on-color);
-
   color: var(--eqt-danger);
+
+  &[aria-pressed='true'] {
+    border-color: var(--eqt-status-include);
+    background: var(--eqt-bg-btn-hover);
+
+    &:hover:not(:disabled) {
+      background: var(--eqt-bg-btn-hover);
+    }
+  }
 }
 
 // ---- 兩欄預覽 ----

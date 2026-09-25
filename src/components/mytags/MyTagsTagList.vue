@@ -154,7 +154,9 @@ function toggleFlag(flag: 'watch' | 'hidden'): void {
     : flag === 'watch'
       ? { watch: true, hidden: false }
       : { hidden: true, watch: false }
-  stageDraft({ patch })
+  // 設旗標 → 取消刪除（刪都要刪了改旗標沒意義）
+  const clearDelete = Object.keys(patch).length && deleting.value
+  stageDraft({ patch, ...(clearDelete ? { action: null } : {}) })
 }
 
 const deleting = computed(() => props.bulkDraft.action?.kind === 'delete')
@@ -163,7 +165,10 @@ const moveTarget = computed(() =>
   props.bulkDraft.action?.kind === 'move' ? props.bulkDraft.action.tagSet : '')
 
 function toggleDelete(): void {
-  stageDraft({ action: deleting.value ? null : { kind: 'delete' } })
+  // 刪除 → 清掉旗標草稿（互斥）
+  stageDraft(deleting.value
+    ? { action: null }
+    : { action: { kind: 'delete' }, patch: {} })
 }
 
 // 這裡只排草稿，送不送由底部的套用決定——選一個目的地不該打到伺服器
@@ -328,12 +333,6 @@ watch(
           :disabled="busy"
           @click="toggleFlag('hidden')"
         >{{ t('taglist.bulkHide') }}</button>
-        <button
-          type="button" class="eqt-panel__btn eqt-taglist__bulk-delete"
-          :aria-pressed="deleting"
-          :disabled="busy"
-          @click="toggleDelete"
-        >{{ t('panel.labelDelete') }}</button>
       </div>
       <div class="eqt-taglist__bulk-move">
         <select
@@ -349,6 +348,12 @@ watch(
           </option>
         </select>
       </div>
+      <button
+        type="button" class="eqt-panel__btn eqt-taglist__bulk-delete"
+        :aria-pressed="deleting"
+        :disabled="busy"
+        @click="toggleDelete"
+      >{{ t('panel.labelDelete') }}</button>
     </div>
   </div>
 </template>
