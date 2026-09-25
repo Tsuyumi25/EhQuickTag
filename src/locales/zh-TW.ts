@@ -363,6 +363,8 @@ export default {
   'panel.helpLanguageFiltering': '抓取的樣本是套用{settings}的「排除語言」後的結果。',
   'panel.helpSettingsPage': '設定頁面',
   'preview.panelZoom': '介面縮放',
+  'preview.expungedOnly': '已刪除',
+  'preview.fetchExpunged': '抓取已刪除的樣本',
   'panel.helpQueryExemption': '搜尋時明確指定的標籤會獲得 E-Hentai 的 My Tags 過濾豁免：它們的權重不計入加總，隱藏設定也不生效；其他標籤仍照常過濾。因此，本頁預覽可能與搜尋結果不同。排除語言與排除上傳者不受這項豁免影響。',
   'panel.helpQueryExample': '例如，把 {anthology} 設為隱藏、{webtoon} 設為負權重。搜尋 {anthology} 時，它的隱藏設定會被略過，{webtoon} 的負權重仍會計入；同時搜尋兩者時，兩者都會被豁免，其他標籤仍照常過濾。',
   'panel.resizeEditor': '拖曳調整編輯區寬度，向右收合、向左展開',

@@ -62,6 +62,7 @@ describe('listingUrl', () => {
     expect(url.searchParams.has('f_sfl')).toBe(false)
     expect(url.searchParams.get('f_search')).toBe('male:"example$"')
     expect(url.searchParams.has('next')).toBe(false)
+    expect(url.searchParams.has('f_sh')).toBe(false)
   })
 
   it('不指定顯示模式——標籤走 API，不從 HTML 讀', () => {
@@ -74,6 +75,13 @@ describe('listingUrl', () => {
     expect(url.searchParams.get('next')).toBe('1000000')
     expect(url.searchParams.has('f_sfl')).toBe(false)
     expect(url.searchParams.has('page')).toBe(false)
+  })
+
+  it('已刪除搜尋沿用語言排除並攜帶自己的游標', () => {
+    const url = new URL(listingUrl('x', 'https://e-hentai.org', '900000', true))
+    expect(url.searchParams.get('f_sh')).toBe('on')
+    expect(url.searchParams.get('next')).toBe('900000')
+    expect(url.searchParams.has('f_sfl')).toBe(false)
   })
 
   it('游標是 null 就是第一頁', () => {

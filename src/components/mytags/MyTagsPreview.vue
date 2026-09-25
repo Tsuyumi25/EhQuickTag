@@ -5,8 +5,7 @@ import { useTagLabel } from '@/composables/useTagLabel'
 import type { SampleGallery, Verdict } from '@/services/mytagsSamples'
 import { EH_CATEGORIES } from '@/services/ehSearchParams'
 import { mismatchOf, type PreviewItem } from '@/services/mytagsScore'
-import { myTagsPanelZoom, myTagsPreviewCoverScale } from '@/services/store'
-import EqtNumberField from '@/components/EqtNumberField.vue'
+import { myTagsPreviewCoverScale } from '@/services/store'
 
 /**
  * EH API 回傳的 category 顯示名稱。key 與 `EH_CATEGORIES` 的 `key` 一致，
@@ -25,7 +24,9 @@ const props = defineProps<{
   verdicts: Record<string, Verdict>
   selected: string | null
   selectedStyle: Record<string, string> | null
-  refreshBusy: string
+  refreshBusy: boolean
+  expungedOnly: boolean
+  expungedBusy: boolean
   markedOnly: boolean
   threshold: number | null
   /** 已經攤開在下面的那一本 */
@@ -39,6 +40,8 @@ const emit = defineEmits<{
   refresh: []
   setVerdict: [number, Verdict | null]
   'update:markedOnly': [boolean]
+  'update:expungedOnly': [boolean]
+  refreshExpunged: []
 }>()
 
 /** 一次多顯示幾本。捲到底自動再加一批，見 watchMore */
@@ -68,7 +71,7 @@ function filterByCategory(list: PreviewItem[]): PreviewItem[] {
 }
 
 // 換標籤、換篩選之後從頭看起——已經展開的那幾十本跟新的一批沒有關係
-watch(() => [props.selected, props.markedOnly, excludedCategories.value], () => {
+watch(() => [props.selected, props.markedOnly, props.expungedOnly, excludedCategories.value], () => {
   limit.value = { left: FLOW_STEP, right: FLOW_STEP }
 })
 
@@ -153,14 +156,21 @@ function metric(item: PreviewItem): string {
       <div class="eqt-preview__controls">
         <label class="eqt-panel__field">
           <input
+            type="checkbox" :checked="expungedOnly"
+            @change="emit('update:expungedOnly', ($event.target as HTMLInputElement).checked)"
+          >
+          {{ t('preview.expungedOnly') }}
+        </label>
+        <label class="eqt-panel__field">
+          <input
             type="checkbox" :checked="markedOnly"
             @change="emit('update:markedOnly', ($event.target as HTMLInputElement).checked)"
           >
           {{ t('preview.markedOnly') }}
         </label>
 
-        <button type="button" class="eqt-panel__btn" :disabled="!!refreshBusy" @click="emit('refresh')">
-          {{ refreshBusy || t('preview.refresh') }}
+        <button type="button" class="eqt-panel__btn" :disabled="refreshBusy" @click="emit('refresh')">
+          {{ refreshBusy ? t('bars.grabbing') : t('preview.refresh') }}
         </button>
       </div>
     </header>
@@ -247,17 +257,6 @@ function metric(item: PreviewItem): string {
 
     <div class="eqt-preview__cover-size">
       <label class="eqt-panel__field">
-        {{ t('preview.panelZoom') }}
-        <EqtNumberField
-          v-model="myTagsPanelZoom"
-          :min="50"
-          :max="150"
-          :step="5"
-          :label="t('preview.panelZoom')"
-        />
-        <span>%</span>
-      </label>
-      <label class="eqt-panel__field">
       {{ t('preview.coverSize') }}
       <input
         v-model.number="myTagsPreviewCoverScale"
@@ -270,6 +269,12 @@ function metric(item: PreviewItem): string {
       >
       <output class="eqt-panel__cover-value">{{ myTagsPreviewCoverScale }}%</output>
     </label>
+      <button
+        type="button"
+        class="eqt-panel__btn eqt-preview__expunged"
+        :disabled="expungedBusy"
+        @click="emit('refreshExpunged')"
+      >{{ expungedBusy ? t('bars.grabbing') : t('preview.fetchExpunged') }}</button>
     </div>
   </section>
 </template>

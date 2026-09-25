@@ -18,6 +18,7 @@ import {
   type EhMyTagsHost, type MyTagRow, type NewTagInput, type TagSetSnapshot,
 } from '@/composables/useEhMyTagsHost'
 import { fetchListing } from '@/composables/useEhSearchListing'
+import { useMyTagsSampleFetcher } from '@/composables/useMyTagsSampleFetcher'
 import {
   outcomeOf, compareItems,
   type PreviewItem, type TagFacts, type TagImpact,
@@ -114,9 +115,23 @@ const filterThreshold = ref<number | null>(null)
 /** EH 上現在的門檻。跟 filterThreshold 不一樣就代表這格也還沒送出去 */
 const savedThreshold = ref<number | null>(null)
 const markedOnly = ref(false)
+const expungedOnly = ref(false)
 const writeBusy = ref('')
-const sampleBusy = ref('')
-const fetchedPages = ref<Record<string, { pages: number; cursor: string | null }>>({})
+function acceptSamples(samples: SampleGallery[]): void {
+  const galleries = { ...store.value.galleries }
+  for (const gallery of samples) galleries[String(gallery.gid)] = gallery
+  store.value = { ...store.value, galleries }
+}
+const currentFetcher = useMyTagsSampleFetcher({
+  fetchPage: (tag, cursor, signal) => fetchListing(listingUrl(term(tag), location.origin, cursor), signal),
+  accept: acceptSamples,
+  maxPages: MAX_FETCH,
+})
+const expungedFetcher = useMyTagsSampleFetcher({
+  fetchPage: (tag, cursor, signal) => fetchListing(listingUrl(term(tag), location.origin, cursor, true), signal),
+  accept: acceptSamples,
+  maxPages: MAX_FETCH,
+})
 
 /** 攤開在預覽下方的那一本。整頁抓回來，判斷才有一張封面以外的依據 */
 const openedGallery = ref<GalleryDetail | null>(null)
@@ -235,6 +250,7 @@ const previewItems = computed<PreviewItem[]>(() => {
   const factSource = target?.kind === 'draft' ? catalogFactsOf : factsOf
   return Object.values(store.value.galleries)
     .filter((gallery) => !markedOnly.value || !!store.value.verdicts[String(gallery.gid)])
+    .filter((gallery) => !expungedOnly.value || gallery.expunged === true)
     .filter((gallery) => !target || gallery.tags.includes(target.full))
     .map((gallery) => ({
       gallery,
@@ -254,6 +270,7 @@ const catalogItems = computed<PreviewItem[]>(() => {
   return Object.values(store.value.galleries)
     .filter((gallery) => gallery.tags.includes(full))
     .filter((gallery) => !markedOnly.value || !!store.value.verdicts[String(gallery.gid)])
+    .filter((gallery) => !expungedOnly.value || gallery.expunged === true)
     .map((gallery) => ({
       gallery,
       outcome: outcomeOf(gallery.tags, catalogFactsOf, threshold),
@@ -485,32 +502,18 @@ function term(full: string): string {
   )
 }
 
-async function grabTag(tag: string): Promise<void> {
-  const at = fetchedPages.value[tag]
-  if (sampleBusy.value || (at && at.cursor === null)) return
-  // 抓回來的都還沒判過，「只看已標記」開著的話它們一本都不會出現，就沒得標記了
+async function grabTag(tag: string, expunged = false): Promise<void> {
+  const selected = expunged ? expungedFetcher : currentFetcher
+  const other = expunged ? currentFetcher : expungedFetcher
+  other.stop()
   markedOnly.value = false
-  sampleBusy.value = t('bars.grabbing')
-  let { pages, cursor } = at ?? { pages: 0, cursor: null }
-  for (let i = 0; i < MAX_FETCH; i += 1) {
-    const got = await fetchListing(listingUrl(term(tag), location.origin, cursor))
-    pages += 1
-    cursor = got.next
-    if (got.galleries.length) {
-      const galleries = { ...store.value.galleries }
-      for (const g of got.galleries) galleries[String(g.gid)] = g
-      store.value = { ...store.value, galleries }
-    }
-    fetchedPages.value = { ...fetchedPages.value, [tag]: { pages, cursor } }
-    if (!cursor) break
-  }
-  sampleBusy.value = ''
+  await selected.start(tag)
 }
 
-async function refreshPreview(): Promise<void> {
+async function refreshPreview(expunged = false): Promise<void> {
   const tag = previewTarget.value?.full
   if (!tag) { toast.info(t('panel.pickTagFirst')); return }
-  await grabTag(tag)
+  await grabTag(tag, expunged)
 }
 
 /** 直接指定，不用一格一格輪。只認 gid——判斷本來就綁畫廊不綁設定 */
@@ -546,7 +549,7 @@ function select(tag: string): void {
     ? null
     : { kind: 'saved', full: tag }
   openedGallery.value = null
-  if (previewTarget.value && !fetchedPages.value[tag]) void grabTag(tag)
+  if (previewTarget.value && !currentFetcher.hasFetched(tag)) void grabTag(tag)
 }
 
 function setCatalogFull(full: string): void {
@@ -558,7 +561,7 @@ function setCatalogFull(full: string): void {
 
 function pickCandidate(entry: TagEntry): void {
   setCatalogFull(entry.fullTag)
-  if (!fetchedPages.value[entry.fullTag]) void grabTag(entry.fullTag)
+  if (!currentFetcher.hasFetched(entry.fullTag)) void grabTag(entry.fullTag)
 }
 
 function previewCatalog(): void {
@@ -661,7 +664,7 @@ onMounted(async () => {
 
 })
 
-onUnmounted(() => { unbind?.(); setAppMode(false) })
+onUnmounted(() => { currentFetcher.stop(); expungedFetcher.stop(); unbind?.(); setAppMode(false) })
 watch(() => store.value.galleries, (galleries) => { void saveGalleries(galleries) })
 watch(() => store.value.verdicts, (verdicts) => { void saveVerdicts(verdicts) })
 watch(edits, () => { void flush() }, { deep: true })
@@ -765,13 +768,16 @@ watch(edits, () => { void flush() }, { deep: true })
       </div>
 
 
-      <label class="eqt-panel__field" :class="{ 'eqt-panel__field--dirty': thresholdDirty }">
-        {{ t('bars.threshold') }}
+      <label class="eqt-panel__field">
+        {{ t('preview.panelZoom') }}
         <EqtNumberField
-          v-model="filterThreshold"
-          :max="0"
-          :label="t('bars.threshold')"
+          v-model="myTagsPanelZoom"
+          :min="50"
+          :max="150"
+          :step="5"
+          :label="t('preview.panelZoom')"
         />
+        <span>%</span>
       </label>
     </header>
 
@@ -843,12 +849,15 @@ watch(edits, () => { void flush() }, { deep: true })
             :inert="isCollapsed"
             :aria-hidden="isCollapsed || undefined"
             v-model:marked-only="markedOnly"
+            v-model:expunged-only="expungedOnly"
+            :expunged-busy="expungedFetcher.busy.value"
             :left="previewLeftItems" :right="previewRightItems"
             :verdicts="store.verdicts"
             :selected="previewTarget?.full ?? null" :selected-style="previewSelectedStyle"
-            :refresh-busy="sampleBusy" :threshold="activeThreshold"
+            :refresh-busy="currentFetcher.busy.value" :threshold="activeThreshold"
             :opened-gid="openedGallery?.gid ?? null"
             @clear-tag="clearPreviewTarget" @refresh="refreshPreview" @set-verdict="setVerdict"
+            @refresh-expunged="refreshPreview(true)"
             @open="openGallery"
           />
           </SplitterPanel>
@@ -914,6 +923,14 @@ watch(edits, () => { void flush() }, { deep: true })
           :min-size="0"
           :default-size="EDITOR_DEFAULT_SIZE"
         >
+      <label class="eqt-panel__field" :class="{ 'eqt-panel__field--dirty': thresholdDirty }" :inert="isCollapsed" :aria-hidden="isCollapsed || undefined">
+        {{ t('bars.threshold') }}
+        <EqtNumberField
+          v-model="filterThreshold"
+          :max="0"
+          :label="t('bars.threshold')"
+        />
+      </label>
           <MyTagsCatalog
             id="eqt-tag-catalog"
             :inert="isCollapsed"

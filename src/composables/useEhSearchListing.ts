@@ -42,13 +42,15 @@ interface GdataEntry {
   category?: string
   thumb?: string
   tags?: string[]
+  expunged?: boolean
   error?: string
 }
 
 /** `namespace: 1` 才會回帶命名空間的標籤（`male:example` 而不是 `example`） */
-async function gdata(refs: GalleryRef[]): Promise<SampleGallery[]> {
+async function gdata(refs: GalleryRef[], signal?: AbortSignal): Promise<SampleGallery[]> {
   const res = await fetch(API, {
     method: 'POST',
+    signal,
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       method: 'gdata',
@@ -67,6 +69,7 @@ async function gdata(refs: GalleryRef[]): Promise<SampleGallery[]> {
       category: g.category ?? '',
       thumb: g.thumb ?? '',
       tags: g.tags ?? [],
+      expunged: g.expunged,
     }))
 }
 
@@ -86,20 +89,27 @@ export interface Listing {
   next: string | null
 }
 
-/** 畫廊為空代表這一頁沒有結果或抓失敗——兩者對呼叫端沒有差別 */
-export async function fetchListing(url: string): Promise<Listing> {
+/** 空結果與抓取失敗皆回空頁；取消必須拋出，避免呼叫端把未完成的頁面記成搜尋到底。 */
+export async function fetchListing(url: string, signal?: AbortSignal): Promise<Listing> {
   try {
-    const res = await fetch(url, { credentials: 'same-origin' })
+    signal?.throwIfAborted()
+    const res = await fetch(url, { credentials: 'same-origin', signal })
     if (!res.ok) return { galleries: [], next: null }
     const html = await res.text()
+    signal?.throwIfAborted()
     const next = parseNextCursor(html)
     const refs = parseRefs(html)
     if (!refs.length) return { galleries: [], next }
 
     const galleries: SampleGallery[] = []
     for (let i = 0; i < refs.length; i += BATCH) {
-      galleries.push(...await gdata(refs.slice(i, i + BATCH)))
+      signal?.throwIfAborted()
+      galleries.push(...await gdata(refs.slice(i, i + BATCH), signal))
     }
+    signal?.throwIfAborted()
     return { galleries, next }
-  } catch { return { galleries: [], next: null } }
+  } catch (error) {
+    if (signal?.aborted) throw error
+    return { galleries: [], next: null }
+  }
 }

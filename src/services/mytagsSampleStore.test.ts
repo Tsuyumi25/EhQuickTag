@@ -60,6 +60,20 @@ describe('mytags sample persistence', () => {
     })
   })
 
+  it('已刪除樣本與沒有狀態的舊樣本能共同保存，人工判斷不變', async () => {
+    await saveGalleries({
+      1: gallery,
+      2: { ...gallery, gid: 2, expunged: true },
+      3: { ...gallery, gid: 3, expunged: false },
+    })
+    await saveVerdicts({ 1: 'keep', 2: 'block' })
+    const loaded = await loadSamples()
+    expect(Object.keys(loaded.galleries)).toEqual(['1', '2', '3'])
+    expect(Object.values(loaded.galleries).filter((item) => item.expunged === true).map((item) => item.gid))
+      .toEqual([2])
+    expect(loaded.verdicts).toEqual({ 1: 'keep', 2: 'block' })
+  })
+
   it('其中一個 key 損壞時仍載入另一個', async () => {
     storage.set('eqt_mytags_galleries', '{broken')
     storage.set('eqt_mytags_verdicts', JSON.stringify({

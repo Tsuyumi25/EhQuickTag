@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { parseRefs, parseNextCursor } from '@/composables/useEhSearchListing'
+import { afterEach, describe, it, expect, vi } from 'vitest'
+import { fetchListing, parseRefs, parseNextCursor } from '@/composables/useEhSearchListing'
 
 describe('parseRefs', () => {
   const html = `
@@ -49,5 +49,58 @@ describe('parseNextCursor', () => {
 
   it('零結果的頁面沒有任何翻頁按鈕', () => {
     expect(parseNextCursor('<p>No hits found</p>')).toBeNull()
+  })
+})
+
+describe('fetchListing cancellation', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('搜尋請求取消時回報取消，不能偽裝成搜尋到底', async () => {
+    const controller = new AbortController()
+    vi.stubGlobal('fetch', vi.fn((_url: string, options: RequestInit) =>
+      new Promise<Response>((_resolve, reject) => {
+        options.signal!.addEventListener('abort', () => reject(options.signal!.reason), { once: true })
+      })))
+    const result = fetchListing('https://example.invalid/', controller.signal)
+    const cancelled = expect(result).rejects.toMatchObject({ name: 'AbortError' })
+    controller.abort()
+    await cancelled
+  })
+
+  it('metadata 請求也能取消，新的抓取不必等待舊批次', async () => {
+    const controller = new AbortController()
+    let started!: () => void
+    const metadataStarted = new Promise<void>((resolve) => { started = resolve })
+    const request = vi.fn()
+      .mockResolvedValueOnce(new Response('<a href="/g/1/aaaaaaaaaa/">sample</a>'))
+      .mockImplementationOnce((_url: string, options: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          options.signal!.addEventListener('abort', () => reject(options.signal!.reason), { once: true })
+          started()
+        }))
+      .mockResolvedValueOnce(new Response('<a href="/g/2/bbbbbbbbbb/">sample</a>'))
+      .mockResolvedValueOnce(Response.json({
+        gmetadata: [{ gid: 2, token: 'bbbbbbbbbb', title: 'sample', tags: [], expunged: true }],
+      }))
+    vi.stubGlobal('fetch', request)
+    const oldResult = fetchListing('https://example.invalid/', controller.signal)
+    const cancelled = expect(oldResult).rejects.toMatchObject({ name: 'AbortError' })
+    await metadataStarted
+    controller.abort()
+    const nextResult = await fetchListing('https://example.invalid/?f_sh=on')
+    await cancelled
+    expect(nextResult.galleries.filter((gallery) => gallery.expunged === true).map((gallery) => gallery.gid))
+      .toEqual([2])
+  })
+
+  it('取消後才完成的回應不能成為可提交的搜尋結果', async () => {
+    let finish!: (response: Response) => void
+    vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>((resolve) => { finish = resolve })))
+    const controller = new AbortController()
+    const result = fetchListing('https://example.invalid/', controller.signal)
+    const cancelled = expect(result).rejects.toMatchObject({ name: 'AbortError' })
+    controller.abort()
+    finish(new Response('<p>No hits found</p>'))
+    await cancelled
   })
 })

@@ -237,13 +237,18 @@
   min-height: 0;
 }
 
-.eqt-panel__side-panel {
+.eqt-panel__side-panel,
+.eqt-panel__editor-panel {
   display: flex;
   flex-direction: column;
 }
 
+.eqt-panel__editor-panel {
+  gap: calc(var(--eqt-checkbox-size) / 3);
+}
+
 .eqt-panel__editor-panel > .eqt-tag-catalog {
-  height: 100%;
+  flex: 1 1 auto;
 }
 
 .eqt-panel__divider {
@@ -775,6 +780,10 @@
   gap: calc(var(--eqt-checkbox-size) / 2);
   flex-shrink: 0;
   margin-top: 6px;
+}
+
+.eqt-preview__expunged {
+  margin-inline-start: auto;
 }
 
 

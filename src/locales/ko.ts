@@ -363,6 +363,8 @@ export default {
   'panel.helpLanguageFiltering': '가져오는 표본은 {settings}의 제외 언어 설정이 적용된 결과입니다.',
   'panel.helpSettingsPage': '설정 페이지',
   'preview.panelZoom': 'UI 배율',
+  'preview.expungedOnly': '삭제됨',
+  'preview.fetchExpunged': '삭제된 표본 가져오기',
   'panel.helpQueryExemption': '검색어에 직접 지정한 태그는 E-Hentai의 My Tags 필터링에서 제외됩니다. 해당 태그의 가중치는 합계에 포함되지 않으며 숨김 설정도 적용되지 않습니다. 다른 태그는 평소대로 필터링되므로 이 미리보기와 검색 결과가 다를 수 있습니다. 제외 언어와 제외 업로더에는 이 예외가 적용되지 않습니다.',
   'panel.helpQueryExample': '예를 들어 {anthology}를 숨김으로 설정하고 {webtoon}에 음수 가중치를 지정합니다. {anthology}를 검색하면 그 숨김 설정은 무시되지만 {webtoon}의 음수 가중치는 계속 합산됩니다. 두 태그를 함께 검색하면 둘 다 제외되고 다른 태그는 평소대로 필터링됩니다.',
   'panel.resizeEditor': '드래그하여 편집 영역 너비 조절: 오른쪽으로 접기, 왼쪽으로 펼치기',

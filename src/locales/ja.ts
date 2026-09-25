@@ -363,6 +363,8 @@ export default {
   'panel.helpLanguageFiltering': '取得するサンプルは、{settings}の「除外言語」を適用した結果です。',
   'panel.helpSettingsPage': '設定ページ',
   'preview.panelZoom': 'UI 拡大率',
+  'preview.expungedOnly': '削除済み',
+  'preview.fetchExpunged': '削除済みのサンプルを取得',
   'panel.helpQueryExemption': '検索条件に明示的に指定したタグは、E-Hentai の My Tags フィルターの対象外になります。そのタグの重みは合計に含まれず、非表示設定も適用されません。他のタグは通常どおり適用されるため、このプレビューと実際の検索結果が一致しない場合があります。ただし、この仕様は除外言語と除外アップローダーには適用されません。',
   'panel.helpQueryExample': '例えば、{anthology} を非表示にし、{webtoon} に負の重みを設定します。{anthology} を検索条件に指定すると、その非表示設定は無視されますが、{webtoon} の負の重みは引き続き加算されます。両方を検索条件に指定すると、どちらも対象外となり、他のタグは通常どおり適用されます。',
   'panel.resizeEditor': 'ドラッグで編集欄の幅を調整。右で折りたたみ、左で展開',

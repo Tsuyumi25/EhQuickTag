@@ -12,6 +12,7 @@ export interface SampleGallery {
   /** 列表頁直接給的封面圖。EH 的封面 URL 是永久的，存下來就能一直用 */
   thumb: string
   tags: string[]
+  expunged?: boolean
 }
 
 /** 使用者的判斷：這本該被擋 / 這本該留下 */
@@ -71,11 +72,12 @@ export function accuracy(
  * 帶什麼值都回傳第一頁，看起來像在翻，其實原地踏步。`next` 從上一頁的
  * `parseNextCursor` 拿，是排除式的：下一頁第一本的 gid 比它小。
  */
-export function listingUrl(keywords: string, origin: string, next?: string | null): string {
+export function listingUrl(keywords: string, origin: string, next?: string | null, expunged = false): string {
   const u = new URL('/', origin)
   u.searchParams.set('f_search', keywords)
   u.searchParams.set('f_cats', '0')
   for (const f of ['f_sft', 'f_sfu']) u.searchParams.set(f, 'on')
+  if (expunged) u.searchParams.set('f_sh', 'on')
   if (next) u.searchParams.set('next', next)
   return u.toString()
 }
