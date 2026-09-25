@@ -746,28 +746,29 @@
   gap: 8px;
 }
 
-.eqt-preview__filter--active {
-  border-color: var(--eqt-status-include);
-  background: var(--eqt-bg-btn-hover);
+// 分類按鈕常駐最上方。宿主 .cs 寫死 width:121px，preview 窄時會溢出——
+// 覆寫成 auto 讓文字決定寬度，grid 的 minmax(0,1fr) 負責壓縮。
+.eqt-preview__cats {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+  flex-shrink: 0;
+  margin-bottom: 6px;
+
+  > .eqt-url-builder__cat {
+    width: auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: bold;
+  }
 }
 
-.eqt-preview__cat-popup {
-  padding: 8px;
-  border: var(--eqt-border-width) solid var(--eqt-border);
-  border-radius: var(--eqt-radius-md);
-  background: var(--eqt-bg);
-  box-shadow: var(--eqt-shadow-popover);
+// 封面大小 slider 貼底
+.eqt-preview__cover-size {
+  flex-shrink: 0;
+  margin-top: 6px;
 }
 
-.eqt-preview__lang-check {
-  // 原生 checkbox 視覺由 eye icon 取代，但保留在 DOM 裡讓 label 的 click 與
-  // 鍵盤操作繼續走原生路徑
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-}
 
 
 .eqt-preview__cols {

@@ -411,7 +411,6 @@ export default {
   'preview.filterRight': '表示される',
   'preview.columnCount': '{side}（{shown}/{total}）',
   'preview.markedOnly': '判定済み',
-  'preview.categories': 'カテゴリ',
   'preview.allLanguages': '全言語',
   'preview.coverSize': '表紙サイズ',
   'preview.refresh': 'サンプル取得',

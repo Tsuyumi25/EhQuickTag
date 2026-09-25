@@ -411,7 +411,6 @@ export default {
   'preview.filterRight': '会显示',
   'preview.columnCount': '{side}（{shown}/{total}）',
   'preview.markedOnly': '已标记',
-  'preview.categories': '画廊分类',
   'preview.allLanguages': '全语言',
   'preview.coverSize': '封面大小',
   'preview.refresh': '抓取样本',

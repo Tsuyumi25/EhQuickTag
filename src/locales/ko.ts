@@ -411,7 +411,6 @@ export default {
   'preview.filterRight': '표시',
   'preview.columnCount': '{side} ({shown}/{total})',
   'preview.markedOnly': '판정',
-  'preview.categories': '분류',
   'preview.allLanguages': '전체 언어',
   'preview.coverSize': '표지 크기',
   'preview.refresh': '표본 가져오기',

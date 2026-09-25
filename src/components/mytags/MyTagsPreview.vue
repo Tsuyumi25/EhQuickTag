@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import { computed, ref, watch, onBeforeUnmount } from 'vue'
-import { Eye, EyeOff } from '@lucide/vue'
-import AnchoredPopover from '@/components/AnchoredPopover.vue'
 import { t } from '@/composables/useI18n'
 import { useTagLabel } from '@/composables/useTagLabel'
 import type { SampleGallery, Verdict } from '@/services/mytagsSamples'
@@ -49,8 +47,6 @@ const limit = ref({ left: FLOW_STEP, right: FLOW_STEP })
 
 // ---- 分類篩選 ----
 
-const catPopupOpen = ref(false)
-const catPopupAnchor = ref<HTMLElement | null>(null)
 /** 被排除的分類名稱（API 字串）。預設全選 = 空集合 */
 const excludedCategories = ref(new Set<string>())
 
@@ -84,7 +80,7 @@ const labels = computed(() => ({
   icon: ['−', '+'], left: t('preview.filterLeft'), right: t('preview.filterRight'),
 }))
 
-const total = computed(() => props.left.length + props.right.length)
+const total = computed(() => items('left').length + items('right').length)
 const { label } = useTagLabel()
 const selectedLabel = computed(() => props.selected ? label.value(props.selected) : null)
 
@@ -127,6 +123,20 @@ function metric(item: PreviewItem): string {
 
 <template>
   <section class="eqt-preview" :style="{ '--eqt-preview-cover-scale': myTagsPreviewCoverScale / 100 }">
+    <!-- 分類按鈕常駐最上方 -->
+    <div class="eqt-preview__cats">
+      <button
+        v-for="c in EH_CATEGORIES"
+        :key="c.bit"
+        class="eqt-url-builder__cat cs"
+        :class="c.nativeClass"
+        :data-disabled="excludedCategories.has(CAT_NAME_OF[c.key]) ? '1' : undefined"
+        type="button"
+        :aria-pressed="!excludedCategories.has(CAT_NAME_OF[c.key])"
+        @click="toggleCategory(CAT_NAME_OF[c.key])"
+      >{{ t(`category.${c.key}`) }}</button>
+    </div>
+
     <header class="eqt-preview__toolbar">
       <div class="eqt-preview__titlerow">
         <h3 class="eqt-preview__title">{{ t('preview.title') }}</h3>
@@ -147,46 +157,19 @@ function metric(item: PreviewItem): string {
       <div class="eqt-preview__controls">
         <label class="eqt-panel__field">
           <input
-            type="checkbox" :checked="markedOnly"
-            @change="emit('update:markedOnly', ($event.target as HTMLInputElement).checked)"
-          >
-          {{ t('preview.markedOnly') }}
-        </label>
-
-        <button
-          ref="catPopupAnchor"
-          type="button"
-          class="eqt-panel__btn"
-          :class="{ 'eqt-preview__filter--active': !allCatsIncluded }"
-          @click="catPopupOpen = !catPopupOpen"
-        >{{ t('preview.categories') }}</button>
-        <AnchoredPopover v-model:open="catPopupOpen" :anchor="catPopupAnchor">
-          <div class="eqt-preview__cat-popup">
-            <div class="eqt-url-builder__cats">
-              <button
-                v-for="c in EH_CATEGORIES"
-                :key="c.bit"
-                class="eqt-url-builder__cat cs"
-                :class="c.nativeClass"
-                :data-disabled="excludedCategories.has(CAT_NAME_OF[c.key]) ? '1' : undefined"
-                type="button"
-                :aria-pressed="!excludedCategories.has(CAT_NAME_OF[c.key])"
-                @click="toggleCategory(CAT_NAME_OF[c.key])"
-              >{{ t(`category.${c.key}`) }}</button>
-            </div>
-          </div>
-        </AnchoredPopover>
-
-        <label class="eqt-panel__field eqt-preview__lang-toggle">
-          <input
-            class="eqt-preview__lang-check"
             type="checkbox"
             :checked="allLanguages"
             @change="allLanguages = ($event.target as HTMLInputElement).checked"
           >
-          <Eye v-if="allLanguages" :size="14" aria-hidden="true" />
-          <EyeOff v-else :size="14" aria-hidden="true" />
           {{ t('preview.allLanguages') }}
+        </label>
+
+        <label class="eqt-panel__field">
+          <input
+            type="checkbox" :checked="markedOnly"
+            @change="emit('update:markedOnly', ($event.target as HTMLInputElement).checked)"
+          >
+          {{ t('preview.markedOnly') }}
         </label>
 
         <button type="button" class="eqt-panel__btn" :disabled="!!refreshBusy" @click="emit('refresh')">
@@ -275,5 +258,19 @@ function metric(item: PreviewItem): string {
       </section>
     </div>
 
+    <!-- 封面大小放最底部 -->
+    <label class="eqt-panel__field eqt-preview__cover-size">
+      {{ t('preview.coverSize') }}
+      <input
+        v-model.number="myTagsPreviewCoverScale"
+        class="eqt-panel__cover-slider"
+        type="range"
+        min="60"
+        max="130"
+        step="5"
+        :aria-label="t('preview.coverSize')"
+      >
+      <output class="eqt-panel__cover-value">{{ myTagsPreviewCoverScale }}%</output>
+    </label>
   </section>
 </template>

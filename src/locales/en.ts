@@ -411,7 +411,6 @@ export default {
   'preview.filterRight': 'shown',
   'preview.columnCount': '{side} ({shown}/{total})',
   'preview.markedOnly': 'Marked',
-  'preview.categories': 'Categories',
   'preview.allLanguages': 'All languages',
   'preview.coverSize': 'Cover size',
   'preview.refresh': 'Fetch samples',

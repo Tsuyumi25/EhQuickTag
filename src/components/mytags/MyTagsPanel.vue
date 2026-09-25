@@ -43,7 +43,7 @@ import {
 import { setUserTag, canWrite } from '@/services/mytagsApi'
 import { patchConfig } from '@/services/ehConfig'
 import { serializeEntry } from '@/services/searchSyntax'
-import { nsFormat, myTagsPreviewCoverScale } from '@/services/store'
+import { nsFormat } from '@/services/store'
 import { tagChipStyle } from '@/services/mytagsColors'
 import type { TagEntry } from '@/services/tagDb'
 
@@ -742,19 +742,6 @@ watch(edits, () => { void flush() }, { deep: true })
             </ol>
           </section>
         </AnchoredPopover>
-        <label class="eqt-panel__field eqt-panel__cover-size">
-          {{ t('preview.coverSize') }}
-          <input
-            v-model.number="myTagsPreviewCoverScale"
-            class="eqt-panel__cover-slider"
-            type="range"
-            min="60"
-            max="130"
-            step="5"
-            :aria-label="t('preview.coverSize')"
-          >
-          <output class="eqt-panel__cover-value">{{ myTagsPreviewCoverScale }}%</output>
-        </label>
       </div>
 
       <MyTagsEhTopbar v-if="ehTopbarOpen" :host="host" />
