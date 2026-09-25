@@ -54,8 +54,9 @@ describe('accuracy', () => {
 })
 
 describe('listingUrl', () => {
-  it('三個過濾器全部停用——不停用的話硬隱藏的標籤會是零筆', () => {
+  it('使用者設定的過濾器全部停用——不停用的話被排除的分類和硬隱藏的標籤會缺席', () => {
     const url = new URL(listingUrl('male:"example$"', 'https://e-hentai.org'))
+    expect(url.searchParams.get('f_cats')).toBe('0')
     expect(url.searchParams.get('f_sft')).toBe('on')
     expect(url.searchParams.get('f_sfu')).toBe('on')
     expect(url.searchParams.get('f_sfl')).toBe('on')

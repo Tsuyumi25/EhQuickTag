@@ -62,9 +62,10 @@ export function accuracy(
 /**
  * 搜尋 URL。只用來拿 gid + token，標籤和封面走官方 API，所以不需要指定顯示模式。
  *
- * 三個 `f_sf*` 停用使用者自己的過濾器（標籤 / 上傳者 / 語言）——不停用的話，被
- * 設定擋掉的那些根本不會出現在結果裡，而那正是要看的東西。硬隱藏的標籤尤其明顯：
- * 不停用就是零筆。
+ * `f_cats=0` 與三個 `f_sf*` 停用使用者自己的過濾器（分類 / 標籤 / 上傳者 /
+ * 語言）——不停用的話，被設定擋掉的那些根本不會出現在結果裡，而那正是要看的東西。
+ * 硬隱藏的標籤尤其明顯：不停用就是零筆。某些 artist 只在特定分類下有作品，預設
+ * 排除該分類的使用者連一筆樣本都抓不到。
  *
  * ⛔ 翻頁不是 `page=N`。EH 為了減輕深分頁的負擔改成游標式，`page=` 現在被忽略——
  * 帶什麼值都回傳第一頁，看起來像在翻，其實原地踏步。`next` 從上一頁的
@@ -73,6 +74,7 @@ export function accuracy(
 export function listingUrl(keywords: string, origin: string, next?: string | null): string {
   const u = new URL('/', origin)
   u.searchParams.set('f_search', keywords)
+  u.searchParams.set('f_cats', '0')
   for (const f of ['f_sft', 'f_sfu', 'f_sfl']) u.searchParams.set(f, 'on')
   if (next) u.searchParams.set('next', next)
   return u.toString()
