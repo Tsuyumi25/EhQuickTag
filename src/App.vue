@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import TagBar from '@/components/tagbar/TagBar.vue'
 import GalleryTagList from '@/components/gallery/GalleryTagList.vue'
 import MyTagsPanel from '@/components/mytags/MyTagsPanel.vue'
@@ -9,12 +10,21 @@ import { useEhGalleryHost } from '@/composables/useEhGalleryHost'
 import { useEhMyTagsHost } from '@/composables/useEhMyTagsHost'
 import { usePageSearch } from '@/composables/usePageSearch'
 import { showSettings, initialSettingsTab, showSearchPopup } from '@/services/appOverlays'
-import { taggingEnhancerEnabled, myTagsEnhancerEnabled } from '@/services/store'
+import { taggingEnhancerEnabled, myTagsEnhancerEnabled, galleryMyTagsColorsEnabled } from '@/services/store'
+import { refreshMyTagsPalette } from '@/services/mytags/mytagsPalette'
+import { useEqtToast } from '@/composables/useEqtToast'
+import { t } from '@/composables/useI18n'
 
 const formHost = useEhFormHost()
 const galleryHost = taggingEnhancerEnabled.value ? useEhGalleryHost() : null
 const myTagsHost = myTagsEnhancerEnabled.value ? useEhMyTagsHost() : null
 const { searchText, search } = usePageSearch()
+const toast = useEqtToast()
+
+onMounted(() => {
+  if (location.pathname !== '/mytags' || myTagsHost || !galleryMyTagsColorsEnabled.value) return
+  void refreshMyTagsPalette().catch(() => toast.error(t('gallery.myTagsColorsFailed')))
+})
 </script>
 
 <template>

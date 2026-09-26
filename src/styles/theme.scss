@@ -121,6 +121,7 @@
 
   // transition base for color/border/background morphing
   --eqt-transition-base: background 0.15s, border-color 0.15s, color 0.15s;
+  --eqt-gallery-selection-corner-size: 8px;
 
   // checkbox 預設尺寸 / 勾勾顏色（必須放 :root inherited，不能放全域 input 規則內，
   // 否則 component 級 override 會被全域 (1,1,1) 在同 element 上壓過去）
@@ -133,6 +134,7 @@
 // Light theme (e-hentai.org) — on :root so Teleported content inherits
 :root {
   --eqt-bg: #edebdf;
+  --eqt-gallery-chip-bg: #F2EFDF;
   --eqt-bg-elevated: #fff;
   --eqt-bg-hover: rgba(0, 0, 0, 0.06);
   --eqt-bg-stripe: rgba(0, 0, 0, 0.045);
@@ -168,6 +170,7 @@
 // Dark theme (exhentai.org)
 :root.eqt-dark {
   --eqt-bg: #4f535b;
+  --eqt-gallery-chip-bg: #4f535b;
   --eqt-bg-elevated: #34353b;
   --eqt-bg-hover: rgba(255, 255, 255, 0.06);
   --eqt-bg-stripe: rgba(255, 255, 255, 0.05);

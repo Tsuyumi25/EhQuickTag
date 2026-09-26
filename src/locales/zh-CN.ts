@@ -298,6 +298,7 @@ export default {
   'gallery.addTags': '新增标签',
   'gallery.sessionExpired': '登录状态已过期，请刷新页面后重试。',
   'gallery.tagDbLoadFailed': '标签数据库加载失败，请稍后再试或检查网络。',
+  'gallery.myTagsColorsFailed': '无法加载 My Tags 颜色。',
   'gallery.wiki': 'Wiki',
 
   'settings.tabMyTags': 'My tags',
@@ -311,6 +312,8 @@ export default {
   'settings.taggingEnhancerHint': '在 /g/ 详情页接管 taglist，提供 vote / search / picker 等强化功能。关闭后保持 EH 原生界面。需刷新页面生效。',
   'settings.galleryDragSelect': '启用拖拽多选',
   'settings.galleryDragSelectHint': '关闭后仅能单击选取，拖拽将不会触发批量标记。',
+  'settings.galleryMyTagsColors': '使用 My Tags 个人颜色',
+  'settings.galleryMyTagsColorsHint': '标签按 My Tags 中保存的颜色显示。颜色取自本地缓存，访问 My Tags 页面即会更新。',
   'settings.sectionGallerySize': '标签列尺寸',
   'settings.galleryTaglistHeight': '高度',
   'settings.galleryTaglistZoom': '缩放',

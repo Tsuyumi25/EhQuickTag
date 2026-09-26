@@ -9,11 +9,12 @@
 //     (cancel)、起點 -1 + 左 = 把 -1 推 0 (cancel)，依此類推
 //   - 任何選取動作都 setPanelTag(chip.tag)：對 x tag 的任何操作都繼續顯示定義，
 //     直到 selection 全空才 auto close panel
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, shallowRef, computed, watch, onMounted, onBeforeUnmount, type CSSProperties } from 'vue'
 import { GM } from '$'
 import { serializeEntry } from '@/services/search/searchSyntax'
 import { findEntryByNsTag, DEFAULT_NS_ORDER, tagDbVersion } from '@/services/tags/tagDb'
-import { nsFormat, defaultExactMatch, galleryDragSelectEnabled, galleryDblClickLeft, galleryDblClickRight, galleryDblClickLeftNewTabActive, galleryDblClickRightNewTabActive, galleryTaglistZoom, type GalleryDblClickAction } from '@/services/store'
+import { nsFormat, defaultExactMatch, galleryDragSelectEnabled, galleryMyTagsColorsEnabled, galleryDblClickLeft, galleryDblClickRight, galleryDblClickLeftNewTabActive, galleryDblClickRightNewTabActive, galleryTaglistZoom, type GalleryDblClickAction } from '@/services/store'
+import { loadMyTagsPalette, type MyTagsPalette } from '@/services/mytags/mytagsPalette'
 import { openSettings } from '@/services/appOverlays'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
 import { t, isZhLocale, locale } from '@/composables/useI18n'
@@ -33,6 +34,33 @@ type TagTier = 'gt' | 'gtl' | 'gtw'
 const host = useEhGalleryHost()!
 
 const toast = useEqtToast()
+
+const myTagsPalette = shallowRef<MyTagsPalette | null>(null)
+let loadingMyTagsPalette = false
+watch(galleryMyTagsColorsEnabled, async (enabled) => {
+  if (!enabled || myTagsPalette.value || loadingMyTagsPalette) return
+  loadingMyTagsPalette = true
+  try {
+    myTagsPalette.value = await loadMyTagsPalette()
+  } catch {
+    toast.error(t('gallery.myTagsColorsFailed'))
+  } finally {
+    loadingMyTagsPalette = false
+  }
+}, { immediate: true })
+
+const myTagsStyles = computed<Record<string, CSSProperties>>(() => {
+  const styles: Record<string, CSSProperties> = {}
+  if (!galleryMyTagsColorsEnabled.value || !myTagsPalette.value) return styles
+  for (const [full, colors] of Object.entries(myTagsPalette.value)) {
+    styles[full] = {
+      '--eqt-mytags-background': `#${colors.face}`,
+      '--eqt-mytags-text': `#${colors.text}`,
+      '--eqt-mytags-border': `#${colors.edge}`,
+    }
+  }
+  return styles
+})
 
 const currentTags = ref<GalleryTag[]>([...host.tags])
 const userVotes = ref<Record<string, VoteState>>({})
@@ -94,6 +122,7 @@ interface ChipView {
   selected: Selection | undefined
   tier: TagTier
   iconUrl?: string
+  personalStyle?: CSSProperties
 }
 
 interface ChipGroup {
@@ -122,6 +151,7 @@ function buildChipView(tag: GalleryTag, showNs = false): ChipView {
     selected: selection.value.get(tag.nsRaw),
     tier: tierOf(tag.tierClass),
     iconUrl: entry?.iconUrl,
+    personalStyle: myTagsStyles.value[tag.nsRaw],
   }
 }
 
@@ -455,7 +485,9 @@ watch(selection, () => {
           :key="chip.tag.nsRaw"
           class="eqt-gallery-chip"
           :data-ns-raw="chip.tag.nsRaw"
+          :style="chip.personalStyle"
           :class="[
+            chip.personalStyle && 'eqt-gallery-chip--mytags-colored',
             chip.selected === 'positive' && 'eqt-gallery-chip--selected-positive',
             chip.selected === 'negative' && 'eqt-gallery-chip--selected-negative',
             `eqt-gallery-chip--${chip.tier}`,

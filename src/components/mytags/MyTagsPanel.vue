@@ -47,6 +47,7 @@ import { serializeEntry } from '@/services/search/searchSyntax'
 import { myTagsPanelZoom, nsFormat } from '@/services/store'
 import { openSettings } from '@/services/appOverlays'
 import { tagChipStyle } from '@/services/mytags/mytagsColors'
+import { buildMyTagsPalette, saveMyTagsPalette } from '@/services/mytags/mytagsPalette'
 import type { TagEntry } from '@/services/tags/tagDb'
 
 const host = useEhMyTagsHost()!
@@ -160,13 +161,40 @@ const setColors = computed<Record<string, string>>(() => {
   return out
 })
 
+/** API 已接受，但原生輸入框還停在舊值——重讀原生時要蓋回去，否則已存狀態會倒退 */
+const accepted = new Map<number, TagState>()
+
 /** API 已接受後，直接更新 rows 這份已儲存狀態。 */
 function acceptWrite(id: number, state: TagState): void {
+  accepted.set(id, state)
   liveRows.value = liveRows.value.map((row) => row.id === id ? { ...row, ...state } : row)
   otherSets.value = otherSets.value.map((set) => ({
     ...set,
     rows: set.rows.map((row) => row.id === id ? { ...row, ...state } : row),
   }))
+}
+
+const paletteSets = computed<TagSetSnapshot[]>(() => {
+  const current: TagSetSnapshot = {
+    value: host.currentSet,
+    name: host.tagSets.find((s) => s.selected)?.name ?? host.currentSet,
+    enabled: host.enabled,
+    defaultColor: host.defaultColor,
+    rows: liveRows.value,
+  }
+  const byValue = new Map<string, TagSetSnapshot>([[current.value, current]])
+  for (const set of otherSets.value) byValue.set(set.value, set)
+  const order = host.tagSets.length ? host.tagSets.map((entry) => entry.value) : [current.value]
+  return order.flatMap((value) => byValue.get(value) ?? [])
+})
+
+/** 有一組沒讀到就不發佈：那會把畫廊那邊完整的快取換成缺一組的版本 */
+const paletteComplete = ref(false)
+
+function publishPalette(): void {
+  if (!paletteComplete.value) return
+  void saveMyTagsPalette(buildMyTagsPalette(paletteSets.value))
+    .catch((error: unknown) => { console.error('palette save failed', error) })
 }
 
 const rowMap = computed(() => new Map(rows.value.map((r) => [r.full, r])))
@@ -408,6 +436,7 @@ async function apply(): Promise<void> {
     }
   } finally {
     await flush()
+    publishPalette()
     writeBusy.value = ''
   }
   if (done.size) toast.success(t('panel.applied', { n: done.size }))
@@ -464,6 +493,7 @@ async function executeMass(rows2: MyTagRow[], target: string): Promise<{ done: n
       ? await host.deleteTags(ids, set)
       : await host.moveTags(ids, target, set)
     if (!next) {
+      paletteComplete.value = false
       toast.error(t('panel.massFailed'))
       ok = false
       break
@@ -476,6 +506,7 @@ async function executeMass(rows2: MyTagRow[], target: string): Promise<{ done: n
   if (target !== '0' && done.length) {
     const got = await fetchTagSet(target)
     if (got) absorb(target, got.rows)
+    else paletteComplete.value = false
   }
   return { done, ok }
 }
@@ -487,6 +518,7 @@ async function moveTags(target: MyTagRow[], to: string): Promise<void> {
     await executeMass(target, to)
   } finally {
     await flush()
+    publishPalette()
     writeBusy.value = ''
   }
 }
@@ -633,7 +665,13 @@ watch([previewLeftItems, previewRightItems], ([l, r]) => {
 
 // ---- 生命週期 ----
 
-function reread(): void { liveRows.value = host.readRows() }
+function reread(): void {
+  liveRows.value = host.readRows().map((row) => {
+    const state = accepted.get(row.id)
+    return state ? { ...row, ...state } : row
+  })
+  publishPalette()
+}
 
 /**
  * 面板接管原生表單；MyTagsEhTopbar 自己管理 #nb / #lb 的借位與歸還。
@@ -661,7 +699,8 @@ onMounted(async () => {
       .map((s) => fetchTagSet(s.value)))
   // 沒啟用的組不進計分，所以連讀都不讀進來
   otherSets.value = got.filter((s): s is TagSetSnapshot => !!s && s.enabled)
-
+  paletteComplete.value = got.every((s) => !!s)
+  publishPalette()
 })
 
 onUnmounted(() => { currentFetcher.stop(); expungedFetcher.stop(); unbind?.(); setAppMode(false) })

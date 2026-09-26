@@ -137,6 +137,7 @@ const INITIAL_SETTINGS = {
   // Gallery taglist 的 drag-select 是否啟用。關掉後 mousedown → mouseup 一律走
   // click 語意（用 Infinity threshold 讓 reducer 永遠不進 dragging state）
   galleryDragSelectEnabled: true,
+  galleryMyTagsColorsEnabled: true,
   // false = 固定基準高、超過捲動；true = 隨 tag 展開往下長、不留捲軸。
   galleryTaglistExpand: false,
   // taglist 基準高 (px)。預設 330 = 原生 EH meta 區高。
@@ -202,6 +203,7 @@ export const convertToTraditional = refs.convertToTraditional
 export const enableHistory      = refs.enableHistory
 export const taggingEnhancerEnabled = refs.taggingEnhancerEnabled
 export const galleryDragSelectEnabled = refs.galleryDragSelectEnabled
+export const galleryMyTagsColorsEnabled = refs.galleryMyTagsColorsEnabled
 export const galleryTaglistExpand = refs.galleryTaglistExpand
 export const galleryTaglistHeight = refs.galleryTaglistHeight
 export const galleryTaglistZoom = refs.galleryTaglistZoom

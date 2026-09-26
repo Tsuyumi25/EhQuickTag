@@ -2,7 +2,7 @@
 import { ToggleLeft, UnfoldVertical, MousePointerClick, Info } from '@lucide/vue'
 import { t } from '@/composables/useI18n'
 import {
-  taggingEnhancerEnabled, galleryDragSelectEnabled, galleryTaglistExpand, galleryTaglistHeight, galleryTaglistZoom, introPanelPrimaryLang, wikiPreludeExpanded,
+  taggingEnhancerEnabled, galleryDragSelectEnabled, galleryMyTagsColorsEnabled, galleryTaglistExpand, galleryTaglistHeight, galleryTaglistZoom, introPanelPrimaryLang, wikiPreludeExpanded,
   galleryDblClickLeft, galleryDblClickRight, galleryDblClickLeftNewTabActive, galleryDblClickRightNewTabActive,
   INTRO_PANEL_PRIMARY_LANGS,
   GALLERY_DBL_CLICK_ACTIONS, type GalleryDblClickAction,
@@ -41,6 +41,19 @@ const galleryDblClickOptions = [
       </label>
       <p class="eqt-settings__hint">
         {{ t('settings.galleryDragSelectHint') }}
+      </p>
+
+      <label class="eqt-settings__row">
+        <input
+          type="checkbox"
+          :checked="galleryMyTagsColorsEnabled"
+          :disabled="!taggingEnhancerEnabled"
+          @change="galleryMyTagsColorsEnabled = ($event.target as HTMLInputElement).checked"
+        />
+        <span class="eqt-settings__label">{{ t('settings.galleryMyTagsColors') }}</span>
+      </label>
+      <p class="eqt-settings__hint">
+        {{ t('settings.galleryMyTagsColorsHint') }}
       </p>
     </section>
 

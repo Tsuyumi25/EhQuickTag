@@ -96,7 +96,7 @@ $eqt-gallery-height: 330px;
   border: 1px solid #806769;
   border-radius: 5px;
   overflow: hidden;
-  background: #F2EFDF;
+  background: var(--eqt-gallery-chip-bg) padding-box;
   font-weight: bold;
   line-height: 1.4;
   user-select: none;
@@ -109,18 +109,22 @@ $eqt-gallery-height: 330px;
 
 .eqt-dark .eqt-gallery-chip {
   border-color: #989898;
-  background: #4f535b;
 }
 .eqt-dark .eqt-gallery-chip--gtl,
 .eqt-dark .eqt-gallery-chip--gtw {
   border-color: #8c8c8c;
 }
 
+.eqt-gallery-chip.eqt-gallery-chip--mytags-colored {
+  background: var(--eqt-mytags-background) padding-box;
+  border-color: var(--eqt-mytags-border);
+}
+
 .eqt-gallery-chip__body {
   padding: 1px 4px;
   border: none;
   background: transparent;
-  color: var(--eqt-text);
+  color: var(--eqt-mytags-text, var(--eqt-text));
   cursor: pointer;
   font: inherit;
   white-space: nowrap;
@@ -130,19 +134,41 @@ $eqt-gallery-height: 330px;
   }
 }
 
-// === Selection 著色（chip body bg）===
-// 不染 chip 整顆 border：避免吃掉 tier border 信號。改用 body bg overlay
-// positive (左鍵) = include / vote up 共用綠、negative (右鍵) = exclude / vote down 共用紅
-.eqt-gallery-chip--selected-positive .eqt-gallery-chip__body {
-  background: color-mix(in srgb, var(--eqt-status-include) 55%, transparent);
-
-  &:hover { background: color-mix(in srgb, var(--eqt-status-include) 70%, transparent); }
+.eqt-gallery-chip--selected-positive {
+  --eqt-gallery-selection-color: var(--eqt-status-include);
 }
 
-.eqt-gallery-chip--selected-negative .eqt-gallery-chip__body {
-  background: color-mix(in srgb, var(--eqt-status-exclude) 55%, transparent);
+.eqt-gallery-chip--selected-negative {
+  --eqt-gallery-selection-color: var(--eqt-status-exclude);
+}
 
-  &:hover { background: color-mix(in srgb, var(--eqt-status-exclude) 70%, transparent); }
+.eqt-gallery-chip:is(.eqt-gallery-chip--selected-positive, .eqt-gallery-chip--selected-negative) {
+  background: var(--eqt-gallery-chip-bg) padding-box;
+}
+
+.eqt-gallery-chip:is(.eqt-gallery-chip--selected-positive, .eqt-gallery-chip--selected-negative) .eqt-gallery-chip__body {
+  --eqt-mytags-text: var(--eqt-text);
+  background: color-mix(in srgb, var(--eqt-gallery-selection-color) 55%, transparent);
+
+  &:hover {
+    background: color-mix(in srgb, var(--eqt-gallery-selection-color) 70%, transparent);
+  }
+}
+
+.eqt-gallery-chip--mytags-colored:is(.eqt-gallery-chip--selected-positive, .eqt-gallery-chip--selected-negative) .eqt-gallery-chip__body {
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: var(--eqt-gallery-selection-corner-size);
+    height: var(--eqt-gallery-selection-corner-size);
+    background: var(--eqt-mytags-background);
+    clip-path: polygon(0 0, 100% 0, 100% 100%);
+    pointer-events: none;
+  }
 }
 
 // === Vote feedback ===

@@ -298,6 +298,7 @@ export default {
   'gallery.addTags': 'Add tags',
   'gallery.sessionExpired': 'Your session has expired. Please refresh the page to log in again.',
   'gallery.tagDbLoadFailed': 'Failed to load tag database. Please retry later or check your network.',
+  'gallery.myTagsColorsFailed': 'Failed to load My Tags colors.',
   'gallery.wiki': 'Wiki',
 
   'settings.tabMyTags': 'My tags',
@@ -311,6 +312,8 @@ export default {
   'settings.taggingEnhancerHint': 'Takes over the taglist on /g/ detail pages with vote / search / picker affordances. When off, the native UI is preserved. Reload the page to apply.',
   'settings.galleryDragSelect': 'Enable drag-select',
   'settings.galleryDragSelectHint': 'When off, chips are click-only; dragging will not toggle multiple at once.',
+  'settings.galleryMyTagsColors': 'Use My Tags colors',
+  'settings.galleryMyTagsColorsHint': 'Chips are colored by the colors saved in My Tags. Colors come from a local cache; visiting My Tags refreshes it.',
   'settings.sectionGallerySize': 'Tag list size',
   'settings.galleryTaglistHeight': 'Height',
   'settings.galleryTaglistZoom': 'Zoom',

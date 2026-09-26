@@ -298,6 +298,7 @@ export default {
   'gallery.addTags': 'タグを追加',
   'gallery.sessionExpired': 'セッションの有効期限が切れました。ページを再読み込みして再ログインしてください。',
   'gallery.tagDbLoadFailed': 'タグ DB の読み込みに失敗しました。後でリトライするかネットワークをご確認ください。',
+  'gallery.myTagsColorsFailed': 'My Tags の色を読み込めませんでした。',
   'gallery.wiki': 'Wiki',
 
   'settings.tabMyTags': 'My tags',
@@ -311,6 +312,8 @@ export default {
   'settings.taggingEnhancerHint': '/g/ 詳細ページの taglist を引き継ぎ、vote / search / picker などの強化機能を提供します。オフの場合はネイティブ UI のまま。ページを再読み込みすると反映されます。',
   'settings.galleryDragSelect': 'ドラッグ選択を有効化',
   'settings.galleryDragSelectHint': 'オフにするとクリックでのみ選択でき、ドラッグで一括切り替えはできません。',
+  'settings.galleryMyTagsColors': 'My Tags の色を使う',
+  'settings.galleryMyTagsColorsHint': 'タグを My Tags に保存した色で表示します。色はローカルキャッシュから読み込まれ、My Tags を開くと更新されます。',
   'settings.sectionGallerySize': 'タグ一覧のサイズ',
   'settings.galleryTaglistHeight': '高さ',
   'settings.galleryTaglistZoom': 'ズーム',

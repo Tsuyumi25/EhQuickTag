@@ -152,23 +152,47 @@ export async function fetchThresholds(): Promise<Thresholds> {
   } catch { return { filter: null } }
 }
 
+async function fetchMyTagsDoc(url: string): Promise<Document | null> {
+  try {
+    const res = await fetch(url, { credentials: 'same-origin' })
+    if (!res.ok) return null
+    return new DOMParser().parseFromString(await res.text(), 'text/html')
+  } catch { return null }
+}
+
+export function parseTagSetSnapshot(doc: Document, value: string): TagSetSnapshot | null {
+  if (!doc.querySelector('#usertag_form') || !doc.querySelector('#usertags_outer')) return null
+  const sel = doc.querySelector<HTMLOptionElement>('#tagset_outer option[selected]')
+  return {
+    value,
+    name: sel?.textContent?.trim() ?? value,
+    enabled: doc.querySelector<HTMLInputElement>('#tagset_enable')?.checked ?? true,
+    defaultColor: doc.querySelector<HTMLInputElement>('#tagcolor')?.value ?? '',
+    rows: parseTagRows(doc, value),
+  }
+}
+
 /** 抓另一組標籤集的頁面。回傳 null 代表抓失敗 */
 export async function fetchTagSet(value: string): Promise<TagSetSnapshot | null> {
-  try {
-    const res = await fetch(`/mytags?tagset=${encodeURIComponent(value)}`, {
-      credentials: 'same-origin',
-    })
-    if (!res.ok) return null
-    const doc = new DOMParser().parseFromString(await res.text(), 'text/html')
-    const sel = doc.querySelector<HTMLOptionElement>('#tagset_outer option[selected]')
-    return {
-      value,
-      name: sel?.textContent?.trim() ?? value,
-      enabled: doc.querySelector<HTMLInputElement>('#tagset_enable')?.checked ?? true,
-      defaultColor: doc.querySelector<HTMLInputElement>('#tagcolor')?.value ?? '',
-      rows: parseTagRows(doc, value),
-    }
-  } catch { return null }
+  const doc = await fetchMyTagsDoc(`/mytags?tagset=${encodeURIComponent(value)}`)
+  return doc ? parseTagSetSnapshot(doc, value) : null
+}
+
+export interface TagSetIndex {
+  /** 標籤集在下拉選單裡的順序 */
+  order: string[]
+  current: TagSetSnapshot
+}
+
+export async function fetchTagSetIndex(): Promise<TagSetIndex | null> {
+  const doc = await fetchMyTagsDoc('/mytags')
+  if (!doc) return null
+  const options = [...doc.querySelectorAll<HTMLOptionElement>('#tagset_outer select option')]
+  const current = doc.querySelector<HTMLOptionElement>('#tagset_outer option[selected]')?.value
+    ?? options[0]?.value ?? '1'
+  const set = parseTagSetSnapshot(doc, current)
+  if (!set) return null
+  return { order: options.length ? options.map((o) => o.value) : [current], current: set }
 }
 
 /** `change_tagset` 的規則：第一組不帶參數 */
