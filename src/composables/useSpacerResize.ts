@@ -1,8 +1,8 @@
 import { ref } from 'vue'
 import type { SpacerButton, LineTextAlign } from '@/types'
-import { computeSpacerResize, edgeSensitivity, DEFAULT_SPACER_WIDTH } from '@/services/spacerResize'
+import { computeSpacerResize, edgeSensitivity, DEFAULT_SPACER_WIDTH } from '@/services/tagbar/spacerResize'
 
-// 數學核心（閉環實測 + gap 恆等式吸附）住在 services/spacerResize.ts 的
+// 數學核心（閉環實測 + gap 恆等式吸附）住在 services/tagbar/spacerResize.ts 的
 // 純函式裡,這邊只當薄 DOM adapter：pointerdown 收集吸附目標、pointermove
 // 量 rect 餵給 computeSpacerResize、把結果套回資料與 guide 線。
 // 目標集合在 pointerdown 收集一次即可：拖曳只影響自己這一行,其他行的

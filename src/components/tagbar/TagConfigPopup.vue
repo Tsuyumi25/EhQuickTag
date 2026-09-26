@@ -8,8 +8,8 @@ import { usePopupBehavior } from '@/composables/usePopupBehavior'
 import { makeRow, type RowState } from '@/composables/useSearchTerm'
 import { TagState, type TagButton, type TagMode } from '@/types'
 import { t, isZhLocale } from '@/composables/useI18n'
-import { loadTagDb } from '@/services/tagDb'
-import { getButtonShape, isStateShapeAllowed, getEffectiveModifiers, addTag } from '@/services/tagState'
+import { loadTagDb } from '@/services/tags/tagDb'
+import { getButtonShape, isStateShapeAllowed, getEffectiveModifiers, addTag } from '@/services/search/tagState'
 
 const props = defineProps<{
   tag: TagButton

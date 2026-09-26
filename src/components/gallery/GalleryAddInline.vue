@@ -2,7 +2,7 @@
 import { ref, shallowRef, watch, onMounted, onBeforeUnmount, computed } from 'vue'
 import { useEventListener } from '@vueuse/core'
 import { useEqtToast } from '@/composables/useEqtToast'
-import { loadTagDb, getFallbackEntries, type TagEntry } from '@/services/tagDb'
+import { loadTagDb, getFallbackEntries, type TagEntry } from '@/services/tags/tagDb'
 import { useTagSuggestions } from '@/composables/useTagSuggestions'
 import { t } from '@/composables/useI18n'
 import SuggestionList from '@/components/SuggestionList.vue'

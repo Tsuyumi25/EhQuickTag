@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { SampleGallery } from '@/services/mytagsSamples'
+import type { SampleGallery } from '@/services/mytags/mytagsSamples'
 
 const { storage, cacheGet, cacheSet } = vi.hoisted(() => {
   const values = new Map<string, string>()
@@ -16,7 +16,7 @@ import {
   loadSamples,
   saveGalleries,
   saveVerdicts,
-} from '@/services/mytagsSampleStore'
+} from '@/services/mytags/mytagsSampleStore'
 
 const gallery: SampleGallery = {
   gid: 1,

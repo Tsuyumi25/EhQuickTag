@@ -1,8 +1,8 @@
 import { describe, expect, beforeEach, vi } from 'vitest'
 import { test, fc } from '@fast-check/vitest'
 import { effectScope, ref, nextTick } from 'vue'
-import { tokenIdentity } from '@/services/tagState'
-import { tokenArb } from '@/services/test-helpers'
+import { tokenIdentity } from '@/services/search/tagState'
+import { tokenArb } from '@/services/search/test-helpers'
 
 // === Mocks ===
 // searchSession 依賴 gmStorage（persist） + store（enableHistory）。

@@ -4,7 +4,7 @@
 // 用——那頁的標籤跨所有命名空間，沒有 row label 可掛，每個 chip 得自帶 ns。
 
 import { computed } from 'vue'
-import { findEntryByNsTag, DEFAULT_NS_ORDER, tagDbVersion } from '@/services/tagDb'
+import { findEntryByNsTag, DEFAULT_NS_ORDER, tagDbVersion } from '@/services/tags/tagDb'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
 import { isZhLocale, t } from '@/composables/useI18n'
 

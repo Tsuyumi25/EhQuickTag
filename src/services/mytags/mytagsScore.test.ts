@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest'
 import {
   outcomeOf, compareItems, mismatchOf,
   type FactsOf, type PreviewItem,
-} from '@/services/mytagsScore'
-import type { SampleGallery } from '@/services/mytagsSamples'
+} from '@/services/mytags/mytagsScore'
+import type { SampleGallery } from '@/services/mytags/mytagsSamples'
 
 const FACTS: Record<string, { weight: number; hidden: boolean; watch: boolean }> = {
   'male:core': { weight: -20, hidden: false, watch: false },

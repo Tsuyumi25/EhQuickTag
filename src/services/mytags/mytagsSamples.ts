@@ -2,7 +2,7 @@
 //
 // ⭐ 判斷綁在畫廊上，不綁在設定上——所以改權重之後先前判過的不用重判。
 
-import { outcomeOf, type FactsOf } from '@/services/mytagsScore'
+import { outcomeOf, type FactsOf } from '@/services/mytags/mytagsScore'
 
 export interface SampleGallery {
   gid: number

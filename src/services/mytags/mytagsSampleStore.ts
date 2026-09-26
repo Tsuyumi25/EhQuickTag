@@ -3,7 +3,7 @@ import {
   type SampleGallery,
   type SampleStore,
   type Verdict,
-} from '@/services/mytagsSamples'
+} from '@/services/mytags/mytagsSamples'
 
 const GALLERIES_KEY = 'eqt_mytags_galleries'
 const VERDICTS_KEY = 'eqt_mytags_verdicts'

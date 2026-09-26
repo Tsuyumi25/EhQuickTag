@@ -1,6 +1,6 @@
 import { ref, shallowRef, watch, onMounted, onScopeDispose } from 'vue'
-import { loadTagDb, searchTags, type TagEntry } from '@/services/tagDb'
-import type { Qualifier } from '@/services/searchSyntax'
+import { loadTagDb, searchTags, type TagEntry } from '@/services/tags/tagDb'
+import type { Qualifier } from '@/services/search/searchSyntax'
 
 /**
  * tagDb 載入 + debounced 查詢的 composable。

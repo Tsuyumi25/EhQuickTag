@@ -2,7 +2,7 @@ import type { MyTagRow } from '@/composables/useEhMyTagsHost'
 import {
   stateOf, effective, stageMany, unstage,
   type EditMap, type TagPatch, type TagState,
-} from '@/services/mytagsEdits'
+} from '@/services/mytags/mytagsEdits'
 
 export interface BulkDraft {
   ids: number[]

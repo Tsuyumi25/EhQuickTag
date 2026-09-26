@@ -4,9 +4,9 @@ import EqtNumberField from '@/components/EqtNumberField.vue'
 import LineColorSwatch from '@/components/LineColorSwatch.vue'
 import { t } from '@/composables/useI18n'
 import { useTagLabel } from '@/composables/useTagLabel'
-import type { TagState } from '@/services/mytagsEdits'
-import { normalizeTagColor, tagChipStyle } from '@/services/mytagsColors'
-import type { TagImpact } from '@/services/mytagsScore'
+import type { TagState } from '@/services/mytags/mytagsEdits'
+import { normalizeTagColor, tagChipStyle } from '@/services/mytags/mytagsColors'
+import type { TagImpact } from '@/services/mytags/mytagsScore'
 
 const props = withDefaults(defineProps<{
   full: string

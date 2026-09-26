@@ -1,5 +1,5 @@
-import { tokenize, tokenIdentity } from '../tagState'
-import { parseTerm, serializeTerm } from '../searchSyntax'
+import { tokenize, tokenIdentity } from './tagState'
+import { parseTerm, serializeTerm } from './searchSyntax'
 
 // === SearchPanel 核心狀態的純函數層 ===
 //

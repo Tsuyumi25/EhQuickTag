@@ -7,7 +7,7 @@
 // ⭐ 遮蔽原生 UI 之後，原生輸入框就沒有人會去動了——它們的值等同「已存值」。
 // 使用者的編輯住在我們自己的 pending 裡，兩者比對就知道有什麼還沒套用。
 
-import { postMassAction } from '@/services/mytagsApi'
+import { postMassAction } from '@/services/mytags/mytagsApi'
 import { createPageContext } from '@/composables/createPageContext'
 import { createAnchor } from '@/utils/createAnchor'
 

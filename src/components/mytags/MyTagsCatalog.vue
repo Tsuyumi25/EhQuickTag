@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { computed, ref, shallowRef, watch } from 'vue'
-import { getFallbackEntries, type TagEntry } from '@/services/tagDb'
+import { getFallbackEntries, type TagEntry } from '@/services/tags/tagDb'
 import { useTagSuggestions } from '@/composables/useTagSuggestions'
 import { t } from '@/composables/useI18n'
 import SuggestionList from '@/components/SuggestionList.vue'
 import NamespaceFilter from '@/components/NamespaceFilter.vue'
 import MyTagsTagBody from '@/components/mytags/MyTagsTagBody.vue'
 import { TAGSET_CAPACITY, type NewTagInput, type TagSetRef } from '@/composables/useEhMyTagsHost'
-import { normalizeTagColor } from '@/services/mytagsColors'
-import type { TagState } from '@/services/mytagsEdits'
-import type { TagImpact } from '@/services/mytagsScore'
+import { normalizeTagColor } from '@/services/mytags/mytagsColors'
+import type { TagState } from '@/services/mytags/mytagsEdits'
+import type { TagImpact } from '@/services/mytags/mytagsScore'
 
 type NewTagSubmission = NewTagInput & { tagSet: string }
 

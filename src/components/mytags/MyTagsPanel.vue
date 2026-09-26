@@ -22,32 +22,32 @@ import { useMyTagsSampleFetcher } from '@/composables/useMyTagsSampleFetcher'
 import {
   outcomeOf, compareItems,
   type PreviewItem, type TagFacts, type TagImpact,
-} from '@/services/mytagsScore'
+} from '@/services/mytags/mytagsScore'
 import {
   listingUrl, emptyStore,
   type SampleStore, type SampleGallery, type Verdict,
-} from '@/services/mytagsSamples'
+} from '@/services/mytags/mytagsSamples'
 import {
   loadSamples,
   saveGalleries,
   saveVerdicts,
-} from '@/services/mytagsSampleStore'
+} from '@/services/mytags/mytagsSampleStore'
 import {
   stage, effective, unstage,
   type EditMap, type TagState,
-} from '@/services/mytagsEdits'
-import { emptyBulkDraft, planTagChanges } from '@/services/mytagsBulk'
+} from '@/services/mytags/mytagsEdits'
+import { emptyBulkDraft, planTagChanges } from '@/services/mytags/mytagsBulk'
 import {
   loadEdits, saveEdits, emptyFilter,
   type TagFilter,
-} from '@/services/mytagsEditStore'
-import { setUserTag, canWrite } from '@/services/mytagsApi'
+} from '@/services/mytags/mytagsEditStore'
+import { setUserTag, canWrite } from '@/services/mytags/mytagsApi'
 import { patchConfig } from '@/services/ehConfig'
-import { serializeEntry } from '@/services/searchSyntax'
+import { serializeEntry } from '@/services/search/searchSyntax'
 import { myTagsPanelZoom, nsFormat } from '@/services/store'
 import { openSettings } from '@/services/appOverlays'
-import { tagChipStyle } from '@/services/mytagsColors'
-import type { TagEntry } from '@/services/tagDb'
+import { tagChipStyle } from '@/services/mytags/mytagsColors'
+import type { TagEntry } from '@/services/tags/tagDb'
 
 const host = useEhMyTagsHost()!
 

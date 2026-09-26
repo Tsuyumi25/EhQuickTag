@@ -9,7 +9,7 @@ import {
   parseSearchUrl,
   emptyAdvancedOptions,
   type EhSearchParams,
-} from '@/services/ehSearchParams'
+} from '@/services/search/ehSearchParams'
 import { EH_ORIGIN } from '@/utils/ehUrl'
 
 const props = defineProps<{ modelValue: string }>()

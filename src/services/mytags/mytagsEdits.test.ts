@@ -3,7 +3,7 @@ import type { MyTagRow } from '@/composables/useEhMyTagsHost'
 import {
   effective, stage, stageMany, unstage,
   type EditMap,
-} from '@/services/mytagsEdits'
+} from '@/services/mytags/mytagsEdits'
 
 function row(over: Partial<MyTagRow> = {}): MyTagRow {
   return {

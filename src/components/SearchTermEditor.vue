@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue'
 import { useSearchTerm, type RowState, cyclePrefix, nsToShort } from '@/composables/useSearchTerm'
-import { ALL_NAMESPACES, type TagEntry } from '@/services/tagDb'
-import { QUALIFIER_SET } from '@/services/searchSyntax'
+import { ALL_NAMESPACES, type TagEntry } from '@/services/tags/tagDb'
+import { QUALIFIER_SET } from '@/services/search/searchSyntax'
 import TagAutocomplete from '@/components/TagAutocomplete.vue'
 import { t } from '@/composables/useI18n'
 

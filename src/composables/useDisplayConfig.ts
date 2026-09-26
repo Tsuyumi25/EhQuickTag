@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 import { searchPanelLangMode, searchPanelShowZh, convertToTraditional } from '@/services/store'
 import { isZhLocale, isTWLocale } from '@/composables/useI18n'
-import { toTW } from '@/services/cjkDict'
+import { toTW } from '@/services/tags/cjkDict'
 
 // === SearchPanel / SuggestionList 中文顯示邏輯：解析 langMode + showZh + 簡轉繁 ===
 //

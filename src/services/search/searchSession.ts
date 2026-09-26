@@ -1,5 +1,5 @@
 import { ref, computed, watch, onScopeDispose, getCurrentScope } from 'vue'
-import { tokenIdentity, removeTag, setTagState } from '../tagState'
+import { tokenIdentity, removeTag, setTagState } from './tagState'
 import { cacheGet, cacheSet } from '../gmStorage'
 import { enableHistory } from '../store'
 import { TagState } from '@/types'

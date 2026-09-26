@@ -2,9 +2,9 @@
 import { computed, ref, watch, onBeforeUnmount } from 'vue'
 import { t } from '@/composables/useI18n'
 import { useTagLabel } from '@/composables/useTagLabel'
-import type { SampleGallery, Verdict } from '@/services/mytagsSamples'
-import { EH_CATEGORIES } from '@/services/ehSearchParams'
-import { mismatchOf, type PreviewItem } from '@/services/mytagsScore'
+import type { SampleGallery, Verdict } from '@/services/mytags/mytagsSamples'
+import { EH_CATEGORIES } from '@/services/search/ehSearchParams'
+import { mismatchOf, type PreviewItem } from '@/services/mytags/mytagsScore'
 import { myTagsPreviewCoverScale } from '@/services/store'
 
 /**

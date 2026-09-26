@@ -1,6 +1,6 @@
 import { readonly, ref } from 'vue'
 import type { Listing } from '@/composables/useEhSearchListing'
-import type { SampleGallery } from '@/services/mytagsSamples'
+import type { SampleGallery } from '@/services/mytags/mytagsSamples'
 
 interface SampleFetcherOptions {
   fetchPage: (tag: string, cursor: string | null, signal: AbortSignal) => Promise<Listing>

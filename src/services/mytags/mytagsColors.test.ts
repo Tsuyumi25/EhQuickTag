@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { normalizeTagColor, tagChipStyle, tagColors, type TagColorInput } from '@/services/mytagsColors'
+import { normalizeTagColor, tagChipStyle, tagColors, type TagColorInput } from '@/services/mytags/mytagsColors'
 
 const base = { color: '', setColor: '', weight: 10, hidden: false }
 

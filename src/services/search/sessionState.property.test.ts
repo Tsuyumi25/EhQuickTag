@@ -1,6 +1,6 @@
 import { describe, expect } from 'vitest'
 import { test, fc } from '@fast-check/vitest'
-import { tokenIdentity } from '@/services/tagState'
+import { tokenIdentity } from '@/services/search/tagState'
 import {
   syncFromSearchPure,
   pushManyToHistoryPure,
@@ -22,7 +22,7 @@ import {
   sessionTermsArb,
   historyArb,
   longHistoryArb,
-} from '@/services/test-helpers'
+} from '@/services/search/test-helpers'
 
 // === helpers ===
 

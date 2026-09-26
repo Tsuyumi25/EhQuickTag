@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useEventListener } from '@vueuse/core'
-import type { TagEntry } from '@/services/tagDb'
-import type { Qualifier } from '@/services/searchSyntax'
+import type { TagEntry } from '@/services/tags/tagDb'
+import type { Qualifier } from '@/services/search/searchSyntax'
 import { useTagSuggestions } from '@/composables/useTagSuggestions'
 import { t } from '@/composables/useI18n'
 import SuggestionList from '@/components/SuggestionList.vue'

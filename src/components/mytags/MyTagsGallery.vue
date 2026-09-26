@@ -3,8 +3,8 @@ import { computed } from 'vue'
 import { t } from '@/composables/useI18n'
 import MyTagsChip from '@/components/mytags/MyTagsChip.vue'
 import type { GalleryDetail } from '@/composables/useEhGalleryPreview'
-import type { Verdict } from '@/services/mytagsSamples'
-import type { Outcome } from '@/services/mytagsScore'
+import type { Verdict } from '@/services/mytags/mytagsSamples'
+import type { Outcome } from '@/services/mytags/mytagsScore'
 
 const props = defineProps<{
   detail: GalleryDetail

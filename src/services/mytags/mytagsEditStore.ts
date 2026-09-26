@@ -4,7 +4,7 @@
 // 「延後送出」這個設計就不成立。
 
 import { cacheGet, cacheSet } from '@/services/gmStorage'
-import type { EditMap, TagPatch } from '@/services/mytagsEdits'
+import type { EditMap, TagPatch } from '@/services/mytags/mytagsEdits'
 
 const EDITS_KEY = 'eqt_mytags_edits'
 const SCHEMA = 1

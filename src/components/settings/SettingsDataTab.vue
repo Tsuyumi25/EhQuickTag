@@ -3,9 +3,9 @@ import { ref, computed } from 'vue'
 import { RotateCcw, Database, ChartColumn, BookOpen } from '@lucide/vue'
 import { t } from '@/composables/useI18n'
 import { useEqtToast } from '@/composables/useEqtToast'
-import { refreshTagDb, TAG_DB_MIRRORS, type TagDbMirror } from '@/services/tagDb'
-import { refreshTagCount, TAG_COUNT_MIRRORS, type TagCountMirror } from '@/services/tagCount'
-import { refreshTagWiki, TAG_WIKI_MIRRORS, WikiSchemaMismatchError, type TagWikiMirror } from '@/services/tagWiki'
+import { refreshTagDb, TAG_DB_MIRRORS, type TagDbMirror } from '@/services/tags/tagDb'
+import { refreshTagCount, TAG_COUNT_MIRRORS, type TagCountMirror } from '@/services/tags/tagCount'
+import { refreshTagWiki, TAG_WIKI_MIRRORS, WikiSchemaMismatchError, type TagWikiMirror } from '@/services/tags/tagWiki'
 import {
   tagDbMirror, tagDbTtlDays, tagCountMirror, tagCountTtlDays,
   tagWikiMirror, tagWikiTtlDays,

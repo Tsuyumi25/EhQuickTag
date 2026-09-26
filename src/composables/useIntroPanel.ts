@@ -1,6 +1,6 @@
 import { ref, computed, watch } from 'vue'
-import { findEntryByNsTag, tagDbVersion } from '@/services/tagDb'
-import { getTagWiki, tagWikiVersion, rawToSlug, type WikiEntry } from '@/services/tagWiki'
+import { findEntryByNsTag, tagDbVersion } from '@/services/tags/tagDb'
+import { getTagWiki, tagWikiVersion, rawToSlug, type WikiEntry } from '@/services/tags/tagWiki'
 import type { GalleryTag } from '@/composables/useEhGalleryHost'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
 import { locale, isZhLocale } from '@/composables/useI18n'

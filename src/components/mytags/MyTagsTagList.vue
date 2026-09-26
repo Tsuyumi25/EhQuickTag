@@ -3,11 +3,11 @@ import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import MyTagsTagBody from '@/components/mytags/MyTagsTagBody.vue'
 import { t } from '@/composables/useI18n'
 import { TAGSET_CAPACITY, type MyTagRow, type TagSetRef } from '@/composables/useEhMyTagsHost'
-import type { EditMap, TagPatch, TagState } from '@/services/mytagsEdits'
-import { effective } from '@/services/mytagsEdits'
-import { emptyBulkDraft, type BulkDraft } from '@/services/mytagsBulk'
-import type { TagImpact } from '@/services/mytagsScore'
-import type { TagFilter } from '@/services/mytagsEditStore'
+import type { EditMap, TagPatch, TagState } from '@/services/mytags/mytagsEdits'
+import { effective } from '@/services/mytags/mytagsEdits'
+import { emptyBulkDraft, type BulkDraft } from '@/services/mytags/mytagsBulk'
+import type { TagImpact } from '@/services/mytags/mytagsScore'
+import type { TagFilter } from '@/services/mytags/mytagsEditStore'
 
 const props = defineProps<{
   rows: MyTagRow[]

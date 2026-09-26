@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import Draggable from 'vuedraggable'
-import { parseTerm } from '@/services/searchSyntax'
-import { tokenize, tokenIdentity } from '@/services/tagState'
+import { parseTerm } from '@/services/search/searchSyntax'
+import { tokenize, tokenIdentity } from '@/services/search/tagState'
 import { lines, enableHistory } from '@/services/store'
-import { findEntryByNsTag, tagDbVersion } from '@/services/tagDb'
+import { findEntryByNsTag, tagDbVersion } from '@/services/tags/tagDb'
 import { t } from '@/composables/useI18n'
 import { baseDragOptions, EQT_TAGS_GROUP } from '@/utils/drag'
 import {

@@ -5,7 +5,7 @@ import { renderToString } from 'vue/server-renderer'
 import { useEhMyTagsHost } from '@/composables/useEhMyTagsHost'
 
 vi.mock('@/services/store', () => ({ fontFamily: ref(''), fontWeight: ref('') }))
-vi.mock('@/services/mytagsApi', () => ({ postMassAction: vi.fn() }))
+vi.mock('@/services/mytags/mytagsApi', () => ({ postMassAction: vi.fn() }))
 
 function myTagsPage() {
   const topbars = {

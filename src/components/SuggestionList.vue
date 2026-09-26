@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { DEFAULT_NS_ORDER, type TagEntry } from '@/services/tagDb'
+import { DEFAULT_NS_ORDER, type TagEntry } from '@/services/tags/tagDb'
 import { isZhLocale, locale, t } from '@/composables/useI18n'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
 import { useTextMeasure } from '@/composables/useTextMeasure'

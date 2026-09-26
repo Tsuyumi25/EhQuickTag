@@ -5,7 +5,7 @@
 // ⭐ 只有這一條軸。watch 仍然是標籤的屬性（要不要進 Watched 那個搜尋），但它不參與
 // 計分，也就沒有自己的預覽可言；硬隱藏是同一條軸上的短路，不是另一個觀點。
 
-import type { SampleGallery, Verdict } from '@/services/mytagsSamples'
+import type { SampleGallery, Verdict } from '@/services/mytags/mytagsSamples'
 
 export interface TagFacts {
   weight: number

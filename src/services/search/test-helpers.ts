@@ -1,6 +1,6 @@
 import { fc } from '@fast-check/vitest'
 import { tokenIdentity } from './tagState'
-import type { TermEntry } from './search/sessionState'
+import type { TermEntry } from './sessionState'
 
 // === Property test 共用 arbitraries ===
 //

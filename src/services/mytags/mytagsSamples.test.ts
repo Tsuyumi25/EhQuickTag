@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import {
   accuracy, listingUrl, emptyStore, type SampleStore,
-} from '@/services/mytagsSamples'
-import type { TagFacts } from '@/services/mytagsScore'
+} from '@/services/mytags/mytagsSamples'
+import type { TagFacts } from '@/services/mytags/mytagsScore'
 
 const FACTS: Record<string, TagFacts> = {
   'male:core': { weight: -20, hidden: false, watch: false },

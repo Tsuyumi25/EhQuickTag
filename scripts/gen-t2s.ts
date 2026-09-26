@@ -7,7 +7,7 @@
  */
 
 const URL = 'https://raw.githubusercontent.com/BYVoid/OpenCC/master/data/dictionary/TSCharacters.txt'
-const OUT = 'src/services/t2s.json'
+const OUT = 'src/services/tags/t2s.json'
 
 async function main() {
   const res = await fetch(URL)

@@ -9,7 +9,7 @@
 // 標籤和封面向 api.e-hentai.org 要（`access-control-allow-origin: *`，兩個站台都通）。
 // 不碰任何 cookie。
 
-import type { SampleGallery } from '@/services/mytagsSamples'
+import type { SampleGallery } from '@/services/mytags/mytagsSamples'
 
 const API = 'https://api.e-hentai.org/api.php'
 /** gdata 一次最多吃 25 筆 */

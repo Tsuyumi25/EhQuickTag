@@ -8,7 +8,7 @@
  */
 
 const URL = 'https://raw.githubusercontent.com/EhTagTranslation/EhSyringe/master/src/plugin/suggest/dict.yml'
-const OUT = 'src/services/dict.json'
+const OUT = 'src/services/tags/dict.json'
 
 async function main() {
   const res = await fetch(URL)

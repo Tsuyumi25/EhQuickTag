@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { t } from '@/composables/useI18n'
-import { DEFAULT_NS_ORDER } from '@/services/tagDb'
+import { DEFAULT_NS_ORDER } from '@/services/tags/tagDb'
 
 const props = defineProps<{ modelValue: string | null }>()
 const emit = defineEmits<{ 'update:modelValue': [value: string | null] }>()

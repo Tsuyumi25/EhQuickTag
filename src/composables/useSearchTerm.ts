@@ -1,5 +1,5 @@
 import { nextTick, type Ref } from 'vue'
-import type { SearchTerm } from '@/services/searchSyntax'
+import type { SearchTerm } from '@/services/search/searchSyntax'
 import {
   parseRawText, serializeToken,
   applyPrefix, applyColonPrefix, applyTagValue,
@@ -7,8 +7,8 @@ import {
   buildExplain, getColonPrefixValue, getNsFormatLabel,
   EXPLAIN_CLASSES,
   type SuggestionEntry,
-} from '@/services/searchTermState'
-import type { Prefix } from '@/services/searchSyntax'
+} from '@/services/search/searchTermState'
+import type { Prefix } from '@/services/search/searchSyntax'
 import { t } from '@/composables/useI18n'
 
 // === RowState：每一筆 term 編輯器的狀態容器 ===
@@ -33,7 +33,7 @@ export function makeRow(raw: string): RowState {
   }
 }
 
-export { cyclePrefix, nsToShort } from '@/services/searchTermState'
+export { cyclePrefix, nsToShort } from '@/services/search/searchTermState'
 
 // === file-private contenteditable DOM 操作 ===
 

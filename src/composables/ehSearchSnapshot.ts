@@ -5,7 +5,7 @@ import {
   type EhAdvancedOptions,
   type EhSearchParams,
   type MinRating,
-} from '@/services/ehSearchParams'
+} from '@/services/search/ehSearchParams'
 
 function fieldValue(form: HTMLFormElement, name: string): string {
   const el = form.elements.namedItem(name)

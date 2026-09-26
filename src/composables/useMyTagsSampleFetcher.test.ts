@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { Listing } from '@/composables/useEhSearchListing'
 import { useMyTagsSampleFetcher } from '@/composables/useMyTagsSampleFetcher'
-import type { SampleGallery } from '@/services/mytagsSamples'
+import type { SampleGallery } from '@/services/mytags/mytagsSamples'
 
 function deferred<T>() {
   let resolve!: (value: T) => void

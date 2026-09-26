@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { GM } from '$'
-import { isASCII, toCN, toJP } from '@/services/cjkDict'
-import { getTagCount } from '@/services/tagCount'
+import { isASCII, toCN, toJP } from '@/services/tags/cjkDict'
+import { getTagCount } from '@/services/tags/tagCount'
 import { hasGMXHR, cacheGet, cacheSet } from '@/services/gmStorage'
 
 export type TagDbMirror = 'jsdelivr' | 'fastly' | 'gcore' | 'github'

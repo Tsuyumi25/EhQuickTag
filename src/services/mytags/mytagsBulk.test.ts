@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import type { MyTagRow } from '@/composables/useEhMyTagsHost'
-import type { EditMap } from '@/services/mytagsEdits'
+import type { EditMap } from '@/services/mytags/mytagsEdits'
 import {
   emptyBulkDraft, planTagChanges,
   type BulkDraft,
-} from '@/services/mytagsBulk'
+} from '@/services/mytags/mytagsBulk'
 
 function row(over: Partial<MyTagRow> = {}): MyTagRow {
   return {

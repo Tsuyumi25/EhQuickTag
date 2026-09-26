@@ -17,7 +17,7 @@ import { currentTagStyleClass } from '@/composables/useTagStyle'
 import { useTagButtonEditor } from '@/composables/useTagButtonEditor'
 import { useEhFormHost } from '@/composables/useEhFormHost'
 import { usePageSearch } from '@/composables/usePageSearch'
-import { DEFAULT_SPACER_WIDTH } from '@/services/spacerResize'
+import { DEFAULT_SPACER_WIDTH } from '@/services/tagbar/spacerResize'
 
 const ACTION_KEYS: Record<DblClickAction, string> = {
   search: 'tagbar.search',
