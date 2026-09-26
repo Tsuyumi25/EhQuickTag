@@ -182,7 +182,7 @@ function resetLayout(): void {
 </template>
 
 <style lang="scss">
-@use '../styles/buttons' as *;
+@use '../../styles/buttons' as *;
 
 .eqt-line-sep {
   &__trigger {

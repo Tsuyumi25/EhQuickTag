@@ -1,0 +1,832 @@
+@use './buttons' as *;
+
+.eqt-tag-bar {
+  position: relative;
+  margin: 6px 0;
+
+  // 強制 include 走 status 綠色：把 --include-base 設成 status-include，
+  // tag-style.scss mixin 的 var(--include-base, var(--line-color, ...)) 就會
+  // resolve 到綠色，line-color 對 include 狀態的影響被「關掉」。
+  &--accent-on-include {
+    --include-base: var(--eqt-status-include);
+  }
+
+  &__overlay {
+    position: absolute;
+    inset: 0;
+    background: var(--eqt-bg-hover);
+    border-radius: var(--eqt-radius-md);
+    clip-path: circle(0 at 14px 14px);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 1;
+    transition: clip-path 0.4s ease-out, opacity 0.4s ease-out;
+  }
+
+  &:has(.eqt-tag-bar__info:hover) &__overlay {
+    clip-path: circle(150% at 14px 14px);
+    opacity: 1;
+  }
+
+  // info icon 本身不做 hover 反饋——hover 反饋讓整片覆蓋層去演，icon 自身保持
+  // 靜態（避免雙重視覺信號搶戲）
+  &__info {
+    position: absolute;
+    right: 100%;
+    top: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    width: var(--eqt-row-h);
+    height: var(--eqt-row-h);
+    padding: 0;
+    color: var(--eqt-text-hint);
+    font-size: 11px;
+    user-select: none;
+    z-index: 2;
+  }
+
+  // Tooltip：popover 風格——加陰影 + 較圓的 radius + 較舒展的 padding。
+  // 垂直 top:50% + translateY(-50%) 對齊 info icon 中軸；不再貼 top:0。
+  // ::before/::after 兩層三角形戳出指向 info icon
+  &__info-text {
+    display: none;
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-left: 10px;
+    padding: 6px 10px;
+    background: var(--eqt-bg);
+    border: var(--eqt-border-width) solid var(--eqt-border);
+    border-radius: var(--eqt-radius-md);
+    box-shadow: var(--eqt-shadow-popover);
+    color: var(--eqt-text);
+    font-size: var(--eqt-fs-sm);
+    text-align: left;
+    // nowrap 讓 tooltip 寬度 hug 最長那一行；換行改由每個 row 各佔一列達成，
+    // 不再靠 i18n 字串裡的 \n——分隔線與分區標題需要真的元素才排得出來
+    white-space: nowrap;
+    line-height: 1.5;
+    pointer-events: none;
+    z-index: 3;
+
+    // 小三角從 tooltip 左側戳出來、指向 info icon。用兩層 ::before / ::after
+    // 疊出「邊框 + 填色」：外層稍大、用 --eqt-border 色當 outline；內層內縮
+    // 1px、用 --eqt-bg 色蓋掉中間，視覺上 = 帶邊的箭頭。
+    &::before,
+    &::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      right: 100%;
+      width: 0;
+      height: 0;
+      border-style: solid;
+    }
+    &::before {
+      transform: translateY(-50%);
+      border-width: 6px 7px 6px 0;
+      border-color: transparent var(--eqt-border) transparent transparent;
+    }
+    &::after {
+      transform: translateY(-50%) translateX(var(--eqt-border-width));
+      border-width: 5px 6px 5px 0;
+      border-color: transparent var(--eqt-bg) transparent transparent;
+    }
+
+    .eqt-tag-bar__info:hover & {
+      display: flex;
+      flex-direction: column;
+    }
+  }
+
+  // 分區標題兼作兩區的分界：首個貼齊上緣，之後每個都帶一條分隔線
+  &__info-section {
+    color: var(--eqt-text-hint);
+    font-size: 11px;
+
+    & + * {
+      margin-top: 1px;
+    }
+
+    &:not(:first-of-type) {
+      margin-top: 6px;
+      padding-top: 6px;
+      border-top: var(--eqt-border-width) solid var(--eqt-divider);
+    }
+  }
+
+  &__info-row {
+    padding-left: 8px;
+  }
+
+  &__info-hint {
+    padding-left: 8px;
+    color: var(--eqt-text-hint);
+    font-size: 11px;
+  }
+
+  &__lines {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: calc(100% - 2 * var(--eqt-controls-w, 0px));
+    margin: 0 auto;
+  }
+
+  &__line-rows {
+    // spacer resize guide 的定位基準：輔助線用絕對座標橫跨行與行之間
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    // 列間距歸屬到各 row 的 padding，避免 hover / drag hit area 中間出現死區。
+    gap: 0;
+  }
+
+  // button 區的 framed 卡片：「+」按鈕住在框內當新增入口，整個框視覺上就是
+  // 「我這次搜的東西 + 怎麼新增」這件事的容器。
+  // legend 風格的左上角標題，騎在 border 上指示「這是進階搜尋面板」
+  &__search-area {
+    position: relative;
+    // top padding 加大讓內容跟 legend 標題拉開距離（label 中線壓在 border 上，
+    // 半個 label 探進卡片內 ~5.5px，6px padding 太貼）
+    padding: 14px 6px 6px;
+    // 跟上方 TagBar 主體拉開——legend label 騎在 border 上需要 vertical
+    // breathing room、否則上面的按鈕牆會把 label 壓得太近
+    margin-top: 6px;
+    border: var(--eqt-border-width) solid var(--eqt-border);
+    border-radius: 6px;
+    background: var(--eqt-bg);
+  }
+
+  // legend 風：標題框絕對定位、垂直中線壓在 border 上、底色蓋掉穿過的邊框線
+  &__search-area-label {
+    position: absolute;
+    top: 0;
+    left: 10px;
+    transform: translateY(-50%);
+    padding: 0 6px;
+    background: var(--eqt-bg);
+    color: var(--eqt-text-hint);
+    font-size: 11px;
+    line-height: 1;
+    user-select: none;
+    pointer-events: none;
+  }
+
+  &__line-wrap {
+    position: relative;
+    display: grid;
+    grid-template-columns:
+      var(--eqt-controls-w, var(--eqt-row-h))
+      minmax(0, 1fr)
+      var(--eqt-controls-w, var(--eqt-row-h));
+    align-items: flex-start;
+    padding-block: 2px;
+    margin-inline: calc(-1 * var(--eqt-controls-w, var(--eqt-row-h)));
+
+    // 建立新 profile 時只畫中央空行；沒有左右 controls 也必須留在內容欄。
+    &--placeholder > .eqt-tag-bar__line {
+      grid-column: 2;
+    }
+
+    // 左右 controls 都代表「操作這一行」：hover 任一側時高亮完整三欄 row；
+    // 行操作 popup 離開 DOM 到 Teleport 後，則由 actions-active 延續狀態。
+    &:has(> .eqt-tag-bar__line-controls .eqt-tag-bar__handle:hover),
+    &:has(> .eqt-tag-bar__line-actions:hover),
+    &--actions-active {
+      background: var(--eqt-bg-hover);
+      border-radius: var(--eqt-radius-sm);
+    }
+
+    &--ghost {
+      opacity: 0.4;
+    }
+  }
+
+  &__line-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: var(--eqt-row-h);
+  }
+
+  &__handle {
+    @include btn-icon;
+    cursor: grab;
+    user-select: none;
+
+    &:active {
+      cursor: grabbing;
+    }
+
+    &--hidden {
+      visibility: hidden;
+      pointer-events: none;
+    }
+  }
+
+  &__bottom-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 6px;
+    margin-bottom: 6px;
+  }
+
+  // 編輯態下方的「行 / 分隔線」拖曳來源。flex: 1 撐滿剩餘空間
+  &__line-add {
+    flex: 1;
+    @include btn-split-group;
+
+    .eqt-tag-bar__tool {
+      flex: 1;
+    }
+  }
+
+  // 「間隔 / 彈簧」自成一格。它們是行內物（Button）不是行（Line）——併進左邊
+  // 那條 split 會讓兩個層級讀起來像四個平行選項，使用者得自己把層級補回來。
+  // hug content：撐滿留給真正管「行」的那組
+  &__item-add {
+    @include btn-split-group;
+  }
+
+  // 工具箱裡的東西只能拖不能點，grab 游標是它跟一般按鈕唯一的視覺區別
+  &__tool {
+    @include btn-split-item;
+    cursor: grab;
+    user-select: none;
+
+    &--chosen {
+      cursor: grabbing;
+    }
+
+    // ghost 不用 display: none——forceFallback 下會讓浮動 ghost 量到 0×0
+    &--ghost {
+      opacity: 0.4;
+    }
+
+    &--drag {
+      opacity: 0.9;
+    }
+  }
+
+  // 右下 ctrl 區的「+ 標籤 / + URL」split；hug content 不撐。
+  // 色彩 override mixin 預設的「外框 + hint 文字」，改成跟旁邊獨立 ctrl
+  // 一致的「bg-btn 填充 + secondary 文字」，視覺權重才不會掉一階。
+  &__ctrl-split {
+    @include btn-split-group;
+    background: var(--eqt-bg-btn);
+  }
+  &__ctrl-split-btn {
+    @include btn-split-item;
+    color: var(--eqt-text);
+  }
+
+  // btn-icon 的非正方變體：高度照樣是 row-h，但寬度由內容決定（保留 padding）。
+  // hover 走 danger 色（不變底）給「會刪行」的視覺暗示。
+  &__line-actions {
+    @include btn-icon;
+    width: 100%;
+    padding: 0;
+    flex-shrink: 0;
+
+    &:hover:not(:disabled) {
+      color: var(--eqt-danger);
+    }
+  }
+
+  &__line-menu-back {
+    @include btn-ghost;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+    padding: 4px;
+    color: var(--eqt-text);
+    font-weight: 600;
+  }
+
+  &__line {
+    flex: 1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    min-height: var(--eqt-row-h);
+
+    &--buttons-align-center {
+      justify-content: center;
+    }
+
+    &--buttons-align-right {
+      justify-content: flex-end;
+    }
+  }
+
+  // Separator line：base 預設為 middle layout（左線 + label + 右線）。
+  // 預設視覺定義在這裡——沒被使用者覆寫的欄位走 CSS 預設，覆寫的欄位透過
+  // inline `:style` (fontSize / --separator-line-thickness) 或修飾 class
+  // (--separator-{solid|dashed|none}、--separator-pos-{top|middle|bottom}、
+  // --separator-align-{left|center|right}) override。
+  //
+  // linePosition 三種 layout：
+  //   middle（預設）：row flex，label 在線中間，::before/::after 各為一段線
+  //   top：column flex，::before 是頂部全寬線，label 在下
+  //   bottom：column flex，::after 是底部全寬線，label 在上
+  //
+  // textAlign 在 middle 模式下控制線比例（label 居左 / 中 / 右）；
+  // 在 top / bottom 模式下控制 label 文字對齊。
+  // Separator line：容器是「絕對空間」，linePosition 決定線釘在哪個邊緣。
+  //   middle：線在容器中軸，靠 ::before/::after 兩段 flex item 達成（線會避開 label）
+  //   top：::before absolute 釘容器頂，label 在容器內 align flex-start
+  //   bottom：::after absolute 釘容器底，label 在容器內 align flex-end
+  // textAlign 在 middle 模式控制 ::before/::after 比例；在 top/bottom 模式控制 label justify
+  &__line--separator {
+    position: relative;
+    min-height: var(--eqt-row-h);
+    // 文字色 / 線色 fallback 都用 --eqt-border：EX 的 --eqt-divider 很暗
+    // (#4f535b 接近 bg)，分隔線幾乎看不見；統一用 --eqt-border (#8d8d8d)
+    // 讓無 line-color 時也有最低能見度，跟其他 UI border 視覺一致。
+    color: var(--line-color, var(--eqt-border));
+    font-size: 10px;
+    line-height: 1.4;
+    // 線長 1-100%，預設 100%；由 SeparatorStyle.lineLength inline :style 設定
+    --separator-line-length: 100%;
+
+    &::before,
+    &::after {
+      content: '';
+      border-top: var(--separator-line-thickness, 2px) solid var(--line-color, var(--eqt-border));
+    }
+  }
+
+  // middle：row flex
+  //   無 label：::after 隱藏，::before 單條取 lineLength，align 決定 justify
+  //   有 label：::before / ::after 兩段 flex:1 把 label 推中間，align 控制比例
+  //   lineLength: middle 用 max-width 限制 ::before / ::after 寬度
+  &__line--separator-pos-middle {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+
+    &::before,
+    &::after {
+      flex: 1;
+    }
+
+    &:not(:has(.eqt-tag-bar__separator-label)) {
+      &::after { display: none; }
+      &::before { max-width: var(--separator-line-length); }
+      &.eqt-tag-bar__line--separator-align-left { justify-content: flex-start; }
+      &.eqt-tag-bar__line--separator-align-center { justify-content: center; }
+      &.eqt-tag-bar__line--separator-align-right { justify-content: flex-end; }
+    }
+
+    &:has(.eqt-tag-bar__separator-label) {
+      gap: 8px;
+      // align-center default：lineLength<100% 時 ::before/::after 各 cap 在 lineLength/2，
+      // 兩條線吃不滿剩餘空間。沒設 justify-content 走 flex-start 預設 → assembly
+      // 整個被推到左邊。justify-content: center 把 assembly 推回容器中軸。
+      // lineLength=100% 時兩線 flex:1 吃滿剩餘空間、本來就沒 free space，justify
+      // 對它無影響——所以這條 default 不會破 100% 既有觀感。
+      justify-content: center;
+
+      // default center: 兩線各 max lineLength/2
+      &::before,
+      &::after {
+        max-width: calc(var(--separator-line-length) / 2);
+      }
+
+      &.eqt-tag-bar__line--separator-align-left {
+        justify-content: flex-start;
+        &::before { flex: 0; border-top: 0; }
+        &::after { max-width: var(--separator-line-length); }
+      }
+      &.eqt-tag-bar__line--separator-align-right {
+        justify-content: flex-end;
+        &::after { flex: 0; border-top: 0; }
+        &::before { max-width: var(--separator-line-length); }
+      }
+    }
+  }
+
+  // top：::before absolute 釘容器頂，label align flex-start
+  //   lineLength 透過 left/right inset 控制線寬範圍
+  &__line--separator-pos-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: calc(var(--separator-line-thickness, 2px) + 2px);
+
+    &::before {
+      position: absolute;
+      top: 0;
+      // default align-center: 兩端對稱 inset
+      left: calc((100% - var(--separator-line-length)) / 2);
+      right: calc((100% - var(--separator-line-length)) / 2);
+    }
+    &::after { display: none; }
+
+    &.eqt-tag-bar__line--separator-align-left {
+      justify-content: flex-start;
+      &::before {
+        left: 0;
+        right: calc(100% - var(--separator-line-length));
+      }
+    }
+    &.eqt-tag-bar__line--separator-align-right {
+      justify-content: flex-end;
+      &::before {
+        left: calc(100% - var(--separator-line-length));
+        right: 0;
+      }
+    }
+  }
+
+  // bottom：::after absolute 釘容器底，label align flex-end
+  &__line--separator-pos-bottom {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: calc(var(--separator-line-thickness, 2px) + 2px);
+
+    &::before { display: none; }
+    &::after {
+      position: absolute;
+      bottom: 0;
+      left: calc((100% - var(--separator-line-length)) / 2);
+      right: calc((100% - var(--separator-line-length)) / 2);
+    }
+
+    &.eqt-tag-bar__line--separator-align-left {
+      justify-content: flex-start;
+      &::after {
+        left: 0;
+        right: calc(100% - var(--separator-line-length));
+      }
+    }
+    &.eqt-tag-bar__line--separator-align-right {
+      justify-content: flex-end;
+      &::after {
+        left: calc(100% - var(--separator-line-length));
+        right: 0;
+      }
+    }
+  }
+
+  // 線型修飾
+  &__line--separator-dashed {
+    &::before,
+    &::after {
+      border-top-style: dashed;
+    }
+  }
+
+  &__line--separator-none {
+    &::before,
+    &::after {
+      border-top: 0;
+    }
+  }
+
+  &__separator-label {
+    flex-shrink: 0;
+    white-space: nowrap;
+    user-select: none;
+  }
+
+  // editing 時用 contenteditable span 做 in-place 編輯（WYSIWYG）
+  // 跟非編輯狀態的 __separator-label 共用一套樣式（font / color / text-align），
+  // 只多 cursor 跟 placeholder。
+  &__separator-label--editing {
+    cursor: text;
+    outline: none;
+
+    &:empty::before,
+    &:has(> br:only-child)::before {
+      content: attr(data-placeholder);
+      color: var(--eqt-text-hint);
+      opacity: 0.5;
+      pointer-events: none;
+    }
+  }
+
+  &__controls {
+    display: flex;
+    gap: 4px;
+    margin-left: auto;
+  }
+
+  &__profile-row {
+    position: relative;
+    display: flex;
+    align-items: stretch;
+    gap: 4px;
+    margin-top: 6px;
+  }
+
+
+  &__profile-nav {
+    flex: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 6px;
+    border: var(--eqt-border-width) solid var(--eqt-border);
+    border-radius: 3px;
+    background: var(--eqt-bg-btn);
+    color: var(--eqt-text-hint);
+    cursor: pointer;
+    font-size: 11px;
+    line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &--prev,
+    &--next {
+      text-align: center;
+    }
+
+    &:hover:not(:disabled) {
+      background: var(--eqt-bg-hover);
+    }
+
+    &:disabled {
+      opacity: 0.3;
+      cursor: default;
+    }
+  }
+
+  &__profile-split {
+    flex: 5;
+    position: relative;
+    border: var(--eqt-border-width) solid var(--eqt-border);
+    border-radius: 3px;
+    min-width: 0;
+  }
+
+  &__profile-split-name {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: none;
+    background: var(--eqt-bg-btn);
+    color: var(--eqt-text);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: bold;
+    line-height: 1.4;
+    text-align: center;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &:hover {
+      background: var(--eqt-bg-hover);
+    }
+  }
+
+  &__profile-split-delete {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    padding: 0 8px;
+    border: none;
+    border-left: var(--eqt-border-width) solid var(--eqt-border);
+    border-radius: 0 3px 3px 0;
+    background: transparent;
+    color: var(--eqt-text-hint);
+    cursor: pointer;
+    font-size: 11px;
+    line-height: 1.4;
+
+    &:hover:not(:disabled) {
+      background: var(--eqt-danger-bg-hover);
+      color: var(--eqt-danger);
+    }
+
+    &:disabled {
+      opacity: 0.3;
+      cursor: default;
+    }
+
+    &--hidden {
+      visibility: hidden;
+      pointer-events: none;
+    }
+  }
+
+  &__profile-input {
+    flex: 5;
+    padding: 0;
+    border: var(--eqt-border-width) solid var(--eqt-border);
+    border-radius: 3px;
+    background: var(--eqt-bg);
+    color: var(--eqt-text);
+    font-size: 13px;
+    font-weight: bold;
+    line-height: 1.4;
+    text-align: center;
+    box-sizing: border-box;
+
+    &:focus {
+      outline: none;
+    }
+  }
+
+  &__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    box-sizing: border-box;
+    height: var(--eqt-row-h);
+    padding: 0 8px;
+    border: var(--eqt-border-width) solid var(--line-color, var(--eqt-border));
+    border-radius: 3px;
+    background: color-mix(in srgb, var(--line-color, var(--eqt-bg-btn)) 15%, var(--eqt-bg-btn));
+    color: var(--eqt-text);
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 1.4;
+    user-select: none;
+    transition: var(--eqt-transition-base);
+
+    &:hover {
+      background: var(--eqt-bg-hover);
+    }
+
+    &--url {
+      text-decoration: none;
+    }
+
+    &--editing {
+      cursor: grab;
+
+      &:hover {
+        background: var(--eqt-bg-hover);
+      }
+    }
+
+    &--ghost {
+      opacity: 0.4;
+    }
+
+    &--chosen {
+      cursor: grabbing;
+    }
+
+    &--drag {
+      opacity: 0.8;
+      box-shadow: var(--eqt-shadow-drag);
+    }
+  }
+
+  // 行內空位：非編輯時純佔位、完全隱形；編輯時畫虛線框給拖曳 / 右鍵一個可視
+  // 目標，拖得動的邊再加一個方括號。flex 變體吃掉整行剩餘空間（把兩側按鈕
+  // 推開）、fixed 變體寬度由使用者拖把手調出的 px 快照（inline style 設定）。
+  &__spacer {
+    $spacer: &;
+
+    position: relative;
+    box-sizing: border-box;
+    height: var(--eqt-row-h);
+
+    &--flex {
+      flex: 1 1 0;
+      min-width: 8px;
+    }
+
+    &--fixed {
+      flex: 0 0 auto;
+      // 渲染端保險:不管資料存了多大的 width(舊髒資料、換窄視窗載入),
+      // 都 clamp 在行容器寬內,不溢出破版
+      max-width: 100%;
+    }
+
+    &--editing {
+      border: var(--eqt-border-width) dashed color-mix(in srgb, var(--eqt-border) 60%, transparent);
+      border-radius: var(--eqt-radius-sm);
+      cursor: grab;
+
+      &:focus-visible {
+        outline: var(--eqt-border-width) solid var(--eqt-green);
+        outline-offset: 1px;
+      }
+    }
+
+    // 拖得動的那一緣就是把手,畫成實線主文字色的方括號——豎線標出那條邊,
+    // 上下再各往內延伸一小段包住轉角,整體讀作「這一整塊邊區抓得住」,跟另外
+    // 三邊的虛線分開(虛線說「這是佔位物」)。
+    //
+    // 用偽元素畫成一個有右側圓角的 border box,而不是疊一根直條上去:圓角因此
+    // 自動吻合外框。定位相對 padding box,所以三個方向各外推一個 border-width
+    // 才貼齊 border box。寬度 cap 在半寬內,免得最小寬的間隔上兩個括號對撞
+    &--grip-left#{$spacer}--editing::before,
+    &--grip-right#{$spacer}--editing::after {
+      content: '';
+      position: absolute;
+      box-sizing: border-box;
+      top: calc(-1 * var(--eqt-border-width));
+      bottom: calc(-1 * var(--eqt-border-width));
+      width: min(6px, calc(50% + var(--eqt-border-width)));
+      border: var(--eqt-border-width) solid var(--eqt-text);
+      pointer-events: none;
+    }
+
+    &--grip-left#{$spacer}--editing::before {
+      left: calc(-1 * var(--eqt-border-width));
+      border-right: none;
+      border-radius: var(--eqt-radius-sm) 0 0 var(--eqt-radius-sm);
+    }
+
+    &--grip-right#{$spacer}--editing::after {
+      right: calc(-1 * var(--eqt-border-width));
+      border-left: none;
+      border-radius: 0 var(--eqt-radius-sm) var(--eqt-radius-sm) 0;
+    }
+  }
+
+  &__spacer-body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--eqt-text-hint);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  // 右緣 resize 把手:純透明熱區,沒有自己的視覺——使用者看到的把手是 --grip-right
+  // 畫的那個方括號。照 VS Code sash 的模型,熱區比視覺寬得多:2px 的線點不到,
+  // 所以向外擴 4px、向內吃一段。
+  // 寬度 cap 在「spacer 半寬 + 外擴」內:居中行雙把手在接近最小寬的間隔上,
+  // 向內的熱區各不超過半寬,兩把手不重疊搶點
+  &__spacer-grip {
+    position: absolute;
+    top: calc(-1 * var(--eqt-border-width));
+    bottom: calc(-1 * var(--eqt-border-width));
+    right: -6px;
+    width: min(12px, calc(50% + 6px));
+    cursor: ew-resize;
+    touch-action: none;
+    z-index: 2;
+
+    // 右對齊行的鏡像：flex-end 下右緣是不動錨點、左緣才是拖了會動的邊,
+    // 把手移到左緣才不會「手在右邊拖、內容往左跑」
+    &--left {
+      right: auto;
+      left: -6px;
+    }
+  }
+
+  // smart guide 吸附輔助線：resize 命中其他行的邊緣時，從那一行連到被拖的這
+  // 一行。垂直範圍由 JS 逐幀給（top / height），這裡只定形狀
+  &__spacer-guide {
+    position: absolute;
+    width: 2px;
+    background: var(--eqt-status-or);
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  &__ctrl {
+    @include btn-toned;
+    padding: 2px 6px;
+
+    &--toggle {
+      display: inline-grid;
+      align-items: center;
+
+      > * {
+        grid-area: 1 / 1;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      // editing 時 bg 填成 border 色——border 跟 bg 同色變實心填充，
+      // 從外圍快速一瞄就能看出當前在編輯模式（不用先讀「完成 / 編輯」文字）。
+      // hover 也維持同色，否則 hover overlay 會把實心填充蓋掉、看起來像
+      // 退出了 editing 狀態
+      &.is-active,
+      &.is-active:hover {
+        background: var(--eqt-border);
+      }
+    }
+  }
+
+  &__ctrl-hidden {
+    visibility: hidden;
+  }
+}

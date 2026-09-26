@@ -10,7 +10,7 @@ import type { UrlButton } from '@/types'
 import { toAbsoluteUrl } from '@/utils/ehUrl'
 import { parseSearchUrl } from '@/services/ehSearchParams'
 import { readEhSearchSnapshot } from '@/composables/ehSearchSnapshot'
-import UrlSearchBuilder from './UrlSearchBuilder.vue'
+import UrlSearchBuilder from '@/components/UrlSearchBuilder.vue'
 import { t } from '@/composables/useI18n'
 
 const props = defineProps<{

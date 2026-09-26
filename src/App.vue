@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import TagBar from '@/components/TagBar.vue'
+import TagBar from '@/components/tagbar/TagBar.vue'
 import GalleryTagList from '@/components/gallery/GalleryTagList.vue'
 import MyTagsPanel from '@/components/mytags/MyTagsPanel.vue'
 import SettingsPopup from '@/components/settings/SettingsPopup.vue'
