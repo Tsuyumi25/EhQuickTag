@@ -260,27 +260,28 @@ test('編輯區可拖曳收合並保留草稿與預覽', async ({ page }) => {
   })
   const columnsBefore = await countColumns()
   const groupBox = (await page.locator('.eqt-panel__splitter').boundingBox())!
+  const groupRight = groupBox.x + groupBox.width
   const sidebarBefore = (await sidebar.boundingBox())!
   const previewBefore = (await preview.boundingBox())!
   const handleBefore = (await handle.boundingBox())!
   const dragY = handleBefore.y + handleBefore.height / 2
   await page.mouse.move(handleBefore.x + handleBefore.width / 2, dragY)
   await page.mouse.down()
-  await page.mouse.move(groupBox.x + groupBox.width * 0.2, dragY, { steps: 8 })
+  await page.mouse.move(groupRight - groupBox.width * 0.2, dragY, { steps: 8 })
   await expect.poll(async () => (await editor.boundingBox())!.width).toBeGreaterThan(groupBox.width * 0.15)
   await expect.poll(async () => (await editor.boundingBox())!.width).toBeLessThan(groupBox.width * 0.25)
   expect((await page.locator('.eqt-tag-catalog').boundingBox())!.width).toBe((await editor.boundingBox())!.width)
-  await page.mouse.move(groupBox.x + groupBox.width * 0.05, dragY, { steps: 8 })
+  await page.mouse.move(groupRight - groupBox.width * 0.05, dragY, { steps: 8 })
   await expect.poll(async () => (await editor.boundingBox())!.width).toBeGreaterThan(0)
   await expect.poll(async () => (await editor.boundingBox())!.width).toBeLessThan(groupBox.width * 0.1)
   expect((await page.locator('.eqt-tag-catalog').boundingBox())!.width).toBe((await editor.boundingBox())!.width)
   const visibleEditor = (await editor.boundingBox())!
   expect(await page.locator('.eqt-tag-catalog').evaluate((element, point) =>
     element.contains(document.elementFromPoint(point.x, point.y)), {
-    x: visibleEditor.x + visibleEditor.width + handleBefore.width + 2,
+    x: visibleEditor.x - handleBefore.width - 2,
     y: dragY,
   })).toBe(false)
-  await page.mouse.move(groupBox.x, dragY, { steps: 12 })
+  await page.mouse.move(groupRight, dragY, { steps: 12 })
   await page.mouse.up()
   await expect.poll(async () => (await editor.boundingBox())!.width).toBe(0)
   await expect(handle).toBeVisible()
@@ -301,10 +302,10 @@ test('編輯區可拖曳收合並保留草稿與預覽', async ({ page }) => {
   const collapsedHandle = (await handle.boundingBox())!
   await page.mouse.move(collapsedHandle.x + collapsedHandle.width / 2, dragY)
   await page.mouse.down()
-  await page.mouse.move(groupBox.x + groupBox.width * 0.05, dragY, { steps: 8 })
+  await page.mouse.move(groupRight - groupBox.width * 0.05, dragY, { steps: 8 })
   await expect.poll(async () => (await editor.boundingBox())!.width).toBeGreaterThan(0)
   await expect.poll(async () => (await editor.boundingBox())!.width).toBeLessThan(groupBox.width * 0.1)
-  await page.mouse.move(groupBox.x + groupBox.width * 0.45, dragY, { steps: 12 })
+  await page.mouse.move(groupRight - groupBox.width * 0.45, dragY, { steps: 12 })
   await page.mouse.up()
   await expect.poll(async () => (await editor.boundingBox())!.width).toBeGreaterThan(0)
   await expect(page.locator('.eqt-tag-catalog')).not.toHaveAttribute('inert', '')
@@ -789,7 +790,7 @@ test('splitter 頂端按鈕展開回預設比例，拖曳後仍可用滑鼠與�
     const y = handleBox.y + handleBox.height / 2
     await page.mouse.move(x, y)
     await page.mouse.down()
-    await page.mouse.move(x + 80, y, { steps: 8 })
+    await page.mouse.move(x + (area === 'side' ? 80 : -80), y, { steps: 8 })
     await page.mouse.up()
     await expect.poll(async () => (await panel.boundingBox())!.width).toBeGreaterThan(defaultWidth)
 
