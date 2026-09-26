@@ -118,10 +118,11 @@ $eqt-gallery-height: 330px;
 .eqt-gallery-chip.eqt-gallery-chip--mytags-colored {
   background: var(--eqt-mytags-background) padding-box;
   border-color: var(--eqt-mytags-border);
+  transition-property: border-color, color;
 }
 
 .eqt-gallery-chip__body {
-  padding: 1px 4px;
+  padding: var(--eqt-gallery-chip-padding-block) var(--eqt-gallery-chip-padding-inline);
   border: none;
   background: transparent;
   color: var(--eqt-mytags-text, var(--eqt-text));
@@ -132,6 +133,23 @@ $eqt-gallery-height: 330px;
   &:hover {
     background: var(--eqt-bg-hover);
   }
+}
+
+.eqt-gallery-taglist .eqt-gallery-chip__body {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--eqt-gallery-chip-content-gap);
+}
+
+.eqt-gallery-chip__weight {
+  display: inline-flex;
+  align-items: center;
+}
+
+.eqt-gallery-chip__watch,
+.eqt-gallery-chip__weight svg {
+  width: var(--eqt-fs-md);
+  height: var(--eqt-fs-md);
 }
 
 .eqt-gallery-chip--selected-positive {
@@ -147,7 +165,7 @@ $eqt-gallery-height: 330px;
 }
 
 .eqt-gallery-chip:is(.eqt-gallery-chip--selected-positive, .eqt-gallery-chip--selected-negative) .eqt-gallery-chip__body {
-  --eqt-mytags-text: var(--eqt-text);
+  color: var(--eqt-text);
   background: color-mix(in srgb, var(--eqt-gallery-selection-color) 55%, transparent);
 
   &:hover {
@@ -155,19 +173,31 @@ $eqt-gallery-height: 330px;
   }
 }
 
-.eqt-gallery-chip--mytags-colored:is(.eqt-gallery-chip--selected-positive, .eqt-gallery-chip--selected-negative) .eqt-gallery-chip__body {
+.eqt-gallery-chip--mytags-colored .eqt-gallery-chip__body {
   position: relative;
+  isolation: isolate;
+
+  .eqt-gallery-chip__name,
+  .eqt-gallery-chip__weight {
+    position: relative;
+  }
 
   &::after {
     content: '';
     position: absolute;
     top: 0;
     right: 0;
-    width: var(--eqt-gallery-selection-corner-size);
-    height: var(--eqt-gallery-selection-corner-size);
+    width: auto;
+    height: 100%;
+    aspect-ratio: 1;
+    z-index: -1;
     background: var(--eqt-mytags-background);
     clip-path: polygon(0 0, 100% 0, 100% 100%);
     pointer-events: none;
+  }
+
+  &:hover::after {
+    background-image: linear-gradient(var(--eqt-bg-hover), var(--eqt-bg-hover));
   }
 }
 

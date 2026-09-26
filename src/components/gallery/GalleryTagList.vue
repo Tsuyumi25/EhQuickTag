@@ -22,7 +22,7 @@ import { batchVote, type VoteState } from '@/services/gallery/galleryVote'
 import { useEqtToast } from '@/composables/useEqtToast'
 import { useEhGalleryHost, parseTaglistRoot, type GalleryTag } from '@/composables/useEhGalleryHost'
 import { useIntroPanel } from '@/composables/useIntroPanel'
-import { Settings, Search, BookOpen } from '@lucide/vue'
+import { Settings, Search, BookOpen, Ban, Eye } from '@lucide/vue'
 import { useDragSelect } from '@/composables/useDragSelect'
 import type { ChipRef, TriState, Selection } from '@/services/gallery/dragSelectMachine'
 import GalleryAddInline from './GalleryAddInline.vue'
@@ -36,18 +36,13 @@ const host = useEhGalleryHost()!
 const toast = useEqtToast()
 
 const myTagsPalette = shallowRef<MyTagsPalette | null>(null)
-let loadingMyTagsPalette = false
-watch(galleryMyTagsColorsEnabled, async (enabled) => {
-  if (!enabled || myTagsPalette.value || loadingMyTagsPalette) return
-  loadingMyTagsPalette = true
+onMounted(async () => {
   try {
     myTagsPalette.value = await loadMyTagsPalette()
   } catch {
     toast.error(t('gallery.myTagsColorsFailed'))
-  } finally {
-    loadingMyTagsPalette = false
   }
-}, { immediate: true })
+})
 
 const myTagsStyles = computed<Record<string, CSSProperties>>(() => {
   const styles: Record<string, CSSProperties> = {}
@@ -123,6 +118,7 @@ interface ChipView {
   tier: TagTier
   iconUrl?: string
   personalStyle?: CSSProperties
+  personalTag?: MyTagsPalette[string]
 }
 
 interface ChipGroup {
@@ -152,6 +148,7 @@ function buildChipView(tag: GalleryTag, showNs = false): ChipView {
     tier: tierOf(tag.tierClass),
     iconUrl: entry?.iconUrl,
     personalStyle: myTagsStyles.value[tag.nsRaw],
+    personalTag: myTagsPalette.value?.[tag.nsRaw],
   }
 }
 
@@ -499,7 +496,14 @@ watch(selection, () => {
             type="button"
             class="eqt-gallery-chip__body"
           >
-            <img v-if="chip.iconUrl" :src="chip.iconUrl" class="eqt-tag-icon" alt="" />{{ chip.display }}
+            <span class="eqt-gallery-chip__name">
+              <img v-if="chip.iconUrl" :src="chip.iconUrl" class="eqt-tag-icon" alt="" />{{ chip.display }}
+            </span>
+            <Eye v-if="chip.personalTag?.watch" class="eqt-gallery-chip__watch" />
+            <span v-if="chip.personalTag" class="eqt-gallery-chip__weight">
+              <Ban v-if="chip.personalTag.hidden" />
+              <template v-else>{{ chip.personalTag.weight > 0 ? `+${chip.personalTag.weight}` : chip.personalTag.weight }}</template>
+            </span>
           </button>
         </div>
       </div>

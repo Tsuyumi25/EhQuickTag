@@ -2,36 +2,44 @@ import { cacheGet, cacheSet } from '@/services/gmStorage'
 import { tagColors, type TagColors } from '@/services/mytags/mytagsColors'
 import {
   fetchTagSet, fetchTagSetIndex,
-  type TagSetSnapshot,
+  type MyTagRow, type TagSetSnapshot,
 } from '@/composables/useEhMyTagsHost'
 
-export type MyTagsPalette = Record<string, TagColors>
+type MyTagsPaletteEntry = TagColors & Pick<MyTagRow, 'weight' | 'hidden' | 'watch'>
+export type MyTagsPalette = Record<string, MyTagsPaletteEntry>
 
 const KEY = 'eqt_mytags_palette'
-const SCHEMA = 1
+const SCHEMA = 3
 
 // 固定採用選單順序，避免切換目前標籤集就改變 Gallery 的重複標籤配色。
 export function buildMyTagsPalette(sets: TagSetSnapshot[]): MyTagsPalette {
-  const colors = new Map<string, TagColors>()
+  const colors = new Map<string, MyTagsPaletteEntry>()
   for (const set of sets) {
     if (!set.enabled) continue
     for (const row of set.rows) {
       if (colors.has(row.full)) continue
-      colors.set(row.full, tagColors({
-        color: row.color,
-        setColor: set.defaultColor,
+      colors.set(row.full, {
+        ...tagColors({
+          color: row.color,
+          setColor: set.defaultColor,
+          weight: row.weight,
+          hidden: row.hidden,
+        }),
         weight: row.weight,
         hidden: row.hidden,
-      }))
+        watch: row.watch,
+      })
     }
   }
   return Object.fromEntries(colors)
 }
 
-function isColors(value: unknown): value is TagColors {
+function isPaletteEntry(value: unknown): value is MyTagsPaletteEntry {
   if (!value || typeof value !== 'object') return false
-  const { text, face, edge } = value as Partial<TagColors>
+  const { text, face, edge, weight, hidden, watch } = value as Partial<MyTagsPaletteEntry>
   return typeof text === 'string' && typeof face === 'string' && typeof edge === 'string'
+    && typeof weight === 'number' && Number.isFinite(weight) && typeof hidden === 'boolean'
+    && typeof watch === 'boolean'
 }
 
 function parsePalette(raw: string | null): MyTagsPalette | null {
@@ -41,7 +49,7 @@ function parsePalette(raw: string | null): MyTagsPalette | null {
     if (saved.schema !== SCHEMA || !saved.tags || typeof saved.tags !== 'object' || Array.isArray(saved.tags)) return null
     const out: MyTagsPalette = {}
     for (const [full, colors] of Object.entries(saved.tags)) {
-      if (!isColors(colors)) return null
+      if (!isPaletteEntry(colors)) return null
       out[full] = colors
     }
     return out

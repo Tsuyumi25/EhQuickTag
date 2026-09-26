@@ -10,7 +10,7 @@ import { useEhGalleryHost } from '@/composables/useEhGalleryHost'
 import { useEhMyTagsHost } from '@/composables/useEhMyTagsHost'
 import { usePageSearch } from '@/composables/usePageSearch'
 import { showSettings, initialSettingsTab, showSearchPopup } from '@/services/appOverlays'
-import { taggingEnhancerEnabled, myTagsEnhancerEnabled, galleryMyTagsColorsEnabled } from '@/services/store'
+import { taggingEnhancerEnabled, myTagsEnhancerEnabled } from '@/services/store'
 import { refreshMyTagsPalette } from '@/services/mytags/mytagsPalette'
 import { useEqtToast } from '@/composables/useEqtToast'
 import { t } from '@/composables/useI18n'
@@ -22,7 +22,7 @@ const { searchText, search } = usePageSearch()
 const toast = useEqtToast()
 
 onMounted(() => {
-  if (location.pathname !== '/mytags' || myTagsHost || !galleryMyTagsColorsEnabled.value) return
+  if (location.pathname !== '/mytags' || myTagsHost) return
   void refreshMyTagsPalette().catch(() => toast.error(t('gallery.myTagsColorsFailed')))
 })
 </script>

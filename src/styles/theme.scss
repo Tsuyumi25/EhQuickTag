@@ -121,7 +121,9 @@
 
   // transition base for color/border/background morphing
   --eqt-transition-base: background 0.15s, border-color 0.15s, color 0.15s;
-  --eqt-gallery-selection-corner-size: 8px;
+  --eqt-gallery-chip-content-gap: 4px;
+  --eqt-gallery-chip-padding-block: 1px;
+  --eqt-gallery-chip-padding-inline: 4px;
 
   // checkbox 預設尺寸 / 勾勾顏色（必須放 :root inherited，不能放全域 input 規則內，
   // 否則 component 級 override 會被全域 (1,1,1) 在同 element 上壓過去）

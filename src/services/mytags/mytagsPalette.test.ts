@@ -50,10 +50,12 @@ describe('buildMyTagsPalette', () => {
   })
 
   it('重複的標籤由選單順序在前的那一組決定', () => {
-    const first = set('1', [row('female:a', '#FF0000')])
+    const first = set('1', [{ ...row('female:a', '#FF0000'), weight: -25, hidden: true, watch: true }])
     const second = set('2', [row('female:a', '#00FF00')])
 
-    expect(buildMyTagsPalette([first, second])['female:a']!.edge).toBe('FF0000')
+    expect(buildMyTagsPalette([first, second])['female:a']).toMatchObject({
+      edge: 'FF0000', weight: -25, hidden: true, watch: true,
+    })
   })
 
   it('標籤沒設色時吃所屬標籤集的預設色', () => {
@@ -94,18 +96,39 @@ describe('loadMyTagsPalette', () => {
     fetchTagSetIndex.mockResolvedValue({ order: ['1'], current: set('1', [row('female:a', '#FF0000')]) })
 
     await expect(loadMyTagsPalette()).resolves.toEqual({
-      'female:a': { text: 'f1f1f1', face: 'df0000', edge: 'FF0000' },
+      'female:a': { text: 'f1f1f1', face: 'df0000', edge: 'FF0000', weight: 10, hidden: false, watch: false },
     })
   })
 
   it('不完整的快取要重抓，不能當成沒有個人配色', async () => {
     storage.set('eqt_mytags_palette', JSON.stringify({
-      schema: 1,
-      tags: { 'female:a': { face: 'FF0000' } },
+      schema: 3,
+      tags: { 'female:a': { text: 'f1f1f1', face: 'df0000', edge: 'FF0000', weight: 10, hidden: false } },
     }))
     fetchTagSetIndex.mockResolvedValue({ order: ['1'], current: set('1', [row('female:a', '#00FF00')]) })
 
     expect((await loadMyTagsPalette())['female:a']!.edge).toBe('00FF00')
+  })
+
+  it('舊版快取重新載入追蹤、權重與隱藏狀態，後續直接使用新快取', async () => {
+    storage.set('eqt_mytags_palette', JSON.stringify({
+      schema: 2,
+      tags: { 'female:a': { text: 'f1f1f1', face: 'df0000', edge: 'FF0000', weight: 10, hidden: false } },
+    }))
+    fetchTagSetIndex.mockResolvedValue({
+      order: ['1'],
+      current: set('1', [
+        { ...row('female:a'), weight: -25, hidden: true, watch: true },
+        { ...row('female:b'), weight: 0 },
+      ]),
+    })
+
+    const palette = await loadMyTagsPalette()
+    expect(palette['female:a']).toMatchObject({ weight: -25, hidden: true, watch: true })
+    expect(palette['female:b']).toMatchObject({ weight: 0, hidden: false, watch: false })
+    vi.clearAllMocks()
+    await expect(loadMyTagsPalette()).resolves.toEqual(palette)
+    expect(fetchTagSetIndex).not.toHaveBeenCalled()
   })
 
   it('抓不到 /mytags 就 reject，不寫入任何快取', async () => {
@@ -129,12 +152,12 @@ describe('loadMyTagsPalette', () => {
   })
 
   it('重抓失敗時原本的完整快取留著', async () => {
-    await saveMyTagsPalette({ 'female:a': { text: 'f1f1f1', face: 'df0000', edge: 'FF0000' } })
+    await saveMyTagsPalette({ 'female:a': { text: 'f1f1f1', face: 'df0000', edge: 'FF0000', weight: 10, hidden: false, watch: false } })
     fetchTagSetIndex.mockResolvedValue(null)
 
     await expect(refreshMyTagsPalette()).rejects.toThrow()
     await expect(loadMyTagsPalette()).resolves.toEqual({
-      'female:a': { text: 'f1f1f1', face: 'df0000', edge: 'FF0000' },
+      'female:a': { text: 'f1f1f1', face: 'df0000', edge: 'FF0000', weight: 10, hidden: false, watch: false },
     })
   })
 })
