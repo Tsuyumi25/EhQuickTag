@@ -589,20 +589,18 @@
   cursor: pointer;
 }
 
+
 .eqt-taglist__chip {
   display: inline-flex;
   align-items: baseline;
   gap: 4px;
   min-width: 0;
   padding: 2px 7px;
-  border: var(--eqt-border-width) solid var(--eqt-border);
   border-radius: var(--eqt-radius-sm);
   background: var(--eqt-bg-btn);
   color: inherit;
   font: inherit;
   font-size: var(--eqt-fs-sm);
-  // 粗體是 EH 標籤最明顯的識別特徵（原生的 div.gt 就是 bold）
-  font-weight: 700;
   cursor: pointer;
 
   &--static { cursor: default; }
@@ -615,6 +613,11 @@
     white-space: nowrap;
     text-overflow: ellipsis;
   }
+}
+.eqt-taglist__chip,
+.eqt-tag-catalog__results .eqt-popup__suggestion--styled {
+  border: var(--eqt-border-width) solid var(--eqt-border);
+  font-weight: 700;
 }
 
 .eqt-taglist__ns { font-size: var(--eqt-fs-xs); opacity: 0.7; }

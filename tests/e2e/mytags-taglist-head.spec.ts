@@ -14,7 +14,7 @@ test.beforeEach(async ({ page }) => {
 test('色票沿用標籤集顏色，無設定色時隨權重與隱藏狀態使用 E 站預設色', async ({ page }) => {
   const draft = page.locator('.eqt-tag-catalog__draft')
   const swatch = draft.locator('.eqt-taglist__color-swatch')
-  await expect(swatch).toHaveCSS('border-top-color', 'rgb(68, 85, 102)')
+  await expect(swatch).toHaveCSS('border-top-color', 'rgb(36, 53, 70)')
 
   await page.addInitScript(() => {
     document.addEventListener('DOMContentLoaded', () => {
@@ -23,25 +23,25 @@ test('色票沿用標籤集顏色，無設定色時隨權重與隱藏狀態使�
     })
   })
   await injectMyTagsUserscript(page)
-  await expect(swatch).toHaveCSS('border-top-color', 'rgb(51, 119, 255)')
-  await expect(swatch).toHaveCSS('background-color', 'rgb(19, 87, 223)')
+  await expect(swatch).toHaveCSS('border-top-color', 'rgb(19, 87, 223)')
+  await expect(swatch).toHaveCSS('background-image', 'radial-gradient(rgb(19, 87, 223), rgb(51, 119, 255))')
 
   const weight = draft.locator('.eqt-number-field__input')
   await weight.fill('-1')
   await weight.press('Enter')
-  await expect(swatch).toHaveCSS('border-top-color', 'rgb(255, 102, 102)')
-  await expect(swatch).toHaveCSS('background-color', 'rgb(223, 70, 70)')
+  await expect(swatch).toHaveCSS('border-top-color', 'rgb(223, 70, 70)')
+  await expect(swatch).toHaveCSS('background-image', 'radial-gradient(rgb(223, 70, 70), rgb(255, 102, 102))')
 
   await weight.fill('1')
   await weight.press('Enter')
-  await expect(swatch).toHaveCSS('border-top-color', 'rgb(51, 119, 255)')
+  await expect(swatch).toHaveCSS('border-top-color', 'rgb(19, 87, 223)')
   await draft.locator('.eqt-taglist__flag input').nth(1).check()
-  await expect(swatch).toHaveCSS('border-top-color', 'rgb(255, 102, 102)')
-  await expect(swatch).toHaveCSS('background-color', 'rgb(223, 70, 70)')
+  await expect(swatch).toHaveCSS('border-top-color', 'rgb(223, 70, 70)')
+  await expect(swatch).toHaveCSS('background-image', 'radial-gradient(rgb(223, 70, 70), rgb(255, 102, 102))')
 
   await draft.locator('.eqt-taglist__color').fill('#EEEEEE')
-  await expect(swatch).toHaveCSS('border-top-color', 'rgb(206, 206, 206)')
-  await expect(swatch).toHaveCSS('background-color', 'rgb(238, 238, 238)')
+  await expect(swatch).toHaveCSS('border-top-color', 'rgb(238, 238, 238)')
+  await expect(swatch).toHaveCSS('background-image', 'radial-gradient(rgb(238, 238, 238), rgb(206, 206, 206))')
 })
 
 test('色票背景與外框分別沿用 chip 的配色', async ({ page }) => {
@@ -52,16 +52,16 @@ test('色票背景與外框分別沿用 chip 的配色', async ({ page }) => {
   const draft = page.locator('.eqt-tag-catalog__draft')
   await draft.locator('.eqt-taglist__color').fill('#FF3333')
   const chip = row.locator('.eqt-taglist__chip')
-  await expect(chip).toHaveCSS('background-color', 'rgb(223, 19, 19)')
-  await expect(chip).toHaveCSS('border-top-color', 'rgb(255, 51, 51)')
+  await expect(chip).toHaveCSS('background-image', 'radial-gradient(rgb(223, 19, 19), rgb(255, 51, 51))')
+  await expect(chip).toHaveCSS('border-top-color', 'rgb(223, 19, 19)')
   const colors = await chip.evaluate((element) => {
     const style = getComputedStyle(element)
-    return { background: style.backgroundColor, border: style.borderTopColor }
+    return { background: style.backgroundImage, border: style.borderTopColor }
   })
   for (const body of [row, draft]) {
     const swatch = body.locator('.eqt-taglist__color-swatch')
     await expect(swatch).toHaveCSS('border-top-color', colors.border)
-    await expect(swatch).toHaveCSS('background-color', colors.background)
+    await expect(swatch).toHaveCSS('background-image', colors.background)
   }
 })
 
@@ -219,7 +219,7 @@ test('編輯區可拖曳收合並保留草稿與預覽', async ({ page }) => {
     getComputedStyle(element).borderTopColor)
   await expect(initialDraft.locator('.eqt-taglist__color-swatch')).toHaveCSS('border-top-color', chipBorder)
   await expect(positiveRow.locator('.eqt-taglist__color-swatch')).toHaveCSS('border-top-color', chipBorder)
-  await expect(initialDraft.locator('.eqt-taglist__color-swatch')).toHaveCSS('background-color', 'rgb(238, 238, 238)')
+  await expect(initialDraft.locator('.eqt-taglist__color-swatch')).toHaveCSS('background-image', 'radial-gradient(rgb(238, 238, 238), rgb(206, 206, 206))')
   await initialDraft.locator('.eqt-taglist__color').fill('#00cc00')
   const moveButton = initialDraft.locator('.eqt-tag-catalog__create')
   await expect(moveButton).toHaveText('移動標籤')
@@ -450,9 +450,12 @@ test('Gallery 操作列固定在捲動區外，標題緊接封面', async ({ pag
 test('Catalog 搜尋結果與左欄解析成同一個既有標籤實體', async ({ page }) => {
   const search = page.locator('.eqt-tag-catalog__search-input')
   await search.fill('negative-sample')
-  await page.locator('.eqt-popup__suggestion').filter({
+  const candidate = page.locator('.eqt-popup__suggestion').filter({
     hasText: 'female:negative-sample',
-  }).click()
+  })
+  await expect(candidate).toHaveCSS('background-image', 'radial-gradient(rgb(172, 0, 0), rgb(204, 0, 0))')
+  await expect(candidate).toHaveCSS('border-top-color', 'rgb(172, 0, 0)')
+  await candidate.click()
 
   const catalog = page.locator('.eqt-tag-catalog__draft')
   const listRow = page.locator('.eqt-taglist__row').filter({
@@ -470,6 +473,12 @@ test('Catalog 搜尋結果與左欄解析成同一個既有標籤實體', async 
   await listRow.locator('.eqt-number-field__input').fill('-30')
   await listRow.locator('.eqt-number-field__input').press('Enter')
   await expect(catalog.locator('.eqt-number-field__input')).toHaveValue('-30')
+
+  await catalog.locator('.eqt-taglist__color').fill('#EEEEEE')
+  await expect(candidate).toHaveCSS('background-image', 'radial-gradient(rgb(238, 238, 238), rgb(206, 206, 206))')
+  await expect(candidate).toHaveCSS('border-top-color', 'rgb(238, 238, 238)')
+  await expect(candidate.locator('.eqt-popup__suggestion-ns')).toHaveCSS('color', 'rgb(9, 9, 9)')
+  await expect(candidate.locator('.eqt-popup__suggestion-tag')).toHaveCSS('color', 'rgb(9, 9, 9)')
 })
 
 test('bulk 草稿合併到 dock 計數，關閉只撤銷 bulk，移動由 dock 套用', async ({ page }) => {

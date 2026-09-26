@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, type CSSProperties } from 'vue'
 import { DEFAULT_NS_ORDER, type TagEntry } from '@/services/tags/tagDb'
 import { isZhLocale, locale, t } from '@/composables/useI18n'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
@@ -16,6 +16,7 @@ const props = defineProps<{
   // 一遍預算 Map」的 O(N) 開銷——function 形式只對 v-for 實際 render 出來的
   // visible items（虛擬滾動切片後 ~20 個）call，跟著虛擬化一起省成本
   stateOf?: (entry: TagEntry) => TagState
+  styleOf?: (entry: TagEntry) => CSSProperties | undefined
   // 可選：限制 ns 欄寬 measure 的 ns 集合。caller 知道篩選態（譬如 SearchPopup
   // 的 selectedNs）時傳入單一 ns 可省 measure 次數；不傳時用 DEFAULT_NS_ORDER
   // 全 13 個量出穩定 col width（不會隨 suggestions 變動而抖動）
@@ -75,6 +76,7 @@ const virtualSuggestions = computed(() =>
   props.suggestions.slice(visibleRange.value.start, visibleRange.value.end).map((data, i) => ({
     data,
     index: visibleRange.value.start + i,
+    style: props.styleOf?.(data),
   })),
 )
 
@@ -158,17 +160,18 @@ const { zhDisplay } = useDisplayConfig()
   <div
     ref="listEl"
     class="eqt-suggestion-list"
-    :style="nsColWidth > 0 ? { '--ns-col-width': nsColWidth + 'px' } : undefined"
+    :style="{ '--ns-col-width': nsColWidth > 0 ? nsColWidth + 'px' : undefined, '--eqt-suggestion-row-height': EST_ITEM_HEIGHT + 'px' }"
     @scroll="onScroll"
     @mouseleave="emit('update:selectedIdx', -1)"
   >
     <div :style="wrapperStyle">
       <div
-        v-for="{ data: entry, index: si } in virtualSuggestions"
+        v-for="{ data: entry, index: si, style } in virtualSuggestions"
         :key="entry.fullTag"
         class="eqt-popup__suggestion"
+        :style="style"
         :class="[
-          { 'eqt-popup__suggestion--active': si === selectedIdx },
+          { 'eqt-popup__suggestion--active': si === selectedIdx, 'eqt-popup__suggestion--styled': !!style },
           stateClassOf(entry),
         ]"
         @mousedown.prevent="onItemMousedown(entry, $event)"

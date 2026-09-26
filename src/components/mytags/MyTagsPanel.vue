@@ -276,6 +276,11 @@ function appearanceOf(tag: string): TagAppearance | null {
   }
 }
 
+function candidateStyle(entry: TagEntry) {
+  const appearance = appearanceOf(entry.fullTag)
+  return appearance ? tagChipStyle(appearance.colors) : undefined
+}
+
 function catalogAppearanceOf(tag: string): TagAppearance | null {
   if (catalogTag.value === tag) {
     if (catalogRow.value && editPlan.value.deletedIds.has(catalogRow.value.id)) return null
@@ -1032,6 +1037,7 @@ watch(edits, () => { void flush() }, { deep: true })
             :sets="host.tagSets"
             :impact="catalogImpact"
             :set-colors="setColors"
+            :style-of="candidateStyle"
             :busy="createBusy || !!writeBusy"
             :previewed="!!catalogTag && previewTarget?.full === catalogTag"
             @update:target-set="setCatalogTarget"

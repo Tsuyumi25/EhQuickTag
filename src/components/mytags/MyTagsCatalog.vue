@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, shallowRef, watch } from 'vue'
+import { computed, ref, shallowRef, watch, type CSSProperties } from 'vue'
 import { getFallbackEntries, type TagEntry } from '@/services/tags/tagDb'
 import { useTagSuggestions } from '@/composables/useTagSuggestions'
 import { t } from '@/composables/useI18n'
@@ -21,6 +21,7 @@ const props = defineProps<{
   sets: TagSetRef[]
   impact: TagImpact
   setColors: Record<string, string>
+  styleOf: (entry: TagEntry) => CSSProperties | undefined
   busy: boolean
   previewed: boolean
 }>()
@@ -205,6 +206,7 @@ function commit(): void {
           :suggestions="suggestions"
           :selected-idx="selectedIdx"
           :ns-list="popupNsList"
+          :style-of="styleOf"
           @update:selected-idx="selectedIdx = $event"
           @pick="pick"
         />
@@ -307,6 +309,22 @@ function commit(): void {
   &__results {
     flex: 1 1 auto;
     min-height: 0;
+
+    .eqt-popup__suggestion--styled {
+      box-sizing: border-box;
+      height: var(--eqt-suggestion-row-height);
+      padding-block: 0;
+
+      .eqt-popup__suggestion-ns,
+      .eqt-popup__suggestion-tag {
+        color: inherit;
+      }
+
+      &.eqt-popup__suggestion--active {
+        outline: var(--eqt-border-width) solid currentColor;
+        outline-offset: calc(-1 * var(--eqt-border-width));
+      }
+    }
   }
 
   &__empty {
