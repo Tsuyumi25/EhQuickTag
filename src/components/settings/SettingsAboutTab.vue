@@ -71,7 +71,7 @@ const appVersion = __APP_VERSION__
 </template>
 
 <style lang="scss">
-@use '../styles/buttons' as *;
+@use '../../styles/buttons' as *;
 
 .eqt-about {
   &__hero {

@@ -2,7 +2,7 @@
 import TagBar from '@/components/TagBar.vue'
 import GalleryTagList from '@/components/gallery/GalleryTagList.vue'
 import MyTagsPanel from '@/components/mytags/MyTagsPanel.vue'
-import SettingsPopup from '@/components/SettingsPopup.vue'
+import SettingsPopup from '@/components/settings/SettingsPopup.vue'
 import SearchPopup from '@/components/search/SearchPopup.vue'
 import { useEhFormHost } from '@/composables/useEhFormHost'
 import { useEhGalleryHost } from '@/composables/useEhGalleryHost'

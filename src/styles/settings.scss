@@ -1,0 +1,257 @@
+@use './buttons' as *;
+
+// 層級規則（統一制）：每個控制項必屬於一個 section、每個 section 必有
+// subtitle。層級感靠三者疊加——14px bold 標題、section 間 hairline 分隔線、
+// 間距尺度差（section 間 28px vs 行間 6px）——不再只靠字重單打。
+//
+// about tab 走自己的 spacing system（about__hero/about__section 用 margin-bottom
+// 串接），所以用 :not(.eqt-settings__about) 排除。
+.eqt-settings__tab-content:not(.eqt-settings__about) {
+  display: flex;
+  flex-direction: column;
+}
+
+.eqt-settings__section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 0;
+
+  &:first-child {
+    padding-top: 0;
+  }
+
+  &:last-child {
+    padding-bottom: 0;
+  }
+
+  & + & {
+    border-top: var(--eqt-border-width) solid var(--eqt-border);
+  }
+}
+
+
+.eqt-settings {
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: var(--eqt-ctrl-h);
+
+    // 整個 row 區域可點 → checkbox toggle。@at-root 跳出 nesting，避免被
+    // 編成 `.eqt-settings__row label.eqt-settings__row` (descendant chain)；
+    // interpolation 把 & 黏進 label 才會得到 compound `label.eqt-settings__row`。
+    @at-root label#{&} {
+      cursor: pointer;
+    }
+  }
+
+  &__label {
+    user-select: none;
+  }
+
+  // 「行內標籤 + 控制項」的通用橫排：雙擊動作 select、ns 格式、字重 slider、
+  // 定義面板語言、標籤列高度都用這個
+  &__field-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    min-height: var(--eqt-ctrl-h);
+  }
+
+  // 二級設定：縮排對齊父 checkbox 的 label 起點（checkbox 25px + gap 8px），
+  // 視覺上表達從屬關係
+  &__field-row--sub {
+    padding-left: calc(var(--eqt-ctrl-h) + 8px);
+  }
+
+  &__field-label {
+    flex-shrink: 0;
+
+    // 對齊寬度只給「成對出現」的 rows（左鍵／右鍵雙擊），讓兩行控制項
+    // 起始 x 對齊出隱性兩欄；單獨 row 的短 label（高度、字重）不需要，
+    // 統一撐寬反而拖出空洞
+    &--aligned {
+      min-width: 5em;
+    }
+  }
+
+  &__locale-row {
+    display: flex;
+    gap: 4px;
+  }
+
+  &__locale-btn {
+    @include btn-toned;
+    height: var(--eqt-ctrl-h);
+    padding: 0 10px;
+
+    &--active {
+      background: var(--eqt-bg-active);
+      font-weight: bold;
+    }
+  }
+
+  &__select {
+    // EH g.css 對 bare `select` 全站塞 min-height:27px、margin:0 1px 1px、
+    // font-weight:bold——min-height 會蓋過 height、margin 讓對齊歪 1px、
+    // bold 比旁邊控制項粗一截，全部歸零奪回控制權（class (0,1,0) 贏
+    // element (0,0,1)）
+    min-height: 0;
+    margin: 0;
+    font-weight: inherit;
+    height: var(--eqt-ctrl-h);
+    padding: 0 6px;
+    box-sizing: border-box;
+    border: var(--eqt-border-width) solid var(--eqt-border);
+    border-radius: 3px;
+    // light 用 page bg（#fff 太刺），dark 走 elevated (#34353b) 對齊 EH form
+    background: var(--eqt-bg);
+    color: var(--eqt-text);
+    font-size: 12px;
+
+    .eqt-dark & {
+      background: var(--eqt-bg-elevated);
+    }
+  }
+
+
+  &__hint {
+    margin: 0 0 0;
+    font-size: 11px;
+    color: var(--eqt-text-hint);
+    line-height: 1.4;
+
+    a {
+      color: var(--eqt-text);
+      text-decoration: underline;
+      &:hover { color: inherit; }
+    }
+  }
+
+
+  // 14px：比 13px 內文大一級、比 15px popup title 小一級，配合 section
+  // 分隔線撐起層級（原本 13px bold 跟內文只差字重，扁平）
+  &__subtitle {
+    margin: 0;
+    font-size: 14px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    // icon 用 hint 色退居輔助，粗體字維持視覺主導；跨 tab 同概念共用
+    // 同一顆 icon（語言/雙擊/預覽），當認知錨點不當裝飾
+    > svg {
+      color: var(--eqt-text-hint);
+      flex-shrink: 0;
+    }
+  }
+
+  &__reset-btn {
+    @include btn-ghost;
+    gap: 2px;
+    padding: 1px 6px;
+    font-size: var(--eqt-fs-sm);
+    line-height: 1;
+
+    &:hover:not(:disabled) {
+      color: var(--eqt-text);
+    }
+  }
+
+  &__input--short {
+    width: 5em;
+    height: var(--eqt-ctrl-h);
+    padding: 0 6px;
+    box-sizing: border-box;
+    border: var(--eqt-border-width) solid var(--eqt-border);
+    border-radius: 3px;
+    background: var(--eqt-bg);
+    color: var(--eqt-text);
+    font-size: 13px;
+
+    .eqt-dark & {
+      background: var(--eqt-bg-elevated);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+
+  &__ns-label {
+    user-select: none;
+    min-width: 3em;
+  }
+
+  &__ns-key {
+    font-size: 11px;
+    color: var(--eqt-text-hint);
+    flex: 1;
+  }
+
+
+
+  // 通用單行文字輸入：字體 family 輸入、資料 mirror 網址（readonly）共用
+  &__text-input {
+    height: var(--eqt-ctrl-h);
+    padding: 0 6px;
+    border: var(--eqt-border-width) solid var(--eqt-border);
+    border-radius: 3px;
+    font-size: 12px;
+    background: var(--eqt-bg);
+    color: var(--eqt-text);
+    box-sizing: border-box;
+
+    .eqt-dark & {
+      background: var(--eqt-bg-elevated);
+    }
+
+    &:focus {
+      outline: none;
+    }
+
+    &--full {
+      width: 100%;
+    }
+
+    // 唯讀（純展示）：hint 色 + 免 focus 框，看起來就不像可編輯
+    &[readonly] {
+      color: var(--eqt-text-hint);
+    }
+  }
+
+
+  &__font-preview {
+    padding: 8px;
+    border: var(--eqt-border-width) solid var(--eqt-border);
+    border-radius: 3px;
+    background: var(--eqt-bg);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__preview-line {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  &__preview-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border: var(--eqt-border-width) solid var(--eqt-border);
+    border-radius: 3px;
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--eqt-text);
+    background: transparent;
+  }
+
+}

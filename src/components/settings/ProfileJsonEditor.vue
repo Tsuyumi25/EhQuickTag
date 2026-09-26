@@ -131,7 +131,7 @@ function onEditorExport() {
 </template>
 
 <style lang="scss">
-@use '../styles/buttons' as *;
+@use '../../styles/buttons' as *;
 
 .eqt-json-editor {
   padding: 1.25rem;
