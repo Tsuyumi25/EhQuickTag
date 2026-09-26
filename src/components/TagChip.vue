@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { Ban, Eye } from '@lucide/vue'
 import type { TagColors } from '@/services/mytags/mytagsColors'
+import { useMyTagsColors } from '@/composables/useMyTagsColors'
 
 const props = withDefaults(defineProps<{
   full: string
@@ -26,11 +27,16 @@ const props = withDefaults(defineProps<{
 
 defineEmits<{ pick: [] }>()
 
-const personalStyle = computed(() => props.colors ? {
-  '--eqt-mytags-background': `#${props.colors.face}`,
-  '--eqt-mytags-text': `#${props.colors.text}`,
-  '--eqt-mytags-border': `#${props.colors.edge}`,
-} : undefined)
+const tagChipStyle = useMyTagsColors()
+const personalStyle = computed(() => {
+  if (!props.colors) return undefined
+  const style = tagChipStyle(props.colors)
+  return {
+    '--eqt-mytags-background': style.background,
+    '--eqt-mytags-text': style.color,
+    '--eqt-mytags-border': style.borderColor,
+  }
+})
 </script>
 
 <template>

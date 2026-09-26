@@ -5,7 +5,8 @@ import LineColorSwatch from '@/components/LineColorSwatch.vue'
 import { t } from '@/composables/useI18n'
 import { useTagLabel } from '@/composables/useTagLabel'
 import type { TagState } from '@/services/mytags/mytagsEdits'
-import { normalizeTagColor, tagChipStyle } from '@/services/mytags/mytagsColors'
+import { normalizeTagColor, tagColors } from '@/services/mytags/mytagsColors'
+import { useMyTagsColors } from '@/composables/useMyTagsColors'
 import type { TagImpact } from '@/services/mytags/mytagsScore'
 
 const props = withDefaults(defineProps<{
@@ -27,13 +28,14 @@ const emit = defineEmits<{
 }>()
 
 const { label } = useTagLabel()
+const tagChipStyle = useMyTagsColors()
 
-const chipStyle = computed(() => tagChipStyle({
+const chipStyle = computed(() => tagChipStyle(tagColors({
   color: props.state.color,
   setColor: props.setColor,
   weight: props.state.weight,
   hidden: props.state.hidden,
-}))
+})))
 
 function onColor(value: string | undefined): void {
   const color = normalizeTagColor(value ?? '')

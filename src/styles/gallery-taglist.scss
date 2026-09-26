@@ -194,7 +194,7 @@ $eqt-gallery-height: 330px;
   }
 
   &:hover::after {
-    background-image: linear-gradient(var(--eqt-bg-hover), var(--eqt-bg-hover));
+    background: linear-gradient(var(--eqt-bg-hover), var(--eqt-bg-hover)), var(--eqt-mytags-background);
   }
 }
 

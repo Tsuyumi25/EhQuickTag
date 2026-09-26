@@ -46,11 +46,13 @@ import { patchConfig } from '@/services/ehConfig'
 import { serializeEntry } from '@/services/search/searchSyntax'
 import { myTagsPanelZoom, nsFormat } from '@/services/store'
 import { openSettings } from '@/services/appOverlays'
-import { tagChipStyle, tagColors, type TagColors } from '@/services/mytags/mytagsColors'
+import { tagColors, type TagColors } from '@/services/mytags/mytagsColors'
+import { useMyTagsColors } from '@/composables/useMyTagsColors'
 import { buildMyTagsPalette, saveMyTagsPalette } from '@/services/mytags/mytagsPalette'
 import type { TagEntry } from '@/services/tags/tagDb'
 
 const host = useEhMyTagsHost()!
+const tagChipStyle = useMyTagsColors()
 
 const toast = useEqtToast()
 
@@ -221,12 +223,12 @@ const selectedTagStyle = computed(() => {
   const row = rowMap.value.get(full)
   if (!row) return null
   const state = view(row)
-  return tagChipStyle({
+  return tagChipStyle(tagColors({
     color: state.color,
     setColor: setColors.value[row.tagSet] ?? '',
     weight: state.weight,
     hidden: state.hidden,
-  })
+  }))
 })
 
 function factsOf(tag: string): TagFacts | null {
@@ -247,12 +249,12 @@ function catalogFactsOf(tag: string): TagFacts | null {
 
 const catalogTagStyle = computed(() => {
   const current = catalogState.value
-  return tagChipStyle({
+  return tagChipStyle(tagColors({
     color: current.color,
     setColor: setColors.value[catalogSet.value] ?? '',
     weight: current.weight,
     hidden: current.hidden,
-  })
+  }))
 })
 
 type TagAppearance = { colors: TagColors; watch: boolean }

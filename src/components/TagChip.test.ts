@@ -1,7 +1,10 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createSSRApp, h } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 import TagChip from './TagChip.vue'
+import { tagColors } from '@/services/mytags/mytagsColors'
+
+afterEach(() => vi.unstubAllGlobals())
 
 function render(props: Record<string, unknown>) {
   return renderToString(createSSRApp({
@@ -14,6 +17,19 @@ function text(html: string): string {
 }
 
 describe('TagChip', () => {
+  it('同份配色在 EH 使用漸層，在 EX 保留原色', async () => {
+    const colors = tagColors({ color: '', setColor: '', weight: 0, hidden: false })
+    vi.stubGlobal('location', { hostname: 'e-hentai.org' })
+    const eh = await render({ colors })
+    expect(eh).toContain('--eqt-mytags-background:radial-gradient(#1357df,#3377FF)')
+    expect(eh).toContain('--eqt-mytags-border:#1357df')
+
+    vi.stubGlobal('location', { hostname: 'exhentai.org' })
+    const ex = await render({ colors })
+    expect(ex).toContain('--eqt-mytags-background:#3377FF')
+    expect(ex).toContain('--eqt-mytags-border:#3377FF')
+  })
+
   it('零權重仍顯示數字，未設定個人權重則不顯示', async () => {
     expect(text(await render({ weight: 0 }))).toMatch(/sample\s*0$/)
     expect(text(await render({}))).toBe('sample')

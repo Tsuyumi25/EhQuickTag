@@ -60,11 +60,23 @@ describe('tagColors · 壞掉的輸入不要吐 NaN 給 CSS', () => {
 })
 
 describe('tagChipStyle', () => {
-  it('把 EH 配色轉成 chip 的 CSS declarations', () => {
-    expect(tagChipStyle({ ...base, color: '#FFFFFF' })).toEqual({
-      color: '#090909',
-      background: '#FFFFFF',
-      borderColor: '#dfdfdf',
+  it.each([
+    ['light', { color: '#E0C6FF' }, 'E0C6FF', 'c0a6df', '090909', 'E0C6FF'],
+    ['dark with clamped channels', { color: '#1C7014' }, '005000', '1C7014', 'f1f1f1', '1C7014'],
+    ['blue fallback', {}, '1357df', '3377FF', 'f1f1f1', '3377FF'],
+    ['negative fallback', { weight: -1 }, 'df4646', 'FF6666', 'f1f1f1', 'FF6666'],
+    ['hidden fallback', { hidden: true }, 'df4646', 'FF6666', 'f1f1f1', 'FF6666'],
+  ] as const)('%s preserves host-specific backgrounds and borders', (_, input, face, edge, text, original) => {
+    const colors = tagColors({ ...base, ...input })
+    expect(tagChipStyle(colors, false)).toEqual({
+      color: `#${text}`,
+      background: `radial-gradient(#${face},#${edge})`,
+      borderColor: `#${face}`,
+    })
+    expect(tagChipStyle(colors, true)).toEqual({
+      color: `#${text}`,
+      background: `#${original}`,
+      borderColor: `#${original}`,
     })
   })
 })

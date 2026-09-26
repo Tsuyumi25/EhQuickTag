@@ -70,15 +70,15 @@ export function tagColors({ color, setColor, weight, hidden }: TagColorInput): T
   }
 }
 
-export function tagChipStyle(input: TagColorInput): {
+export function tagChipStyle(colors: TagColors, isExHentai: boolean): {
   color: string
   background: string
   borderColor: string
 } {
-  const colors = tagColors(input)
+  const face = isExHentai && colors.text === 'f1f1f1' ? colors.edge : colors.face
   return {
     color: `#${colors.text}`,
-    background: `#${colors.face}`,
-    borderColor: `#${colors.edge}`,
+    background: isExHentai ? `#${face}` : `radial-gradient(#${face},#${colors.edge})`,
+    borderColor: `#${face}`,
   }
 }
