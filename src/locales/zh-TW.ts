@@ -300,6 +300,10 @@ export default {
   'gallery.tagDbLoadFailed': '標籤資料庫載入失敗，請稍後再試或檢查網路。',
   'gallery.wiki': 'Wiki',
 
+  'settings.tabMyTags': 'My tags',
+  'settings.sectionMyTagsToggles': '功能開關',
+  'settings.myTagsEnhancer': '啟用 My Tags 強化介面',
+  'settings.myTagsEnhancerHint': '在 {mytags} 頁面提供標籤編輯與過濾預覽。',
   // Gallery settings tab
   'settings.tabGallery': '畫廊',
   'settings.sectionGalleryToggles': '功能開關',
@@ -359,7 +363,7 @@ export default {
   'panel.help': '說明',
   'panel.helpFeedback': '本頁提供視覺回饋，讓你在調整權重時看到樣本圖庫中哪些會被隱藏、哪些會顯示。它無法判斷標籤的語意，也無法判斷圖庫是否符合你的偏好。',
   'panel.helpUsage': '點擊標籤名稱就能打開{preview}。{blocked}與{shown}兩邊最上方都是離{threshold}最近的圖庫（硬隱藏的排在最後），因為只有靠近{threshold}的圖庫才會隨權重變動在兩邊之間移動。\n用{block}、{keep}標示有爭議的圖庫。同一批爭議反覆出現時，通常是規則不符合 E-Hentai 的生態，或應該直接針對 artist 標籤設定規則。\n紅綠比例條可用來快速確認樣本的分佈是否符合預期。\n本頁所有改動都只是草稿，按下紅色的應用按鈕才會批次寫回，在那之前都可以取消。',
-  'panel.helpTagSets': '建立與重新命名標籤集屬於低頻操作，本頁不提供這兩項功能。請停用插件後，到 E-Hentai 原生 My Tags 頁面操作。',
+  'panel.helpTagSets': '建立與重新命名標籤集屬於低頻操作，本頁不提供這兩項功能。請在設定的 My tags 分頁關閉強化介面並重新整理，再到 E-Hentai 原生 My Tags 頁面操作。',
   'panel.helpLanguageFiltering': '抓取的樣本是套用{settings}的「排除語言」後的結果。',
   'panel.helpSettingsPage': '設定頁面',
   'preview.panelZoom': '介面縮放',

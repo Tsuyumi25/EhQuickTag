@@ -300,6 +300,10 @@ export default {
   'gallery.tagDbLoadFailed': '标签数据库加载失败，请稍后再试或检查网络。',
   'gallery.wiki': 'Wiki',
 
+  'settings.tabMyTags': 'My tags',
+  'settings.sectionMyTagsToggles': '功能开关',
+  'settings.myTagsEnhancer': '启用 My Tags 增强界面',
+  'settings.myTagsEnhancerHint': '在 {mytags} 页面提供标签编辑与过滤预览。',
   // Gallery settings tab
   'settings.tabGallery': '图库',
   'settings.sectionGalleryToggles': '功能开关',
@@ -359,7 +363,7 @@ export default {
   'panel.help': '说明',
   'panel.helpFeedback': '本页提供视觉反馈，让你在调整权重时看到样本图库中哪些会被隐藏、哪些会显示。它无法判断标签的语义，也无法判断图库是否符合你的偏好。',
   'panel.helpUsage': '点击标签名称就能打开{preview}。{blocked}与{shown}两边最上方都是离{threshold}最近的图库（硬隐藏的排在最后），因为只有靠近{threshold}的图库才会随权重变动在两边之间移动。\n用{block}、{keep}标示有争议的图库。同一批争议反复出现时，通常是规则不符合 E-Hentai 的生态，或应该直接针对 artist 标签设定规则。\n红绿比例条可用来快速确认样本的分布是否符合预期。\n本页所有改动都只是草稿，按下红色的应用按钮才会批量写回，在那之前都可以取消。',
-  'panel.helpTagSets': '创建与重命名标签集属于低频操作，本页不提供这两项功能。请停用插件后，到 E-Hentai 原生 My Tags 页面操作。',
+  'panel.helpTagSets': '创建与重命名标签集属于低频操作，本页不提供这两项功能。请在设置的 My tags 分页关闭增强界面并刷新，再到 E-Hentai 原生 My Tags 页面操作。',
   'panel.helpLanguageFiltering': '抓取的样本是套用{settings}的「排除语言」后的结果。',
   'panel.helpSettingsPage': '设置页面',
   'preview.panelZoom': '界面缩放',

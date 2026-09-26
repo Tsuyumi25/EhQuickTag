@@ -300,6 +300,10 @@ export default {
   'gallery.tagDbLoadFailed': 'Failed to load tag database. Please retry later or check your network.',
   'gallery.wiki': 'Wiki',
 
+  'settings.tabMyTags': 'My tags',
+  'settings.sectionMyTagsToggles': 'Features',
+  'settings.myTagsEnhancer': 'Enable My Tags enhanced interface',
+  'settings.myTagsEnhancerHint': 'Provides tag editing and filtering previews on {mytags}.',
   // Gallery settings tab
   'settings.tabGallery': 'Gallery',
   'settings.sectionGalleryToggles': 'Features',
@@ -359,7 +363,7 @@ export default {
   'panel.help': 'Help',
   'panel.helpFeedback': 'This page shows you which sample galleries would be hidden or shown as you adjust tag weights. It cannot tell you what a tag means, or whether a gallery matches your preferences.',
   'panel.helpUsage': 'Click a tag name to open the {preview}. Both the {blocked} and {shown} sides list the galleries closest to the {threshold} first, and hard-hidden galleries are placed at the bottom, because those near the threshold are the ones most likely to move between the two sides as weights change.\nUse {block} and {keep} to mark borderline cases. If the same borderline cases keep appearing, the rule usually does not match how tags are actually used on E-Hentai, or it may be better applied to the artist tag instead.\nThe red/green ratio bar lets you check at a glance whether the sample distribution matches your expectations.\nChanges made here are only drafts. Nothing is saved until you press the red Apply button, and you can discard your draft changes at any time before then.',
-  'panel.helpTagSets': 'Tag sets cannot be created or renamed here, since those tasks are rarely needed. Disable the userscript and use the original E-Hentai My Tags page for those actions.',
+  'panel.helpTagSets': 'Tag sets cannot be created or renamed here, since those tasks are rarely needed. Turn off the enhanced interface in Settings → My tags and reload, then use the original E-Hentai My Tags page for those actions.',
   'panel.helpLanguageFiltering': 'Fetched samples are results after applying the Excluded Languages settings on the {settings}.',
   'panel.helpSettingsPage': 'settings page',
   'preview.panelZoom': 'UI zoom',

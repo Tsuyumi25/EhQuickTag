@@ -686,7 +686,7 @@ watch(edits, () => { void flush() }, { deep: true })
       <div class="eqt-panel__tools">
         <button
           type="button" class="eqt-panel__btn eqt-panel__btn--settings"
-          @click="openSettings()"
+          @click="openSettings('mytags')"
         >
           <Settings :size="14" aria-hidden="true" />
           {{ t('settings.title') }}

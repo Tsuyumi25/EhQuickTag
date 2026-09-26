@@ -162,6 +162,10 @@ const INITIAL_SETTINGS = {
   // per-panel 點「▸ Notes」展開，切下個 chip 又回預設
   wikiPreludeExpanded: false,
   followCurrentSite: true,
+  // My Tags Enhancer：plugin 在 /mytags 是否接管原生標籤管理 UI。跟
+  // taggingEnhancerEnabled 同語意、同時機——App.vue setup 階段讀一次，
+  // 關掉就完全不遮蔽原生頁面，toggle 後需重新整理才生效
+  myTagsEnhancerEnabled: true,
   myTagsPreviewCoverScale: 100,
   myTagsPanelZoom: 100,
 }
@@ -208,6 +212,7 @@ export const galleryDblClickLeftNewTabActive  = refs.galleryDblClickLeftNewTabAc
 export const galleryDblClickRightNewTabActive = refs.galleryDblClickRightNewTabActive
 export const wikiPreludeExpanded = refs.wikiPreludeExpanded
 export const followCurrentSite  = refs.followCurrentSite
+export const myTagsEnhancerEnabled = refs.myTagsEnhancerEnabled
 export const myTagsPreviewCoverScale = refs.myTagsPreviewCoverScale
 export const myTagsPanelZoom = refs.myTagsPanelZoom
 

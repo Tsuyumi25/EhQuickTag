@@ -14,6 +14,7 @@ import ProfileJsonEditor from './ProfileJsonEditor.vue'
 import SettingsGeneralTab from './SettingsGeneralTab.vue'
 import SettingsTagBarTab from './SettingsTagBarTab.vue'
 import SettingsGalleryTab from './SettingsGalleryTab.vue'
+import SettingsMyTagsTab from './SettingsMyTagsTab.vue'
 import SettingsDataTab from './SettingsDataTab.vue'
 import SettingsAboutTab from './SettingsAboutTab.vue'
 
@@ -29,17 +30,18 @@ const dragOptions = {
 
 // --- tabs ---
 
-// tab 依 scope 組織：general 收「兩個 scope 都作用」的真全域（介面語言、
-// OpenCC、字體），tagbar / gallery 各對應 userscript 住在頁面上的兩個實體，
-// data 是共用基礎設施。per-scope 的偏好（面板語言、定義面板語言）留在各自
-// scope tab，不集中——集中就變回兩套分類軸混用
-const tabKeys = ['general', 'tagbar', 'gallery', 'data', 'about'] as const
+// tab 依 scope 組織：general 收「所有 scope 都作用」的真全域（介面語言、
+// OpenCC、字體），tagbar / gallery / mytags 各對應 userscript 住在頁面上的
+// 三個實體，data 是共用基礎設施。per-scope 的偏好（面板語言、定義面板語言）
+// 留在各自 scope tab，不集中——集中就變回兩套分類軸混用
+const tabKeys = ['general', 'tagbar', 'gallery', 'mytags', 'data', 'about'] as const
 type TabKey = typeof tabKeys[number]
 
 const tabLabelKeys: Record<TabKey, string> = {
   general: 'settings.tabGeneral',
   tagbar: 'settings.tabTagBar',
   gallery: 'settings.tabGallery',
+  mytags: 'settings.tabMyTags',
   data: 'settings.tabData',
   about: 'settings.tabAbout',
 }
@@ -234,6 +236,7 @@ function onEditorPurge() {
         <div v-show="editingProfileIdx < 0" class="eqt-settings__panel-inner">
           <SettingsTagBarTab v-show="activeTab === 'tagbar'" />
           <SettingsGalleryTab v-show="activeTab === 'gallery'" />
+          <SettingsMyTagsTab v-show="activeTab === 'mytags'" />
           <SettingsDataTab v-show="activeTab === 'data'" />
           <SettingsGeneralTab v-show="activeTab === 'general'" />
           <SettingsAboutTab v-show="activeTab === 'about'" />

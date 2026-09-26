@@ -9,11 +9,11 @@ import { useEhGalleryHost } from '@/composables/useEhGalleryHost'
 import { useEhMyTagsHost } from '@/composables/useEhMyTagsHost'
 import { usePageSearch } from '@/composables/usePageSearch'
 import { showSettings, initialSettingsTab, showSearchPopup } from '@/services/appOverlays'
-import { taggingEnhancerEnabled } from '@/services/store'
+import { taggingEnhancerEnabled, myTagsEnhancerEnabled } from '@/services/store'
 
 const formHost = useEhFormHost()
 const galleryHost = taggingEnhancerEnabled.value ? useEhGalleryHost() : null
-const myTagsHost = useEhMyTagsHost()
+const myTagsHost = myTagsEnhancerEnabled.value ? useEhMyTagsHost() : null
 const { searchText, search } = usePageSearch()
 </script>
 

@@ -300,6 +300,10 @@ export default {
   'gallery.tagDbLoadFailed': 'タグ DB の読み込みに失敗しました。後でリトライするかネットワークをご確認ください。',
   'gallery.wiki': 'Wiki',
 
+  'settings.tabMyTags': 'My tags',
+  'settings.sectionMyTagsToggles': '機能',
+  'settings.myTagsEnhancer': 'My Tags の拡張インターフェースを有効化',
+  'settings.myTagsEnhancerHint': '{mytags} でタグ編集とフィルタリングのプレビューを提供します。',
   // Gallery settings tab
   'settings.tabGallery': 'ギャラリー',
   'settings.sectionGalleryToggles': '機能',
@@ -359,7 +363,7 @@ export default {
   'panel.help': '使い方',
   'panel.helpFeedback': 'このページでは、タグの重みを調整したときに、サンプルのギャラリーのうちどれが非表示になり、どれが表示されるかを視覚的に確認できます。タグの意味や、ギャラリーが好みに合うかどうかまでは判断できません。',
   'panel.helpUsage': 'タグ名をクリックすると{preview}が表示されます。{blocked}側と{shown}側のどちらも、上部には{threshold}に最も近いギャラリーが並びます（非表示になるものは末尾に並びます）。重みを変更したときに両側のあいだを移動する可能性があるのは、閾値付近のギャラリーだけだからです。\n判断に迷うギャラリーは{block}または{keep}としてマークします。そうしたギャラリーが何度も現れる場合、現在のルールが E-Hentai の実際のタグ付けに合っていないか、artist タグ単位でルールを設定したほうがよい可能性があります。\n赤と緑の比率バーでは、サンプルの分布が想定どおりかを手早く確認できます。\nこのページでの変更はすべて下書きとして扱われます。赤い適用ボタンを押すまで反映されず、それまでは取り消せます。',
-  'panel.helpTagSets': 'タグセットの作成と名前変更は利用頻度が低いため、このページでは対応していません。ユーザースクリプトを無効にして、E-Hentai 標準の My Tags ページで操作してください。',
+  'panel.helpTagSets': 'タグセットの作成と名前変更は利用頻度が低いため、このページでは対応していません。設定の My tags タブで拡張インターフェースをオフにして再読み込みし、E-Hentai 標準の My Tags ページで操作してください。',
   'panel.helpLanguageFiltering': '取得するサンプルは、{settings}の「除外言語」を適用した結果です。',
   'panel.helpSettingsPage': '設定ページ',
   'preview.panelZoom': 'UI 拡大率',

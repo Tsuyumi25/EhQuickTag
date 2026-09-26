@@ -300,6 +300,10 @@ export default {
   'gallery.tagDbLoadFailed': '태그 데이터베이스를 불러오지 못했습니다. 나중에 다시 시도하거나 네트워크를 확인하세요.',
   'gallery.wiki': 'Wiki',
 
+  'settings.tabMyTags': 'My tags',
+  'settings.sectionMyTagsToggles': '기능',
+  'settings.myTagsEnhancer': 'My Tags 확장 인터페이스 활성화',
+  'settings.myTagsEnhancerHint': '{mytags}에서 태그 편집과 필터링 미리보기를 제공합니다.',
   // Gallery settings tab
   'settings.tabGallery': '갤러리',
   'settings.sectionGalleryToggles': '기능',
@@ -359,7 +363,7 @@ export default {
   'panel.help': '도움말',
   'panel.helpFeedback': '이 페이지는 태그 가중치를 조정할 때 샘플 갤러리 중 어떤 갤러리가 숨겨지고 어떤 갤러리가 표시되는지 시각적으로 보여줍니다. 태그의 의미나 갤러리가 취향에 맞는지는 판단할 수 없습니다.',
   'panel.helpUsage': '태그 이름을 클릭하면 {preview}가 나타납니다. {blocked} 쪽과 {shown} 쪽 모두 위에는 {threshold}에 가장 가까운 갤러리가 표시됩니다(숨김 처리된 항목은 맨 뒤로 밀립니다). 가중치를 변경했을 때 양쪽 사이를 이동할 수 있는 갤러리는 임계값 근처의 항목뿐이기 때문입니다.\n판단이 애매한 갤러리는 {block}, {keep}로 표시합니다. 그런 갤러리가 반복해서 나타난다면, 대개 규칙이 E-Hentai의 태그 사용 방식과 맞지 않거나 artist 태그 단위로 규칙을 설정해야 할 가능성이 큽니다.\n빨간색·초록색 비율 막대로 샘플 분포가 예상과 맞는지 빠르게 확인할 수 있습니다.\n이 페이지에서 변경한 내용은 모두 초안으로만 저장됩니다. 빨간색 적용 버튼을 누르기 전에는 반영되지 않으며 언제든지 취소할 수 있습니다.',
-  'panel.helpTagSets': '태그 세트 생성 및 이름 변경 기능은 사용 빈도가 낮아 이 페이지에서는 제공하지 않습니다. 사용자 스크립트를 비활성화한 뒤 E-Hentai에서 제공하는 My Tags 페이지에서 작업해 주세요.',
+  'panel.helpTagSets': '태그 세트 생성 및 이름 변경 기능은 사용 빈도가 낮아 이 페이지에서는 제공하지 않습니다. 설정의 My tags 탭에서 확장 인터페이스를 끄고 새로고침한 뒤 E-Hentai 기본 My Tags 페이지에서 작업해 주세요.',
   'panel.helpLanguageFiltering': '가져오는 표본은 {settings}의 제외 언어 설정이 적용된 결과입니다.',
   'panel.helpSettingsPage': '설정 페이지',
   'preview.panelZoom': 'UI 배율',
