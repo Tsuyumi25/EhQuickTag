@@ -22,11 +22,11 @@ const { searchText, search } = usePageSearch()
     <TagBar />
   </Teleport>
 
-  <Teleport v-else-if="galleryHost" :to="galleryHost.anchor">
+  <Teleport v-if="galleryHost" :to="galleryHost.anchor">
     <GalleryTagList />
   </Teleport>
 
-  <Teleport v-else-if="myTagsHost" :to="myTagsHost.anchor">
+  <Teleport v-if="myTagsHost" :to="myTagsHost.anchor">
     <MyTagsPanel />
   </Teleport>
 

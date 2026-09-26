@@ -11,6 +11,23 @@ test('gallery taglist 接管並渲染 chip', async ({ page }) => {
   await expect(page.locator('.eqt-gallery-chip__body').first()).toBeVisible()
 })
 
+test('gallery 同時有搜尋欄時，TagBar 與標籤增強介面都會掛載', async ({ page }) => {
+  await page.addInitScript(() => {
+    document.addEventListener('DOMContentLoaded', () => {
+      const form = document.createElement('form')
+      form.action = '/'
+      form.innerHTML = '<div><input id="f_search" name="f_search" type="text"><input type="submit" value="Search"></div>'
+      document.body.prepend(form)
+    }, { once: true })
+  })
+  await injectGalleryUserscript(page)
+
+  await expect(page.locator('#eqt-bar-anchor .eqt-tag-bar')).toBeVisible()
+  await expect(page.locator('#eqt-gallery-anchor .eqt-gallery-taglist')).toBeVisible()
+  await page.locator('.eqt-gallery-chip__body').first().click()
+  await expect(page.locator('.eqt-intro-panel')).toBeVisible()
+})
+
 test('#gmid 失去固定高時 taglist 仍撐滿（ExResurrect）', async ({ page }) => {
   await injectGalleryUserscript(page)
   const taglist = page.locator('.eqt-gallery-taglist')
