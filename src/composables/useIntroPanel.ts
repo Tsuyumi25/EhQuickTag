@@ -1,6 +1,7 @@
 import { ref, computed, watch } from 'vue'
 import { findEntryByNsTag, tagDbVersion } from '@/services/tags/tagDb'
 import { getTagWiki, tagWikiVersion, rawToSlug, type WikiEntry } from '@/services/tags/tagWiki'
+import { sanitizeIntroHtml, sanitizeImageUrl } from '@/services/tags/introHtml'
 import type { GalleryTag } from '@/composables/useEhGalleryHost'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
 import { locale, isZhLocale } from '@/composables/useI18n'
@@ -68,22 +69,26 @@ export function useIntroPanel() {
   const introHtml = computed<string | null>(() => {
     if (displayedLang.value !== 'zh') return null
     const raw = entry.value?.introHtml
-    return raw ? translateHtml(raw, zhDisplay) : null
+    return raw ? sanitizeIntroHtml(translateHtml(raw, zhDisplay)) : null
   })
   const linksHtml = computed<string | null>(() => {
     if (displayedLang.value !== 'zh') return null
     const raw = entry.value?.linksHtml
-    return raw ? translateHtml(raw, zhDisplay) : null
+    return raw ? sanitizeIntroHtml(translateHtml(raw, zhDisplay)) : null
   })
 
-  const iconUrl = computed<string | null>(() => entry.value?.iconUrl ?? null)
+  const iconUrl = computed<string | null>(() => sanitizeImageUrl(entry.value?.iconUrl))
 
   // 英文側 (wiki block)：只在 displayedLang=en 時顯示
   const wikiEntry = computed<WikiEntry | null>(() => {
     void tagWikiVersion.value
     if (displayedLang.value !== 'en') return null
     if (!openTag.value) return null
-    return getTagWiki(openTag.value.ns, openTag.value.raw) ?? null
+    const variants = getTagWiki(openTag.value.ns, openTag.value.raw)
+    return variants?.map((variant) => ({
+      prelude: sanitizeIntroHtml(variant.prelude),
+      blocks: variant.blocks.map(sanitizeIntroHtml),
+    })) ?? null
   })
 
   // 該 tag 對應的 wiki page URL (永遠存在不管 wikiEntry 有沒有, 但 panel 只在
@@ -98,9 +103,9 @@ export function useIntroPanel() {
     if (displayedLang.value !== 'en') return []
     const raw = entry.value?.introHtml
     if (!raw) return []
-    const doc = new DOMParser().parseFromString(`<div>${raw}</div>`, 'text/html')
+    const doc = new DOMParser().parseFromString(sanitizeIntroHtml(raw), 'text/html')
     return Array.from(doc.querySelectorAll('img'))
-      .map((img) => img.getAttribute('src'))
+      .map((img) => sanitizeImageUrl(img.getAttribute('src')))
       .filter((s): s is string => !!s)
   })
 
