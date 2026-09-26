@@ -138,6 +138,8 @@ const INITIAL_SETTINGS = {
   // click 語意（用 Infinity threshold 讓 reducer 永遠不進 dragging state）
   galleryDragSelectEnabled: true,
   galleryMyTagsColorsEnabled: true,
+  galleryMyTagsScoresEnabled: true,
+  galleryMyTagsMarksEnabled: true,
   // false = 固定基準高、超過捲動；true = 隨 tag 展開往下長、不留捲軸。
   galleryTaglistExpand: false,
   // taglist 基準高 (px)。預設 330 = 原生 EH meta 區高。
@@ -169,6 +171,9 @@ const INITIAL_SETTINGS = {
   myTagsEnhancerEnabled: true,
   myTagsPreviewCoverScale: 100,
   myTagsPanelZoom: 100,
+  myTagsGalleryColorsEnabled: true,
+  myTagsGalleryScoresEnabled: true,
+  myTagsGalleryMarksEnabled: true,
 }
 
 type Settings = typeof INITIAL_SETTINGS
@@ -204,6 +209,8 @@ export const enableHistory      = refs.enableHistory
 export const taggingEnhancerEnabled = refs.taggingEnhancerEnabled
 export const galleryDragSelectEnabled = refs.galleryDragSelectEnabled
 export const galleryMyTagsColorsEnabled = refs.galleryMyTagsColorsEnabled
+export const galleryMyTagsScoresEnabled = refs.galleryMyTagsScoresEnabled
+export const galleryMyTagsMarksEnabled = refs.galleryMyTagsMarksEnabled
 export const galleryTaglistExpand = refs.galleryTaglistExpand
 export const galleryTaglistHeight = refs.galleryTaglistHeight
 export const galleryTaglistZoom = refs.galleryTaglistZoom
@@ -217,6 +224,9 @@ export const followCurrentSite  = refs.followCurrentSite
 export const myTagsEnhancerEnabled = refs.myTagsEnhancerEnabled
 export const myTagsPreviewCoverScale = refs.myTagsPreviewCoverScale
 export const myTagsPanelZoom = refs.myTagsPanelZoom
+export const myTagsGalleryColorsEnabled = refs.myTagsGalleryColorsEnabled
+export const myTagsGalleryScoresEnabled = refs.myTagsGalleryScoresEnabled
+export const myTagsGalleryMarksEnabled = refs.myTagsGalleryMarksEnabled
 
 // enum-shape setting 的合法 id 集合。壞值 silently fallback 到 INITIAL_SETTINGS 預設——
 // 沒這層守門 GM storage 被竄改塞個壞字串會直接灌進 ref，UI 永久卡在「無 active button、

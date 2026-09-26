@@ -312,8 +312,6 @@ export default {
   'settings.taggingEnhancerHint': '/g/ 詳細ページの taglist を引き継ぎ、vote / search / picker などの強化機能を提供します。オフの場合はネイティブ UI のまま。ページを再読み込みすると反映されます。',
   'settings.galleryDragSelect': 'ドラッグ選択を有効化',
   'settings.galleryDragSelectHint': 'オフにするとクリックでのみ選択でき、ドラッグで一括切り替えはできません。',
-  'settings.galleryMyTagsColors': 'My Tags の色を使う',
-  'settings.galleryMyTagsColorsHint': 'タグを My Tags に保存した色で表示します。色はローカルキャッシュから読み込まれ、My Tags を開くと更新されます。',
   'settings.sectionGallerySize': 'タグ一覧のサイズ',
   'settings.galleryTaglistHeight': '高さ',
   'settings.galleryTaglistZoom': 'ズーム',
@@ -324,6 +322,12 @@ export default {
   'settings.galleryDblClickActions': 'Taglist ダブルクリック動作',
   'settings.galleryDblClickLeft': '左ダブルクリック',
   'settings.galleryDblClickRight': '右ダブルクリック',
+
+  'settings.tagAppearance': 'タグの外観',
+  'settings.appearanceExample': 'サンプル {n}',
+  'settings.appearanceColors': '個人の色を表示',
+  'settings.appearanceScores': 'スコアを表示',
+  'settings.appearanceMarks': 'ウォッチ中と非表示のマークを表示',
 
   // Intro panel
   'intro.close': '閉じる',

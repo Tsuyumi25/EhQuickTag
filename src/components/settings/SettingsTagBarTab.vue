@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import {
-  Eye, LayoutPanelTop, Tag, MousePointerClick, Palette, ExternalLink,
+  Eye, LayoutPanelTop, Palette, Tag, MousePointerClick, ExternalLink,
 } from '@lucide/vue'
 import { textAlignToJustify } from '@/utils/align'
 import type { LineTextAlign } from '@/types'

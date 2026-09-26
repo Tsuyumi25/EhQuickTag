@@ -312,8 +312,6 @@ export default {
   'settings.taggingEnhancerHint': '/g/ 상세 페이지의 taglist를 대체하여 vote / search / picker 기능을 제공합니다. 끄면 기본 UI가 유지됩니다. 페이지를 새로고침하면 적용됩니다.',
   'settings.galleryDragSelect': '드래그 선택 활성화',
   'settings.galleryDragSelectHint': '끄면 클릭으로만 선택할 수 있으며, 드래그로 여러 개를 한 번에 전환할 수 없습니다.',
-  'settings.galleryMyTagsColors': 'My Tags 색상 사용',
-  'settings.galleryMyTagsColorsHint': '태그를 My Tags에 저장한 색상으로 표시합니다. 색상은 로컬 캐시에서 가져오며, My Tags를 방문하면 갱신됩니다.',
   'settings.sectionGallerySize': '태그 리스트 크기',
   'settings.galleryTaglistHeight': '높이',
   'settings.galleryTaglistZoom': '배율',
@@ -324,6 +322,12 @@ export default {
   'settings.galleryDblClickActions': 'Taglist 더블클릭 동작',
   'settings.galleryDblClickLeft': '왼쪽 더블클릭',
   'settings.galleryDblClickRight': '오른쪽 더블클릭',
+
+  'settings.tagAppearance': '태그 외관',
+  'settings.appearanceExample': '예시 {n}',
+  'settings.appearanceColors': '개인 색상 표시',
+  'settings.appearanceScores': '점수 표시',
+  'settings.appearanceMarks': '관심 및 숨김 표시',
 
   // Intro panel
   'intro.close': '닫기',

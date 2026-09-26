@@ -30,10 +30,6 @@ const dragOptions = {
 
 // --- tabs ---
 
-// tab 依 scope 組織：general 收「所有 scope 都作用」的真全域（介面語言、
-// OpenCC、字體），tagbar / gallery / mytags 各對應 userscript 住在頁面上的
-// 三個實體，data 是共用基礎設施。per-scope 的偏好（面板語言、定義面板語言）
-// 留在各自 scope tab，不集中——集中就變回兩套分類軸混用
 const tabKeys = ['general', 'tagbar', 'gallery', 'mytags', 'data', 'about'] as const
 type TabKey = typeof tabKeys[number]
 

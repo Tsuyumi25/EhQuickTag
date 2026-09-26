@@ -312,8 +312,6 @@ export default {
   'settings.taggingEnhancerHint': 'Takes over the taglist on /g/ detail pages with vote / search / picker affordances. When off, the native UI is preserved. Reload the page to apply.',
   'settings.galleryDragSelect': 'Enable drag-select',
   'settings.galleryDragSelectHint': 'When off, chips are click-only; dragging will not toggle multiple at once.',
-  'settings.galleryMyTagsColors': 'Use My Tags colors',
-  'settings.galleryMyTagsColorsHint': 'Chips are colored by the colors saved in My Tags. Colors come from a local cache; visiting My Tags refreshes it.',
   'settings.sectionGallerySize': 'Tag list size',
   'settings.galleryTaglistHeight': 'Height',
   'settings.galleryTaglistZoom': 'Zoom',
@@ -324,6 +322,12 @@ export default {
   'settings.galleryDblClickActions': 'Taglist double-click actions',
   'settings.galleryDblClickLeft': 'Left double-click',
   'settings.galleryDblClickRight': 'Right double-click',
+
+  'settings.tagAppearance': 'Tag appearance',
+  'settings.appearanceExample': 'Example {n}',
+  'settings.appearanceColors': 'Show personal colors',
+  'settings.appearanceScores': 'Show scores',
+  'settings.appearanceMarks': 'Show watched and hidden marks',
 
   // Intro panel
   'intro.close': 'Close',

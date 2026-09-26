@@ -46,7 +46,7 @@ import { patchConfig } from '@/services/ehConfig'
 import { serializeEntry } from '@/services/search/searchSyntax'
 import { myTagsPanelZoom, nsFormat } from '@/services/store'
 import { openSettings } from '@/services/appOverlays'
-import { tagChipStyle } from '@/services/mytags/mytagsColors'
+import { tagChipStyle, tagColors, type TagColors } from '@/services/mytags/mytagsColors'
 import { buildMyTagsPalette, saveMyTagsPalette } from '@/services/mytags/mytagsPalette'
 import type { TagEntry } from '@/services/tags/tagDb'
 
@@ -254,6 +254,42 @@ const catalogTagStyle = computed(() => {
     hidden: current.hidden,
   })
 })
+
+type TagAppearance = { colors: TagColors; watch: boolean }
+
+/** 攤開的畫廊上那排 chip 的外觀。取編輯中的狀態，不讀已存檔的 palette——改了顏色、
+ *  還沒送出去也要當場看得到 */
+function appearanceOf(tag: string): TagAppearance | null {
+  const row = rowMap.value.get(tag)
+  if (!row || editPlan.value.deletedIds.has(row.id)) return null
+  const state = view(row)
+  return {
+    colors: tagColors({
+      color: state.color,
+      setColor: setColors.value[row.tagSet] ?? '',
+      weight: state.weight,
+      hidden: state.hidden,
+    }),
+    watch: state.watch,
+  }
+}
+
+function catalogAppearanceOf(tag: string): TagAppearance | null {
+  if (catalogTag.value === tag) {
+    if (catalogRow.value && editPlan.value.deletedIds.has(catalogRow.value.id)) return null
+    const current = catalogState.value
+    return {
+      colors: tagColors({
+        color: current.color,
+        setColor: setColors.value[catalogSet.value] ?? '',
+        weight: current.weight,
+        hidden: current.hidden,
+      }),
+      watch: current.watch,
+    }
+  }
+  return appearanceOf(tag)
+}
 
 
 // NumberField 暫時沒有有限數字時，不讓空值經 JS coercion 混進計分。
@@ -571,6 +607,19 @@ async function openGallery(g: SampleGallery): Promise<void> {
 /** 攤開的那一本在目前預覽條件下的去向，跟格子上顯示的是同一份 */
 const openedOutcome = computed(() =>
   previewItems.value.find((item) => item.gallery.gid === openedGallery.value?.gid)?.outcome ?? null)
+
+/** 跟計分同一份來源：目標是還沒建立的標籤時，草稿那格也要算進去 */
+const openedAppearance = computed(() => {
+  const out = new Map<string, TagAppearance>()
+  const detail = openedGallery.value
+  if (!detail) return out
+  const source = previewTarget.value?.kind === 'draft' ? catalogAppearanceOf : appearanceOf
+  for (const tag of detail.tags) {
+    const at = source(tag.full)
+    if (at) out.set(tag.full, at)
+  }
+  return out
+})
 
 function select(tag: string): void {
   catalogTag.value = tag
@@ -921,7 +970,7 @@ watch(edits, () => { void flush() }, { deep: true })
           <MyTagsGallery
             :inert="isCollapsed"
             :aria-hidden="isCollapsed || undefined"
-            :detail="openedGallery" :outcome="openedOutcome"
+            :detail="openedGallery" :outcome="openedOutcome" :appearance="openedAppearance"
             :verdict="store.verdicts[String(openedGallery.gid)]" :loading="galleryBusy"
             :threshold="activeThreshold"
             @close="openedGallery = null"

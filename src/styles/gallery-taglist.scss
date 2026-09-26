@@ -122,6 +122,9 @@ $eqt-gallery-height: 330px;
 }
 
 .eqt-gallery-chip__body {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--eqt-gallery-chip-content-gap);
   padding: var(--eqt-gallery-chip-padding-block) var(--eqt-gallery-chip-padding-inline);
   border: none;
   background: transparent;
@@ -133,12 +136,6 @@ $eqt-gallery-height: 330px;
   &:hover {
     background: var(--eqt-bg-hover);
   }
-}
-
-.eqt-gallery-taglist .eqt-gallery-chip__body {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--eqt-gallery-chip-content-gap);
 }
 
 .eqt-gallery-chip__weight {

@@ -9,11 +9,11 @@
 //     (cancel)、起點 -1 + 左 = 把 -1 推 0 (cancel)，依此類推
 //   - 任何選取動作都 setPanelTag(chip.tag)：對 x tag 的任何操作都繼續顯示定義，
 //     直到 selection 全空才 auto close panel
-import { ref, shallowRef, computed, watch, onMounted, onBeforeUnmount, type CSSProperties } from 'vue'
+import { ref, shallowRef, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { GM } from '$'
 import { serializeEntry } from '@/services/search/searchSyntax'
 import { findEntryByNsTag, DEFAULT_NS_ORDER, tagDbVersion } from '@/services/tags/tagDb'
-import { nsFormat, defaultExactMatch, galleryDragSelectEnabled, galleryMyTagsColorsEnabled, galleryDblClickLeft, galleryDblClickRight, galleryDblClickLeftNewTabActive, galleryDblClickRightNewTabActive, galleryTaglistZoom, type GalleryDblClickAction } from '@/services/store'
+import { nsFormat, defaultExactMatch, galleryDragSelectEnabled, galleryMyTagsColorsEnabled, galleryMyTagsScoresEnabled, galleryMyTagsMarksEnabled, galleryDblClickLeft, galleryDblClickRight, galleryDblClickLeftNewTabActive, galleryDblClickRightNewTabActive, galleryTaglistZoom, type GalleryDblClickAction } from '@/services/store'
 import { loadMyTagsPalette, type MyTagsPalette } from '@/services/mytags/mytagsPalette'
 import { openSettings } from '@/services/appOverlays'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
@@ -22,11 +22,12 @@ import { batchVote, type VoteState } from '@/services/gallery/galleryVote'
 import { useEqtToast } from '@/composables/useEqtToast'
 import { useEhGalleryHost, parseTaglistRoot, type GalleryTag } from '@/composables/useEhGalleryHost'
 import { useIntroPanel } from '@/composables/useIntroPanel'
-import { Settings, Search, BookOpen, Ban, Eye } from '@lucide/vue'
+import { Settings, Search, BookOpen } from '@lucide/vue'
 import { useDragSelect } from '@/composables/useDragSelect'
 import type { ChipRef, TriState, Selection } from '@/services/gallery/dragSelectMachine'
 import GalleryAddInline from './GalleryAddInline.vue'
 import GalleryIntroPanel from './GalleryIntroPanel.vue'
+import TagChip from '@/components/TagChip.vue'
 import type { TagEntry } from '@/services/tags/tagDb'
 
 type TagTier = 'gt' | 'gtl' | 'gtw'
@@ -42,19 +43,6 @@ onMounted(async () => {
   } catch {
     toast.error(t('gallery.myTagsColorsFailed'))
   }
-})
-
-const myTagsStyles = computed<Record<string, CSSProperties>>(() => {
-  const styles: Record<string, CSSProperties> = {}
-  if (!galleryMyTagsColorsEnabled.value || !myTagsPalette.value) return styles
-  for (const [full, colors] of Object.entries(myTagsPalette.value)) {
-    styles[full] = {
-      '--eqt-mytags-background': `#${colors.face}`,
-      '--eqt-mytags-text': `#${colors.text}`,
-      '--eqt-mytags-border': `#${colors.edge}`,
-    }
-  }
-  return styles
 })
 
 const currentTags = ref<GalleryTag[]>([...host.tags])
@@ -117,7 +105,6 @@ interface ChipView {
   selected: Selection | undefined
   tier: TagTier
   iconUrl?: string
-  personalStyle?: CSSProperties
   personalTag?: MyTagsPalette[string]
 }
 
@@ -147,7 +134,6 @@ function buildChipView(tag: GalleryTag, showNs = false): ChipView {
     selected: selection.value.get(tag.nsRaw),
     tier: tierOf(tag.tierClass),
     iconUrl: entry?.iconUrl,
-    personalStyle: myTagsStyles.value[tag.nsRaw],
     personalTag: myTagsPalette.value?.[tag.nsRaw],
   }
 }
@@ -477,35 +463,22 @@ watch(selection, () => {
     >
       <div class="eqt-gallery-taglist__label">{{ group.label }}:</div>
       <div class="eqt-gallery-taglist__cells">
-        <div
+        <TagChip
           v-for="chip in group.chips"
           :key="chip.tag.nsRaw"
-          class="eqt-gallery-chip"
-          :data-ns-raw="chip.tag.nsRaw"
-          :style="chip.personalStyle"
-          :class="[
-            chip.personalStyle && 'eqt-gallery-chip--mytags-colored',
-            chip.selected === 'positive' && 'eqt-gallery-chip--selected-positive',
-            chip.selected === 'negative' && 'eqt-gallery-chip--selected-negative',
-            `eqt-gallery-chip--${chip.tier}`,
-            userVotes[chip.tag.nsRaw] === 'up' && 'eqt-gallery-chip--voted-up',
-            userVotes[chip.tag.nsRaw] === 'down' && 'eqt-gallery-chip--voted-down',
-          ]"
-        >
-          <button
-            type="button"
-            class="eqt-gallery-chip__body"
-          >
-            <span class="eqt-gallery-chip__name">
-              <img v-if="chip.iconUrl" :src="chip.iconUrl" class="eqt-tag-icon" alt="" />{{ chip.display }}
-            </span>
-            <Eye v-if="chip.personalTag?.watch" class="eqt-gallery-chip__watch" />
-            <span v-if="chip.personalTag" class="eqt-gallery-chip__weight">
-              <Ban v-if="chip.personalTag.hidden" />
-              <template v-else>{{ chip.personalTag.weight > 0 ? `+${chip.personalTag.weight}` : chip.personalTag.weight }}</template>
-            </span>
-          </button>
-        </div>
+          :full="chip.tag.nsRaw"
+          :display="chip.display"
+          :icon-url="chip.iconUrl"
+          :tier="chip.tier"
+          :colors="galleryMyTagsColorsEnabled ? chip.personalTag : undefined"
+          :weight="chip.personalTag?.weight"
+          :hidden="chip.personalTag?.hidden"
+          :watch="chip.personalTag?.watch"
+          :show-score="galleryMyTagsScoresEnabled"
+          :show-marks="galleryMyTagsMarksEnabled"
+          :selection="chip.selected"
+          :vote="userVotes[chip.tag.nsRaw]"
+        />
       </div>
     </div>
   </div>

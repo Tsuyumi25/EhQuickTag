@@ -312,8 +312,6 @@ export default {
   'settings.taggingEnhancerHint': '在 /g/ 詳情頁接管 taglist，提供 vote / search / picker 等強化功能。關閉後保持 EH 原生介面。需重新整理頁面生效。',
   'settings.galleryDragSelect': '啟用拖曳多選',
   'settings.galleryDragSelectHint': '關閉後僅能單擊選取，拖曳將不會觸發批次標記。',
-  'settings.galleryMyTagsColors': '使用 My Tags 個人顏色',
-  'settings.galleryMyTagsColorsHint': '標籤依 My Tags 中儲存的顏色顯示。顏色取自本機快取，造訪 My Tags 頁面即會更新。',
   'settings.sectionGallerySize': '標籤列尺寸',
   'settings.galleryTaglistHeight': '高度',
   'settings.galleryTaglistZoom': '縮放',
@@ -324,6 +322,12 @@ export default {
   'settings.galleryDblClickActions': 'Taglist 雙擊動作',
   'settings.galleryDblClickLeft': '左鍵雙擊',
   'settings.galleryDblClickRight': '右鍵雙擊',
+
+  'settings.tagAppearance': '標籤外觀',
+  'settings.appearanceExample': '範例 {n}',
+  'settings.appearanceColors': '顯示個人顏色',
+  'settings.appearanceScores': '顯示分數',
+  'settings.appearanceMarks': '顯示關注與隱藏標記',
 
   // Intro panel
   'intro.close': '關閉',

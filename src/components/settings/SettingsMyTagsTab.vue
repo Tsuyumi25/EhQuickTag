@@ -2,6 +2,7 @@
 import { ToggleLeft } from '@lucide/vue'
 import { t } from '@/composables/useI18n'
 import { myTagsEnhancerEnabled } from '@/services/store'
+import SettingsTagAppearanceSection from './SettingsTagAppearanceSection.vue'
 </script>
 
 <template>
@@ -23,5 +24,6 @@ import { myTagsEnhancerEnabled } from '@/services/store'
         </template>
       </p>
     </section>
+    <SettingsTagAppearanceSection scene="mytags" />
   </div>
 </template>
