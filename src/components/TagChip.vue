@@ -54,6 +54,7 @@ const personalStyle = computed(() => {
     ]"
   >
     <button type="button" class="eqt-gallery-chip__body" @click="$emit('pick')">
+      <span v-if="$slots.lead" class="eqt-gallery-chip__lead"><slot name="lead" /></span>
       <span class="eqt-gallery-chip__name">
         <img v-if="iconUrl" :src="iconUrl" class="eqt-tag-icon" alt="" />{{ display }}
       </span>

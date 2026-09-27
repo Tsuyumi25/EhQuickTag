@@ -80,11 +80,28 @@ $eqt-gallery-height: 330px;
   color: var(--eqt-text);
 }
 
+// 緊接在同 ns 底下的候選列，ns 欄不再寫一次名稱，改用 corner-left-up 指回上一列
+.eqt-gallery-taglist__label-icon {
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.125em;
+}
+
 // chip cells：靠 chip 自己的 margin 排版，不在這加 gap（native 也是用 margin 0 2px 5px）
 .eqt-gallery-taglist__cells {
   display: flex;
   flex-wrap: wrap;
   min-width: 0;
+
+  // 候選列整塊框起來：跟上下的真標籤列一眼就分得開。框用實線，虛線 / 點線留給 chip
+  // 表示可信度；上方 padding 補回 chip 只有下 margin 造成的不對稱
+  &--candidate {
+    // 右邊跟操作區一樣留 6px，框的右緣才會跟底下的網址欄、按鈕對齊
+    margin: 0 6px 5px 0;
+    padding: 4px 2px 0;
+    border: var(--eqt-border-width) solid var(--eqt-border);
+    border-radius: var(--eqt-radius-md);
+  }
 }
 
 // === Chip ===
@@ -138,12 +155,14 @@ $eqt-gallery-height: 330px;
   }
 }
 
+.eqt-gallery-chip__lead,
 .eqt-gallery-chip__weight {
   display: inline-flex;
   align-items: center;
 }
 
 .eqt-gallery-chip__watch,
+.eqt-gallery-chip__lead svg,
 .eqt-gallery-chip__weight svg {
   width: var(--eqt-fs-md);
   height: var(--eqt-fs-md);
@@ -216,16 +235,45 @@ $eqt-gallery-height: 330px;
   color: #FF3333;
 }
 
-// 5 欄 × 2 列 grid：search 跨 col 1 / row 1-2、vote 跨 col 5 / row 1-2，兩個大方塊
-// 把誤觸代價較高的 vote 從 search 拉開。中間第 1 列 add（跨兩欄）+ wiki、第 2 列
-// clear + My Tags 均分 add 那段寬度，再接 settings
+// search / vote 兩個大方塊跨兩列，把誤觸代價較高的 vote 從 search 拉開。中間一列
+// add + 導入 + wiki，另一列 clear + My Tags + settings，兩列各自均分同一段寬度。
+// 導入打開時網址欄在最上面多一列、橫跨全部欄位
 .eqt-gallery-actions {
   flex: none;
   display: grid;
   grid-template-columns: 64px minmax(0, 1fr) minmax(0, 1fr) auto 64px;
-  grid-template-rows: auto auto;
+  grid-template-areas:
+    "search add toggle wiki vote"
+    "search clear mytags settings vote";
   gap: 5px;
   margin: 6px 6px 0 0;
+
+  &--import {
+    grid-template-areas:
+      "import import import import import"
+      "search add toggle wiki vote"
+      "search clear mytags settings vote";
+  }
+}
+
+// EH 的 g.css 對 input[type="text"] 設了 margin / padding / line-height / border /
+// border-radius，權重 (0,1,1) 高過單一 class，所以這裡多掛一層父層把它們蓋掉
+.eqt-gallery-actions > .eqt-gallery-actions__import {
+  grid-area: import;
+  min-width: 0;
+  margin: 0;
+  border: var(--eqt-border-width) solid var(--eqt-border);
+  border-radius: var(--eqt-radius-sm);
+  background: var(--eqt-bg);
+  color: var(--eqt-text);
+  padding: 4px 8px;
+  font-size: var(--eqt-fs-md);
+  font-family: inherit;
+  line-height: normal;
+
+  &[readonly] {
+    opacity: 0.6;
+  }
 }
 
 .eqt-gallery-actions__btn {
@@ -241,6 +289,11 @@ $eqt-gallery-height: 330px;
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+
+  &[aria-pressed='true'] {
+    border-color: var(--eqt-text);
+    background: var(--eqt-bg-active);
   }
 
   // search / vote 大方塊：column flow 把 icon (或 vote 的 ↑↓ 計數) 疊在 label 上方
@@ -259,39 +312,13 @@ $eqt-gallery-height: 330px;
     white-space: nowrap;
   }
 
-  &--search {
-    grid-column: 1;
-    grid-row: 1 / span 2;
-  }
-
-  &--vote {
-    grid-column: 5;
-    grid-row: 1 / span 2;
-  }
-
-  &--add {
-    grid-column: 2 / span 2;
-    grid-row: 1;
-  }
-
-  &--wiki {
-    grid-column: 4;
-    grid-row: 1;
-  }
-
-  &--clear {
-    grid-column: 2;
-    grid-row: 2;
-  }
-
-  &--mytags {
-    grid-column: 3;
-    grid-row: 2;
-  }
-
-  &--settings {
-    grid-column: 4;
-    grid-row: 2;
-  }
+  &--search { grid-area: search; }
+  &--vote { grid-area: vote; }
+  &--add { grid-area: add; }
+  &--import { grid-area: toggle; }
+  &--wiki { grid-area: wiki; }
+  &--clear { grid-area: clear; }
+  &--mytags { grid-area: mytags; }
+  &--settings { grid-area: settings; }
 
 }

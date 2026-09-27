@@ -294,7 +294,8 @@ export default {
   // Gallery
   'gallery.searchN': '搜索 {n}',
   'gallery.vote': '投票',
-  'gallery.added': '新增',
+  'gallery.importToggle': '导入标签候选',
+  'gallery.importFailed': '无法读取该图库。',
   'gallery.clearSelection': '取消选取',
   'gallery.addTags': '新增标签',
   'gallery.sessionExpired': '登录状态已过期，请刷新页面后重试。',

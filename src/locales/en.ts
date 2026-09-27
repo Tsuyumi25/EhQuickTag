@@ -294,7 +294,8 @@ export default {
   // Gallery
   'gallery.searchN': 'Search {n}',
   'gallery.vote': 'Vote',
-  'gallery.added': 'Add',
+  'gallery.importToggle': 'Import candidates',
+  'gallery.importFailed': 'Could not load that gallery.',
   'gallery.clearSelection': 'Clear selection',
   'gallery.addTags': 'Add tags',
   'gallery.sessionExpired': 'Your session has expired. Please refresh the page to log in again.',

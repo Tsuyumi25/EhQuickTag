@@ -294,7 +294,8 @@ export default {
   // Gallery
   'gallery.searchN': '검색 {n}',
   'gallery.vote': '투표',
-  'gallery.added': '추가',
+  'gallery.importToggle': '태그 후보 가져오기',
+  'gallery.importFailed': '해당 갤러리를 불러오지 못했습니다.',
   'gallery.clearSelection': '선택 해제',
   'gallery.addTags': '태그 추가',
   'gallery.sessionExpired': '세션이 만료되었습니다. 페이지를 새로고침하여 다시 로그인하세요.',

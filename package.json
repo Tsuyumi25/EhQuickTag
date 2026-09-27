@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@floating-ui/vue": "^1.1.11",
-    "@lucide/vue": "^1.16.0",
+    "@lucide/vue": "^1.48.0",
     "@vueuse/core": "^14.3.0",
     "reka-ui": "^2.10.4",
     "vanilla-colorful": "^0.7.2",

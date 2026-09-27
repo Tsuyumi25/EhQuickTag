@@ -294,7 +294,8 @@ export default {
   // Gallery
   'gallery.searchN': '搜尋 {n}',
   'gallery.vote': '投票',
-  'gallery.added': '新增',
+  'gallery.importToggle': '導入標籤候選',
+  'gallery.importFailed': '無法讀取該圖庫。',
   'gallery.clearSelection': '取消選取',
   'gallery.addTags': '新增標籤',
   'gallery.sessionExpired': '登入狀態已過期，請重新整理頁面後再試。',
