@@ -6,6 +6,7 @@ export default {
   // TagBar
   'nsFilter.label': '依 namespace 篩選',
   'nsFilter.all': '全部',
+  'nsFilter.picked': '選中 {n}',
   'tagbar.search': '搜尋',
   'tagbar.searchNewTab': '新分頁搜尋',
   'tagbar.clearSearch': '清空搜尋框',
@@ -298,6 +299,7 @@ export default {
   'gallery.addTags': '新增標籤',
   'gallery.sessionExpired': '登入狀態已過期，請重新整理頁面後再試。',
   'gallery.tagDbLoadFailed': '標籤資料庫載入失敗，請稍後再試或檢查網路。',
+  'gallery.openInMyTags': '到 My Tags 檢視',
   'gallery.myTagsColorsFailed': '無法載入 My Tags 顏色。',
   'gallery.wiki': 'Wiki',
 

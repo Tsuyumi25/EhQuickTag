@@ -6,6 +6,7 @@ export default {
   // TagBar
   'nsFilter.label': 'Namespace で絞り込む',
   'nsFilter.all': 'すべて',
+  'nsFilter.picked': '選択中 {n}',
   'tagbar.search': '検索',
   'tagbar.searchNewTab': '新しいタブで検索',
   'tagbar.clearSearch': '検索をクリア',
@@ -298,6 +299,7 @@ export default {
   'gallery.addTags': 'タグを追加',
   'gallery.sessionExpired': 'セッションの有効期限が切れました。ページを再読み込みして再ログインしてください。',
   'gallery.tagDbLoadFailed': 'タグ DB の読み込みに失敗しました。後でリトライするかネットワークをご確認ください。',
+  'gallery.openInMyTags': 'My Tags で表示',
   'gallery.myTagsColorsFailed': 'My Tags の色を読み込めませんでした。',
   'gallery.wiki': 'Wiki',
 

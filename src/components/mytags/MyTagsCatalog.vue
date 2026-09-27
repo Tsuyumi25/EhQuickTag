@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, shallowRef, watch, type CSSProperties } from 'vue'
-import { getFallbackEntries, type TagEntry } from '@/services/tags/tagDb'
+import { entryForTag, getFallbackEntries, type TagEntry } from '@/services/tags/tagDb'
 import { useTagSuggestions } from '@/composables/useTagSuggestions'
 import { t } from '@/composables/useI18n'
 import SuggestionList from '@/components/SuggestionList.vue'
@@ -24,6 +24,8 @@ const props = defineProps<{
   styleOf: (entry: TagEntry) => CSSProperties | undefined
   busy: boolean
   previewed: boolean
+  /** 從圖庫頁帶過來的標籤；有的話「選中」篩選一開始就打開 */
+  picked: string[]
 }>()
 
 const emit = defineEmits<{
@@ -53,7 +55,22 @@ const { dbReady, suggestions } = useTagSuggestions({
   emptyFallback: () => fallbackEntries.value,
 })
 
-watch(suggestions, () => { selectedIdx.value = 0 })
+const pickedMode = ref(false)
+watch(() => props.picked.length, (count, before) => {
+  if (count && !before) pickedMode.value = true
+}, { immediate: true })
+
+// 圖庫上的標籤不一定在字典裡，也不必走字典搜尋：數量就那幾個，直接比對名稱和翻譯
+const pickedEntries = computed(() => {
+  if (!dbReady.value) return []
+  const q = query.value.trim().toLowerCase()
+  return props.picked
+    .map(entryForTag)
+    .filter((entry) => !q || entry.fullTag.toLowerCase().includes(q) || entry.nameLow.includes(q))
+})
+const candidates = computed(() => pickedMode.value ? pickedEntries.value : suggestions.value)
+
+watch(candidates, () => { selectedIdx.value = 0 })
 watch(
   dbReady,
   (ready) => {
@@ -77,12 +94,12 @@ function pick(entry: TagEntry): void {
 function onSearchKeydown(event: KeyboardEvent): void {
   if (event.key === 'ArrowDown') {
     event.preventDefault()
-    if (selectedIdx.value < suggestions.value.length - 1) selectedIdx.value++
+    if (selectedIdx.value < candidates.value.length - 1) selectedIdx.value++
   } else if (event.key === 'ArrowUp') {
     event.preventDefault()
     if (selectedIdx.value > 0) selectedIdx.value--
   } else if (event.key === 'Enter') {
-    const entry = suggestions.value[selectedIdx.value]
+    const entry = candidates.value[selectedIdx.value]
     if (!entry) return
     event.preventDefault()
     pick(entry)
@@ -184,7 +201,11 @@ function commit(): void {
     </div>
 
     <div class="eqt-tag-catalog__browser">
-      <NamespaceFilter v-model="selectedNs" />
+      <NamespaceFilter
+        v-model="selectedNs"
+        v-model:picked="pickedMode"
+        :picked-count="picked.length"
+      />
 
       <div class="eqt-tag-catalog__candidates">
         <div class="eqt-tag-catalog__search">
@@ -201,11 +222,11 @@ function commit(): void {
         </div>
 
         <SuggestionList
-          v-if="suggestions.length"
+          v-if="candidates.length"
           class="eqt-tag-catalog__results"
-          :suggestions="suggestions"
+          :suggestions="candidates"
           :selected-idx="selectedIdx"
-          :ns-list="popupNsList"
+          :ns-list="pickedMode ? undefined : popupNsList"
           :style-of="styleOf"
           @update:selected-idx="selectedIdx = $event"
           @pick="pick"

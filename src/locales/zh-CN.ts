@@ -6,6 +6,7 @@ export default {
   // TagBar
   'nsFilter.label': '按 namespace 筛选',
   'nsFilter.all': '全部',
+  'nsFilter.picked': '选中 {n}',
   'tagbar.search': '搜索',
   'tagbar.searchNewTab': '新标签页搜索',
   'tagbar.clearSearch': '清空搜索框',
@@ -298,6 +299,7 @@ export default {
   'gallery.addTags': '新增标签',
   'gallery.sessionExpired': '登录状态已过期，请刷新页面后重试。',
   'gallery.tagDbLoadFailed': '标签数据库加载失败，请稍后再试或检查网络。',
+  'gallery.openInMyTags': '到 My Tags 查看',
   'gallery.myTagsColorsFailed': '无法加载 My Tags 颜色。',
   'gallery.wiki': 'Wiki',
 

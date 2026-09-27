@@ -216,13 +216,13 @@ $eqt-gallery-height: 330px;
   color: #FF3333;
 }
 
-// 4 欄 × 2 列 grid：search 跨 col 1 / row 1-2、vote 跨 col 4 / row 1-2，兩個大方塊
-// 把誤觸代價較高的 vote 從 search 拉開。中間欄第 1 列 add（跨兩 col 撐滿）、
-// 第 2 列 clear + settings
+// 5 欄 × 2 列 grid：search 跨 col 1 / row 1-2、vote 跨 col 5 / row 1-2，兩個大方塊
+// 把誤觸代價較高的 vote 從 search 拉開。中間第 1 列 add（跨兩欄）+ wiki、第 2 列
+// clear + My Tags 均分 add 那段寬度，再接 settings
 .eqt-gallery-actions {
   flex: none;
   display: grid;
-  grid-template-columns: 64px 1fr auto 64px;
+  grid-template-columns: 64px minmax(0, 1fr) minmax(0, 1fr) auto 64px;
   grid-template-rows: auto auto;
   gap: 5px;
   margin: 6px 6px 0 0;
@@ -265,17 +265,17 @@ $eqt-gallery-height: 330px;
   }
 
   &--vote {
-    grid-column: 4;
+    grid-column: 5;
     grid-row: 1 / span 2;
   }
 
   &--add {
-    grid-column: 2;
+    grid-column: 2 / span 2;
     grid-row: 1;
   }
 
   &--wiki {
-    grid-column: 3;
+    grid-column: 4;
     grid-row: 1;
   }
 
@@ -284,8 +284,13 @@ $eqt-gallery-height: 330px;
     grid-row: 2;
   }
 
-  &--settings {
+  &--mytags {
     grid-column: 3;
+    grid-row: 2;
+  }
+
+  &--settings {
+    grid-column: 4;
     grid-row: 2;
   }
 

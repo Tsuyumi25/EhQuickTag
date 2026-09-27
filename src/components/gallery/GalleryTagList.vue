@@ -15,6 +15,7 @@ import { serializeEntry } from '@/services/search/searchSyntax'
 import { findEntryByNsTag, DEFAULT_NS_ORDER, tagDbVersion } from '@/services/tags/tagDb'
 import { nsFormat, defaultExactMatch, galleryDragSelectEnabled, galleryMyTagsColorsEnabled, galleryMyTagsScoresEnabled, galleryMyTagsMarksEnabled, galleryDblClickLeft, galleryDblClickRight, galleryDblClickLeftNewTabActive, galleryDblClickRightNewTabActive, galleryTaglistZoom, type GalleryDblClickAction } from '@/services/store'
 import { loadMyTagsPalette, type MyTagsPalette } from '@/services/mytags/mytagsPalette'
+import { pickUrl, savePick } from '@/services/mytags/mytagsPicks'
 import { openSettings } from '@/services/appOverlays'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
 import { t, isZhLocale, locale } from '@/composables/useI18n'
@@ -22,7 +23,7 @@ import { batchVote, type VoteState } from '@/services/gallery/galleryVote'
 import { useEqtToast } from '@/composables/useEqtToast'
 import { useEhGalleryHost, parseTaglistRoot, type GalleryTag } from '@/composables/useEhGalleryHost'
 import { useIntroPanel } from '@/composables/useIntroPanel'
-import { Settings, Search, BookOpen } from '@lucide/vue'
+import { Settings, Search, BookOpen, Tags } from '@lucide/vue'
 import { useDragSelect } from '@/composables/useDragSelect'
 import type { ChipRef, TriState, Selection } from '@/services/gallery/dragSelectMachine'
 import GalleryAddInline from './GalleryAddInline.vue'
@@ -372,6 +373,18 @@ function onSearchCurrent(): void {
   // navigation 觸發，component 即將卸載——不用 clearSelection
 }
 
+async function onOpenInMyTags(): Promise<void> {
+  const gidMatch = /^\/g\/(\d+)\//.exec(location.pathname)
+  if (!gidMatch || selectedCount.value === 0) return
+  const gid = Number(gidMatch[1])
+  const tags = [...currentTags.value, ...addedTags.value]
+    .filter(t => selection.value.has(t.nsRaw))
+    .map(t => t.nsRaw)
+  await savePick(gid, tags)
+  Promise.resolve(GM.openInTab(pickUrl(location.origin, gid), { active: true })).catch(() => {})
+  onClearSelection()
+}
+
 function tagsFor(target: Selection): GalleryTag[] {
   // 原 taglist + addedTags 都要收：vote batch / search 兩條都共用這個
   return [...currentTags.value, ...addedTags.value]
@@ -513,6 +526,17 @@ watch(selection, () => {
       @click="onClearSelection"
     >
       {{ t('gallery.clearSelection') }}
+    </button>
+
+    <button
+      type="button"
+      class="eqt-gallery-actions__btn eqt-gallery-actions__btn--mytags"
+      :disabled="selectedCount === 0"
+      :title="t('gallery.openInMyTags')"
+      @click="onOpenInMyTags"
+    >
+      <Tags :size="14" />
+      <span>{{ t('gallery.openInMyTags') }}</span>
     </button>
 
     <a

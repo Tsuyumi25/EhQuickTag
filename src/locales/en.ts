@@ -6,6 +6,7 @@ export default {
   // TagBar
   'nsFilter.label': 'Filter by namespace',
   'nsFilter.all': 'All',
+  'nsFilter.picked': 'Picked {n}',
   'tagbar.search': 'Search',
   'tagbar.searchNewTab': 'Search in new tab',
   'tagbar.clearSearch': 'Clear search',
@@ -298,6 +299,7 @@ export default {
   'gallery.addTags': 'Add tags',
   'gallery.sessionExpired': 'Your session has expired. Please refresh the page to log in again.',
   'gallery.tagDbLoadFailed': 'Failed to load tag database. Please retry later or check your network.',
+  'gallery.openInMyTags': 'View in My Tags',
   'gallery.myTagsColorsFailed': 'Failed to load My Tags colors.',
   'gallery.wiki': 'Wiki',
 

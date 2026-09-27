@@ -49,6 +49,7 @@ import { openSettings } from '@/services/appOverlays'
 import { tagColors, type TagColors } from '@/services/mytags/mytagsColors'
 import { useMyTagsColors } from '@/composables/useMyTagsColors'
 import { buildMyTagsPalette, saveMyTagsPalette } from '@/services/mytags/mytagsPalette'
+import { loadPick, PICK_PARAM } from '@/services/mytags/mytagsPicks'
 import type { TagEntry } from '@/services/tags/tagDb'
 
 const host = useEhMyTagsHost()!
@@ -143,6 +144,8 @@ const galleryBusy = ref(false)
 const galleryCache = new Map<number, GalleryDetail>()
 
 const filter = ref<TagFilter>(emptyFilter())
+/** 圖庫頁用 `?eqt_gid=` 帶過來的選取 */
+const pickedTags = ref<string[]>([])
 
 
 // ---- 合併所有標籤集 ----
@@ -817,6 +820,8 @@ let unbind: (() => void) | null = null
 onMounted(async () => {
   unbind = host.onChange(reread)
   setAppMode(true)
+  const pickGid = new URLSearchParams(location.search).get(PICK_PARAM)
+  if (pickGid) pickedTags.value = await loadPick(pickGid)
   store.value = await loadSamples()
   edits.value = await loadEdits()
   filterThreshold.value = (await fetchThresholds()).filter
@@ -1112,6 +1117,7 @@ watch(edits, () => { void flush() }, { deep: true })
             :style-of="candidateStyle"
             :busy="createBusy || !!writeBusy"
             :previewed="!!catalogTag && previewTarget?.full === catalogTag"
+            :picked="pickedTags"
             @update:target-set="setCatalogTarget"
             @update:full="setCatalogFull"
             @patch="patchCatalog"

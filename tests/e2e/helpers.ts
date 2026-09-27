@@ -64,7 +64,7 @@ export async function mockEh(page: Page): Promise<void> {
       route.fulfill({ contentType: 'text/html', body: FIXTURE_GALLERY_HTML })
     } else if (url === MYTAGS_URL) {
       route.fulfill({ contentType: 'text/html', body: FIXTURE_MYTAGS_HTML })
-    } else if (url.startsWith(`${MYTAGS_URL}?tagset=`)) {
+    } else if (url.startsWith(`${MYTAGS_URL}?`)) {
       route.fulfill({ contentType: 'text/html', body: FIXTURE_MYTAGS_HTML })
     } else if (url === 'https://e-hentai.org/uconfig.php') {
       route.fulfill({ contentType: 'text/html', body: '<input id="ft" value="0">' })
@@ -132,6 +132,7 @@ function gmShimCode(): string {
         .catch((e) => onerror?.({ error: String(e), readyState: 4, status: 0 }))
     }
     window.GM = {
+      openInTab: (url) => { window.open(url, '_blank') },
       getValue: async (key, def) => {
         const v = localStorage.getItem('eqt-test:' + key)
         return v === null ? def : JSON.parse(v)

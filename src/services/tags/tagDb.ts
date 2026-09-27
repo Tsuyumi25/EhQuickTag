@@ -229,6 +229,15 @@ export function findEntryByNsTag(ns: string, tag: string): TagEntry | undefined 
   return _entryIndex.get(`${ns}:${tag.toLowerCase()}`)
 }
 
+/** 字典裡沒有的標籤（例如圖庫上剛被提名的）也要能進候選清單，就用原文湊一筆 */
+export function entryForTag(full: string): TagEntry {
+  const colon = full.indexOf(':')
+  const ns = colon > 0 ? full.slice(0, colon) : ''
+  const raw = colon > 0 ? full.slice(colon + 1) : full
+  return findEntryByNsTag(ns, raw)
+    ?? addSearchFields({ fullTag: full, ns, raw, name: raw, introSearch: '' })
+}
+
 // --- multi-key ranking ---
 
 // Match tier: how well does the search term match the tag?

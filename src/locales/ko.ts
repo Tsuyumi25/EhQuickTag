@@ -6,6 +6,7 @@ export default {
   // TagBar
   'nsFilter.label': 'Namespace로 필터링',
   'nsFilter.all': '전체',
+  'nsFilter.picked': '선택됨 {n}',
   'tagbar.search': '검색',
   'tagbar.searchNewTab': '새 탭에서 검색',
   'tagbar.clearSearch': '검색 지우기',
@@ -298,6 +299,7 @@ export default {
   'gallery.addTags': '태그 추가',
   'gallery.sessionExpired': '세션이 만료되었습니다. 페이지를 새로고침하여 다시 로그인하세요.',
   'gallery.tagDbLoadFailed': '태그 데이터베이스를 불러오지 못했습니다. 나중에 다시 시도하거나 네트워크를 확인하세요.',
+  'gallery.openInMyTags': 'My Tags에서 보기',
   'gallery.myTagsColorsFailed': 'My Tags 색상을 불러오지 못했습니다.',
   'gallery.wiki': 'Wiki',
 
