@@ -364,6 +364,8 @@ export default {
   'panel.discard': 'Cancel',
   'panel.noCredentials': 'No login credentials on this page, so nothing can be written back.',
   'panel.createFailed': 'The new tag form could not be submitted.',
+  'panel.createRejected': 'EH did not add this tag. Check the name, or whether the tag set is full.',
+  'panel.createdInDisabledSet': 'Added to “{set}”. That tag set is not enabled, so it will not appear in the list.',
   'panel.navLabel': 'My Tags navigation controls',
   'panel.ehTopbar': 'EH top bar',
   'panel.wiki': 'WIKI',

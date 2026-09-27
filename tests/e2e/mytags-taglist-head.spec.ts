@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
-import { injectMyTagsUserscript } from './helpers'
+import { readFileSync } from 'node:fs'
+import { injectMyTagsUserscript, reinjectUserscript } from './helpers'
 
 async function visibleTags(page: Page): Promise<string[]> {
   return page.locator('.eqt-panel__side .eqt-taglist__chip').evaluateAll((chips) =>
@@ -713,6 +714,69 @@ test('新增草稿會送到指定 tag set 並保留設定', async ({ page }) => 
   expect(form.get('tagcolor_0')).toBe('#123ABC')
   expect(form.get('tagwatch_0')).toBe('on')
   expect(form.has('taghide_0')).toBe(false)
+})
+
+test('新增標籤不刷新頁面，EH 收下的新列直接出現在清單並成為編輯對象', async ({ page }) => {
+  const fixture = readFileSync(new URL('../fixtures/eh-mytags.html', import.meta.url), 'utf-8')
+  const added = fixture.replace('      </div>\n    </form>', [
+    '        <div id="usertag_9">',
+    '          <span id="tagpreview_9" title="female:sample tag"></span>',
+    '          <input id="tagweight_9" type="text" value="25">',
+    '          <input id="tagcolor_9" type="text" value="#123ABC">',
+    '          <input id="tagwatch_9" type="checkbox" checked>',
+    '          <input id="taghide_9" type="checkbox">',
+    '        </div>',
+    '      </div>\n    </form>',
+  ].join('\n'))
+  await page.route('https://e-hentai.org/mytags?tagset=2', (route) => (
+    route.request().method() === 'POST'
+      ? route.fulfill({ contentType: 'text/html', body: added })
+      : route.fallback()
+  ))
+  // 換頁會丟掉這個標記；它還在就代表送出沒有離開目前文件
+  await page.evaluate(() => { document.documentElement.dataset.eqtNoReload = '1' })
+
+  await page.locator('.eqt-tag-catalog__search-input').fill('sample tag')
+  await page.locator('.eqt-popup__suggestion').filter({ hasText: 'female:sample tag' }).click()
+  await page.locator('.eqt-tag-catalog__create-row select').selectOption('2')
+  await page.locator('.eqt-tag-catalog__create').click()
+
+  await expect(page.locator('.eqt-panel__side .eqt-taglist__chip[title="female:sample tag"]')).toBeVisible()
+  await expect(page.locator('.eqt-tag-catalog__create')).toHaveText('移動標籤')
+  await expect(page.locator('html[data-eqt-no-reload]')).toHaveCount(1)
+  // 組的已用格數以回應為準：fixture 的 4 列加上新增的 1 列
+  await expect(page.locator('.eqt-tag-catalog__create-row select option[value="2"]')).toContainText('5/100')
+})
+
+test('新增到沒啟用的組：不誤認既有列，提示已新增且不留在編輯區', async ({ page }) => {
+  const fixture = readFileSync(new URL('../fixtures/eh-mytags.html', import.meta.url), 'utf-8')
+  const disabled = fixture.replace('<input id="tagset_enable" type="checkbox" checked>', '<input id="tagset_enable" type="checkbox">')
+  const added = disabled.replace('      </div>\n    </form>', [
+    '        <div id="usertag_9">',
+    '          <span id="tagpreview_9" title="female:sample tag"></span>',
+    '          <input id="tagweight_9" type="text" value="10">',
+    '          <input id="tagcolor_9" type="text" value="">',
+    '          <input id="tagwatch_9" type="checkbox">',
+    '          <input id="taghide_9" type="checkbox">',
+    '        </div>',
+    '      </div>\n    </form>',
+  ].join('\n'))
+  await page.route('https://e-hentai.org/mytags?tagset=2', (route) => route.fulfill({
+    contentType: 'text/html',
+    body: route.request().method() === 'POST' ? added : disabled,
+  }))
+  await page.goto('https://e-hentai.org/mytags')
+  await reinjectUserscript(page)
+  await expect(page.locator('.eqt-panel__side > .eqt-taglist')).toBeVisible()
+
+  await page.locator('.eqt-tag-catalog__search-input').fill('sample tag')
+  await page.locator('.eqt-popup__suggestion').filter({ hasText: 'female:sample tag' }).click()
+  await page.locator('.eqt-tag-catalog__create-row select').selectOption('2')
+  await page.locator('.eqt-tag-catalog__create').click()
+
+  await expect(page.getByText('已新增到「Second set」')).toBeVisible()
+  await expect(page.locator('.eqt-tag-catalog__name')).toHaveValue('')
+  await expect(page.locator('.eqt-tag-catalog__create-row select option[value="2"]')).toContainText('5/100')
 })
 
 test('名稱 input 可新增候選清單外的 tag，送出前保留完整名稱與設定', async ({ page }) => {

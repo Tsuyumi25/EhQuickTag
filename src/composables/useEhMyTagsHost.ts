@@ -7,7 +7,7 @@
 // ⭐ 遮蔽原生 UI 之後，原生輸入框就沒有人會去動了——它們的值等同「已存值」。
 // 使用者的編輯住在我們自己的 pending 裡，兩者比對就知道有什麼還沒套用。
 
-import { postMassAction } from '@/services/mytags/mytagsApi'
+import { postForm, postMassAction } from '@/services/mytags/mytagsApi'
 import { createPageContext } from '@/composables/createPageContext'
 import { createAnchor } from '@/utils/createAnchor'
 
@@ -60,9 +60,13 @@ export interface EhMyTagsHost {
   mountEhTopbar(target: HTMLElement): void
   /** 將 #nb / #lb 放回各自在 EH 文件裡的原位置。 */
   restoreEhTopbar(): void
-  /** 下面這些都會讓整頁刷新——呼叫前 pending 必須先落地 */
+  /** 會讓整頁刷新——呼叫前 pending 必須先落地 */
   switchSet(value: string): void
-  createTag(tagSet: string, input: NewTagInput): boolean
+  /**
+   * 新增到 `tagSet`，不刷新。回傳那一組的最新標籤列，null 代表沒送成功；
+   * 送成功不代表 EH 收下了，呼叫端要自己從回傳的列確認。
+   */
+  createTag(tagSet: string, input: NewTagInput): Promise<MyTagRow[] | null>
   /**
    * 刪除 / 搬移。`tagSet` 是這批 tagid 所屬的組，不是當前組——表單認的是 URL 上的
    * `?tagset=`，所以任何一組都動得了，也不刷新。回傳那一組的最新標籤列，null 代表失敗。
@@ -246,16 +250,6 @@ function setupEhMyTagsHost(): EhMyTagsHost | null {
   if (pageBox) pageBox.after(anchor)
   else form.after(anchor)
 
-  function submitUsertagForm(action: string, tagSet: string): boolean {
-    const field = el<HTMLInputElement>(document, 'usertag_action')
-    if (!field || !form) return false
-    field.value = action
-    form.action = tagSetUrl(tagSet)
-    form.submit()
-    return true
-  }
-
-
   async function massAction(
     ids: number[],
     target: string,
@@ -277,8 +271,8 @@ function setupEhMyTagsHost(): EhMyTagsHost | null {
     coverNative(on) {
       // ⚠️ 藏的是 #outer 整個，不是裡面那兩張表單——#outer 本身就是 .stuffbox，
       // 只藏表單的話那個帶邊框的空殼會留在畫面上。
-      // display:none 而不是搬走：寫入路徑（新增 / 刪除 / 標籤集）還要 submit 這些
-      // 表單，而 form.submit() 和 getElementById 對隱藏的節點照樣有效
+      // display:none 而不是搬走：新增還要從這張表單序列化欄位，
+      // FormData 和 getElementById 對隱藏的節點照樣有效
       const box = pageBox ?? form
       if (box instanceof HTMLElement) box.style.display = on ? 'none' : ''
     },
@@ -295,9 +289,10 @@ function setupEhMyTagsHost(): EhMyTagsHost | null {
 
     switchSet(value) { location.href = tagSetUrl(value) },
 
-    createTag(tagSet, input) {
+    async createTag(tagSet, input) {
       const name = el<HTMLInputElement>(document, 'tagname_new')
-      if (!name) return false
+      const action = el<HTMLInputElement>(document, 'usertag_action')
+      if (!name || !action) return null
       name.value = input.full
       const w = el<HTMLInputElement>(document, 'tagweight_0')
       if (w) w.value = String(input.weight)
@@ -307,7 +302,13 @@ function setupEhMyTagsHost(): EhMyTagsHost | null {
       if (h) h.checked = input.hidden
       const t = el<HTMLInputElement>(document, 'tagwatch_0')
       if (t) t.checked = input.watch
-      return submitUsertagForm('add', tagSet)
+      action.value = 'add'
+      // 新增列各欄位的 name 屬於 EH 的黑箱：照原生表單序列化，送出的欄位就跟
+      // form.submit() 一模一樣，差別只在由我們讀回應、而不是讓瀏覽器換頁
+      const fields = [...new FormData(form)].flatMap(([k, v]): [string, string][] =>
+        typeof v === 'string' ? [[k, v]] : [])
+      const doc = await postForm(tagSet, fields)
+      return doc ? parseTagSetSnapshot(doc, tagSet)?.rows ?? null : null
     },
 
     deleteTags(ids, tagSet) { return massAction(ids, '0', tagSet) },   // 0 = Delete Selected

@@ -364,6 +364,8 @@ export default {
   'panel.discard': '取消',
   'panel.noCredentials': '這一頁讀不到登入憑證，沒辦法寫回去。',
   'panel.createFailed': '新增標籤表單無法送出。',
+  'panel.createRejected': 'E站沒有收下這個標籤，確認一下名稱，或標籤集是否已滿。',
+  'panel.createdInDisabledSet': '已新增到「{set}」。這一組沒有啟用，所以不會出現在清單裡。',
   'panel.navLabel': 'My Tags 介面控制',
   'panel.ehTopbar': 'E站頂部欄',
   'panel.wiki': 'WIKI',

@@ -364,6 +364,8 @@ export default {
   'panel.discard': '취소',
   'panel.noCredentials': '이 페이지에서 로그인 정보를 읽을 수 없어 되돌려 쓸 수 없습니다.',
   'panel.createFailed': '새 태그 양식을 제출하지 못했습니다.',
+  'panel.createRejected': 'EH가 이 태그를 추가하지 않았습니다. 태그 이름이나 태그 세트 여유를 확인하세요.',
+  'panel.createdInDisabledSet': '「{set}」에 추가했습니다. 이 태그 세트는 비활성화되어 있어 목록에 표시되지 않습니다.',
   'panel.navLabel': 'My Tags 화면 컨트롤',
   'panel.ehTopbar': 'EH 상단 바',
   'panel.wiki': 'WIKI',

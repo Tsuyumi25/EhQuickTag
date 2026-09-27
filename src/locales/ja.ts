@@ -364,6 +364,8 @@ export default {
   'panel.discard': 'キャンセル',
   'panel.noCredentials': 'このページからログイン情報を読めないため、書き戻せません。',
   'panel.createFailed': '新しいタグのフォームを送信できませんでした。',
+  'panel.createRejected': 'EH がこのタグを追加しませんでした。タグ名やタグセットの空きを確認してください。',
+  'panel.createdInDisabledSet': '「{set}」に追加しました。このタグセットは無効なので、リストには表示されません。',
   'panel.navLabel': 'My Tags 表示コントロール',
   'panel.ehTopbar': 'EH トップバー',
   'panel.wiki': 'WIKI',

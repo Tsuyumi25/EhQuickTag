@@ -84,7 +84,7 @@ function formUrl(tagSet: string): string {
 }
 
 /** 送出後的新頁面。回 null 代表這次沒送成功，呼叫端不要拿舊資料當新的 */
-async function postForm(
+export async function postForm(
   tagSet: string,
   fields: [string, string][],
 ): Promise<Document | null> {

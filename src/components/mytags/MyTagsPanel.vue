@@ -532,10 +532,27 @@ async function applyThreshold(): Promise<void> {
 }
 
 
+/**
+ * 各組目前有幾列。原生頁面上的數字只在載入當下準，送出後以回應為準，否則滿了的組
+ * 還能選、沒滿的組反而被擋
+ */
+const usedAfter = ref<Record<string, number>>({})
+const tagSets = computed(() => host.tagSets.map((set) => (
+  set.value in usedAfter.value ? { ...set, used: usedAfter.value[set.value] } : set
+)))
+
 /** 送出後把那一組的標籤列換成最新的。當前組住在 liveRows，其餘住在 otherSets */
 function absorb(tagSet: string, next: MyTagRow[]): void {
+  usedAfter.value = { ...usedAfter.value, [tagSet]: next.length }
   if (tagSet === host.currentSet) { liveRows.value = next; return }
   otherSets.value = otherSets.value.map((s) => (s.value === tagSet ? { ...s, rows: next } : s))
+}
+
+/** 已經讀進來的那一組；沒啟用的組不進計分，所以不在這裡 */
+function loadedRows(tagSet: string): MyTagRow[] | undefined {
+  return tagSet === host.currentSet
+    ? liveRows.value
+    : otherSets.value.find((s) => s.value === tagSet)?.rows
 }
 
 /**
@@ -721,15 +738,45 @@ async function createNewTag(current: NewTagSubmission): Promise<void> {
   if (createBusy.value) return
   createBusy.value = true
   try {
-    // 原生新增會立刻刷新；先等既有 pending edits 真正落進 gmStorage。
-    await flush()
-    if (host.createTag(current.tagSet, current)) return
-    toast.error(t('panel.createFailed'))
+    // 認「回應裡多出來的那一列」要跟同一組送出前的列比：EH 可能把輸入的名稱正規化，
+    // 不能比對名稱；沒啟用的組沒讀進來，先抓一次
+    const before = loadedRows(current.tagSet) ?? (await fetchTagSet(current.tagSet))?.rows
+    if (!before) {
+      toast.error(t('panel.createFailed'))
+      return
+    }
+    const known = new Set(before.map((row) => row.id))
+    const next = await host.createTag(current.tagSet, current)
+    if (!next) {
+      toast.error(t('panel.createFailed'))
+      return
+    }
+    absorb(current.tagSet, next)
+    publishPalette()
+    const added = next.find((row) => !known.has(row.id))
+    if (!added) {
+      toast.error(t('panel.createRejected'))
+      return
+    }
+    draft.value = emptyDraft()
+    const wasPreviewed = previewTarget.value?.full === catalogTag.value
+    if (rowMap.value.get(added.full)?.id !== added.id) {
+      // 沒啟用的組不在清單裡，編輯區留著也改不到它
+      const name = host.tagSets.find((set) => set.value === added.tagSet)?.name ?? added.tagSet
+      toast.success(t('panel.createdInDisabledSet', { set: name }))
+      catalogTag.value = ''
+      if (wasPreviewed) clearPreviewTarget()
+      return
+    }
+    catalogTag.value = added.full
+    moveTarget.value = added.tagSet
+    if (wasPreviewed) previewCatalog()
   } catch (error) {
     console.error('createTag failed', error)
     toast.error(t('panel.createFailed'))
+  } finally {
+    createBusy.value = false
   }
-  createBusy.value = false
 }
 
 // ---- 封面預載：當前和接下來的先進快取，往下捲就不用等網路 ----
@@ -907,7 +954,7 @@ watch(edits, () => { void flush() }, { deep: true })
           v-model:filter="filter"
           v-model:bulk-draft="bulkDraft"
           :rows="sidebarRows" :total-count="rows.length" :edits="editPlan.edits" :selected="selectedSaved"
-          :sets="host.tagSets" :current-set="host.currentSet"
+          :sets="tagSets" :current-set="host.currentSet"
           :impact="impact" :set-colors="setColors"
           :busy="!!writeBusy"
           @patch="patch" @select="select"
@@ -1059,7 +1106,7 @@ watch(edits, () => { void flush() }, { deep: true })
             :state="catalogState"
             :target-set="catalogRow ? moveTarget : draft.tagSet"
             :source-set="catalogRow?.tagSet ?? null"
-            :sets="host.tagSets"
+            :sets="tagSets"
             :impact="catalogImpact"
             :set-colors="setColors"
             :style-of="candidateStyle"
