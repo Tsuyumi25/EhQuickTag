@@ -3,6 +3,8 @@
 // ⭐ 縮圖是雪碧圖：每一格的 inline style 自帶圖片網址、偏移和尺寸，所以原樣搬過來
 // 就會顯示，不用解析。而且一張雪碧圖裝二十格 = 一個請求換二十張縮圖。
 
+import { parseTaglistRoot } from '@/composables/useEhGalleryHost'
+
 export interface GalleryPageThumb {
   /** 單頁的 /s/... 連結 */
   href: string
@@ -15,8 +17,6 @@ export interface GalleryPageThumb {
 export type TagTier = 'gt' | 'gtl' | 'gtw'
 
 export interface GalleryPageTag {
-  ns: string
-  name: string
   full: string
   /** gdata 給不了這個，而它正好回答「這個標籤到底算不算數」 */
   tier: TagTier
@@ -46,22 +46,13 @@ function styleOf(root: ParentNode, sel: string): string {
 }
 
 export function parseGalleryDoc(doc: Document, gid: number, token: string): GalleryDetail {
-  const tags: GalleryPageTag[] = []
-  for (const row of doc.querySelectorAll('#taglist tr')) {
-    // 命名空間那一格帶著結尾的冒號
-    const ns = (row.querySelector('.tc')?.textContent ?? '').replace(/:\s*$/, '').trim()
-    for (const chip of row.querySelectorAll<HTMLElement>('div.gt, div.gtl, div.gtw')) {
-      const name = chip.textContent?.trim() ?? ''
-      if (!name) continue
-      const cls = chip.className
-      tags.push({
-        ns,
-        name,
-        full: ns ? `${ns}:${name}` : name,
-        tier: /\bgtw\b/.test(cls) ? 'gtw' : /\bgtl\b/.test(cls) ? 'gtl' : 'gt',
-      })
-    }
-  }
+  // ⚠️ 不能讀 chip 上的字：EH 對有別名的標籤會顯示成「原名 | 別名」，拿去當名稱就對不上
+  // 其他地方的同一個標籤。onclick 裡的 nsRaw 才是原名
+  const taglist = doc.querySelector('#taglist')
+  const tags: GalleryPageTag[] = (taglist ? parseTaglistRoot(taglist) : []).map((tag) => ({
+    full: tag.nsRaw,
+    tier: /\bgtw\b/.test(tag.tierClass) ? 'gtw' : /\bgtl\b/.test(tag.tierClass) ? 'gtl' : 'gt',
+  }))
 
   const thumbs: GalleryPageThumb[] = []
   for (const a of doc.querySelectorAll<HTMLAnchorElement>('#gdt a')) {
