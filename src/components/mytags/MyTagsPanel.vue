@@ -231,20 +231,45 @@ const selectedTagStyle = computed(() => {
   }))
 })
 
-function factsOf(tag: string): TagFacts | null {
-  const r = rowMap.value.get(tag)
-  if (!r || editPlan.value.deletedIds.has(r.id)) return null
-  const v = view(r)
-  return { weight: v.weight, hidden: v.hidden, watch: v.watch }
+function sameFacts(a: TagFacts | null, b: TagFacts | null): boolean {
+  return a === b || (!!a && !!b
+    && a.weight === b.weight && a.hidden === b.hidden && a.watch === b.watch)
 }
 
-function catalogFactsOf(tag: string): TagFacts | null {
-  if (catalogTag.value === tag) {
-    if (catalogRow.value && editPlan.value.deletedIds.has(catalogRow.value.id)) return null
-    const current = catalogState.value
-    return { weight: current.weight, hidden: current.hidden, watch: current.watch }
+// ⭐ 顏色不參與計分，但它跟權重擠在同一份 edits 裡。拖色盤每一格都會換掉 editPlan，
+// 讓預覽、影響分佈把所有樣本 × 標籤重算一遍——樣本一多，色盤就卡。所以計分只讀這份
+// 事實表，內容沒變時沿用舊的 Map，下游的 computed 就不會被喚醒。
+const scoringFacts = computed<Map<string, TagFacts>>((previous) => {
+  const next = new Map<string, TagFacts>()
+  for (const r of rows.value) {
+    if (editPlan.value.deletedIds.has(r.id)) continue
+    const v = view(r)
+    next.set(r.full, { weight: v.weight, hidden: v.hidden, watch: v.watch })
   }
-  return factsOf(tag)
+  if (!previous || previous.size !== next.size) return next
+  for (const [tag, facts] of next) {
+    if (!sameFacts(previous.get(tag) ?? null, facts)) return next
+  }
+  return previous
+})
+
+function factsOf(tag: string): TagFacts | null {
+  return scoringFacts.value.get(tag) ?? null
+}
+
+const catalogFacts = computed<TagFacts | null>((previous) => {
+  const next = catalogRow.value && editPlan.value.deletedIds.has(catalogRow.value.id)
+    ? null
+    : {
+        weight: catalogState.value.weight,
+        hidden: catalogState.value.hidden,
+        watch: catalogState.value.watch,
+      }
+  return previous !== undefined && sameFacts(previous, next) ? previous : next
+})
+
+function catalogFactsOf(tag: string): TagFacts | null {
+  return catalogTag.value === tag ? catalogFacts.value : factsOf(tag)
 }
 
 const catalogTagStyle = computed(() => {
