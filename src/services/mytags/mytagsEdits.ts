@@ -68,3 +68,23 @@ export function unstage(edits: EditMap, ids: number[]): EditMap {
   for (const id of ids) delete next[id]
   return next
 }
+
+/**
+ * 搬到另一組之後，把原本那列的欄位修改接到落地的那一列上。
+ *
+ * 搬移只換所在組，欄位修改還是草稿；但 EH 回來的新列不保證沿用舊 tagid，所以用名稱
+ * 對回來——同一個標籤在清單裡只會有一列。對不上的（目標組沒讀到）就放掉。
+ */
+export function carryEdits(
+  edits: EditMap,
+  carried: EditMap,
+  moved: readonly MyTagRow[],
+  landed: readonly MyTagRow[],
+): EditMap {
+  const byName = new Map(landed.map((row) => [row.full, row]))
+  return moved.reduce((acc, row) => {
+    const patch = carried[row.id]
+    const target = byName.get(row.full)
+    return patch && target ? stage(acc, target, patch) : acc
+  }, edits)
+}

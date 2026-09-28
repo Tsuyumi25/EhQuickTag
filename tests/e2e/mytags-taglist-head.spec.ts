@@ -898,3 +898,40 @@ test('攤開的圖庫跟 gallery 頁一樣顯示權重 0', async ({ page }) => {
   await row.locator('.eqt-number-field__input').press('Enter')
   await expect(weight).toHaveText('0')
 })
+
+test('編輯區移動後，這顆的欄位草稿跟著搬到新的那一列', async ({ page }) => {
+  const fixture = readFileSync(new URL('../fixtures/eh-mytags.html', import.meta.url), 'utf-8')
+  const block = /\n\s*<div id="usertag_2">[\s\S]*?<\/div>/
+  const withoutPositive = fixture.replace(block, '')
+  const landed = fixture.replace(block, '').replace('      </div>\n    </form>', [
+    '        <div id="usertag_9">',
+    '          <span id="tagpreview_9" title="male:positive-sample"></span>',
+    '          <input id="tagweight_9" type="text" value="40">',
+    '          <input id="tagcolor_9" type="text" value="#00cc00">',
+    '          <input id="tagwatch_9" type="checkbox" checked>',
+    '          <input id="taghide_9" type="checkbox">',
+    '        </div>',
+    '      </div>\n    </form>',
+  ].join('\n'))
+  await page.route('https://e-hentai.org/mytags', async (route) => (
+    route.request().method() === 'POST'
+      ? route.fulfill({ contentType: 'text/html', body: withoutPositive })
+      : route.fallback()
+  ))
+  await page.route('https://e-hentai.org/mytags?tagset=2', (route) => route.fulfill({ contentType: 'text/html', body: landed }))
+
+  const row = () => page.locator('.eqt-taglist__row').filter({
+    has: page.locator('.eqt-taglist__chip[title="male:positive-sample"]'),
+  })
+  await row().locator('.eqt-taglist__chip').click()
+  const catalog = page.locator('.eqt-tag-catalog__draft')
+  await catalog.locator('.eqt-number-field__input').fill('41')
+  await catalog.locator('.eqt-number-field__input').press('Enter')
+  await catalog.locator('select').selectOption('2')
+  await catalog.locator('.eqt-tag-catalog__create').click()
+
+  await expect(catalog.locator('select')).toHaveValue('2')
+  await expect(row()).toHaveClass(/eqt-taglist__row--dirty/)
+  await expect(row().locator('.eqt-number-field__input')).toHaveValue('41')
+  await expect(catalog.locator('.eqt-number-field__input')).toHaveValue('41')
+})

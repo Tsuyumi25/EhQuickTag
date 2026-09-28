@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import type { MyTagRow } from '@/composables/useEhMyTagsHost'
 import {
-  effective, stage, stageMany, unstage,
+  carryEdits, effective, stage, stageMany, unstage,
   type EditMap,
 } from '@/services/mytags/mytagsEdits'
 
@@ -90,5 +90,19 @@ describe('unstage', () => {
       2: { weight: -2 },
     }
     expect(unstage(edits, [1])).toEqual({ 2: { weight: -2 } })
+  })
+})
+
+describe('carryEdits', () => {
+  it('搬移後欄位修改接到同名的新列，不管 tagid 有沒有換', () => {
+    const before = row({ id: 1, tagSet: '1' })
+    const after = row({ id: 9, tagSet: '2' })
+    expect(carryEdits({}, { 1: { weight: 41 } }, [before], [after])).toEqual({ 9: { weight: 41 } })
+  })
+
+  it('新列已經是那個值就不留草稿；目標組讀不到就放掉', () => {
+    const before = row({ id: 1 })
+    expect(carryEdits({}, { 1: { weight: 41 } }, [before], [row({ id: 9, weight: 41 })])).toEqual({})
+    expect(carryEdits({}, { 1: { weight: 41 } }, [before], [])).toEqual({})
   })
 })
