@@ -218,21 +218,53 @@ $eqt-gallery-height: 330px;
 }
 
 // === Vote feedback ===
-// 染整顆 chip body 文字，不單獨染 vote 按鈕——避免雙重著色太搶眼
-.eqt-gallery-chip--voted-up .eqt-gallery-chip__body {
+// 染整顆 chip body 文字，不單獨染 vote 按鈕——避免雙重著色太搶眼。
+// ⚠️ 雙 class 是為了壓過選取時把文字色重設回 --eqt-text 那條 (0,3,0)：投過的票比選取
+// 狀態更該被看見。
+.eqt-gallery-chip.eqt-gallery-chip--voted-up .eqt-gallery-chip__body {
   color: green;
 }
 
-.eqt-gallery-chip--voted-down .eqt-gallery-chip__body {
+.eqt-gallery-chip.eqt-gallery-chip--voted-down .eqt-gallery-chip__body {
   color: red;
 }
 
-.eqt-dark .eqt-gallery-chip--voted-up .eqt-gallery-chip__body {
+.eqt-dark .eqt-gallery-chip.eqt-gallery-chip--voted-up .eqt-gallery-chip__body {
   color: #00E639;
 }
 
-.eqt-dark .eqt-gallery-chip--voted-down .eqt-gallery-chip__body {
+.eqt-dark .eqt-gallery-chip.eqt-gallery-chip--voted-down .eqt-gallery-chip__body {
   color: #FF3333;
+}
+
+// 有底色的 chip（個人配色或選取中）底色可能是任何顏色，沒辦法針對底色挑描邊，改挑跟
+// 字色反差最大的黑或白，字的輪廓在哪種底上都會被勾出來。主題預設底色本來就對得上投票
+// 色，不描。不用 contrast-color()：它照 WCAG 亮度在約 18% 就翻成黑，純紅會拿到黑邊
+// 變得又粗又暗；OKLCH 亮度取整才是人眼覺得的亮暗分界。
+// 八個方向：只有上下左右時筆畫轉角會缺一個直角，描邊越粗越明顯；斜角的位移乘上
+// 1/√2，整圈才會等粗
+.eqt-gallery-chip:is(.eqt-gallery-chip--voted-up, .eqt-gallery-chip--voted-down):is(.eqt-gallery-chip--mytags-colored, .eqt-gallery-chip--selected-positive, .eqt-gallery-chip--selected-negative) .eqt-gallery-chip__body {
+  --eqt-vote-halo: oklch(from currentColor round(1.21 - l) 0 0);
+
+  text-shadow:
+    0.5px 0 0 var(--eqt-vote-halo),
+    -0.5px 0 0 var(--eqt-vote-halo),
+    0 0.5px 0 var(--eqt-vote-halo),
+    0 -0.5px 0 var(--eqt-vote-halo),
+    0.354px 0.354px 0 var(--eqt-vote-halo),
+    -0.354px 0.354px 0 var(--eqt-vote-halo),
+    0.354px -0.354px 0 var(--eqt-vote-halo),
+    -0.354px -0.354px 0 var(--eqt-vote-halo);
+
+  // 關注 / 隱藏等圖示是 SVG，text-shadow 碰不到。drop-shadow 會疊在前一層的結果上，
+  // 所以四個正方向串起來，斜角就已經被左右擴出去的那層補滿
+  svg {
+    filter:
+      drop-shadow(0.5px 0 0 var(--eqt-vote-halo))
+      drop-shadow(-0.5px 0 0 var(--eqt-vote-halo))
+      drop-shadow(0 0.5px 0 var(--eqt-vote-halo))
+      drop-shadow(0 -0.5px 0 var(--eqt-vote-halo));
+  }
 }
 
 // search / vote 兩個大方塊跨兩列，把誤觸代價較高的 vote 從 search 拉開。中間一列
