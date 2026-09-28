@@ -68,7 +68,8 @@ type NewTagSubmission = NewTagInput & { tagSet: string }
 function emptyDraft(): NewTagDraft {
   return {
     tagSet: host.currentSet,
-    weight: 10,
+    // EH 原生新增欄預設 10；只想加關注、隱藏或顏色的標籤會順手多出 +10 分，所以從 0 起
+    weight: 0,
     color: '',
     watch: false,
     hidden: false,
