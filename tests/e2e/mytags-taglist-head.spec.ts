@@ -610,14 +610,17 @@ test('批次刪除暫存到 dock，取消確認保留草稿，確認後才送出
   const apply = page.locator('.eqt-panel__dock .eqt-panel__btn--primary')
   await expect(apply).toHaveText('套用 1 個到 EH')
   expect(writes).toEqual([])
-  page.once('dialog', dialog => dialog.dismiss())
+  const confirmBox = page.getByRole('alertdialog')
   await apply.click()
+  await expect(confirmBox).toContainText('1 個標籤')
+  await confirmBox.getByRole('button', { name: '保留' }).click()
+  await expect(confirmBox).toHaveCount(0)
   await expect(apply).toBeEnabled()
   expect(writes).toEqual([])
-  page.once('dialog', dialog => dialog.accept())
   const requestPromise = page.waitForRequest(request =>
     request.url() === 'https://e-hentai.org/mytags' && request.method() === 'POST')
   await apply.click()
+  await confirmBox.getByRole('button', { name: '刪除' }).click()
   const form = new URLSearchParams((await requestPromise).postData() ?? '')
   expect(form.get('usertag_target')).toBe('0')
   expect(form.getAll('modify_usertags[]')).toEqual(['1'])
@@ -936,7 +939,7 @@ test('編輯區移動後，這顆的欄位草稿跟著搬到新的那一列', as
   await expect(catalog.locator('.eqt-number-field__input')).toHaveValue('41')
 })
 
-test('編輯區的刪除確認後立即送出，取消則不送', async ({ page }) => {
+test('編輯區的刪除在頁面內確認後立即送出，保留或 Esc 則不送', async ({ page }) => {
   const posts: URLSearchParams[] = []
   await page.route('https://e-hentai.org/mytags', async (route) => {
     if (route.request().method() === 'POST') posts.push(new URLSearchParams(route.request().postData() ?? ''))
@@ -948,12 +951,17 @@ test('編輯區的刪除確認後立即送出，取消則不送', async ({ page 
     has: page.locator('.eqt-taglist__chip[title="male:positive-sample"]'),
   }).locator('.eqt-taglist__chip').click()
 
-  page.once('dialog', (dialog) => dialog.dismiss())
+  const confirmBox = page.getByRole('alertdialog')
   await remove.click()
+  await expect(confirmBox).toContainText('male:positive-sample')
+  // 焦點預設在保留，按 Enter 不會直接刪掉
+  await expect(confirmBox.getByRole('button', { name: '保留' })).toBeFocused()
+  await page.keyboard.press('Escape')
+  await expect(confirmBox).toHaveCount(0)
   expect(posts).toHaveLength(0)
 
-  page.once('dialog', (dialog) => dialog.accept())
   await remove.click()
+  await confirmBox.getByRole('button', { name: '刪除' }).click()
   await expect.poll(() => posts.length).toBe(1)
   expect(posts[0].get('usertag_target')).toBe('0')
   expect(posts[0].getAll('modify_usertags[]')).toEqual(['2'])

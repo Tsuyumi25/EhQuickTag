@@ -1,5 +1,6 @@
 import { provide, type Ref } from 'vue'
 import { onClickOutside, useScrollLock, useEventListener } from '@vueuse/core'
+import { confirmRequest } from '@/services/confirmDialog'
 
 // 子元件（譬如 LineColorSwatch）可以 inject 這個 register 函數，
 // 把自己 teleport 到 body 的浮層 el 註冊進 ignore list。
@@ -27,13 +28,17 @@ export function usePopupBehavior(options: {
     }
   })
 
-  onClickOutside(options.popupEl, options.onClose, {
+  // 確認框開著時，點它、按 Esc 都是在回答它，不是要關掉底下這個 popup
+  onClickOutside(options.popupEl, () => {
+    if (!confirmRequest.value) options.onClose()
+  }, {
     ignore: ignoreList,
   })
 
   useScrollLock(document.body, true)
 
   useEventListener(document, 'keydown', (e: KeyboardEvent) => {
+    if (confirmRequest.value) return
     if (e.key === 'Escape') {
       options.onClose()
     } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && options.onSave) {

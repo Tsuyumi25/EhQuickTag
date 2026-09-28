@@ -2,6 +2,9 @@ export default {
   // Common
   'common.itemColor': 'ボタンの色',
   'common.back': '戻る',
+  'confirm.title': '確認',
+  'confirm.keep': '残す',
+  'confirm.delete': '削除',
 
   // TagBar
   'nsFilter.label': 'Namespace で絞り込む',
@@ -397,6 +400,7 @@ export default {
   'panel.working': '処理中…',
   'panel.massFailed': 'この一括処理は送信できませんでした。一覧が最新でない可能性があります。',
   'panel.deleteConfirmMany': 'タグ {n} 件を EH から削除しますか？取り消せません。',
+  'panel.deleteConfirmOne': '「{tag}」を EH から削除しますか？元に戻せません。',
   'taglist.allSets': 'すべて',
   'taglist.addTag': 'タグを追加',
   'manage.newTag': '新しいタグ',

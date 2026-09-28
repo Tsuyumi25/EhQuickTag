@@ -2,6 +2,9 @@ export default {
   // Common
   'common.itemColor': 'Button color',
   'common.back': 'Back',
+  'confirm.title': 'Confirm',
+  'confirm.keep': 'Keep',
+  'confirm.delete': 'Delete',
 
   // TagBar
   'nsFilter.label': 'Filter by namespace',
@@ -397,6 +400,7 @@ export default {
   'panel.working': 'Working…',
   'panel.massFailed': 'That batch did not go through; the list may be out of date.',
   'panel.deleteConfirmMany': 'Delete {n} tags from EH? This cannot be undone.',
+  'panel.deleteConfirmOne': 'Delete “{tag}” from EH? This cannot be undone.',
   'taglist.allSets': 'All',
   'taglist.addTag': 'Add tag',
   'manage.newTag': 'New tag',

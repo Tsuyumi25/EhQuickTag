@@ -15,6 +15,7 @@ import { resolveButtonUrl } from '@/utils/ehUrl'
 import { dismissTerms } from '@/services/search/searchSession'
 import { t } from '@/composables/useI18n'
 import { useSpacerResize } from '@/composables/useSpacerResize'
+import { askConfirm } from '@/services/confirmDialog'
 
 // Off 給 explicit class（即使沒對應 style）：給 e2e / 外部觀察者一個正面條件
 // 可 assert，避免「不是 include / or / exclude 就是 Off」的 negate 推論在新 state
@@ -134,8 +135,8 @@ function isLineEmpty(line: Line): boolean {
   if (line.kind === 'buttons') return line.buttons.length === 0 && (!line.style || Object.keys(line.style).length === 0)
   return !line.label && (!line.style || Object.keys(line.style).length === 0)
 }
-function onDeleteLine(li: number) {
-  if (!isLineEmpty(lines[li]) && !confirm(t('tagbar.deleteLineConfirm'))) return
+async function onDeleteLine(li: number) {
+  if (!isLineEmpty(lines[li]) && !await askConfirm(t('tagbar.deleteLineConfirm'), t('confirm.delete'))) return
   lines.splice(li, 1)
 }
 

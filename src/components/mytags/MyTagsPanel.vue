@@ -46,6 +46,7 @@ import { patchConfig } from '@/services/ehConfig'
 import { serializeEntry } from '@/services/search/searchSyntax'
 import { myTagsPanelZoom, nsFormat } from '@/services/store'
 import { openSettings } from '@/services/appOverlays'
+import { askConfirm } from '@/services/confirmDialog'
 import { tagColors, type TagColors } from '@/services/mytags/mytagsColors'
 import { useMyTagsColors } from '@/composables/useMyTagsColors'
 import { buildMyTagsPalette, saveMyTagsPalette } from '@/services/mytags/mytagsPalette'
@@ -467,7 +468,7 @@ async function apply(): Promise<void> {
     toast.error(t('panel.noCredentials')); return
   }
   const deletes = todo.filter(change => change.remove)
-  if (deletes.length && !confirm(t('panel.deleteConfirmMany', { n: deletes.length }))) return
+  if (deletes.length && !await askConfirm(t('panel.deleteConfirmMany', { n: deletes.length }), t('panel.labelDelete'))) return
 
   const done = new Set<number>()
   let failed = false
@@ -744,10 +745,10 @@ function moveCatalogTag(target: string): void {
   massNow([row], target)
 }
 
-function deleteCatalogTag(): void {
+async function deleteCatalogTag(): Promise<void> {
   const row = catalogRow.value
   if (!row || writeBusy.value) return
-  if (!confirm(t('panel.deleteConfirmMany', { n: 1 }))) return
+  if (!await askConfirm(t('panel.deleteConfirmOne', { tag: row.full }), t('panel.labelDelete'))) return
   massNow([row], '0')
 }
 

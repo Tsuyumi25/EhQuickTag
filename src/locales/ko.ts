@@ -2,6 +2,9 @@ export default {
   // Common
   'common.itemColor': '버튼 색상',
   'common.back': '뒤로',
+  'confirm.title': '확인',
+  'confirm.keep': '유지',
+  'confirm.delete': '삭제',
 
   // TagBar
   'nsFilter.label': 'Namespace로 필터링',
@@ -397,6 +400,7 @@ export default {
   'panel.working': '처리 중…',
   'panel.massFailed': '이 일괄 작업이 전송되지 않았습니다. 목록이 최신이 아닐 수 있습니다.',
   'panel.deleteConfirmMany': '태그 {n}개를 EH에서 삭제할까요? 되돌릴 수 없습니다.',
+  'panel.deleteConfirmOne': 'EH에서 「{tag}」를 삭제할까요? 되돌릴 수 없습니다.',
   'taglist.allSets': '전체',
   'taglist.addTag': '태그 추가',
   'manage.newTag': '새 태그',

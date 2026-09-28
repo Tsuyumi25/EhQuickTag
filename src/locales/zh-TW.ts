@@ -2,6 +2,9 @@ export default {
   // Common
   'common.itemColor': '按鈕顏色',
   'common.back': '返回',
+  'confirm.title': '確認',
+  'confirm.keep': '保留',
+  'confirm.delete': '刪除',
 
   // TagBar
   'nsFilter.label': '依 namespace 篩選',
@@ -397,6 +400,7 @@ export default {
   'panel.working': '處理中⋯',
   'panel.massFailed': '這批沒送成功，清單可能不是最新的。',
   'panel.deleteConfirmMany': '確定要從 EH 刪掉 {n} 個標籤嗎？沒有還原。',
+  'panel.deleteConfirmOne': '確定要從 EH 刪掉「{tag}」嗎？沒有還原。',
   'taglist.allSets': '全部',
   'taglist.addTag': '新增標籤',
   'manage.newTag': '新增標籤',

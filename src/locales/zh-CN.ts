@@ -2,6 +2,9 @@ export default {
   // Common
   'common.itemColor': '按钮颜色',
   'common.back': '返回',
+  'confirm.title': '确认',
+  'confirm.keep': '保留',
+  'confirm.delete': '删除',
 
   // TagBar
   'nsFilter.label': '按 namespace 筛选',
@@ -397,6 +400,7 @@ export default {
   'panel.working': '处理中⋯',
   'panel.massFailed': '这批没送成功，列表可能不是最新的。',
   'panel.deleteConfirmMany': '确定要从 EH 删掉 {n} 个标签吗？没有还原。',
+  'panel.deleteConfirmOne': '确定要从 EH 删掉「{tag}」吗？没有还原。',
   'taglist.allSets': '全部',
   'taglist.addTag': '新增标签',
   'manage.newTag': '新增标签',

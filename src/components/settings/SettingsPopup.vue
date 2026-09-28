@@ -17,6 +17,7 @@ import SettingsGalleryTab from './SettingsGalleryTab.vue'
 import SettingsMyTagsTab from './SettingsMyTagsTab.vue'
 import SettingsDataTab from './SettingsDataTab.vue'
 import SettingsAboutTab from './SettingsAboutTab.vue'
+import { askConfirm } from '@/services/confirmDialog'
 
 const emit = defineEmits<{
   'close': []
@@ -165,17 +166,17 @@ function onRestore(idx: number) {
   restoreProfile(idx)
 }
 
-function onPurge(idx: number) {
+async function onPurge(idx: number) {
   const name = deletedProfiles[idx]?.name ?? ''
-  if (!confirm(t('settings.purgeConfirm', { name }))) return
+  if (!await askConfirm(t('settings.purgeConfirm', { name }), t('confirm.delete'))) return
   adjustEditorIdxOnRemove(idx, true)
   purgeProfile(idx)
 }
 
-function onPurgeCorrupted(idx: number) {
+async function onPurgeCorrupted(idx: number) {
   const c = corruptedProfiles[idx]
   const name = c ? new Date(c.savedAt).toLocaleString() : ''
-  if (!confirm(t('settings.purgeConfirm', { name }))) return
+  if (!await askConfirm(t('settings.purgeConfirm', { name }), t('confirm.delete'))) return
   adjustEditorIdxOnCorruptedRemove(idx)
   purgeCorrupted(idx)
 }
