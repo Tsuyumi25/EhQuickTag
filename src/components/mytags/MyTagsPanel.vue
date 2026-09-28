@@ -285,7 +285,7 @@ const catalogTagStyle = computed(() => {
   }))
 })
 
-type TagAppearance = { colors: TagColors; watch: boolean }
+type TagAppearance = { colors: TagColors; weight: number; hidden: boolean; watch: boolean }
 
 /** 攤開的畫廊上那排 chip 的外觀。取編輯中的狀態，不讀已存檔的 palette——改了顏色、
  *  還沒送出去也要當場看得到 */
@@ -300,6 +300,8 @@ function appearanceOf(tag: string): TagAppearance | null {
       weight: state.weight,
       hidden: state.hidden,
     }),
+    weight: state.weight,
+    hidden: state.hidden,
     watch: state.watch,
   }
 }
@@ -320,6 +322,8 @@ function catalogAppearanceOf(tag: string): TagAppearance | null {
         weight: current.weight,
         hidden: current.hidden,
       }),
+      weight: current.weight,
+      hidden: current.hidden,
       watch: current.watch,
     }
   }

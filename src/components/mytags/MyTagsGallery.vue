@@ -15,8 +15,8 @@ const props = defineProps<{
   detail: GalleryDetail
   /** 這本的去向，跟格子上顯示的是同一份 */
   outcome: Outcome | null
-  /** 編輯器裡此刻的配色與 watch；不在清單裡、或正要刪掉的標籤不在這份裡 */
-  appearance: Map<string, { colors: TagColors; watch: boolean }>
+  /** 編輯器裡此刻的配色、權重與旗標；不在清單裡、或正要刪掉的標籤不在這份裡 */
+  appearance: Map<string, { colors: TagColors; weight: number; hidden: boolean; watch: boolean }>
   verdict: Verdict | undefined
   loading: boolean
   threshold: number | null
@@ -27,12 +27,6 @@ const emit = defineEmits<{
   setVerdict: [Verdict | null]
   pickTag: [string]
 }>()
-
-/** 在使用者清單裡的標籤要標出來——那是它為什麼落在這一邊的原因 */
-const weighted = computed(() => new Map(
-  (props.outcome?.parts ?? []).map((p) => [p.tag, p.weight])))
-
-const hidden = computed(() => new Set(props.outcome?.hiddenBy ?? []))
 
 const { label } = useTagLabel()
 
@@ -47,8 +41,9 @@ const chips = computed(() => props.detail.tags.map((tag) => {
     iconUrl: view.iconUrl,
     colors: myTagsGalleryColorsEnabled.value ? at?.colors : undefined,
     watch: at?.watch ?? false,
-    weight: weighted.value.get(tag.full) ?? undefined,
-    hidden: hidden.value.has(tag.full),
+    // 跟 gallery 頁一樣讀清單上的值：計分的 parts 會略過權重 0，拿它來顯示 0 就不見了
+    weight: at?.weight,
+    hidden: at?.hidden ?? false,
   }
 }))
 

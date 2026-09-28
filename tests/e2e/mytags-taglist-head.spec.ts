@@ -880,3 +880,21 @@ test('splitter 頂端按鈕展開回預設比例，拖曳後仍可用滑鼠與�
     await expect.poll(async () => Math.abs((await panel.boundingBox())!.width - defaultWidth)).toBeLessThan(1)
   }
 })
+
+test('攤開的圖庫跟 gallery 頁一樣顯示權重 0', async ({ page }) => {
+  const html = readFileSync(new URL('../fixtures/eh-g.html', import.meta.url), 'utf-8')
+    .replaceAll("'male:sole male'", "'female:negative-sample'")
+  await page.route(/\/g\/100[12]\//, (route) => route.fulfill({ contentType: 'text/html', body: html }))
+  await page.locator('.eqt-tag-catalog__search-input').fill('sample tag')
+  await page.locator('.eqt-popup__suggestion').filter({ hasText: 'female:sample tag' }).click()
+  await page.locator('.eqt-preview__cover').first().click()
+
+  const weight = page.locator('.eqt-gal .eqt-gallery-chip[data-ns-raw="female:negative-sample"] .eqt-gallery-chip__weight')
+  await expect(weight).toHaveText('-20')
+  const row = page.locator('.eqt-taglist__row').filter({
+    has: page.locator('.eqt-taglist__chip[title="female:negative-sample"]'),
+  })
+  await row.locator('.eqt-number-field__input').fill('0')
+  await row.locator('.eqt-number-field__input').press('Enter')
+  await expect(weight).toHaveText('0')
+})
