@@ -884,7 +884,8 @@
 .eqt-preview__pick {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1px;
+  gap: var(--eqt-border-width-thin);
+  border-top: var(--eqt-border-width-thin) solid var(--eqt-border);
   background: var(--eqt-border);
 
   button {
