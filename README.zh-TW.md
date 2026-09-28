@@ -53,6 +53,7 @@ Gallery Tagging Enhancer
   - [x] 左鍵、右鍵與拖曳選取
   - [x] 批次投票與批次搜尋
   - [x] 內嵌新增標籤 picker
+  - [x] 從其他圖庫導入候選，候選與既有標籤以實線／虛線／點線 check 圖示標示來源佐證
   - [x] Gallery Tagging Wiki 快捷連結
 - [x] 個人化
   - [x] 多組獨立標籤配置

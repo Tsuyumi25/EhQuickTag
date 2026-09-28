@@ -53,6 +53,7 @@ Gallery Tagging Enhancer
   - [x] Left-click, right-click, and drag selection
   - [x] Batch voting and batch search
   - [x] Inline add-tag picker
+  - [x] Import candidates from other galleries, with solid/dashed/dotted check icons indicating source evidence on candidates and existing tags
   - [x] Gallery Tagging Wiki shortcut
 - [x] Personalization
   - [x] Multiple independent tag profiles

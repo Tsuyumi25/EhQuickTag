@@ -153,9 +153,8 @@ interface ChipView {
   tier: TagTier
   iconUrl?: string
   personalTag?: MyTagsPalette[string]
-  /** 候選從哪來：picker 手動新增的掛 tag-plus，別本導入的掛 square-arrow-right-enter */
   candidate: 'added' | 'imported' | null
-  /** 導入給這個已有標籤的佐證；候選和本來就是實線的不掛 */
+  /** 別本提供的佐證；本頁已有的實線標籤省略 */
   evidence: 'solid' | 'dashed' | 'dotted' | null
   /** 開頭記號的 hover 說明：從哪幾本帶進來 */
   sources: string
@@ -186,7 +185,7 @@ function buildChipView(tag: GalleryTag, isCandidate: boolean): ChipView {
     personalTag: myTagsPalette.value?.[tag.nsRaw],
     candidate: !isCandidate ? null : imports.value.has(tag.nsRaw) ? 'imported' : 'added',
     // 這本已經是實線的標籤，別本再怎麼佐證也不會更穩
-    evidence: isCandidate || tierOf(tag.tierClass) === 'gt' ? null : evidenceOf(sources),
+    evidence: !isCandidate && tierOf(tag.tierClass) === 'gt' ? null : evidenceOf(sources),
     sources: sources.map(s => s.title).join('\n'),
   }
 }
@@ -571,7 +570,6 @@ watch(selection, () => {
         >
           <template v-if="chip.candidate || chip.evidence" #lead>
             <TagPlus v-if="chip.candidate === 'added'" />
-            <SquareArrowRightEnter v-else-if="chip.candidate === 'imported'" :title="chip.sources" />
             <CircleCheck v-else-if="chip.evidence === 'solid'" :title="chip.sources" />
             <CircleDashedCheck v-else-if="chip.evidence === 'dashed'" :title="chip.sources" />
             <CircleDottedCheck v-else :title="chip.sources" />
