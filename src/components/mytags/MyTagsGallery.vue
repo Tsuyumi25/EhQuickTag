@@ -122,7 +122,7 @@ function url(): string {
 
           <!-- popup 收掉之後，加總和門檻只剩這裡講得到 -->
           <p v-if="outcome" class="eqt-gal__sum">
-            <span v-if="outcome.hiddenBy.length" class="eqt-preview__neg">
+            <span v-if="outcome.hiddenBy.length">
               {{ t('marked.hiddenBy', { tags: outcome.hiddenBy.join(' · ') }) }}
             </span>
             <span v-else>
