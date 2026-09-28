@@ -614,7 +614,8 @@ async function executeMass(rows2: MyTagRow[], target: string): Promise<{ done: n
   return { done, ok }
 }
 
-async function moveTags(target: MyTagRow[], to: string): Promise<void> {
+/** 立即搬移或刪除（`to` 是 `0`）；編輯區的按鈕走這條，不經 dock */
+async function massNow(target: MyTagRow[], to: string): Promise<void> {
   if (!to || writeBusy.value || !target.length) return
   writeBusy.value = t('panel.working')
   try {
@@ -740,7 +741,14 @@ function setCatalogTarget(value: string): void {
 function moveCatalogTag(target: string): void {
   const row = catalogRow.value
   if (!row || target === row.tagSet) return
-  moveTags([row], target)
+  massNow([row], target)
+}
+
+function deleteCatalogTag(): void {
+  const row = catalogRow.value
+  if (!row || writeBusy.value) return
+  if (!confirm(t('panel.deleteConfirmMany', { n: 1 }))) return
+  massNow([row], '0')
 }
 
 function clearPreviewTarget(): void {
@@ -1140,6 +1148,7 @@ watch(edits, () => { void flush() }, { deep: true })
             @preview="previewCatalog"
             @confirm="refreshPreview"
             @move="moveCatalogTag"
+            @remove="deleteCatalogTag"
             @create="createNewTag"
           />
         </SplitterPanel>

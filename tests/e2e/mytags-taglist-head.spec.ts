@@ -935,3 +935,26 @@ test('編輯區移動後，這顆的欄位草稿跟著搬到新的那一列', as
   await expect(row().locator('.eqt-number-field__input')).toHaveValue('41')
   await expect(catalog.locator('.eqt-number-field__input')).toHaveValue('41')
 })
+
+test('編輯區的刪除確認後立即送出，取消則不送', async ({ page }) => {
+  const posts: URLSearchParams[] = []
+  await page.route('https://e-hentai.org/mytags', async (route) => {
+    if (route.request().method() === 'POST') posts.push(new URLSearchParams(route.request().postData() ?? ''))
+    await route.fallback()
+  })
+  const remove = page.locator('.eqt-tag-catalog__delete')
+  await expect(remove).toHaveCount(0)
+  await page.locator('.eqt-taglist__row').filter({
+    has: page.locator('.eqt-taglist__chip[title="male:positive-sample"]'),
+  }).locator('.eqt-taglist__chip').click()
+
+  page.once('dialog', (dialog) => dialog.dismiss())
+  await remove.click()
+  expect(posts).toHaveLength(0)
+
+  page.once('dialog', (dialog) => dialog.accept())
+  await remove.click()
+  await expect.poll(() => posts.length).toBe(1)
+  expect(posts[0].get('usertag_target')).toBe('0')
+  expect(posts[0].getAll('modify_usertags[]')).toEqual(['2'])
+})

@@ -35,6 +35,7 @@ const emit = defineEmits<{
   pick: [entry: TagEntry]
   create: [submission: NewTagSubmission]
   move: [target: string]
+  remove: []
   preview: []
   confirm: []
 }>()
@@ -190,6 +191,13 @@ function commit(): void {
           :disabled="existing ? !canMove : !canCreate"
           @click="commit"
         >{{ busy ? t('panel.working') : t(existing ? 'manage.moveTag' : 'taglist.addTag') }}</button>
+        <button
+          v-if="existing"
+          type="button"
+          class="eqt-tag-catalog__delete eqt-panel__btn eqt-panel__btn--primary"
+          :disabled="busy"
+          @click="emit('remove')"
+        >{{ t('panel.labelDelete') }}</button>
       </div>
 
       <p v-if="full && setFull && targetSet !== sourceSet" class="eqt-tag-catalog__error">
@@ -270,6 +278,7 @@ function commit(): void {
   &__create-row {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
+    grid-auto-flow: column;
     gap: calc(var(--eqt-checkbox-size) / 4);
     align-items: stretch;
 
@@ -280,7 +289,8 @@ function commit(): void {
     }
   }
 
-  &__create {
+  &__create,
+  &__delete {
     height: calc(var(--eqt-checkbox-size) + var(--eqt-border-width) * 2);
     padding: 0 calc(var(--eqt-checkbox-size) / 3);
     font-size: var(--eqt-fs-xs);
