@@ -616,9 +616,16 @@ async function executeMass(rows2: MyTagRow[], target: string): Promise<{ done: n
       break
     }
     absorb(set, next)
-    done.push(...ids)
-    if (target === '0') edits.value = unstage(edits.value, ids)
-    retireBulk(ids)
+    const remaining = new Set(next.map(row => row.id))
+    const applied = ids.filter(id => !remaining.has(id))
+    done.push(...applied)
+    if (target === '0') edits.value = unstage(edits.value, applied)
+    retireBulk(applied)
+    if (applied.length !== ids.length) {
+      toast.error(t('panel.massFailed'))
+      ok = false
+      break
+    }
   }
   if (target !== '0' && done.length) {
     const got = await fetchTagSet(target)

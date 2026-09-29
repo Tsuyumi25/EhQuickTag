@@ -69,7 +69,10 @@ export interface EhMyTagsHost {
   createTag(tagSet: string, input: NewTagInput): Promise<MyTagRow[] | null>
   /**
    * 刪除 / 搬移。`tagSet` 是這批 tagid 所屬的組，不是當前組——表單認的是 URL 上的
-   * `?tagset=`，所以任何一組都動得了，也不刷新。回傳那一組的最新標籤列，null 代表失敗。
+   * `?tagset=`，所以任何一組都動得了，也不刷新。
+   *
+   * 回傳來源組的完整標籤列，null 代表回應無效。仍在列內的 id 尚未完成操作，
+   * 呼叫端須保留這些標籤的草稿。
    */
   deleteTags(ids: number[], tagSet: string): Promise<MyTagRow[] | null>
   moveTags(ids: number[], targetSet: string, tagSet: string): Promise<MyTagRow[] | null>
@@ -250,6 +253,7 @@ function setupEhMyTagsHost(): EhMyTagsHost | null {
   if (pageBox) pageBox.after(anchor)
   else form.after(anchor)
 
+  // 缺少標籤集結構的回應不能當成空集合，否則呼叫端會誤認所有來源標籤都已移除。
   async function massAction(
     ids: number[],
     target: string,
@@ -257,7 +261,12 @@ function setupEhMyTagsHost(): EhMyTagsHost | null {
   ): Promise<MyTagRow[] | null> {
     if (!ids.length) return null
     const doc = await postMassAction(tagSet, ids, target)
-    return doc ? parseTagRows(doc, tagSet) : null
+    if (!doc) return null
+    const snapshot = parseTagSetSnapshot(doc, tagSet)
+    if (!snapshot) return null
+    const shown = doc.querySelector<HTMLOptionElement>('#tagset_outer option[selected]')?.value
+    if (shown !== undefined && shown !== tagSet) return null
+    return snapshot.rows
   }
 
   return {
