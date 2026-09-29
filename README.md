@@ -1,4 +1,4 @@
-# EhQuickTag
+<img width="1493" height="873" alt="圖片" src="https://github.com/user-attachments/assets/2e0e96b1-7bda-4dd5-9a4e-5c49b43820ef" /># EhQuickTag
 
 [繁體中文](README.zh-TW.md) | [Sleazy Fork](https://sleazyfork.org/zh-TW/scripts/578820-eh-quick-tag)
 
@@ -26,7 +26,8 @@ Tag browser
 <img width="2366" height="2008" alt="Tag browser" src="https://github.com/user-attachments/assets/6ed46053-80c7-4df9-a56b-4e92e21659c8" />
 
 Gallery Tagging Enhancer
-<img width="1454" height="831" alt="Gallery Tagging Enhancer" src="https://github.com/user-attachments/assets/2335e64e-3655-42df-b884-b10e68d321e9" />
+<img width="1493" height="873" alt="Gallery Tagging Enhancer" src="https://github.com/user-attachments/assets/288883b5-a667-4f71-88be-203c1b5b0bac" />
+
 
 My Tags Enhancer
 <img width="3333" height="1953" alt="My Tags Enhancer" src="https://github.com/user-attachments/assets/0a17e645-d9ce-4af0-9e10-ec844751cc51" />
