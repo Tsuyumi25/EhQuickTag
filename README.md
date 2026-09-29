@@ -1,6 +1,6 @@
 [繁體中文](README.zh-TW.md) | [Sleazy Fork](https://sleazyfork.org/zh-TW/scripts/578820-eh-quick-tag)
 
-A customizable quick tag bar and Gallery tagging toolkit for E-Hentai / ExHentai.
+E-Hentai / ExHentai quick tag search (custom profiles, multilingual search), visual search filters & search history, gallery tag colors & batch voting, visual My Tags management (batch editing, filter previews)
 
 [tag-bar-and-search-panel.webm](https://github.com/user-attachments/assets/f3db2250-dc81-4e15-b50c-1555502debbb)
 

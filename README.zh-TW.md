@@ -2,7 +2,7 @@
 
 [English](README.md) | [Sleazy Fork](https://sleazyfork.org/zh-TW/scripts/578820-eh-quick-tag)
 
-E-Hentai / ExHentai 的可自訂快捷標籤列與 Gallery 標籤工具。
+E-Hentai / ExHentai 快捷標籤搜尋（自訂配置、多語搜尋）、視覺化搜尋條件 & 搜尋歷史、圖庫標籤顯示顏色 & 批次投票、My Tags 視覺管理（批次編輯、過濾效果預覽）
 
 [tag-bar-and-search-panel.webm](https://github.com/user-attachments/assets/f3db2250-dc81-4e15-b50c-1555502debbb)
 
