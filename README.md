@@ -61,12 +61,9 @@ My Tags Enhancer
   - [x] Import candidates from other galleries, with solid/dashed/dotted check icons indicating source evidence on candidates and existing tags
   - [x] Gallery Tagging Wiki shortcut
 - [x] My Tags Enhancer
-  - [x] Preview filtering with enabled tag sets
-  - [x] Clear all fetched samples from Settings → My Tags while retaining block/keep judgments; delayed writes from before clearing cannot restore old samples
-  - [x] Keep edits made during a save as drafts and acknowledge the threshold actually submitted
-  - [x] Preserve draft fields when moving tags, with reload recovery when the destination cannot be fetched
-  - [x] Per-item draft, judgment, and sample storage with automatic migration; tabs editing different items do not overwrite each other, while the last write wins for the same item
-  - [x] Validate batch delete/move responses and per-tag results, retaining drafts for failed items
+  - [x] Preview filtering on gallery samples in real time, adjusting weights and thresholds before applying
+  - [x] Mark galleries as “block” or “keep” to tune rules to your preferences
+  - [x] View and organize tags across tag sets with bulk actions
 - [x] Personalization
   - [x] Multiple independent tag profiles
   - [x] Profile ordering, renaming, trash, and JSON editor
