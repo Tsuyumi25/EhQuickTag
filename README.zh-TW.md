@@ -26,7 +26,7 @@ E-Hentai / ExHentai 的可自訂快捷標籤列與 Gallery 標籤工具。
 <img width="2366" height="2008" alt="標籤瀏覽器" src="https://github.com/user-attachments/assets/6ed46053-80c7-4df9-a56b-4e92e21659c8" />
 
 Gallery Tagging Enhancer
-<img width="1454" height="831" alt="Gallery Tagging Enhancer" src="https://github.com/user-attachments/assets/2335e64e-3655-42df-b884-b10e68d321e9" />
+<img width="1493" height="873" alt="Gallery Tagging Enhancer" src="https://github.com/user-attachments/assets/288883b5-a667-4f71-88be-203c1b5b0bac" />
 
 My Tags Enhancer
 <img width="3333" height="1953" alt="My Tags Enhancer" src="https://github.com/user-attachments/assets/0a17e645-d9ce-4af0-9e10-ec844751cc51" />
