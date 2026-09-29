@@ -358,6 +358,7 @@ export default {
   // My Tags panel
   'bars.threshold': 'Soft filter threshold',
   'bars.grabbing': 'Fetching…',
+  'panel.sampleFetchFailed': 'Could not fetch samples. Progress has been kept; you can try fetching again.',
   'panel.weightHint': 'Weight -99 to 99. A total below the threshold gets blocked',
   'panel.colorHint': 'Colour for this tag; leave blank to inherit the tag set default',
   'panel.toggleHidden': 'Hide unconditionally (skips the sum entirely)',
@@ -381,7 +382,7 @@ export default {
   'panel.ehTopbar': 'EH top bar',
   'panel.wiki': 'WIKI',
   'panel.help': 'Help',
-  'panel.helpFeedback': 'This page shows you which sample galleries would be hidden or shown as you adjust tag weights. It cannot tell you what a tag means, or whether a gallery matches your preferences. Preview pauses until a valid filter threshold is available.',
+  'panel.helpFeedback': 'This page shows you which sample galleries would be hidden or shown as you adjust tag weights. It cannot tell you what a tag means, or whether a gallery matches your preferences. Preview pauses until a valid filter threshold is available. If fetching fails, fetch again to resume from the unfinished page.',
   'panel.helpUsage': 'Click a tag name to open the {preview}. Both the {blocked} and {shown} sides list the galleries closest to the {threshold} first, and hard-hidden galleries are placed at the bottom, because those near the threshold are the ones most likely to move between the two sides as weights change.\nUse {block} and {keep} to mark borderline cases. If the same borderline cases keep appearing, the rule usually does not match how tags are actually used on E-Hentai, or it may be better applied to the artist tag instead.\nThe red/green ratio bar lets you check at a glance whether the sample distribution matches your expectations.\nChanges made here are only drafts. Nothing is saved until you press the red Apply button, and you can discard your draft changes at any time before then.',
   'panel.helpTagSets': 'Tag sets cannot be created or renamed here, since those tasks are rarely needed. Turn off the enhanced interface in Settings → My Tags and reload, then use the original E-Hentai My Tags page for those actions.',
   'panel.helpLanguageFiltering': 'Fetched samples are results after applying the Excluded Languages settings on the {settings}.',

@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from 'vitest'
-import type { Listing } from '@/composables/useEhSearchListing'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { fetchListing, type Listing } from '@/composables/useEhSearchListing'
 import { useMyTagsSampleFetcher } from '@/composables/useMyTagsSampleFetcher'
 import type { SampleGallery } from '@/services/mytags/mytagsSamples'
 
@@ -130,5 +130,64 @@ describe('useMyTagsSampleFetcher', () => {
     await fetcher.start('tag')
     expect(accepted.map((gallery) => gallery.gid)).toEqual([1])
     expect(fetchPage.mock.calls.map(([, cursor]) => cursor)).toEqual([null, null])
+  })
+})
+
+describe('sample fetching through the listing transport', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  const listing = '<a href="/g/1/aaaaaaaaaa/">sample</a>'
+  const metadata = { gmetadata: [{ gid: 1, token: 'aaaaaaaaaa', title: 'sample', tags: [] }] }
+
+  it.each(['HTTP', 'network', 'metadata'] as const)('%s 失敗後可重抓第一頁並取得樣本', async (failure) => {
+    const request = vi.fn()
+    if (failure === 'metadata') request.mockResolvedValueOnce(new Response(listing))
+    if (failure === 'network') request.mockRejectedValueOnce(new TypeError('network unavailable'))
+    else request.mockResolvedValueOnce(new Response('{}', { status: 503 }))
+    request.mockResolvedValueOnce(new Response(listing))
+      .mockResolvedValueOnce(Response.json(metadata))
+    vi.stubGlobal('fetch', request)
+    const accepted: SampleGallery[] = []
+    const fetcher = useMyTagsSampleFetcher({
+      fetchPage: (_, __, signal) => fetchListing('https://example.invalid/', signal),
+      accept: galleries => accepted.push(...galleries),
+      maxPages: 2,
+    })
+
+    await expect(fetcher.start('tag')).rejects.toThrow()
+    expect(fetcher.hasFetched('tag')).toBe(false)
+    expect(fetcher.busy.value).toBe(false)
+    expect(accepted).toEqual([])
+    await fetcher.start('tag')
+    expect(accepted.map(gallery => gallery.gid)).toEqual([1])
+  })
+
+  it('後續頁失敗後保留樣本與游標，重試完成後才停止抓取', async () => {
+    const request = vi.fn()
+      .mockResolvedValueOnce(new Response(`${listing}<a id="unext" href="/?next=100">next</a>`))
+      .mockResolvedValueOnce(Response.json(metadata))
+      .mockResolvedValueOnce(new Response('unavailable', { status: 503 }))
+      .mockResolvedValueOnce(new Response('<a href="/g/2/bbbbbbbbbb/">sample</a>'))
+      .mockResolvedValueOnce(Response.json({ gmetadata: [{ gid: 2, token: 'bbbbbbbbbb', tags: [] }] }))
+    vi.stubGlobal('fetch', request)
+    const accepted: SampleGallery[] = []
+    const fetcher = useMyTagsSampleFetcher({
+      fetchPage: (_, cursor, signal) => {
+        const url = new URL('https://example.invalid/')
+        if (cursor) url.searchParams.set('next', cursor)
+        return fetchListing(url.toString(), signal)
+      },
+      accept: galleries => accepted.push(...galleries),
+      maxPages: 2,
+    })
+
+    await expect(fetcher.start('tag')).rejects.toThrow()
+    expect(accepted.map(gallery => gallery.gid)).toEqual([1])
+    expect(fetcher.busy.value).toBe(false)
+    await fetcher.start('tag')
+    await fetcher.start('tag')
+    expect(accepted.map(gallery => gallery.gid)).toEqual([1, 2])
+    expect(request.mock.calls.filter(([, init]) => init?.method !== 'POST')
+      .map(([url]) => new URL(url).searchParams.get('next'))).toEqual([null, '100', '100'])
   })
 })

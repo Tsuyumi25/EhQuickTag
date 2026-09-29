@@ -58,7 +58,7 @@ async function gdata(refs: GalleryRef[], signal?: AbortSignal): Promise<SampleGa
       namespace: 1,
     }),
   })
-  if (!res.ok) return []
+  if (!res.ok) throw new Error(`Gallery metadata HTTP ${res.status}`)
   const body = await res.json() as { gmetadata?: GdataEntry[] }
   return (body.gmetadata ?? [])
     .filter((g): g is GdataEntry & { gid: number } => typeof g.gid === 'number' && !g.error)
@@ -85,31 +85,26 @@ export function parseNextCursor(html: string): string | null {
 
 export interface Listing {
   galleries: SampleGallery[]
-  /** 餵回 `listingUrl` 就會拿到下一頁；`null` 代表已經到底或抓失敗 */
+  /** 餵回 `listingUrl` 就會拿到下一頁；`null` 代表已經到底 */
   next: string | null
 }
 
-/** 空結果與抓取失敗皆回空頁；取消必須拋出，避免呼叫端把未完成的頁面記成搜尋到底。 */
+/** 失敗必須拋出，避免呼叫端把未完成的頁面記成搜尋到底。 */
 export async function fetchListing(url: string, signal?: AbortSignal): Promise<Listing> {
-  try {
-    signal?.throwIfAborted()
-    const res = await fetch(url, { credentials: 'same-origin', signal })
-    if (!res.ok) return { galleries: [], next: null }
-    const html = await res.text()
-    signal?.throwIfAborted()
-    const next = parseNextCursor(html)
-    const refs = parseRefs(html)
-    if (!refs.length) return { galleries: [], next }
+  signal?.throwIfAborted()
+  const res = await fetch(url, { credentials: 'same-origin', signal })
+  if (!res.ok) throw new Error(`Listing HTTP ${res.status}`)
+  const html = await res.text()
+  signal?.throwIfAborted()
+  const next = parseNextCursor(html)
+  const refs = parseRefs(html)
+  if (!refs.length) return { galleries: [], next }
 
-    const galleries: SampleGallery[] = []
-    for (let i = 0; i < refs.length; i += BATCH) {
-      signal?.throwIfAborted()
-      galleries.push(...await gdata(refs.slice(i, i + BATCH), signal))
-    }
+  const galleries: SampleGallery[] = []
+  for (let i = 0; i < refs.length; i += BATCH) {
     signal?.throwIfAborted()
-    return { galleries, next }
-  } catch (error) {
-    if (signal?.aborted) throw error
-    return { galleries: [], next: null }
+    galleries.push(...await gdata(refs.slice(i, i + BATCH), signal))
   }
+  signal?.throwIfAborted()
+  return { galleries, next }
 }

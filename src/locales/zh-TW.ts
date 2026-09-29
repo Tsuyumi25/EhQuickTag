@@ -358,6 +358,7 @@ export default {
   // My Tags panel
   'bars.threshold': '軟過濾閾值',
   'bars.grabbing': '抓取中⋯',
+  'panel.sampleFetchFailed': '樣本抓取失敗，已保留進度，可以再次抓取。',
   'panel.weightHint': '權重 -99 ~ 99。加總低於閾值就會被擋',
   'panel.colorHint': '這個標籤的顏色，留空就用標籤集的預設色',
   'panel.toggleHidden': '無條件隱藏（不進加總）',
@@ -381,7 +382,7 @@ export default {
   'panel.ehTopbar': 'E站頂部欄',
   'panel.wiki': 'WIKI',
   'panel.help': '說明',
-  'panel.helpFeedback': '本頁提供視覺回饋，讓你在調整權重時看到樣本圖庫中哪些會被隱藏、哪些會顯示。它無法判斷標籤的語意，也無法判斷圖庫是否符合你的偏好。過濾門檻未知時會暫停預覽，取得或輸入有效門檻後恢復。',
+  'panel.helpFeedback': '本頁提供視覺回饋，讓你在調整權重時看到樣本圖庫中哪些會被隱藏、哪些會顯示。它無法判斷標籤的語意，也無法判斷圖庫是否符合你的偏好。過濾門檻未知時會暫停預覽，取得或輸入有效門檻後恢復。樣本抓取失敗時，可再次抓取並從未完成的頁面繼續。',
   'panel.helpUsage': '點擊標籤名稱就能打開{preview}。{blocked}與{shown}兩邊最上方都是離{threshold}最近的圖庫（硬隱藏的排在最後），因為只有靠近{threshold}的圖庫才會隨權重變動在兩邊之間移動。\n用{block}、{keep}標示有爭議的圖庫。同一批爭議反覆出現時，通常是規則不符合 E-Hentai 的生態，或應該直接針對 artist 標籤設定規則。\n紅綠比例條可用來快速確認樣本的分佈是否符合預期。\n本頁所有改動都只是草稿，按下紅色的應用按鈕才會批次寫回，在那之前都可以取消。',
   'panel.helpTagSets': '建立與重新命名標籤集屬於低頻操作，本頁不提供這兩項功能。請在設定的 My Tags 分頁關閉強化介面並重新整理，再到 E-Hentai 原生 My Tags 頁面操作。',
   'panel.helpLanguageFiltering': '抓取的樣本是套用{settings}的「排除語言」後的結果。',

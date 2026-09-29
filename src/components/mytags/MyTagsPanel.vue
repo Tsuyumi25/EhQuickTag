@@ -677,7 +677,11 @@ async function grabTag(tag: string, expunged = false): Promise<void> {
   const other = expunged ? currentFetcher : expungedFetcher
   other.stop()
   markedOnly.value = false
-  await selected.start(tag)
+  try {
+    await selected.start(tag)
+  } catch {
+    toast.error(t('panel.sampleFetchFailed'))
+  }
 }
 
 async function refreshPreview(expunged = false): Promise<void> {
