@@ -29,6 +29,7 @@ Gallery Tagging Enhancer
 <img width="1454" height="831" alt="Gallery Tagging Enhancer" src="https://github.com/user-attachments/assets/2335e64e-3655-42df-b884-b10e68d321e9" />
 
 My Tags Enhancer
+<img width="3333" height="1953" alt="My Tags Enhancer" src="https://github.com/user-attachments/assets/0a17e645-d9ce-4af0-9e10-ec844751cc51" />
 
 ## Features
 
