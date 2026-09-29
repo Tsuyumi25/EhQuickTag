@@ -1,5 +1,3 @@
-<img width="1493" height="873" alt="圖片" src="https://github.com/user-attachments/assets/2e0e96b1-7bda-4dd5-9a4e-5c49b43820ef" /># EhQuickTag
-
 [繁體中文](README.zh-TW.md) | [Sleazy Fork](https://sleazyfork.org/zh-TW/scripts/578820-eh-quick-tag)
 
 A customizable quick tag bar and Gallery tagging toolkit for E-Hentai / ExHentai.
