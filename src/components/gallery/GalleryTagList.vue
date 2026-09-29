@@ -25,7 +25,7 @@ import { batchVote, type VoteState } from '@/services/gallery/galleryVote'
 import { useEqtToast } from '@/composables/useEqtToast'
 import { useEhGalleryHost, parseTaglistRoot, type GalleryTag } from '@/composables/useEhGalleryHost'
 import { useIntroPanel } from '@/composables/useIntroPanel'
-import { Settings, Search, BookOpen, Tags, TagPlus, SquareArrowRightEnter, CornerLeftUp, CircleCheck, CircleDashedCheck } from '@lucide/vue'
+import { Settings, Search, BookOpen, Tags, TagPlus, SquareArrowRightEnter, CornerLeftUp, CircleCheck, CircleDashedCheck, X } from '@lucide/vue'
 import { useDragSelect } from '@/composables/useDragSelect'
 import type { ChipRef, TriState, Selection } from '@/services/gallery/dragSelectMachine'
 import GalleryAddInline from './GalleryAddInline.vue'
@@ -632,7 +632,8 @@ watch(selection, () => {
       :disabled="selectedCount === 0"
       @click="onClearSelection"
     >
-      {{ t('gallery.clearSelection') }}
+      <X :size="14" />
+      <span>{{ t('gallery.clearSelection') }}</span>
     </button>
 
     <button
