@@ -28,7 +28,6 @@ Tag browser
 Gallery Tagging Enhancer
 <img width="1493" height="873" alt="Gallery Tagging Enhancer" src="https://github.com/user-attachments/assets/288883b5-a667-4f71-88be-203c1b5b0bac" />
 
-
 My Tags Enhancer
 <img width="3333" height="1953" alt="My Tags Enhancer" src="https://github.com/user-attachments/assets/0a17e645-d9ce-4af0-9e10-ec844751cc51" />
 
