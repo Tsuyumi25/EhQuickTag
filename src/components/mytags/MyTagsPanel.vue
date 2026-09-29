@@ -1079,7 +1079,7 @@ watch(edits, () => { void flush().catch(reportStorageError) }, { deep: true })
           :title="t(sidePanel?.isCollapsed ? 'panel.expandTagList' : 'panel.collapseTagList')"
           @mousedown.stop
           @touchstart.stop
-          @click="sidePanel?.isCollapsed ? sidePanel.resize(SIDE_DEFAULT_SIZE) : sidePanel?.collapse()"
+          @click="sidePanel?.isCollapsed ? sidePanel.expand() : sidePanel?.collapse()"
         >
           <ArrowRightFromLine v-if="sidePanel?.isCollapsed" :size="14" aria-hidden="true" />
           <ArrowLeftFromLine v-else :size="14" aria-hidden="true" />
@@ -1161,7 +1161,7 @@ watch(edits, () => { void flush().catch(reportStorageError) }, { deep: true })
             :title="t(editorPanel?.isCollapsed ? 'panel.expandEditor' : 'panel.collapseEditor')"
             @mousedown.stop
             @touchstart.stop
-            @click="editorPanel?.isCollapsed ? editorPanel.resize(EDITOR_DEFAULT_SIZE) : editorPanel?.collapse()"
+            @click="editorPanel?.isCollapsed ? editorPanel.expand() : editorPanel?.collapse()"
           >
             <ArrowLeftFromLine v-if="editorPanel?.isCollapsed" :size="14" aria-hidden="true" />
             <ArrowRightFromLine v-else :size="14" aria-hidden="true" />

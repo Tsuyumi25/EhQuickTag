@@ -935,7 +935,7 @@ test('名稱 input 在既有 tag 與草稿間切換，focus 接管預覽且輸�
   expect(writes).toEqual([])
 })
 
-test('splitter 頂端按鈕展開回預設比例，拖曳後仍可用滑鼠與鍵盤收合', async ({ page }) => {
+test('splitter 收合後以滑鼠或鍵盤展開都回復拖曳後的比例', async ({ page }) => {
   for (const area of ['side', 'editor']) {
     const panel = page.locator(`.eqt-panel__${area}-panel`)
     const handle = page.locator(`.eqt-panel__resize-handle--${area}`)
@@ -949,18 +949,19 @@ test('splitter 頂端按鈕展開回預設比例，拖曳後仍可用滑鼠與�
     await page.mouse.move(x + (area === 'side' ? 80 : -80), y, { steps: 8 })
     await page.mouse.up()
     await expect.poll(async () => (await panel.boundingBox())!.width).toBeGreaterThan(defaultWidth)
+    const resizedWidth = (await panel.boundingBox())!.width
 
     await toggle.click()
     await expect.poll(async () => (await panel.boundingBox())!.width).toBe(0)
     await expect(toggle).toHaveAttribute('aria-expanded', 'false')
     await toggle.click()
-    await expect.poll(async () => Math.abs((await panel.boundingBox())!.width - defaultWidth)).toBeLessThan(1)
+    await expect.poll(async () => Math.abs((await panel.boundingBox())!.width - resizedWidth)).toBeLessThan(1)
     await expect(toggle).toHaveAttribute('aria-expanded', 'true')
 
     await toggle.press('Enter')
     await expect.poll(async () => (await panel.boundingBox())!.width).toBe(0)
     await toggle.press('Space')
-    await expect.poll(async () => Math.abs((await panel.boundingBox())!.width - defaultWidth)).toBeLessThan(1)
+    await expect.poll(async () => Math.abs((await panel.boundingBox())!.width - resizedWidth)).toBeLessThan(1)
   }
 })
 
