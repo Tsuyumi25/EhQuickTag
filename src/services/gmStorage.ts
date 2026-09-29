@@ -10,7 +10,7 @@ export async function cacheGet(key: string): Promise<string | null> {
 
 export async function cacheSet(key: string, value: string): Promise<void> {
   if (hasGM) { await GM.setValue(key, value); return }
-  try { localStorage.setItem(key, value) } catch { /* quota exceeded */ }
+  localStorage.setItem(key, value)
 }
 
 export async function cacheKeys(prefix: string): Promise<string[]> {

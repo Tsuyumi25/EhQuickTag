@@ -404,6 +404,7 @@ export default {
   'panel.pickTagFirst': '先在左边选一个标签。',
   'panel.working': '处理中⋯',
   'panel.massFailed': '这批没送成功，列表可能不是最新的。',
+  'panel.localStorageFailed': '无法读取或保存本地数据。请保留此页面，以免丢失尚未保存的修改。',
   'panel.deleteConfirmMany': '确定要从 EH 删掉 {n} 个标签吗？没有还原。',
   'panel.deleteConfirmOne': '确定要从 EH 删掉「{tag}」吗？没有还原。',
   'taglist.allSets': '全部',

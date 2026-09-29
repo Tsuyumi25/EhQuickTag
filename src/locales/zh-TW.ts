@@ -404,6 +404,7 @@ export default {
   'panel.pickTagFirst': '先在左邊選一個標籤。',
   'panel.working': '處理中⋯',
   'panel.massFailed': '這批沒送成功，清單可能不是最新的。',
+  'panel.localStorageFailed': '無法讀取或儲存本機資料。請保留此頁面，以免遺失尚未儲存的修改。',
   'panel.deleteConfirmMany': '確定要從 EH 刪掉 {n} 個標籤嗎？沒有還原。',
   'panel.deleteConfirmOne': '確定要從 EH 刪掉「{tag}」嗎？沒有還原。',
   'taglist.allSets': '全部',

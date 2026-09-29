@@ -404,6 +404,7 @@ export default {
   'panel.pickTagFirst': '先に左でタグを選んでください。',
   'panel.working': '処理中…',
   'panel.massFailed': 'この一括処理は送信できませんでした。一覧が最新でない可能性があります。',
+  'panel.localStorageFailed': 'ローカルデータを読み込むか保存することができませんでした。未保存の変更を失わないよう、このページを開いたままにしてください。',
   'panel.deleteConfirmMany': 'タグ {n} 件を EH から削除しますか？取り消せません。',
   'panel.deleteConfirmOne': '「{tag}」を EH から削除しますか？元に戻せません。',
   'taglist.allSets': 'すべて',

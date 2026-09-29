@@ -404,6 +404,7 @@ export default {
   'panel.pickTagFirst': 'Pick a tag on the left first.',
   'panel.working': 'Working…',
   'panel.massFailed': 'That batch did not go through; the list may be out of date.',
+  'panel.localStorageFailed': 'Local data could not be loaded or saved. Keep this page open to avoid losing unsaved changes.',
   'panel.deleteConfirmMany': 'Delete {n} tags from EH? This cannot be undone.',
   'panel.deleteConfirmOne': 'Delete “{tag}” from EH? This cannot be undone.',
   'taglist.allSets': 'All',

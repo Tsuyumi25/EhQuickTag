@@ -1,13 +1,11 @@
-// 還沒送出的編輯要能撐過整頁刷新。
-//
-// ⭐ 新增和標籤集操作仍然會刷新，而那些正是編到一半最可能做的事。存不住的話
-// 「延後送出」這個設計就不成立。
+// 還沒送出的編輯要能撐過整頁刷新，一個標籤一個 key。
 
-import { cacheGet, cacheSet } from '@/services/gmStorage'
+import { createItemStore } from '@/services/mytags/mytagsItemStore'
 import type { EditMap, PendingEdit } from '@/services/mytags/mytagsEdits'
 
-const EDITS_KEY = 'eqt_mytags_edits'
-const SCHEMA = 1
+const EDIT_PREFIX = 'eqt_mytags_edit'
+const LEGACY_KEY = 'eqt_mytags_edits'
+const LEGACY_SCHEMA = 1
 
 /** 清單的篩選與排序條件。旗標篩選同時啟用時取聯集。 */
 export interface TagFilter {
@@ -39,21 +37,31 @@ function isPatch(value: unknown): value is PendingEdit {
   })
 }
 
-export async function loadEdits(): Promise<EditMap> {
-  const raw = await cacheGet(EDITS_KEY)
-  if (!raw) return {}
-  try {
-    const p = JSON.parse(raw) as { schema?: number; edits?: Record<string, unknown> }
-    if (p.schema !== SCHEMA) return {}
-    const out: EditMap = {}
-    for (const [key, value] of Object.entries(p.edits ?? {})) {
-      if (isPatch(value)) out[Number(key)] = value
-    }
-    return out
-  } catch { return {} }
+export interface EditStore {
+  load: () => Promise<EditMap>
+  save: (next: EditMap) => Promise<void>
 }
 
-export async function saveEdits(edits: EditMap): Promise<void> {
-  await cacheSet(EDITS_KEY, JSON.stringify({ schema: SCHEMA, edits }))
-}
+/** 一個面板 session 用一個：存檔只寫這個 instance 改過的那幾個標籤 */
+export function createEditStore(): EditStore {
+  const items = createItemStore<PendingEdit>({
+    prefix: EDIT_PREFIX,
+    legacyKey: LEGACY_KEY,
+    legacyField: 'edits',
+    legacySchema: LEGACY_SCHEMA,
+    parse: (value) => (isPatch(value) ? value : null),
+  })
 
+  return {
+    async load(): Promise<EditMap> {
+      const stored = await items.load()
+      const out: EditMap = {}
+      for (const [key, patch] of Object.entries(stored)) {
+        const id = Number(key)
+        if (Number.isInteger(id)) out[id] = patch
+      }
+      return out
+    },
+    save: items.save,
+  }
+}

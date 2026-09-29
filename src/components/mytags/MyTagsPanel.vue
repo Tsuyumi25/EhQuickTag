@@ -28,9 +28,7 @@ import {
   type SampleStore, type SampleGallery, type Verdict,
 } from '@/services/mytags/mytagsSamples'
 import {
-  loadSamples,
-  saveGalleries,
-  saveVerdicts,
+  createSampleStore,
   sampleClearVersion,
 } from '@/services/mytags/mytagsSampleStore'
 import {
@@ -39,7 +37,7 @@ import {
 } from '@/services/mytags/mytagsEdits'
 import { emptyBulkDraft, planTagChanges } from '@/services/mytags/mytagsBulk'
 import {
-  loadEdits, saveEdits, emptyFilter,
+  createEditStore, emptyFilter,
   type TagFilter,
 } from '@/services/mytags/mytagsEditStore'
 import { setUserTag, canWrite } from '@/services/mytags/mytagsApi'
@@ -83,6 +81,9 @@ const otherSets = ref<TagSetSnapshot[]>([])
 const edits = ref<EditMap>({})
 const bulkDraft = ref(emptyBulkDraft())
 const store = ref<SampleStore>(emptyStore())
+const editStore = createEditStore()
+const sampleStore = createSampleStore()
+const storageReady = ref(false)
 const ehTopbarOpen = ref(false)
 const helpOpen = ref(false)
 const helpAnchor = ref<HTMLElement | null>(null)
@@ -459,7 +460,14 @@ const thresholdDirty = computed(() =>
 const pendingTotal = computed(() =>
   editPlan.value.changes.length + (thresholdDirty.value ? 1 : 0))
 
-async function flush(): Promise<void> { await saveEdits(edits.value) }
+async function flush(): Promise<void> {
+  if (storageReady.value) await editStore.save(edits.value)
+}
+
+function reportStorageError(error: unknown): void {
+  console.error('My Tags storage failed', error)
+  toast.error(t('panel.localStorageFailed'))
+}
 
 /**
  * 逐一送出，不分標籤集。
@@ -864,9 +872,15 @@ onMounted(async () => {
   const pickGid = new URLSearchParams(location.search).get(PICK_PARAM)
   if (pickGid) pickedTags.value = await loadPick(pickGid)
   const version = sampleClearVersion.value
-  const samples = await loadSamples()
-  store.value = { ...samples, galleries: version === sampleClearVersion.value ? samples.galleries : {} }
-  edits.value = await loadEdits()
+  try {
+    const [samples, savedEdits] = await Promise.all([sampleStore.load(), editStore.load()])
+    store.value = { ...samples, galleries: version === sampleClearVersion.value ? samples.galleries : {} }
+    edits.value = savedEdits
+    storageReady.value = true
+  } catch (error) {
+    reportStorageError(error)
+    return
+  }
   filterThreshold.value = (await fetchThresholds()).filter
   savedThreshold.value = filterThreshold.value
 
@@ -893,13 +907,17 @@ watch(sampleClearVersion, () => {
   openedGallery.value = null
   galleryBusy.value = false
 }, { flush: 'sync' })
-watch(() => store.value.galleries, (galleries) => { void saveGalleries(galleries) })
-watch(() => store.value.verdicts, (verdicts) => { void saveVerdicts(verdicts) })
-watch(edits, () => { void flush() }, { deep: true })
+watch(() => store.value.galleries, (galleries) => {
+  if (storageReady.value) void sampleStore.saveGalleries(galleries).catch(reportStorageError)
+})
+watch(() => store.value.verdicts, (verdicts) => {
+  if (storageReady.value) void sampleStore.saveVerdicts(verdicts).catch(reportStorageError)
+})
+watch(edits, () => { void flush().catch(reportStorageError) }, { deep: true })
 </script>
 
 <template>
-  <section class="eqt-panel" :style="{ zoom: myTagsPanelZoom / 100 }">
+  <section class="eqt-panel" :inert="!storageReady" :style="{ zoom: myTagsPanelZoom / 100 }">
     <SplitterGroup :direction="narrowLayout ? 'vertical' : 'horizontal'" class="eqt-panel__workspace">
       <SplitterPanel
         ref="sidePanel"
