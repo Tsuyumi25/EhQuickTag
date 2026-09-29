@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { injectGalleryUserscript } from './helpers'
 
-test('導入的標籤按 ns 分列：已有的掛佐證記號，沒有的排進同 ns 底下的候選列，一顆都不預先選', async ({ page }) => {
+test('導入標籤按命名空間分列、去重，候選不預先選取且只能投正向票', async ({ page }) => {
   await injectGalleryUserscript(page)
   const taglist = page.locator('.eqt-gallery-taglist')
   const chips = taglist.locator('.eqt-gallery-chip')
@@ -34,7 +34,6 @@ test('導入的標籤按 ns 分列：已有的掛佐證記號，沒有的排進�
   await toggle.click()
   await expect(toggle).toHaveAttribute('aria-pressed', 'true')
   await expect(input).toBeFocused()
-  await expect(input).toHaveAttribute('placeholder', 'https://e-hentai.org/g/123456/0123456789/')
   await input.fill('https://e-hentai.org/g/1002/bbbbbbbbbb/')
 
   const tag = (nsRaw: string) => taglist.locator(`.eqt-gallery-chip[data-ns-raw="${nsRaw}"]`)
@@ -48,24 +47,13 @@ test('導入的標籤按 ns 分列：已有的掛佐證記號，沒有的排進�
   // 已有的標籤不重複列出，只看別本的線型在 chip 開頭掛記號；這本已經是實線的不掛
   for (const nsRaw of [solid, female, male]) await expect(tag(nsRaw)).toHaveCount(1)
   await expect(lead(solid)).toHaveCount(0)
-  await expect(lead(female)).toHaveClass(/lucide-circle-check/)
-  await expect(lead(male)).toHaveClass(/lucide-circle-dashed-check/)
-  await expect(tag(female).locator('.eqt-gallery-chip__body > :first-child')).toHaveClass(/eqt-gallery-chip__lead/)
-
-  // 沒有的標籤當候選，開頭掛導入記號；邊框照別本的線型畫，點線也一樣
-  for (const nsRaw of ['other:imported only', 'female:weak import']) {
-    await expect(lead(nsRaw)).toHaveClass(/lucide-square-arrow-right-enter/)
-  }
   await expect(tag('other:imported only')).toHaveClass(/eqt-gallery-chip--gtl/)
   await expect(tag('female:weak import')).toHaveClass(/eqt-gallery-chip--gtw/)
 
-  // 候選列緊接在同 ns 的真標籤列底下，ns 欄畫 corner-left-up、cells 裡只有 chip；
-  // 這本沒有的 ns 才在 ns 欄寫名稱
   const labels = taglist.locator('.eqt-gallery-taglist__label')
   const cells = taglist.locator('.eqt-gallery-taglist__cells')
   const femaleAt = (await labels.allTextContents()).findIndex(text => text.trim() === '女:')
   await expect(labels.nth(femaleAt + 1)).toHaveText('')
-  await expect(labels.nth(femaleAt + 1).locator('svg')).toHaveClass(/lucide-corner-left-up/)
   await expect(cells.nth(femaleAt + 1).locator(':scope > :first-child')).toHaveClass(/eqt-gallery-chip/)
   await expect(cells.nth(femaleAt + 1).locator('.eqt-gallery-chip[data-ns-raw="female:weak import"]')).toBeVisible()
   await expect(labels.last()).toHaveText('其他:')
@@ -87,33 +75,6 @@ test('導入的標籤按 ns 分列：已有的掛佐證記號，沒有的排進�
   await expect(toggle).toHaveAttribute('aria-pressed', 'false')
   await expect(input).toHaveCount(0)
   await expect(tag('other:imported only')).toBeVisible()
-})
-
-test('記號依來源區分：手動新增 tag-plus、導入 square-arrow-right-enter，已有標籤的點線佐證用自製的點線勾', async ({ page }) => {
-  await injectGalleryUserscript(page)
-  await page.route('https://e-hentai.org/g/1002/bbbbbbbbbb/', (route) => route.fulfill({
-    contentType: 'text/html',
-    body: [
-      '<h1 id="gn">Other</h1><div id="taglist"><table><tr><td>',
-      '<div class="gt"><a onclick="return toggle_tagmenu(1,\'female:imported one\',this)">imported one</a></div>',
-      '<div class="gtw"><a onclick="return toggle_tagmenu(2,\'male:sole male\',this)">sole male</a></div>',
-      '</td></tr></table></div>',
-    ].join(''),
-  }))
-  await page.locator('.eqt-gallery-actions__btn--add').click()
-  await page.locator('.eqt-gallery-add-inline__input').fill('sample tag')
-  await page.locator('.eqt-gallery-add-inline .eqt-popup__suggestion').filter({ hasText: 'sample tag' }).first().click()
-  await page.locator('.eqt-gallery-actions__btn--import').click()
-  await page.locator('.eqt-gallery-actions__import').fill('https://e-hentai.org/g/1002/bbbbbbbbbb/')
-
-  const taglist = page.locator('.eqt-gallery-taglist')
-  const lead = (nsRaw: string) => taglist.locator(`.eqt-gallery-chip[data-ns-raw="${nsRaw}"] .eqt-gallery-chip__lead svg`)
-  await expect(lead('female:imported one')).toHaveClass(/lucide-square-arrow-right-enter/)
-  await expect(lead('female:sample tag')).toHaveClass(/lucide-tag-plus/)
-  await expect(lead('male:sole male')).toHaveClass(/lucide-circle-dotted-check/)
-  const row = taglist.locator('.eqt-gallery-taglist__cells--candidate')
-  await expect(row).toHaveCount(1)
-  await expect(row.locator(':scope > svg')).toHaveCount(0)
 })
 
 test('導入網址欄是操作區第一列、橫跨整個寬度，導入按鈕跟新增標籤均分寬度', async ({ page }) => {

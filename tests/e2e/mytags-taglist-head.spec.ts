@@ -7,6 +7,62 @@ async function visibleTags(page: Page): Promise<string[]> {
     chips.map((chip) => chip.getAttribute('title') ?? ''))
 }
 
+interface TagRowHtml {
+  id: number
+  full: string
+  weight: string
+  color: string
+  watch?: boolean
+  hidden?: boolean
+}
+
+interface MovedTagHtml extends TagRowHtml { from: number }
+
+function tagRowHtml(row: TagRowHtml): string {
+  return [
+    `        <div id="usertag_${row.id}">`,
+    `          <span id="tagpreview_${row.id}" title="${row.full}"></span>`,
+    `          <input id="tagweight_${row.id}" type="text" value="${row.weight}">`,
+    `          <input id="tagcolor_${row.id}" type="text" value="${row.color}">`,
+    `          <input id="tagwatch_${row.id}" type="checkbox"${row.watch ? ' checked' : ''}>`,
+    `          <input id="taghide_${row.id}" type="checkbox"${row.hidden ? ' checked' : ''}>`,
+    '        </div>',
+  ].join('\n')
+}
+
+const SAVED_ROWS = /\n {8}<div id="usertag_1">[\s\S]*?(?=\n {6}<\/div>\n {4}<\/form>)/
+
+function secondSetPage(fixture: string, rows: TagRowHtml[]): string {
+  return fixture
+    .replace('<option value="1" selected>Default</option>', '<option value="1">Default</option>')
+    .replace('<option value="2">Second set</option>', '<option value="2" selected>Second set</option>')
+    .replace('<option value="2">Second set (7)</option>', '<option value="1">Default (4)</option>')
+    .replace(SAVED_ROWS, `\n${rows.map(tagRowHtml).join('\n')}`)
+}
+
+async function mockMassMove(page: Page, moved: MovedTagHtml[]): Promise<void> {
+  const fixture = readFileSync(new URL('../fixtures/eh-mytags.html', import.meta.url), 'utf-8')
+  const source = moved.reduce((html, row) => html.replace(
+    new RegExp(`\\n\\s*<div id="usertag_${row.from}">[\\s\\S]*?</div>`), ''), fixture)
+  const resident: TagRowHtml = { id: 7, full: 'artist:second-set-only', weight: '30', color: '' }
+  const before = secondSetPage(fixture, [resident])
+  const after = secondSetPage(fixture, [resident, ...moved])
+  let landed = false
+  await page.route('https://e-hentai.org/mytags', (route) => {
+    if (route.request().method() !== 'POST') return route.fallback()
+    landed = true
+    return route.fulfill({ contentType: 'text/html', body: source })
+  })
+  await page.route('https://e-hentai.org/mytags?tagset=2', (route) => route.fulfill({
+    contentType: 'text/html',
+    body: landed ? after : before,
+  }))
+  // 目的組在面板掛載時讀取，先註冊回應再重新掛載。
+  await page.goto('https://e-hentai.org/mytags')
+  await reinjectUserscript(page)
+  await expect(page.locator('.eqt-panel__side > .eqt-taglist')).toBeVisible()
+}
+
 test.beforeEach(async ({ page }) => {
   await injectMyTagsUserscript(page)
   await expect(page.locator('.eqt-panel__side > .eqt-taglist')).toBeVisible()
@@ -483,6 +539,10 @@ test('Catalog 搜尋結果與左欄解析成同一個既有標籤實體', async 
 })
 
 test('bulk 草稿合併到 dock 計數，關閉只撤銷 bulk，移動由 dock 套用', async ({ page }) => {
+  await mockMassMove(page, [
+    { from: 1, id: 11, full: 'female:negative-sample', weight: '-20', color: '#cc0000' },
+    { from: 2, id: 12, full: 'male:positive-sample', weight: '40', color: '#00cc00', watch: true },
+  ])
   const negative = page.locator('.eqt-taglist__row').filter({
     has: page.locator('.eqt-taglist__chip[title="female:negative-sample"]'),
   })
@@ -543,6 +603,17 @@ test('bulk 草稿合併到 dock 計數，關閉只撤銷 bulk，移動由 dock �
   expect(form.getAll('modify_usertags[]').sort()).toEqual(['1', '2'])
   await expect(bulk).toHaveCount(0)
   await expect(apply).toBeDisabled()
+  expect(writes).toHaveLength(1)
+  const setPick = page.locator('.eqt-panel__side .eqt-taglist__head .eqt-panel__setpick')
+  await setPick.selectOption('1')
+  await expect(negative).toHaveCount(0)
+  await expect(positive).toHaveCount(0)
+  await expect(plain.locator('.eqt-number-field__input')).toHaveValue('10')
+  await setPick.selectOption('2')
+  await expect(negative.locator('.eqt-number-field__input')).toHaveValue('-20')
+  await expect(positive.locator('.eqt-taglist__flag input').nth(0)).toBeChecked()
+  await expect(negative).not.toHaveClass(/eqt-taglist__row--dirty/)
+  await expect(positive).not.toHaveClass(/eqt-taglist__row--dirty/)
 })
 
 test('部分套用失敗只保留未完成草稿，關閉 bulk 仍保留個別修改', async ({ page }) => {
@@ -628,6 +699,9 @@ test('批次刪除暫存到 dock，取消確認保留草稿，確認後才送出
 })
 
 test('個別修改先存再批次移動，移動失敗重試不重送已存欄位', async ({ page }) => {
+  await mockMassMove(page, [
+    { from: 2, id: 12, full: 'male:positive-sample', weight: '41', color: '#00cc00', watch: true },
+  ])
   await page.evaluate(() => {
     Object.assign(window, { apiuid: 1, apikey: 'test-key', api_url: `${location.origin}/api.php` })
   })
@@ -667,6 +741,12 @@ test('個別修改先存再批次移動，移動失敗重試不重送已存欄�
   await expect(apply).toBeDisabled()
   await expect(bulk).toHaveCount(0)
   expect(operations).toEqual(['write', 'move', 'move'])
+  const setPick = page.locator('.eqt-panel__side .eqt-taglist__head .eqt-panel__setpick')
+  await setPick.selectOption('1')
+  await expect(row).toHaveCount(0)
+  await setPick.selectOption('2')
+  await expect(row.locator('.eqt-number-field__input')).toHaveValue('41')
+  await expect(row).not.toHaveClass(/eqt-taglist__row--dirty/)
 })
 
 test('既有標籤從 Catalog 送出移動動作', async ({ page }) => {
