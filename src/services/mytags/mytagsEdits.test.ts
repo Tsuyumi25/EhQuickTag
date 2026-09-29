@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import type { MyTagRow } from '@/composables/useEhMyTagsHost'
 import {
-  acknowledgeWrite, carryEdits, effective, stage, stageMany, unstage,
+  acknowledgeWrite, markMovingEdits, reconcileMovedEdits, effective, stage, stageMany, unstage,
   type EditMap,
 } from '@/services/mytags/mytagsEdits'
 
@@ -120,16 +120,42 @@ describe('acknowledgeWrite', () => {
   })
 })
 
-describe('carryEdits', () => {
-  it('搬移後欄位修改接到同名的新列，不管 tagid 有沒有換', () => {
-    const before = row({ id: 1, tagSet: '1' })
-    const after = row({ id: 9, tagSet: '2' })
-    expect(carryEdits({}, { 1: { weight: 41 } }, [before], [after])).toEqual({ 9: { weight: 41 } })
+describe('move draft recovery', () => {
+  it('目標組讀不到時保留可跨重整恢復的草稿與目的地', () => {
+    const before = row()
+    const moving = markMovingEdits({ 1: { weight: 41 } }, [before], '2')
+    const restored: EditMap = JSON.parse(JSON.stringify(moving))
+    expect(reconcileMovedEdits(restored, [])).toEqual({
+      1: { weight: 41, destination: { full: before.full, tagSet: '2' } },
+    })
+    expect(reconcileMovedEdits(restored, [row({ id: 9, tagSet: '2' })])).toEqual({
+      9: { weight: 41 },
+    })
   })
 
-  it('新列已經是那個值就不留草稿；目標組讀不到就放掉', () => {
-    const before = row({ id: 1 })
-    expect(carryEdits({}, { 1: { weight: 41 } }, [before], [row({ id: 9, weight: 41 })])).toEqual({})
-    expect(carryEdits({}, { 1: { weight: 41 } }, [before], [])).toEqual({})
+  it('只接到指定目的組，同名的其他組不能接走草稿', () => {
+    const moving = markMovingEdits({ 1: { weight: 41 } }, [row()], '2')
+    expect(reconcileMovedEdits(moving, [row({ id: 8, tagSet: '3' })])).toEqual(moving)
+  })
+
+  it('來源列仍存在時保留草稿並解除搬移標記', () => {
+    const moving = markMovingEdits({ 1: { weight: 41 } }, [row()], '2')
+    expect(reconcileMovedEdits(moving, [row(), row({ id: 9, tagSet: '2' })])).toEqual({
+      1: { weight: 41 },
+    })
+  })
+
+  it('搬移期間改回原值再編輯仍保留目的地', () => {
+    let moving = markMovingEdits({ 1: { weight: 41 } }, [row()], '2')
+    moving = stage(moving, row(), { weight: 10 })
+    moving = stage(moving, row(), { color: '#123456' })
+    expect(reconcileMovedEdits(moving, [row({ id: 9, tagSet: '2' })])).toEqual({
+      9: { color: '#123456' },
+    })
+  })
+
+  it('目的地已具有想要的值時不留下冗餘草稿', () => {
+    const moving = markMovingEdits({ 1: { weight: 41 } }, [row()], '2')
+    expect(reconcileMovedEdits(moving, [row({ id: 9, tagSet: '2', weight: 41 })])).toEqual({})
   })
 })

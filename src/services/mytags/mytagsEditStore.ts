@@ -4,7 +4,7 @@
 // 「延後送出」這個設計就不成立。
 
 import { cacheGet, cacheSet } from '@/services/gmStorage'
-import type { EditMap, TagPatch } from '@/services/mytags/mytagsEdits'
+import type { EditMap, PendingEdit } from '@/services/mytags/mytagsEdits'
 
 const EDITS_KEY = 'eqt_mytags_edits'
 const SCHEMA = 1
@@ -22,7 +22,7 @@ export function emptyFilter(): TagFilter {
   return { set: 'all', watch: false, hidden: false, sort: 'negative', status: 'all' }
 }
 
-function isPatch(value: unknown): value is TagPatch {
+function isPatch(value: unknown): value is PendingEdit {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false
   const entries = Object.entries(value)
   if (!entries.length) return false
@@ -30,6 +30,11 @@ function isPatch(value: unknown): value is TagPatch {
     if (key === 'weight') return typeof field === 'number'
     if (key === 'hidden' || key === 'watch') return typeof field === 'boolean'
     if (key === 'color') return typeof field === 'string'
+    if (key === 'destination') {
+      return !!field && typeof field === 'object' && !Array.isArray(field)
+        && typeof field.full === 'string' && !!field.full
+        && typeof field.tagSet === 'string' && !!field.tagSet
+    }
     return false
   })
 }

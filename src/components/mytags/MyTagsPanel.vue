@@ -34,7 +34,7 @@ import {
   sampleClearVersion,
 } from '@/services/mytags/mytagsSampleStore'
 import {
-  stage, effective, unstage, carryEdits, acknowledgeWrite,
+  stage, effective, unstage, markMovingEdits, reconcileMovedEdits, acknowledgeWrite,
   type EditMap, type TagState,
 } from '@/services/mytags/mytagsEdits'
 import { emptyBulkDraft, planTagChanges } from '@/services/mytags/mytagsBulk'
@@ -592,12 +592,12 @@ async function executeMass(rows2: MyTagRow[], target: string): Promise<{ done: n
 
   writeBusy.value = t('panel.working')
   const done: number[] = []
-  // 搬移只換所在組，欄位修改還是草稿：先記下來，落地後接到新的那列
-  const carried: EditMap = target === '0'
-    ? {}
-    : Object.fromEntries(rows2.flatMap((row) => (edits.value[row.id] ? [[row.id, edits.value[row.id]]] : [])))
   let ok = true
   for (const [set, ids] of bySet) {
+    if (target !== '0') {
+      edits.value = markMovingEdits(edits.value, rows2.filter(row => row.tagSet === set), target)
+      await flush()
+    }
     const next = target === '0'
       ? await host.deleteTags(ids, set)
       : await host.moveTags(ids, target, set)
@@ -609,18 +609,22 @@ async function executeMass(rows2: MyTagRow[], target: string): Promise<{ done: n
     }
     absorb(set, next)
     done.push(...ids)
-    edits.value = unstage(edits.value, ids)
+    if (target === '0') edits.value = unstage(edits.value, ids)
     retireBulk(ids)
   }
   if (target !== '0' && done.length) {
     const got = await fetchTagSet(target)
-    if (got) absorb(target, got.rows)
-    else paletteComplete.value = false
-    // 沒啟用的組不在清單裡，接過去也看不到、改不到，就不接
-    const landed = loadedRows(target)
-    if (landed) {
-      const moved = rows2.filter((row) => done.includes(row.id))
-      edits.value = carryEdits(edits.value, carried, moved, landed)
+    if (got) {
+      absorb(target, got.rows)
+      edits.value = reconcileMovedEdits(edits.value, [
+        ...liveRows.value,
+        ...otherSets.value.flatMap(set => set.rows),
+        ...got.rows,
+      ])
+    } else {
+      paletteComplete.value = false
+      toast.error(t('panel.massFailed'))
+      ok = false
     }
   }
   return { done, ok }
@@ -871,6 +875,10 @@ onMounted(async () => {
       .map((s) => fetchTagSet(s.value)))
   // 沒啟用的組不進計分，所以連讀都不讀進來
   otherSets.value = got.filter((s): s is TagSetSnapshot => !!s && s.enabled)
+  edits.value = reconcileMovedEdits(edits.value, [
+    ...liveRows.value,
+    ...got.flatMap(set => set?.rows ?? []),
+  ])
   paletteComplete.value = got.every((s) => !!s)
   publishPalette()
 })

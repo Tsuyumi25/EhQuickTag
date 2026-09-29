@@ -64,6 +64,7 @@ My Tags Enhancer
   - [x] Preview filtering with enabled tag sets
   - [x] Clear all fetched samples from Settings → My Tags while retaining block/keep judgments
   - [x] Keep edits made during a save as drafts and acknowledge the threshold actually submitted
+  - [x] Preserve draft fields when moving tags, with reload recovery when the destination cannot be fetched
 - [x] Personalization
   - [x] Multiple independent tag profiles
   - [x] Profile ordering, renaming, trash, and JSON editor

@@ -14,8 +14,11 @@ export interface TagState {
 
 export type TagPatch = Partial<TagState>
 
-/** key 是 tagid，value 只包含使用者改過的欄位 */
-export type EditMap = Record<number, TagPatch>
+export type PendingEdit = TagPatch & {
+  destination?: { full: string; tagSet: string }
+}
+
+export type EditMap = Record<number, PendingEdit>
 
 export function stateOf(row: MyTagRow): TagState {
   return { weight: row.weight, hidden: row.hidden, watch: row.watch, color: row.color }
@@ -23,7 +26,13 @@ export function stateOf(row: MyTagRow): TagState {
 
 /** EH 已儲存狀態疊上還沒送出的欄位修改 */
 export function effective(row: MyTagRow, edits: EditMap): TagState {
-  return { ...stateOf(row), ...edits[row.id] }
+  const patch = edits[row.id]
+  return {
+    weight: patch?.weight ?? row.weight,
+    hidden: patch?.hidden ?? row.hidden,
+    watch: patch?.watch ?? row.watch,
+    color: patch?.color ?? row.color,
+  }
 }
 
 function difference(saved: TagState, want: TagState): TagPatch | null {
@@ -49,7 +58,9 @@ export function stage(edits: EditMap, row: MyTagRow, change: TagPatch): EditMap 
 
   const next = { ...edits }
   const patch = difference(saved, want)
-  if (patch) next[row.id] = patch
+  const destination = edits[row.id]?.destination
+  if (destination) next[row.id] = { ...patch, destination }
+  else if (patch) next[row.id] = patch
   else delete next[row.id]
   return next
 }
@@ -82,22 +93,27 @@ export function acknowledgeWrite(
   return next
 }
 
-/**
- * 搬到另一組之後，把原本那列的欄位修改接到落地的那一列上。
- *
- * 搬移只換所在組，欄位修改還是草稿；但 EH 回來的新列不保證沿用舊 tagid，所以用名稱
- * 對回來——同一個標籤在清單裡只會有一列。對不上的（目標組沒讀到）就放掉。
- */
-export function carryEdits(
+export function markMovingEdits(
   edits: EditMap,
-  carried: EditMap,
-  moved: readonly MyTagRow[],
-  landed: readonly MyTagRow[],
+  rows: readonly MyTagRow[],
+  tagSet: string,
 ): EditMap {
-  const byName = new Map(landed.map((row) => [row.full, row]))
-  return moved.reduce((acc, row) => {
-    const patch = carried[row.id]
-    const target = byName.get(row.full)
-    return patch && target ? stage(acc, target, patch) : acc
-  }, edits)
+  const next = { ...edits }
+  for (const row of rows) {
+    if (next[row.id]) next[row.id] = { ...next[row.id], destination: { full: row.full, tagSet } }
+  }
+  return next
+}
+
+export function reconcileMovedEdits(edits: EditMap, rows: readonly MyTagRow[]): EditMap {
+  let next = edits
+  for (const [key, patch] of Object.entries(edits)) {
+    const destination = patch.destination
+    if (!destination) continue
+    const id = Number(key)
+    const target = rows.find(row => row.id === id && row.tagSet !== destination.tagSet)
+      ?? rows.find(row => row.full === destination.full && row.tagSet === destination.tagSet)
+    if (target) next = stage(unstage(next, [id]), target, patch)
+  }
+  return next
 }
