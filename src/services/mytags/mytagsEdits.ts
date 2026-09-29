@@ -69,6 +69,19 @@ export function unstage(edits: EditMap, ids: number[]): EditMap {
   return next
 }
 
+export function acknowledgeWrite(
+  edits: EditMap,
+  id: number,
+  written: TagState,
+  wanted: TagState,
+): EditMap {
+  const next = { ...edits }
+  const patch = difference(written, wanted)
+  if (patch) next[id] = patch
+  else delete next[id]
+  return next
+}
+
 /**
  * 搬到另一組之後，把原本那列的欄位修改接到落地的那一列上。
  *

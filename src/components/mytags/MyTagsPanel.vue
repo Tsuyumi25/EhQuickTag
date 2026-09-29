@@ -34,7 +34,7 @@ import {
   sampleClearVersion,
 } from '@/services/mytags/mytagsSampleStore'
 import {
-  stage, effective, unstage, carryEdits,
+  stage, effective, unstage, carryEdits, acknowledgeWrite,
   type EditMap, type TagState,
 } from '@/services/mytags/mytagsEdits'
 import { emptyBulkDraft, planTagChanges } from '@/services/mytags/mytagsBulk'
@@ -492,8 +492,9 @@ async function apply(): Promise<void> {
         failed = true
         break
       }
+      const remaining = acknowledgeWrite(edits.value, change.row.id, change.state, view(change.row))
       acceptWrite(change.row.id, change.state)
-      edits.value = unstage(edits.value, [change.row.id])
+      edits.value = remaining
       if (!change.moveTo) {
         done.add(change.row.id)
         retireBulk([change.row.id])
@@ -536,16 +537,17 @@ async function apply(): Promise<void> {
  */
 async function applyThreshold(): Promise<void> {
   writeBusy.value = t('panel.applyingThreshold')
-  const res = await patchConfig('ft', 'ft', String(filterThreshold.value))
+  const sentThreshold = filterThreshold.value
+  const res = await patchConfig('ft', 'ft', String(sentThreshold))
   if (!res.ok) {
     toast.error(t('panel.thresholdFailed', { error: res.error }))
     return
   }
-  savedThreshold.value = filterThreshold.value
+  savedThreshold.value = sentThreshold
   if (res.clobbered.length) {
     toast.warning(t('panel.thresholdClobbered', { fields: res.clobbered.join(', ') }))
   } else {
-    toast.success(t('panel.thresholdApplied', { n: filterThreshold.value ?? 0 }))
+    toast.success(t('panel.thresholdApplied', { n: sentThreshold ?? 0 }))
   }
 }
 

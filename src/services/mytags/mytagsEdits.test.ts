@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import type { MyTagRow } from '@/composables/useEhMyTagsHost'
 import {
-  carryEdits, effective, stage, stageMany, unstage,
+  acknowledgeWrite, carryEdits, effective, stage, stageMany, unstage,
   type EditMap,
 } from '@/services/mytags/mytagsEdits'
 
@@ -90,6 +90,33 @@ describe('unstage', () => {
       2: { weight: -2 },
     }
     expect(unstage(edits, [1])).toEqual({ 2: { weight: -2 } })
+  })
+})
+
+describe('acknowledgeWrite', () => {
+  it('成功回應只清除已送出的值，保留等待期間的後續修改與其他標籤草稿', () => {
+    const saved = row()
+    const sent = effective(saved, stage({}, saved, { weight: -20 }))
+    const edits = stage({ 2: { color: '#123456' } }, saved, { weight: -35, watch: true })
+    expect(acknowledgeWrite(edits, saved.id, sent, effective(saved, edits))).toEqual({
+      1: { weight: -35, watch: true },
+      2: { color: '#123456' },
+    })
+  })
+
+  it('等待期間改回原值仍是相對於已送出值的待套用修改', () => {
+    const saved = row()
+    const sent = effective(saved, { 1: { weight: -20 } })
+    expect(acknowledgeWrite({}, saved.id, sent, effective(saved, {}))).toEqual({
+      1: { weight: 10 },
+    })
+  })
+
+  it('目前想要的狀態已全部送出時清除該列草稿', () => {
+    const saved = row()
+    const edits = stage({}, saved, { hidden: true })
+    const sent = effective(saved, edits)
+    expect(acknowledgeWrite(edits, saved.id, sent, sent)).toEqual({})
   })
 })
 
