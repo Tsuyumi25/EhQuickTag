@@ -28,6 +28,8 @@ E-Hentai / ExHentai 的可自訂快捷標籤列與 Gallery 標籤工具。
 Gallery Tagging Enhancer
 <img width="1454" height="831" alt="Gallery Tagging Enhancer" src="https://github.com/user-attachments/assets/2335e64e-3655-42df-b884-b10e68d321e9" />
 
+My Tags Enhancer
+
 ## 功能
 
 - [x] 快捷標籤列
@@ -53,8 +55,13 @@ Gallery Tagging Enhancer
   - [x] 左鍵、右鍵與拖曳選取
   - [x] 批次投票與批次搜尋
   - [x] 內嵌新增標籤 picker
-  - [x] 從其他圖庫導入候選，候選與既有標籤以實線／虛線／點線 check 圖示標示來源佐證
+  - [x] 圖庫標籤顯示 My Tags 個人顏色與分數
+  - [x] 將選取的圖庫標籤帶到 My Tags 檢視與編輯
+  - [x] 從其他圖庫導入標籤候選，候選與既有標籤以實線／虛線／點線 check 圖示標示來源佐證
   - [x] Gallery Tagging Wiki 快捷連結
+- [x] My Tags Enhancer
+  - [x] 使用啟用中的標籤集預覽過濾結果
+  - [x] 從設定 → My Tags 清除所有已抓取樣本，保留「該擋／該留」人工判斷
 - [x] 個人化
   - [x] 多組獨立標籤配置
   - [x] 標籤組排序、改名、回收桶與 JSON 編輯器

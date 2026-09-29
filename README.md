@@ -28,6 +28,8 @@ Tag browser
 Gallery Tagging Enhancer
 <img width="1454" height="831" alt="Gallery Tagging Enhancer" src="https://github.com/user-attachments/assets/2335e64e-3655-42df-b884-b10e68d321e9" />
 
+My Tags Enhancer
+
 ## Features
 
 - [x] Quick tag bar
@@ -53,8 +55,13 @@ Gallery Tagging Enhancer
   - [x] Left-click, right-click, and drag selection
   - [x] Batch voting and batch search
   - [x] Inline add-tag picker
+  - [x] Display My Tags personal colors and scores on gallery tags
+  - [x] Open selected gallery tags in My Tags for inspection and editing
   - [x] Import candidates from other galleries, with solid/dashed/dotted check icons indicating source evidence on candidates and existing tags
   - [x] Gallery Tagging Wiki shortcut
+- [x] My Tags Enhancer
+  - [x] Preview filtering with enabled tag sets
+  - [x] Clear all fetched samples from Settings → My Tags while retaining block/keep judgments
 - [x] Personalization
   - [x] Multiple independent tag profiles
   - [x] Profile ordering, renaming, trash, and JSON editor
