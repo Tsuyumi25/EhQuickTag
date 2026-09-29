@@ -1,4 +1,5 @@
 import { fileURLToPath, URL } from 'url'
+import { readFileSync } from 'node:fs'
 
 import { configDefaults, defineConfig } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
@@ -25,6 +26,11 @@ export default defineConfig(({ command }) => ({
     }),
     monkey({
       entry: 'src/main.ts',
+      generate: ({ userscript, mode }) => {
+        if (mode !== 'build') return userscript
+        const license = readFileSync(new URL('./node_modules/dompurify/LICENSE', import.meta.url), 'utf8')
+        return `${userscript}\n\n/*!\nDOMPurify ${pkg.dependencies.dompurify}\nCopyright Cure53 and other contributors\n${license}\n*/`
+      },
       userscript: {
         namespace: 'https://github.com/Tsuyumi25/EhQuickTag',
         match: [

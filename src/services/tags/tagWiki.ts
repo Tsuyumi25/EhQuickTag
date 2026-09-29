@@ -24,8 +24,8 @@ const CACHE_TS_KEY = 'eqt_tag_wiki_v3_ts'
 // v3 schema (raw-HTML per variant, ul-anchored structure)：extractor 保留
 // mw-parser-output HTML，split by <hr/> 分 variant、split by <ul> 分成
 // prelude (警告/Reminder) + blocks (每個 ul 帶尾隨 dl/p 到下個 ul)。
-// Client 用 v-html 渲染，prelude CSS 小字弱化，任何 ehwiki 未來新增的
-// markup（dl/dd 條列、紅字警告、圖片等）都自動包含
+// 保留 dl/dd 條列、紅字警告與圖片結構；預覽前由 introHtml 清理 HTML，
+// prelude CSS 小字弱化。
 export interface WikiVariant {
   prelude: string
   blocks: string[]
