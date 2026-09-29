@@ -176,7 +176,10 @@ function metric(item: PreviewItem): string {
     </header>
 
 
-    <div class="eqt-preview__cols">
+    <p v-if="threshold === null" class="eqt-panel__hint">
+      {{ t('preview.thresholdUnknown', { threshold: t('bars.threshold') }) }}
+    </p>
+    <div v-else class="eqt-preview__cols">
       <section
         v-for="(side, i) in (['left', 'right'] as const)"
         :key="side"

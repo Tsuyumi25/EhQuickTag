@@ -352,7 +352,8 @@ const activeThreshold = computed<number | null>(() => {
 // ---- 樣本 → 兩欄 ----
 
 const allItems = computed<PreviewItem[]>(() => {
-  const th = activeThreshold.value ?? 0
+  const th = activeThreshold.value
+  if (th === null) return []
   return Object.values(store.value.galleries).map((gallery) => ({
     gallery,
     outcome: outcomeOf(gallery.tags, factsOf, th),
@@ -361,7 +362,8 @@ const allItems = computed<PreviewItem[]>(() => {
 
 const previewItems = computed<PreviewItem[]>(() => {
   const target = previewTarget.value
-  const threshold = activeThreshold.value ?? 0
+  const threshold = activeThreshold.value
+  if (threshold === null) return []
   const factSource = target?.kind === 'draft' ? catalogFactsOf : factsOf
   return Object.values(store.value.galleries)
     .filter((gallery) => !markedOnly.value || !!store.value.verdicts[String(gallery.gid)])
@@ -381,7 +383,8 @@ const previewRightItems = computed(() =>
 const catalogItems = computed<PreviewItem[]>(() => {
   const full = catalogTag.value
   if (!full) return []
-  const threshold = activeThreshold.value ?? 0
+  const threshold = activeThreshold.value
+  if (threshold === null) return []
   return Object.values(store.value.galleries)
     .filter((gallery) => gallery.tags.includes(full))
     .filter((gallery) => !markedOnly.value || !!store.value.verdicts[String(gallery.gid)])
