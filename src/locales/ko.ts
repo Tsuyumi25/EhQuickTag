@@ -311,6 +311,11 @@ export default {
   'settings.sectionMyTagsToggles': '기능',
   'settings.myTagsEnhancer': 'My Tags 확장 인터페이스 활성화',
   'settings.myTagsEnhancerHint': '{mytags}에서 태그 편집과 필터링 미리보기를 제공합니다.',
+  'settings.myTagsClearSamples': '모든 샘플 삭제',
+  'settings.myTagsClearSamplesHint': '수집한 갤러리 샘플을 모두 삭제합니다. 차단/유지 판단과 EH 태그 설정은 유지됩니다.',
+  'settings.myTagsClearSamplesConfirm': '수집한 갤러리 샘플을 모두 삭제할까요? 차단/유지 판단과 EH 태그 설정은 유지됩니다. 샘플은 다시 수집할 수 있습니다.',
+  'settings.myTagsSamplesCleared': '모든 갤러리 샘플을 삭제했습니다.',
+  'settings.myTagsClearSamplesFailed': '갤러리 샘플을 삭제하지 못했습니다.',
   // Gallery settings tab
   'settings.tabGallery': '갤러리',
   'settings.sectionGalleryToggles': '기능',

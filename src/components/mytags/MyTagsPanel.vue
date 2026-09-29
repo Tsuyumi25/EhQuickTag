@@ -20,7 +20,7 @@ import {
 import { fetchListing } from '@/composables/useEhSearchListing'
 import { useMyTagsSampleFetcher } from '@/composables/useMyTagsSampleFetcher'
 import {
-  outcomeOf, compareItems,
+  outcomeOf, compareItems, enabledTagRows,
   type PreviewItem, type TagFacts, type TagImpact,
 } from '@/services/mytags/mytagsScore'
 import {
@@ -31,6 +31,7 @@ import {
   loadSamples,
   saveGalleries,
   saveVerdicts,
+  sampleClearVersion,
 } from '@/services/mytags/mytagsSampleStore'
 import {
   stage, effective, unstage, carryEdits,
@@ -241,12 +242,17 @@ function sameFacts(a: TagFacts | null, b: TagFacts | null): boolean {
     && a.weight === b.weight && a.hidden === b.hidden && a.watch === b.watch)
 }
 
+const scoringRows = computed(() => enabledTagRows([
+  ...otherSets.value,
+  { enabled: host.enabled, rows: liveRows.value },
+]))
+
 // ⭐ 顏色不參與計分，但它跟權重擠在同一份 edits 裡。拖色盤每一格都會換掉 editPlan，
 // 讓預覽、影響分佈把所有樣本 × 標籤重算一遍——樣本一多，色盤就卡。所以計分只讀這份
 // 事實表，內容沒變時沿用舊的 Map，下游的 computed 就不會被喚醒。
 const scoringFacts = computed<Map<string, TagFacts>>((previous) => {
   const next = new Map<string, TagFacts>()
-  for (const r of rows.value) {
+  for (const r of scoringRows.value) {
     if (editPlan.value.deletedIds.has(r.id)) continue
     const v = view(r)
     next.set(r.full, { weight: v.weight, hidden: v.hidden, watch: v.watch })
@@ -263,6 +269,9 @@ function factsOf(tag: string): TagFacts | null {
 }
 
 const catalogFacts = computed<TagFacts | null>((previous) => {
+  if (catalogRow.value?.tagSet === host.currentSet && !host.enabled) {
+    return factsOf(catalogRow.value.full)
+  }
   const next = catalogRow.value && editPlan.value.deletedIds.has(catalogRow.value.id)
     ? null
     : {
@@ -665,8 +674,10 @@ async function openGallery(g: SampleGallery): Promise<void> {
   if (openedGallery.value?.gid === g.gid) { openedGallery.value = null; return }
   const cached = galleryCache.get(g.gid)
   if (cached) { openedGallery.value = cached; return }
+  const version = sampleClearVersion.value
   galleryBusy.value = true
   const got = await fetchGallery(g.gid, g.token)
+  if (version !== sampleClearVersion.value) return
   galleryBusy.value = false
   if (!got) { toast.error(t('gallery.failed')); return }
   galleryCache.set(g.gid, got)
@@ -846,7 +857,9 @@ onMounted(async () => {
   setAppMode(true)
   const pickGid = new URLSearchParams(location.search).get(PICK_PARAM)
   if (pickGid) pickedTags.value = await loadPick(pickGid)
-  store.value = await loadSamples()
+  const version = sampleClearVersion.value
+  const samples = await loadSamples()
+  store.value = { ...samples, galleries: version === sampleClearVersion.value ? samples.galleries : {} }
   edits.value = await loadEdits()
   filterThreshold.value = (await fetchThresholds()).filter
   savedThreshold.value = filterThreshold.value
@@ -861,6 +874,15 @@ onMounted(async () => {
 })
 
 onUnmounted(() => { currentFetcher.stop(); expungedFetcher.stop(); unbind?.(); setAppMode(false) })
+watch(sampleClearVersion, () => {
+  currentFetcher.reset()
+  expungedFetcher.reset()
+  store.value = { ...store.value, galleries: {} }
+  galleryCache.clear()
+  warmed.clear()
+  openedGallery.value = null
+  galleryBusy.value = false
+}, { flush: 'sync' })
 watch(() => store.value.galleries, (galleries) => { void saveGalleries(galleries) })
 watch(() => store.value.verdicts, (verdicts) => { void saveVerdicts(verdicts) })
 watch(edits, () => { void flush() }, { deep: true })

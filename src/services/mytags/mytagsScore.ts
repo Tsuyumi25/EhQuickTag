@@ -6,6 +6,16 @@
 // 計分，也就沒有自己的預覽可言；硬隱藏是同一條軸上的短路，不是另一個觀點。
 
 import type { SampleGallery, Verdict } from '@/services/mytags/mytagsSamples'
+import type { MyTagRow, TagSetSnapshot } from '@/composables/useEhMyTagsHost'
+
+export function enabledTagRows(sets: readonly Pick<TagSetSnapshot, 'enabled' | 'rows'>[]): MyTagRow[] {
+  const rows = new Map<string, MyTagRow>()
+  for (const set of sets) {
+    if (!set.enabled) continue
+    for (const row of set.rows) rows.set(row.full, row)
+  }
+  return [...rows.values()]
+}
 
 export interface TagFacts {
   weight: number

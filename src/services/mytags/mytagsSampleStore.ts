@@ -1,3 +1,4 @@
+import { ref } from 'vue'
 import { cacheGet, cacheSet } from '@/services/gmStorage'
 import {
   type SampleGallery,
@@ -9,6 +10,13 @@ const GALLERIES_KEY = 'eqt_mytags_galleries'
 const VERDICTS_KEY = 'eqt_mytags_verdicts'
 const GALLERIES_SCHEMA = 1
 const VERDICTS_SCHEMA = 1
+export const sampleClearVersion = ref(0)
+let galleriesWrite: Promise<void> = Promise.resolve()
+
+export async function clearSamples(): Promise<void> {
+  sampleClearVersion.value += 1
+  await saveGalleries({})
+}
 
 function parseGalleries(raw: string | null): Record<string, SampleGallery> {
   if (!raw) return {}
@@ -60,7 +68,9 @@ export async function loadSamples(): Promise<SampleStore> {
 }
 
 export async function saveGalleries(galleries: Record<string, SampleGallery>): Promise<void> {
-  await cacheSet(GALLERIES_KEY, JSON.stringify({ schema: GALLERIES_SCHEMA, galleries }))
+  const value = JSON.stringify({ schema: GALLERIES_SCHEMA, galleries })
+  galleriesWrite = galleriesWrite.catch(() => {}).then(() => cacheSet(GALLERIES_KEY, value))
+  await galleriesWrite
 }
 
 export async function saveVerdicts(verdicts: Record<string, Verdict>): Promise<void> {

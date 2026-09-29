@@ -1,9 +1,36 @@
 import { describe, it, expect } from 'vitest'
 import {
-  outcomeOf, compareItems, mismatchOf,
+  outcomeOf, compareItems, mismatchOf, enabledTagRows,
   type FactsOf, type PreviewItem,
 } from '@/services/mytags/mytagsScore'
 import type { SampleGallery } from '@/services/mytags/mytagsSamples'
+
+describe('enabledTagRows', () => {
+  it('停用目前組的隱藏與權重不影響計分，也不蓋掉啟用組的同名標籤', () => {
+    const active = { id: 1, full: 'parody:sample', weight: 5, hidden: false, watch: false, color: '', tagSet: '1' }
+    const disabled = { ...active, id: 2, weight: -99, hidden: true, tagSet: '2' }
+    const rows = enabledTagRows([
+      { enabled: true, rows: [active] },
+      { enabled: false, rows: [disabled] },
+    ])
+    const outcome = outcomeOf([active.full], tag => rows.find(row => row.full === tag) ?? null, 0)
+    expect(outcome.side).toBe('right')
+    expect(outcome.score).toBe(5)
+    expect(outcome.hiddenBy).toEqual([])
+    expect(enabledTagRows([{ enabled: false, rows: [disabled] }])).toEqual([])
+  })
+
+  it('啟用中的目前組保留同名標籤的優先權', () => {
+    const row = { id: 1, full: 'parody:sample', weight: 5, hidden: false, watch: false, color: '', tagSet: '1' }
+    const current = { ...row, id: 2, weight: -10, tagSet: '2' }
+    const rows = enabledTagRows([
+      { enabled: true, rows: [row] },
+      { enabled: true, rows: [current] },
+    ])
+    expect(rows).toEqual([current])
+    expect(outcomeOf([row.full], () => rows[0]!, 0).side).toBe('left')
+  })
+})
 
 const FACTS: Record<string, { weight: number; hidden: boolean; watch: boolean }> = {
   'male:core': { weight: -20, hidden: false, watch: false },

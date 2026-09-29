@@ -311,6 +311,11 @@ export default {
   'settings.sectionMyTagsToggles': 'Features',
   'settings.myTagsEnhancer': 'Enable My Tags enhanced interface',
   'settings.myTagsEnhancerHint': 'Provides tag editing and filtering previews on {mytags}.',
+  'settings.myTagsClearSamples': 'Clear all samples',
+  'settings.myTagsClearSamplesHint': 'Remove all fetched gallery samples. Keep your block/keep judgments and EH tag settings.',
+  'settings.myTagsClearSamplesConfirm': 'Clear all fetched gallery samples? Your block/keep judgments and EH tag settings will be kept. Samples can be fetched again.',
+  'settings.myTagsSamplesCleared': 'All gallery samples cleared.',
+  'settings.myTagsClearSamplesFailed': 'Could not clear gallery samples.',
   // Gallery settings tab
   'settings.tabGallery': 'Gallery',
   'settings.sectionGalleryToggles': 'Features',

@@ -311,6 +311,11 @@ export default {
   'settings.sectionMyTagsToggles': '機能',
   'settings.myTagsEnhancer': 'My Tags の拡張インターフェースを有効化',
   'settings.myTagsEnhancerHint': '{mytags} でタグ編集とフィルタリングのプレビューを提供します。',
+  'settings.myTagsClearSamples': 'すべてのサンプルを削除',
+  'settings.myTagsClearSamplesHint': '取得済みのギャラリーサンプルをすべて削除します。「非表示／表示」の判定と EH のタグ設定は保持します。',
+  'settings.myTagsClearSamplesConfirm': '取得済みのギャラリーサンプルをすべて削除しますか？「非表示／表示」の判定と EH のタグ設定は保持されます。サンプルは再取得できます。',
+  'settings.myTagsSamplesCleared': 'すべてのギャラリーサンプルを削除しました。',
+  'settings.myTagsClearSamplesFailed': 'ギャラリーサンプルを削除できませんでした。',
   // Gallery settings tab
   'settings.tabGallery': 'ギャラリー',
   'settings.sectionGalleryToggles': '機能',

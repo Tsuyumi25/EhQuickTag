@@ -16,6 +16,7 @@ import {
   loadSamples,
   saveGalleries,
   saveVerdicts,
+  clearSamples,
 } from '@/services/mytags/mytagsSampleStore'
 
 const gallery: SampleGallery = {
@@ -33,6 +34,34 @@ beforeEach(() => {
 })
 
 describe('mytags sample persistence', () => {
+  it('清除一般與已刪除樣本，保留人工判斷及其他儲存資料', async () => {
+    await saveGalleries({ 1: gallery, 2: { ...gallery, gid: 2, expunged: true } })
+    await saveVerdicts({ 1: 'keep', 2: 'block' })
+    storage.set('eqt_mytags_edits', 'pending edits')
+    await clearSamples()
+    await expect(loadSamples()).resolves.toEqual({
+      galleries: {},
+      verdicts: { 1: 'keep', 2: 'block' },
+    })
+    expect(storage.get('eqt_mytags_edits')).toBe('pending edits')
+  })
+
+  it('清除會等先前的樣本寫入完成，舊快照不能在清除後回填', async () => {
+    const started = Promise.withResolvers<void>()
+    const release = Promise.withResolvers<void>()
+    cacheSet.mockImplementationOnce(async (key, value) => {
+      started.resolve()
+      await release.promise
+      storage.set(key, value)
+    })
+    const saving = saveGalleries({ 1: gallery })
+    await started.promise
+    const clearing = clearSamples()
+    release.resolve()
+    await Promise.all([saving, clearing])
+    expect((await loadSamples()).galleries).toEqual({})
+  })
+
   it('galleries 與 verdicts 各自寫入自己的 key', async () => {
     await saveGalleries({ 1: gallery })
     expect([...storage.keys()]).toEqual(['eqt_mytags_galleries'])

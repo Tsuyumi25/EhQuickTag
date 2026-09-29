@@ -19,6 +19,11 @@ export function useMyTagsSampleFetcher(options: SampleFetcherOptions) {
     busy.value = false
   }
 
+  function reset(): void {
+    stop()
+    cursors.clear()
+  }
+
   async function start(tag: string): Promise<void> {
     if (active || cursors.get(tag) === null) return
     const controller = new AbortController()
@@ -44,5 +49,5 @@ export function useMyTagsSampleFetcher(options: SampleFetcherOptions) {
     }
   }
 
-  return { busy: readonly(busy), start, stop, hasFetched: (tag: string) => cursors.has(tag) }
+  return { busy: readonly(busy), start, stop, reset, hasFetched: (tag: string) => cursors.has(tag) }
 }

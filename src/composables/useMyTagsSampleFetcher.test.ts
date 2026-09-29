@@ -14,6 +14,35 @@ function page(gid: number, next: string | null): Listing {
 }
 
 describe('useMyTagsSampleFetcher', () => {
+  it('重設後清除到底的游標，下一次可從第一頁重新抓取', async () => {
+    const accepted: number[] = []
+    const fetchPage = vi.fn().mockResolvedValueOnce(page(1, null)).mockResolvedValueOnce(page(2, null))
+    const fetcher = useMyTagsSampleFetcher({
+      fetchPage, accept: galleries => accepted.push(...galleries.map(gallery => gallery.gid)), maxPages: 1,
+    })
+    await fetcher.start('tag')
+    fetcher.reset()
+    expect(fetcher.hasFetched('tag')).toBe(false)
+    await fetcher.start('tag')
+    expect(accepted).toEqual([1, 2])
+    expect(fetchPage.mock.calls.map(([, cursor]) => cursor)).toEqual([null, null])
+  })
+
+  it('清除時停止抓取，晚到的回應不能重新加入樣本', async () => {
+    const pending = deferred<Listing>()
+    const accepted: SampleGallery[] = []
+    const fetcher = useMyTagsSampleFetcher({
+      fetchPage: () => pending.promise, accept: galleries => accepted.push(...galleries), maxPages: 1,
+    })
+    const running = fetcher.start('tag')
+    fetcher.reset()
+    pending.resolve(page(1, '100'))
+    await running
+    expect(accepted).toEqual([])
+    expect(fetcher.hasFetched('tag')).toBe(false)
+    expect(fetcher.busy.value).toBe(false)
+  })
+
   it('兩個實例各自忙碌，停止其中一個不影響另一個', async () => {
     const firstPage = deferred<Listing>()
     const secondPage = deferred<Listing>()

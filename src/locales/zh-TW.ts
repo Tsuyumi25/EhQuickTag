@@ -311,6 +311,11 @@ export default {
   'settings.sectionMyTagsToggles': '功能開關',
   'settings.myTagsEnhancer': '啟用 My Tags 強化介面',
   'settings.myTagsEnhancerHint': '在 {mytags} 頁面提供標籤編輯與過濾預覽。',
+  'settings.myTagsClearSamples': '清除所有樣本',
+  'settings.myTagsClearSamplesHint': '清除已抓取的所有圖庫樣本，保留「該擋／該留」的人工判斷與 EH 標籤設定。',
+  'settings.myTagsClearSamplesConfirm': '清除已抓取的所有圖庫樣本？「該擋／該留」的人工判斷與 EH 標籤設定會保留，樣本可以重新抓取。',
+  'settings.myTagsSamplesCleared': '已清除所有圖庫樣本。',
+  'settings.myTagsClearSamplesFailed': '圖庫樣本清除失敗。',
   // Gallery settings tab
   'settings.tabGallery': '畫廊',
   'settings.sectionGalleryToggles': '功能開關',
