@@ -33,6 +33,7 @@ import { CircleDottedCheck } from './circleDottedCheck'
 import GalleryIntroPanel from './GalleryIntroPanel.vue'
 import TagChip from '@/components/TagChip.vue'
 import type { TagEntry } from '@/services/tags/tagDb'
+import { pageWindow } from '@/utils/pageWindow'
 
 type TagTier = 'gt' | 'gtl' | 'gtw'
 
@@ -42,6 +43,8 @@ const toast = useEqtToast()
 
 const myTagsPalette = shallowRef<MyTagsPalette | null>(null)
 onMounted(async () => {
+  // EH 的匿名 gallery 以 apiuid = -1 標示未登入，個人 My Tags 此時不可用。
+  if (pageWindow<{ apiuid?: number }>().apiuid === -1) return
   try {
     myTagsPalette.value = await loadMyTagsPalette()
   } catch {

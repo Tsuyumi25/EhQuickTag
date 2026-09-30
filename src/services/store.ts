@@ -138,7 +138,7 @@ const INITIAL_SETTINGS = {
   // click 語意（用 Infinity threshold 讓 reducer 永遠不進 dragging state）
   galleryDragSelectEnabled: true,
   galleryMyTagsColorsEnabled: true,
-  galleryMyTagsScoresEnabled: true,
+  galleryMyTagsScoresEnabled: false,
   galleryMyTagsMarksEnabled: true,
   // false = 固定基準高、超過捲動；true = 隨 tag 展開往下長、不留捲軸。
   galleryTaglistExpand: false,
