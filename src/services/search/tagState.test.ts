@@ -869,14 +869,27 @@ describe('setTagState: 位置守恆', () => {
   })
 })
 
-// 預設標籤組真實案例：純日語（negative-multi）跟 7 個語言按鈕（positive-single）
-// 互搶 language:X 身份。
-describe('cross-button: 純日語 ↔ 個別語言按鈕', () => {
+describe('cross-button: Japanese-only preset ↔ individual languages', () => {
   const japaneseOnly = [
-    '-language:chinese$', '-language:english$', '-language:japanese$',
+    '-language:translated$', '-language:rewrite$',
+    '-language:chinese$', '-language:english$', 'language:japanese$',
     '-language:korean$', '-language:speechless$', '-language:"text cleaned$"',
   ]
   const english = ['language:english$']
+
+  it('includes Japanese and turns off when Japanese is excluded', () => {
+    const japanese = ['language:japanese$']
+    let text = _setTagStateArr('', japaneseOnly, TagState.Include)
+    expect(_getStateArr(japanese, identityIndex(text))).toBe(TagState.Include)
+    expect(_getStateArr(english, identityIndex(text))).toBe(TagState.Exclude)
+    expect(_getStateArr(japaneseOnly, identityIndex(text))).toBe(TagState.Include)
+
+    text = _setTagStateArr(text, japanese, TagState.Exclude)
+
+    expect(_getStateArr(japanese, identityIndex(text))).toBe(TagState.Exclude)
+    expect(_getStateArr(japaneseOnly, identityIndex(text))).toBe(TagState.Off)
+    expect(_getStateArr(english, identityIndex(text))).toBe(TagState.Exclude)
+  })
 
   it('純日語 active → 點英文 → 英文搶下 l:english，純日語退場', () => {
     let text = _setTagStateArr('', japaneseOnly, TagState.Include)
@@ -899,14 +912,16 @@ describe('cross-button: 純日語 ↔ 個別語言按鈕', () => {
     expect(_getStateArr(english, identityIndex(text))).toBe(TagState.Include)
   })
 
-  it('翻譯本（language:translated）跟純日語身份不重疊 → 可真正共存', () => {
+  it('including translated turns off Japanese-only while preserving Japanese', () => {
     const translated = ['language:translated$']
     let text = _setTagStateArr('', japaneseOnly, TagState.Include)
+    expect(_getStateArr(translated, identityIndex(text))).toBe(TagState.Exclude)
     text = _setTagStateArr(text, translated, TagState.Include)
 
-    // 兩按鈕都 Include：純日語的 6 個 -language 身份戳齊全，翻譯本的 l:translated 也在
-    expect(_getStateArr(japaneseOnly, identityIndex(text))).toBe(TagState.Include)
+    expect(_getStateArr(japaneseOnly, identityIndex(text))).toBe(TagState.Off)
     expect(_getStateArr(translated, identityIndex(text))).toBe(TagState.Include)
+    expect(_getStateArr(['language:japanese$'], identityIndex(text))).toBe(TagState.Include)
+    expect(_getStateArr(english, identityIndex(text))).toBe(TagState.Exclude)
   })
 })
 

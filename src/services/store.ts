@@ -281,9 +281,8 @@ const DEFAULT_LINE_DEFS: DefaultLineDef[] = [
     { kind: 'tag', tags: ['l:english$'], labelKey: 'default.english' },
     { kind: 'tag', tags: ['l:japanese$'], labelKey: 'default.japanese' },
     { kind: 'tag', tags: ['l:korean$'], labelKey: 'default.korean' },
-    // Japanese originals carry no language tag: `japanese` is the default flag,
-    // reserved for dual-language galleries and translations *into* Japanese.
-    // Exclusion is therefore the only way to express "untranslated Japanese".
+    // Japanese tags also apply to Japanese-only galleries; multilingual galleries
+    // can still carry other language tags: https://ehwiki.org/wiki/japanese
     // `translated` and `rewrite` are language-agnostic — without them,
     // translations into any language not listed here pass through.
     { kind: 'tag', tags: [
@@ -291,7 +290,7 @@ const DEFAULT_LINE_DEFS: DefaultLineDef[] = [
       '-l:rewrite$',
       '-l:chinese$',
       '-l:english$',
-      '-l:japanese$',
+      'l:japanese$',
       '-l:korean$',
       '-l:speechless$',
       '-l:"text cleaned$"',
