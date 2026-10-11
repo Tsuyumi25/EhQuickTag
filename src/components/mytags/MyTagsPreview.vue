@@ -5,7 +5,7 @@ import { useTagLabel } from '@/composables/useTagLabel'
 import type { SampleGallery, Verdict } from '@/services/mytags/mytagsSamples'
 import { EH_CATEGORIES } from '@/services/search/ehSearchParams'
 import { mismatchOf, type PreviewItem } from '@/services/mytags/mytagsScore'
-import { myTagsPreviewCoverScale } from '@/services/store'
+import { myTagsPreviewCoverScale, myTagsExcludedCategories } from '@/services/store'
 
 /**
  * EH API 回傳的 category 顯示名稱。key 與 `EH_CATEGORIES` 的 `key` 一致，
@@ -52,7 +52,7 @@ const limit = ref({ left: FLOW_STEP, right: FLOW_STEP })
 // ---- 分類篩選 ----
 
 /** 被排除的分類名稱（API 字串）。預設全選 = 空集合 */
-const excludedCategories = ref(new Set<string>())
+const excludedCategories = computed(() => new Set(myTagsExcludedCategories.value))
 
 const allCatsIncluded = computed(() => excludedCategories.value.size === 0)
 
@@ -60,7 +60,7 @@ function toggleCategory(name: string): void {
   const next = new Set(excludedCategories.value)
   if (next.has(name)) next.delete(name)
   else next.add(name)
-  excludedCategories.value = next
+  myTagsExcludedCategories.value = [...next]
 }
 
 // ---- 篩選與分頁 ----

@@ -43,7 +43,7 @@ import {
 import { setUserTag, canWrite } from '@/services/mytags/mytagsApi'
 import { patchConfig } from '@/services/ehConfig'
 import { serializeEntry } from '@/services/search/searchSyntax'
-import { myTagsPanelZoom, nsFormat } from '@/services/store'
+import { myTagsPanelZoom, myTagsLayouts, nsFormat } from '@/services/store'
 import { openSettings } from '@/services/appOverlays'
 import { askConfirm } from '@/services/confirmDialog'
 import { tagColors, type TagColors } from '@/services/mytags/mytagsColors'
@@ -56,6 +56,11 @@ const host = useEhMyTagsHost()!
 const tagChipStyle = useMyTagsColors()
 
 const toast = useEqtToast()
+
+const layoutStorage = {
+  getItem: (name: string): string | null => myTagsLayouts.value[name] ?? null,
+  setItem: (name: string, value: string): void => { myTagsLayouts.value[name] = value },
+}
 
 /** 一次「抓取樣本」最多翻幾頁 EH */
 const MAX_FETCH = 6
@@ -932,8 +937,14 @@ watch(edits, () => { void flush().catch(reportStorageError) }, { deep: true })
 
 <template>
   <section class="eqt-panel" :inert="!storageReady" :style="{ zoom: myTagsPanelZoom / 100 }">
-    <SplitterGroup :direction="narrowLayout ? 'vertical' : 'horizontal'" class="eqt-panel__workspace">
+    <SplitterGroup
+      :direction="narrowLayout ? 'vertical' : 'horizontal'"
+      auto-save-id="eqt-mytags-workspace"
+      :storage="layoutStorage"
+      class="eqt-panel__workspace"
+    >
       <SplitterPanel
+        id="eqt-mytags-side"
         ref="sidePanel"
         v-slot="{ isCollapsed }"
         class="eqt-panel__side-panel"
@@ -1093,11 +1104,12 @@ watch(edits, () => { void flush().catch(reportStorageError) }, { deep: true })
         </SplitterResizeHandle>
       </div>
 
-      <SplitterPanel :min-size="30" :default-size="100 - SIDE_DEFAULT_SIZE" class="eqt-panel__main-panel">
-      <SplitterGroup direction="horizontal" class="eqt-panel__splitter">
-        <SplitterPanel :min-size="30" :default-size="100 - EDITOR_DEFAULT_SIZE" class="eqt-panel__preview-stack">
-          <SplitterGroup direction="vertical" class="eqt-panel__preview-splitter">
+      <SplitterPanel id="eqt-mytags-main" :min-size="30" :default-size="100 - SIDE_DEFAULT_SIZE" class="eqt-panel__main-panel">
+      <SplitterGroup direction="horizontal" auto-save-id="eqt-mytags-editor" :storage="layoutStorage" class="eqt-panel__splitter">
+        <SplitterPanel id="eqt-mytags-preview-stack" :min-size="30" :default-size="100 - EDITOR_DEFAULT_SIZE" class="eqt-panel__preview-stack">
+          <SplitterGroup direction="vertical" auto-save-id="eqt-mytags-preview" :storage="layoutStorage" class="eqt-panel__preview-splitter">
           <SplitterPanel
+            id="eqt-mytags-preview"
             v-slot="{ isCollapsed }"
             collapsible
             :collapsed-size="0"
@@ -1130,6 +1142,7 @@ watch(edits, () => { void flush().catch(reportStorageError) }, { deep: true })
             <span class="eqt-panel__resize-grip" aria-hidden="true" />
           </SplitterResizeHandle>
           <SplitterPanel
+            id="eqt-mytags-gallery"
             v-if="openedGallery"
             v-slot="{ isCollapsed }"
             collapsible
@@ -1175,6 +1188,7 @@ watch(edits, () => { void flush().catch(reportStorageError) }, { deep: true })
           </SplitterResizeHandle>
         </div>
         <SplitterPanel
+          id="eqt-mytags-editor"
           ref="editorPanel"
           v-slot="{ isCollapsed }"
           class="eqt-panel__editor-panel"

@@ -171,6 +171,8 @@ const INITIAL_SETTINGS = {
   myTagsEnhancerEnabled: true,
   myTagsPreviewCoverScale: 100,
   myTagsPanelZoom: 100,
+  myTagsLayouts: {} as Record<string, string>,
+  myTagsExcludedCategories: [] as string[],
   myTagsGalleryColorsEnabled: true,
   myTagsGalleryScoresEnabled: true,
   myTagsGalleryMarksEnabled: true,
@@ -224,6 +226,8 @@ export const followCurrentSite  = refs.followCurrentSite
 export const myTagsEnhancerEnabled = refs.myTagsEnhancerEnabled
 export const myTagsPreviewCoverScale = refs.myTagsPreviewCoverScale
 export const myTagsPanelZoom = refs.myTagsPanelZoom
+export const myTagsLayouts = refs.myTagsLayouts
+export const myTagsExcludedCategories = refs.myTagsExcludedCategories
 export const myTagsGalleryColorsEnabled = refs.myTagsGalleryColorsEnabled
 export const myTagsGalleryScoresEnabled = refs.myTagsGalleryScoresEnabled
 export const myTagsGalleryMarksEnabled = refs.myTagsGalleryMarksEnabled
@@ -235,6 +239,9 @@ export const myTagsGalleryMarksEnabled = refs.myTagsGalleryMarksEnabled
 const SETTING_VALIDATORS: Partial<{ [K in SettingKey]: (v: unknown) => boolean }> = {
   myTagsPreviewCoverScale: v => typeof v === 'number' && Number.isFinite(v) && v >= 60 && v <= 130,
   myTagsPanelZoom:        v => typeof v === 'number' && Number.isFinite(v) && v >= 50 && v <= 150,
+  myTagsLayouts: v => !!v && typeof v === 'object' && !Array.isArray(v)
+    && Object.values(v).every(value => typeof value === 'string'),
+  myTagsExcludedCategories: v => Array.isArray(v) && v.every(value => typeof value === 'string'),
   searchPanelLangMode:    v => SEARCH_PANEL_LANG_MODES.some(m => m.id === v),
   convertToTraditional:   v => CONVERT_TO_TRADITIONAL_MODES.some(m => m.id === v),
   introPanelPrimaryLang:  v => INTRO_PANEL_PRIMARY_LANGS.some(m => m.id === v),
