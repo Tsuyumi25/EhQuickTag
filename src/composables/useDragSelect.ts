@@ -22,7 +22,7 @@ export interface UseDragSelectOptions {
   /** 對 chip 套用 selection delta（toggle 邏輯由 caller 那邊的 setSelection 負責） */
   applySelection: (id: string, mode: Selection) => void
   /** chip 被選取時觸發 intro panel 顯示 */
-  setPanelTag: (id: string) => void
+  setPanelTag?: (id: string) => void
   /** reducer 設定。預設 dragThresholdPx=3 */
   config?: Partial<DragSelectConfig>
   /**
@@ -30,6 +30,7 @@ export interface UseDragSelectOptions {
    * 行為等同單純 click（pressed → mouseup → 對 initialChip 套 delta）
    */
   enabled?: () => boolean
+  takeOver?: boolean
 }
 
 export function useDragSelect(opts: UseDragSelectOptions): {
@@ -44,11 +45,16 @@ export function useDragSelect(opts: UseDragSelectOptions): {
     const effects = store.dispatch(event)
     for (const eff of effects) {
       if (eff.kind === 'apply') opts.applySelection(eff.id, eff.mode)
-      else if (eff.kind === 'panelTag') opts.setPanelTag(eff.id)
+      else if (eff.kind === 'panelTag') opts.setPanelTag?.(eff.id)
     }
   }
 
   function onAreaMouseDown(e: MouseEvent): void {
+    if (e.button !== 0 && e.button !== 2) return
+    if (opts.takeOver) {
+      e.preventDefault()
+      e.stopImmediatePropagation()
+    }
     dispatch({
       kind: 'mousedown',
       button: e.button,
@@ -60,18 +66,26 @@ export function useDragSelect(opts: UseDragSelectOptions): {
 
   useEventListener(document, 'mousemove', (e: MouseEvent) => {
     if (store.isIdle()) return
+    if (opts.takeOver) {
+      e.preventDefault()
+      e.stopImmediatePropagation()
+    }
     dispatch({
       kind: 'mousemove',
       x: e.clientX,
       y: e.clientY,
       chip: opts.chipFromPoint(e.clientX, e.clientY),
     })
-  })
+  }, { capture: opts.takeOver })
 
-  useEventListener(document, 'mouseup', () => {
+  useEventListener(document, 'mouseup', (e: MouseEvent) => {
     if (store.isIdle()) return
+    if (opts.takeOver) {
+      e.preventDefault()
+      e.stopImmediatePropagation()
+    }
     dispatch({ kind: 'mouseup' })
-  })
+  }, { capture: opts.takeOver })
 
   return { onAreaMouseDown }
 }

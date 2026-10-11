@@ -53,6 +53,7 @@ const personalStyle = computed(() => {
       vote === 'down' && 'eqt-gallery-chip--voted-down',
     ]"
   >
+    <slot name="head" />
     <button type="button" class="eqt-gallery-chip__body" @click="$emit('pick')">
       <span v-if="$slots.lead" class="eqt-gallery-chip__lead"><slot name="lead" /></span>
       <span class="eqt-gallery-chip__name">
@@ -64,5 +65,6 @@ const personalStyle = computed(() => {
         <template v-else>{{ weight !== undefined && weight > 0 ? `+${weight}` : weight }}</template>
       </span>
     </button>
+    <slot name="trail" />
   </div>
 </template>

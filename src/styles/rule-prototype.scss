@@ -1,0 +1,191 @@
+@use 'buttons' as *;
+
+:root {
+  --eqt-rule-prototype-gap: var(--eqt-gallery-chip-content-gap);
+  --eqt-rule-prototype-panel-width: calc(var(--eqt-row-h) * 18);
+  --eqt-rule-prototype-dock-height: calc(var(--eqt-row-h) * 3);
+  --eqt-rule-prototype-blur: calc(var(--eqt-gallery-chip-content-gap) * 2);
+}
+
+.eqt-rule-prototype,
+.eqt-rule-prototype__mount,
+.eqt-rule-prototype__floating {
+  color: var(--eqt-text);
+  font-family: var(--eqt-font-family, inherit);
+  font-weight: var(--eqt-font-weight, normal);
+  font-size: var(--eqt-fs-md);
+  line-height: 1.4;
+  text-align: start;
+  white-space: normal;
+
+  &, *, *::before, *::after { box-sizing: border-box; }
+}
+
+.eqt-rule-prototype,
+.eqt-rule-prototype__mount {
+  button, input, select { font: inherit; }
+  input, select {
+    color: var(--eqt-text);
+    background: var(--eqt-bg-elevated);
+    border: var(--eqt-border-width-thin) solid var(--eqt-border);
+    border-radius: var(--eqt-radius-sm);
+    max-width: 100%;
+  }
+  input[type='checkbox'] {
+    position: static;
+    margin: 0;
+    accent-color: var(--eqt-green);
+  }
+  button { @include btn-filled; }
+  label { display: inline-flex; align-items: center; gap: var(--eqt-rule-prototype-gap); }
+  p { margin: var(--eqt-rule-prototype-gap) 0; }
+  small { color: var(--eqt-text-hint); }
+}
+
+.eqt-rule-prototype__mount:empty { display: none; }
+.eqt-rule-prototype__tag-content,
+.eqt-rule-prototype__native-chip { display: contents; }
+.eqt-rule-prototype__chip {
+  &, *, *::before, *::after { box-sizing: border-box; }
+  vertical-align: baseline;
+}
+.eqt-rule-prototype__floating {
+  position: fixed;
+  bottom: calc(var(--eqt-rule-prototype-gap) * 2);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--eqt-z-overlay);
+  width: max-content;
+  max-width: calc(100vw - var(--eqt-rule-prototype-gap) * 4);
+}
+// 規則頁預覽中，規則頁的返回鈕留在畫面底部；dock 墊高到它上面，兩個不會疊在一起
+.eqt-rule-prototype__floating--previewing {
+  bottom: calc(var(--eqt-rule-page-footer-clearance) + var(--eqt-rule-prototype-gap) * 2);
+}
+.eqt-rule-prototype__dock {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: var(--eqt-rule-prototype-gap);
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  padding: var(--eqt-rule-prototype-gap);
+  background: var(--eqt-bg);
+  border: var(--eqt-border-width) solid var(--eqt-border);
+  border-radius: calc(var(--eqt-radius-md) * 2);
+  box-shadow: var(--eqt-shadow-popover);
+  > .eqt-rule-prototype__clear,
+  .eqt-rule-prototype__dock-tools > button,
+  .eqt-rule-prototype__dock-tools > a,
+  .eqt-rule-prototype__selection-count {
+    @include btn-toned;
+    border: none;
+    flex-shrink: 0;
+    height: var(--eqt-row-h);
+    gap: var(--eqt-rule-prototype-gap);
+    padding: 0 calc(var(--eqt-rule-prototype-gap) * 1.5);
+    white-space: nowrap;
+    text-decoration: none;
+    svg {
+      width: var(--eqt-fs-md);
+      height: var(--eqt-fs-md);
+      flex-shrink: 0;
+    }
+  }
+  .eqt-rule-prototype__clear {
+    width: var(--eqt-row-h);
+    padding: 0;
+  }
+  .eqt-rule-prototype__rules-toggle, .eqt-rule-prototype__selection-count {
+    &[aria-expanded='true'] {
+      background: var(--eqt-bg-active);
+    }
+  }
+  // 預覽中這顆會把選好的標籤帶回規則頁，是這時候 dock 上的主要動作；
+  // 要壓過上面 dock-tools > button 的 btn-toned
+  .eqt-rule-prototype__dock-tools > .eqt-rule-prototype__rules-toggle--carry {
+    @include btn-green;
+    border: none;
+  }
+}
+.eqt-rule-prototype__dock-tools {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--eqt-rule-prototype-gap);
+  width: 100%;
+  min-width: 0;
+}
+.eqt-rule-prototype__separator {
+  flex: 0 0 var(--eqt-border-width-thin);
+  width: var(--eqt-border-width-thin);
+  height: var(--eqt-row-h);
+  background: var(--eqt-divider);
+}
+.eqt-rule-prototype__search-menu {
+  min-width: 0;
+}
+.eqt-rule-prototype__selection-count {
+  display: flex;
+  gap: var(--eqt-rule-prototype-gap);
+  align-items: center;
+  white-space: nowrap;
+  min-width: 0;
+  flex-shrink: 1;
+  max-width: 100%;
+  font-variant-numeric: tabular-nums;
+  span { overflow: hidden; text-overflow: ellipsis; }
+  &[aria-expanded='true'] .eqt-rule-prototype__menu-chevron { transform: rotate(180deg); }
+  &[aria-pressed='true'] { box-shadow: inset 0 calc(var(--eqt-border-width) * -1) 0 var(--eqt-text); }
+}
+.eqt-rule-prototype__panel {
+  z-index: var(--eqt-z-popover);
+  width: var(--eqt-rule-prototype-panel-width);
+  max-width: calc(100vw - var(--eqt-rule-prototype-gap) * 4);
+  max-height: calc(100dvh - var(--eqt-rule-prototype-dock-height));
+  overflow: auto;
+  padding: calc(var(--eqt-rule-prototype-gap) * 3);
+  border: var(--eqt-border-width) solid var(--eqt-border);
+  border-radius: var(--eqt-radius-md);
+  background: var(--eqt-bg);
+  box-shadow: var(--eqt-shadow-popover);
+}
+.eqt-rule-prototype__search-popover {
+  z-index: var(--eqt-z-popover);
+  padding-block: var(--eqt-rule-prototype-gap);
+  &::before {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    inset-block: calc((var(--eqt-rule-prototype-gap) + var(--eqt-border-width)) * -1);
+    z-index: -1;
+  }
+}
+.eqt-rule-prototype__search-panel {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--eqt-rule-prototype-gap) * 2);
+  .eqt-rule-prototype__header {
+    justify-content: space-between;
+    > button { @include btn-ghost; }
+  }
+}
+.eqt-rule-prototype__header {
+  display: flex;
+  align-items: start;
+  gap: calc(var(--eqt-rule-prototype-gap) * 2);
+  padding-bottom: calc(var(--eqt-rule-prototype-gap) * 2);
+  border-bottom: var(--eqt-border-width-thin) solid var(--eqt-divider);
+  > div { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  small { display: block; }
+  a { color: var(--eqt-text); white-space: nowrap; }
+}
+
+.eqt-rule-prototype__gallery--background {
+  &, > td {
+    background: color-mix(in srgb, var(--eqt-rule-prototype-background) 25%, var(--eqt-bg)) !important;
+  }
+}
+.eqt-rule-prototype__gallery--blur {
+  .glthumb:not(:hover) img, .gl3t:not(:hover) img, .gl1e:not(:hover) img { filter: blur(var(--eqt-rule-prototype-blur)) !important; }
+}

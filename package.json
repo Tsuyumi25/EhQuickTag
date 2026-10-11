@@ -18,6 +18,7 @@
     "@vueuse/core": "^14.3.0",
     "dompurify": "3.4.16",
     "reka-ui": "^2.10.4",
+    "sortablejs": "1.14.0",
     "vanilla-colorful": "^0.7.2",
     "vue": "^3.5.34",
     "vue-contenteditable": "^4.1.0",
@@ -27,6 +28,7 @@
   "devDependencies": {
     "@fast-check/vitest": "^0.4.1",
     "@playwright/test": "1.61.1",
+    "@types/sortablejs": "^1.15.9",
     "@vitejs/plugin-vue": "^6.0.7",
     "fast-check": "^4.8.0",
     "release-it": "^20.0.1",

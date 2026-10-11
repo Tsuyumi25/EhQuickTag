@@ -1,0 +1,953 @@
+@use 'buttons' as *;
+
+:root {
+  --eqt-rule-page-gap: var(--eqt-gallery-chip-content-gap);
+  --eqt-rule-page-sidebar: calc(var(--eqt-row-h) * 10);
+  // 右欄要放得下 namespace 篩選 + 候選清單的 ns / 名稱 / 原文三欄
+  --eqt-rule-page-library: calc(var(--eqt-row-h) * 16);
+  --eqt-rule-page-control-h: var(--eqt-checkbox-size);
+  // 同 .eqt-popup__suggestion 的搜尋狀態色條粗細
+  --eqt-rule-page-tone-width: calc(var(--eqt-border-width) * 1.5);
+  // 句子裡的控制項跟標籤 chip 的內容同高；em 在使用處才解析，跟著各自的字級走
+  --eqt-rule-page-inline-h: calc(1.4em + var(--eqt-gallery-chip-padding-block) * 2);
+  // 跟 .eqt-gallery-chip 自帶的 margin 同一組，評分、Folder、摘要裡的項目才能排在 chip 旁邊對齊
+  --eqt-rule-page-item-margin: 0 calc(var(--eqt-rule-page-gap) / 2) calc(var(--eqt-rule-page-gap) * 1.25);
+  // 四周留出一圈搜尋頁：規則頁是浮在搜尋頁上的一張卡，不是換到另一個頁面
+  --eqt-rule-page-margin: calc(var(--eqt-rule-page-gap) * 6);
+  // 從視窗底部到預覽返回鈕頂端的距離：卡片外距 + 框線 + 卡片下內距 + 按鈕高。
+  // 列表的 dock 在預覽時墊高到這裡之上，改 footer 或卡片的間距時要一起對
+  --eqt-rule-page-footer-clearance: calc(
+    var(--eqt-rule-page-margin) + var(--eqt-border-width) + var(--eqt-rule-page-gap) * 2.5 + var(--eqt-rule-page-control-h)
+  );
+}
+
+// 三欄沿用 /mytags 工作台：兩側是 stripe 卡片，左欄底部 dock 放主要動作；
+// 每一欄各自捲動，所以標題列與 dock 不需要 sticky。
+.eqt-rule-page {
+  position: fixed;
+  inset: var(--eqt-rule-page-margin);
+  z-index: var(--eqt-z-overlay);
+  display: grid;
+  grid-template-columns:
+    minmax(0, var(--eqt-rule-page-sidebar)) minmax(0, 1fr) minmax(0, var(--eqt-rule-page-library));
+  gap: calc(var(--eqt-rule-page-gap) * 3);
+  overflow: hidden;
+  // 背景搜尋頁可以捲動，但滾輪落在規則頁上時不能捲到後面去；
+  // 欄內的清單與編輯區各自 contain，這裡擋的是標題列、footer 這些本身不能捲的地方
+  overscroll-behavior: contain;
+  padding: calc(var(--eqt-rule-page-gap) * 2.5) calc(var(--eqt-rule-page-gap) * 3);
+  border: var(--eqt-border-width) solid var(--eqt-border);
+  border-radius: var(--eqt-radius-lg);
+  background: var(--eqt-bg);
+  box-shadow: var(--eqt-shadow);
+  color: var(--eqt-text);
+  font-size: var(--eqt-fs-md);
+  line-height: 1.4;
+  text-align: start;
+  white-space: normal;
+
+  &--collapsed {
+    visibility: hidden;
+    pointer-events: none;
+
+    // 版面還在，按鈕與提示留在 footer 原本的位置，只有它們看得見；提示只是文字，點擊穿過去給搜尋頁
+    .eqt-rule-page__toggle,
+    .eqt-rule-page__preview-hint {
+      visibility: visible;
+      box-shadow: var(--eqt-shadow-popover);
+    }
+
+    .eqt-rule-page__toggle { pointer-events: auto; }
+  }
+}
+
+.eqt-rule-page__icon {
+  flex-shrink: 0;
+  width: var(--eqt-fs-lg);
+  height: var(--eqt-fs-lg);
+}
+
+.eqt-rule-page__input,
+.eqt-rule-page__select {
+  min-width: 0;
+  // EH g.css 對 bare select 塞 min-height / margin，歸零才能跟其他控制項等高對齊
+  min-height: 0;
+  max-width: 100%;
+  height: var(--eqt-rule-page-control-h);
+  margin: 0;
+  padding: 0 calc(var(--eqt-rule-page-gap) * 1.5);
+  border: var(--eqt-border-width) solid var(--eqt-border);
+  border-radius: var(--eqt-radius-sm);
+  background: var(--eqt-bg);
+  color: var(--eqt-text);
+  font: inherit;
+  transition: var(--eqt-transition-base);
+
+  .eqt-dark & { background: var(--eqt-bg-elevated); }
+
+  &:focus {
+    border-color: var(--eqt-text);
+    outline: none;
+  }
+}
+
+.eqt-rule-page__input::placeholder {
+  color: var(--eqt-text-hint);
+}
+
+.eqt-rule-page__alert {
+  margin: calc(var(--eqt-rule-page-gap) * 3) 0 0;
+  padding: calc(var(--eqt-rule-page-gap) * 2) calc(var(--eqt-rule-page-gap) * 3);
+  border-inline-start: var(--eqt-rule-page-tone-width) solid var(--eqt-danger);
+  border-radius: var(--eqt-radius-sm);
+  background: var(--eqt-danger-bg-hover);
+  color: var(--eqt-danger);
+}
+
+// ---- 兩側卡片：左欄規則清單、右欄素材與標籤 ----
+
+.eqt-rule-page__side,
+.eqt-rule-page__library {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--eqt-rule-page-gap) * 1.5);
+  min-width: 0;
+  min-height: 0;
+  padding: calc(var(--eqt-rule-page-gap) * 2);
+  border: var(--eqt-border-width) solid var(--eqt-divider);
+  border-radius: var(--eqt-radius-md);
+  background: var(--eqt-bg-stripe);
+}
+
+.eqt-rule-page__library {
+  gap: calc(var(--eqt-rule-page-gap) * 2.5);
+}
+
+// 對齊 settings popup 側欄標題
+.eqt-rule-page__title {
+  margin: 0 0 var(--eqt-rule-page-gap);
+  padding: var(--eqt-rule-page-gap) calc(var(--eqt-rule-page-gap) * 1.5) 0;
+  font-size: var(--eqt-fs-lg);
+  font-weight: bold;
+}
+
+// min-height: 0 讓清單在側欄的高度內捲動，而不是把 dock 擠出視窗
+.eqt-rule-page__list-items {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: calc(var(--eqt-rule-page-gap) / 2);
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+// 列的高度與選中態沿用 settings 的 profile 清單
+.eqt-rule-page__list-item {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  width: 100%;
+  min-height: calc(var(--eqt-row-h) + var(--eqt-rule-page-gap) * 1.5);
+  border-radius: var(--eqt-radius-sm);
+
+  &:hover { background: var(--eqt-bg-hover); }
+
+  &--active,
+  &--active:hover {
+    background: var(--eqt-bg-active);
+
+    .eqt-rule-page__list-name { font-weight: bold; }
+  }
+
+  &--disabled .eqt-rule-page__list-name { color: var(--eqt-text-hint); }
+
+  &--ghost { opacity: 0.4; }
+}
+
+.eqt-rule-page__list-select {
+  @include btn-ghost;
+  flex: 1;
+  justify-content: flex-start;
+  gap: calc(var(--eqt-rule-page-gap) * 1.5);
+  min-width: 0;
+  align-self: stretch;
+  padding: 0 var(--eqt-rule-page-gap);
+  color: var(--eqt-text);
+  font-size: var(--eqt-fs-lg);
+  text-align: start;
+
+  // 整列已經有 hover 底色，按鈕自己再疊一層會變成兩階
+  &:hover:not(:disabled) { background: transparent; }
+}
+
+.eqt-rule-page__list-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// 樣子照設定頁 profile 清單的 active badge：只有底色、沒有框
+.eqt-rule-page__badge {
+  flex-shrink: 0;
+  padding: 0 var(--eqt-rule-page-gap);
+  border-radius: var(--eqt-radius-sm);
+  background: var(--eqt-bg-active);
+  color: var(--eqt-text-hint);
+  font-size: var(--eqt-fs-xs);
+  font-weight: normal;
+}
+
+.eqt-rule-page__drag-handle,
+.eqt-rule-page__list-menu {
+  @include btn-icon;
+  flex-shrink: 0;
+}
+
+.eqt-rule-page__drag-handle {
+  color: var(--eqt-grip);
+  cursor: grab;
+  touch-action: none;
+
+  &:active { cursor: grabbing; }
+}
+
+// ⚠️ 實色。--eqt-bg-stripe 是半透明疊加色，拿來當底會透出捲到下面的清單
+.eqt-rule-page__dock {
+  flex-shrink: 0;
+  margin: 0 calc(var(--eqt-rule-page-gap) * -2) calc(var(--eqt-rule-page-gap) * -2);
+  padding: calc(var(--eqt-rule-page-gap) * 2);
+  border-top: var(--eqt-border-width) solid var(--eqt-divider);
+  border-radius: 0 0 var(--eqt-radius-md) var(--eqt-radius-md);
+  background: var(--eqt-bg);
+}
+
+.eqt-rule-page__add-rule {
+  @include btn-toned;
+  width: 100%;
+  height: var(--eqt-rule-page-control-h);
+}
+
+// ---- 編輯區 ----
+
+.eqt-rule-page__editor {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+// dark 的 --eqt-divider 與 --eqt-bg 同色，分隔線一律用 --eqt-border 才看得見
+.eqt-rule-page__meta {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--eqt-rule-page-gap) * 2);
+  padding-bottom: calc(var(--eqt-rule-page-gap) * 2.5);
+  border-bottom: var(--eqt-border-width) solid var(--eqt-border);
+}
+
+.eqt-rule-page__name {
+  flex: 1 1 calc(var(--eqt-row-h) * 8);
+  font-size: var(--eqt-fs-lg);
+  font-weight: bold;
+}
+
+.eqt-rule-page__enabled {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--eqt-rule-page-gap) * 1.5);
+  min-height: var(--eqt-rule-page-control-h);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.eqt-rule-page__close {
+  @include btn-ghost;
+  width: var(--eqt-rule-page-control-h);
+  height: var(--eqt-rule-page-control-h);
+  margin-inline-start: auto;
+  padding: 0;
+}
+
+.eqt-rule-page__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding-inline-end: calc(var(--eqt-rule-page-gap) * 2);
+}
+
+.eqt-rule-page__footer {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: calc(var(--eqt-rule-page-gap) * 2);
+  padding-top: calc(var(--eqt-rule-page-gap) * 2.5);
+  border-top: var(--eqt-border-width) solid var(--eqt-border);
+}
+
+// 預覽時底下就是搜尋頁，提示自己帶底色與框，才讀得出來
+.eqt-rule-page__preview-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--eqt-rule-page-gap);
+  min-width: 0;
+  height: var(--eqt-rule-page-control-h);
+  margin: 0;
+  padding: 0 calc(var(--eqt-rule-page-gap) * 2.5);
+  border: var(--eqt-border-width) solid var(--eqt-border);
+  border-radius: var(--eqt-radius-sm);
+  background: var(--eqt-bg);
+  color: var(--eqt-text-hint);
+  white-space: nowrap;
+
+  > .eqt-rule-page__icon { color: var(--eqt-green); }
+}
+
+.eqt-rule-page__toggle {
+  @include btn-toned;
+  gap: calc(var(--eqt-rule-page-gap) * 1.5);
+  height: var(--eqt-rule-page-control-h);
+  padding: 0 calc(var(--eqt-rule-page-gap) * 2.5);
+
+  // btn-toned 的 hover 換成半透明的 --eqt-bg-hover；預覽時整頁隱藏、按鈕底下就是搜尋頁，
+  // 會整顆變透明。疊在原本的底色上，只讓它暗一階
+  &:hover:not(:disabled) {
+    background: linear-gradient(var(--eqt-bg-hover), var(--eqt-bg-hover)), var(--eqt-bg-btn);
+  }
+}
+
+.eqt-rule-page__kbd {
+  padding: 0 var(--eqt-rule-page-gap);
+  border: var(--eqt-border-width-thin) solid var(--eqt-border);
+  border-radius: var(--eqt-radius-sm);
+  color: var(--eqt-text-hint);
+  font: inherit;
+  font-size: var(--eqt-fs-xs);
+}
+
+// 層級同 settings：粗體標題 + hint 色 icon、section 之間 --eqt-border 分隔、
+// section 間距遠大於行距
+.eqt-rule-page__section {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--eqt-rule-page-gap) * 1.5);
+  min-width: 0;
+  padding-block: calc(var(--eqt-rule-page-gap) * 3.5);
+
+  & + & {
+    border-top: var(--eqt-border-width) solid var(--eqt-border);
+  }
+
+  // 三區條件借用搜尋狀態的顏色：全部成立 = include、任一成立 = OR、
+  // 例外 = exclude。色條只畫在最外層，Folder 內不重複
+  &--all { --eqt-rule-page-tone: var(--eqt-status-include); }
+  &--any { --eqt-rule-page-tone: var(--eqt-status-or); }
+  &--except { --eqt-rule-page-tone: var(--eqt-status-exclude); }
+
+  &--all,
+  &--any,
+  &--except {
+    > .eqt-rule-page__tray {
+      padding-inline-start: calc(var(--eqt-rule-page-gap) * 3);
+      border-inline-start: var(--eqt-rule-page-tone-width) solid var(--eqt-rule-page-tone);
+    }
+  }
+}
+
+.eqt-rule-page__section > h2,
+.eqt-rule-page__digest-head > h2,
+.eqt-rule-page__materials-head > h2,
+.eqt-rule-page__finder > h2 {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--eqt-rule-page-gap) * 1.5);
+  margin: 0;
+  font-size: var(--eqt-fs-lg);
+  font-weight: bold;
+
+  > .eqt-rule-page__icon { color: var(--eqt-text-hint); }
+}
+
+// ---- 條件：chip 托盤 ----
+
+// 項目間距沿用 .eqt-gallery-chip 自帶的 margin（對齊原生 taglist），托盤本身不設 gap
+.eqt-rule-page__tray {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  min-width: 0;
+  // 空的托盤也要留一列高，素材才有地方放
+  min-height: calc(var(--eqt-row-h) + var(--eqt-rule-page-gap) * 1.25);
+
+  > .eqt-rule-page__range,
+  > .eqt-rule-page__folder,
+  > .eqt-rule-page__source {
+    margin: var(--eqt-rule-page-item-margin);
+  }
+
+  // 拖曳中的 ghost 也算項目，滑進來提示字就讓位
+  &:not(:has(> .eqt-rule-page__item, > .eqt-popup__suggestion))::before {
+    content: attr(data-empty);
+    margin: var(--eqt-rule-page-item-margin);
+    color: var(--eqt-text-hint);
+    font-size: var(--eqt-fs-sm);
+  }
+
+  .eqt-rule-page__folder > &:not(:has(> .eqt-rule-page__item, > .eqt-popup__suggestion))::before {
+    color: var(--eqt-danger);
+  }
+
+  // 從候選清單拖進來的是一整列，在托盤裡縮成 chip 大小、只留名稱
+  > .eqt-popup__suggestion {
+    display: inline-flex;
+    align-items: center;
+    height: var(--eqt-row-h);
+    margin: var(--eqt-rule-page-item-margin);
+    padding: 0 calc(var(--eqt-rule-page-gap) * 1.5);
+    border: var(--eqt-border-width) dashed var(--eqt-border);
+    border-radius: var(--eqt-radius-sm);
+
+    > .eqt-popup__suggestion-ns,
+    > .eqt-popup__suggestion-tag { display: none; }
+  }
+}
+
+.eqt-rule-page__item--ghost { opacity: 0.4; }
+
+// body 不再負責切換，抓著就是拖
+.eqt-rule-page__chip .eqt-gallery-chip__body {
+  cursor: grab;
+}
+
+// mytags 底色只上在名稱那一段；兩側的含有／不含與移除鈕是操作，維持一般 chip 底色。
+// 三個 class 是為了壓過 gallery-taglist.scss 在整顆 chip 上鋪底色的 (0,2,0)
+.eqt-rule-page__chip.eqt-gallery-chip.eqt-gallery-chip--mytags-colored {
+  background: var(--eqt-gallery-chip-bg) padding-box;
+
+  .eqt-gallery-chip__body {
+    background: var(--eqt-mytags-background);
+
+    // 通用的 hover 會用半透明色整片換掉底色；疊在 mytags 底色上面才不會一 hover 就褪色
+    &:hover {
+      background: linear-gradient(var(--eqt-bg-hover), var(--eqt-bg-hover)), var(--eqt-mytags-background);
+    }
+  }
+}
+
+// 含有／不含：綠紅只用在這顆 icon。--eqt-status-include 是給大面積色條用的亮綠，
+// 細線 icon 在 chip 底色上要深一階才讀得出來
+.eqt-rule-page__polarity {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 calc(var(--eqt-gallery-chip-padding-inline) / 2) 0 var(--eqt-gallery-chip-padding-inline);
+  border: none;
+  background: transparent;
+  color: var(--eqt-green);
+  cursor: pointer;
+  transition: var(--eqt-transition-base);
+
+  > svg {
+    width: var(--eqt-fs-md);
+    height: var(--eqt-fs-md);
+  }
+
+  &--exclude { color: var(--eqt-danger); }
+}
+
+.eqt-rule-page__chip-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--eqt-gallery-chip-padding-inline);
+  border: none;
+  // 承接 chip 外框的顏色與線型，分隔線看起來跟外框是同一條
+  border-inline-start: var(--eqt-border-width-thin) solid;
+  border-inline-start-color: inherit;
+  background: transparent;
+  color: var(--eqt-text-hint);
+  cursor: pointer;
+  transition: var(--eqt-transition-base);
+
+  > svg {
+    width: var(--eqt-fs-md);
+    height: var(--eqt-fs-md);
+  }
+
+  &:hover { color: var(--eqt-danger); }
+}
+
+// 數值條件讀起來是一句話（★ 不低於 4.5）：框只留 chip 外面這一層，裡面的下拉與數字欄都不畫框
+.eqt-rule-page__range {
+  // 四個字寬放得下四位數的頁數；ch 跟著字級縮放
+  --eqt-number-field-width: calc(4ch + var(--eqt-rule-page-gap));
+
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--eqt-rule-page-gap) / 2);
+  padding-inline-start: calc(var(--eqt-rule-page-gap) * 1.5);
+  overflow: hidden;
+  border: var(--eqt-border-width) solid var(--eqt-border);
+  border-radius: var(--eqt-radius-sm);
+  background: var(--eqt-bg-btn);
+  color: var(--eqt-text-hint);
+  line-height: 1.4;
+  cursor: grab;
+
+  .eqt-number-field { height: auto; }
+  .eqt-number-field__step { display: none; }
+
+  // 要壓過 EqtNumberField 的 input:enabled:hover / :focus
+  input.eqt-number-field__input {
+    height: var(--eqt-rule-page-inline-h);
+    padding: 0 calc(var(--eqt-rule-page-gap) / 2);
+    border: none;
+    border-radius: var(--eqt-radius-sm);
+    background: transparent;
+    font-size: inherit;
+
+    &:enabled:hover,
+    &:enabled:focus { background: var(--eqt-bg-hover); }
+  }
+
+  > .eqt-rule-page__chip-remove {
+    align-self: stretch;
+    border-inline-start: var(--eqt-border-width) solid var(--eqt-border);
+  }
+}
+
+.eqt-rule-page__stars {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+}
+
+// 兩層同一顆星疊起來：底下是空心外框，上面是實心星、用 clip 露出整顆或左半顆
+.eqt-rule-page__star {
+  display: inline-grid;
+  width: var(--eqt-fs-lg);
+  height: var(--eqt-fs-lg);
+
+  > svg {
+    grid-area: 1 / 1;
+    width: 100%;
+    height: 100%;
+  }
+
+  > .eqt-rule-page__star-back { color: var(--eqt-text-hint); }
+
+  > .eqt-rule-page__star-front {
+    color: var(--eqt-status-or);
+    fill: currentColor;
+  }
+
+  &--empty > .eqt-rule-page__star-front { clip-path: inset(0 100% 0 0); }
+  &--half > .eqt-rule-page__star-front { clip-path: inset(0 50% 0 0); }
+}
+
+// 嵌在句子裡的下拉（數值條件的運算子、Folder 的判定模式）：平常是一段字，hover 才浮出底色
+.eqt-rule-page__inline-select {
+  appearance: none;
+  min-width: 0;
+  // EH g.css 對 bare select 塞 min-height / margin
+  min-height: 0;
+  height: var(--eqt-rule-page-inline-h);
+  margin: 0;
+  padding: 0 calc(var(--eqt-rule-page-gap) / 2);
+  border: none;
+  border-radius: var(--eqt-radius-sm);
+  background: transparent;
+  color: var(--eqt-text);
+  font: inherit;
+  cursor: pointer;
+  transition: var(--eqt-transition-base);
+
+  &:hover,
+  &:focus-visible {
+    outline: none;
+    background: var(--eqt-bg-hover);
+  }
+
+  // 下拉本體透明時，Chromium 的選單會拿預設白底配上 dark 的淺色字
+  > option {
+    background: var(--eqt-bg-elevated);
+    color: var(--eqt-text);
+  }
+}
+
+// 運算子只有一個符號，字級放大到跟星星同高、固定寬度置中，換成別的符號時後面的值不會跳動
+.eqt-rule-page__op {
+  min-width: calc(var(--eqt-fs-lg) * 1.5);
+  font-size: var(--eqt-fs-lg);
+  font-weight: bold;
+  text-align: center;
+  text-align-last: center;
+}
+
+// ---- 右欄：素材與標籤清單 ----
+
+// 素材只佔自己需要的高度、最多到上限，剩下的高度全給標籤清單
+.eqt-rule-page__materials {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  gap: calc(var(--eqt-rule-page-gap) * 1.5);
+  min-width: 0;
+}
+
+.eqt-rule-page__materials-head {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--eqt-rule-page-gap) * 2);
+
+  > .eqt-rule-page__tool { margin-inline-start: auto; }
+}
+
+.eqt-rule-page__tool {
+  @include btn-toned;
+  height: var(--eqt-row-h);
+  padding: 0 calc(var(--eqt-rule-page-gap) * 1.5);
+  font-size: var(--eqt-fs-sm);
+}
+
+.eqt-rule-page__sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--eqt-rule-page-gap);
+}
+
+// 虛線框表示「拉出來的是新的一份」，跟實線的 chip 分開
+.eqt-rule-page__source {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--eqt-rule-page-gap);
+  height: var(--eqt-row-h);
+  padding: 0 calc(var(--eqt-rule-page-gap) * 1.5);
+  border: var(--eqt-border-width) dashed var(--eqt-border);
+  border-radius: var(--eqt-radius-sm);
+  color: var(--eqt-text-hint);
+  font-size: var(--eqt-fs-sm);
+  cursor: grab;
+  user-select: none;
+  transition: var(--eqt-transition-base);
+
+  &:hover {
+    background: var(--eqt-bg-hover);
+    color: var(--eqt-text);
+  }
+}
+
+.eqt-rule-page__material-tray {
+  max-height: calc(var(--eqt-row-h) * 6);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+// min-height: 0 讓候選清單在右欄剩下的高度內捲動，而不是把整欄撐出視窗
+.eqt-rule-page__finder {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: calc(var(--eqt-rule-page-gap) * 1.5);
+  min-width: 0;
+  min-height: 0;
+  padding-top: calc(var(--eqt-rule-page-gap) * 2.5);
+  border-top: var(--eqt-border-width) solid var(--eqt-border);
+
+  > .eqt-rule-page__input {
+    flex-shrink: 0;
+    width: 100%;
+  }
+}
+
+.eqt-rule-page__finder-body {
+  display: flex;
+  flex: 1 1 auto;
+  gap: calc(var(--eqt-rule-page-gap) * 1.5);
+  min-height: 0;
+}
+
+.eqt-rule-page__finder-list {
+  flex: 1 1 auto;
+  min-width: 0;
+
+  .eqt-popup__suggestion { cursor: grab; }
+
+  // 跟 /mytags 標籤目錄同一套：有個人配色的列畫出 chip 的框與粗體，底色與字色走 inline style
+  .eqt-popup__suggestion--styled {
+    box-sizing: border-box;
+    height: var(--eqt-suggestion-row-height);
+    padding-block: 0;
+    border: var(--eqt-border-width) solid var(--eqt-border);
+    font-weight: 700;
+
+    .eqt-popup__suggestion-ns,
+    .eqt-popup__suggestion-tag { color: inherit; }
+
+    &.eqt-popup__suggestion--active {
+      outline: var(--eqt-border-width) solid currentColor;
+      outline-offset: calc(-1 * var(--eqt-border-width));
+    }
+  }
+}
+
+// Folder 跟 chip 排在同一行，是一段內嵌的小區塊。用底色分組而不是外框，巢狀時底色自然疊深一階；
+// 色條沿用三區那一套：全部成立 = include、任一成立 = OR、全部不成立 = exclude
+.eqt-rule-page__folder {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  // 子項目自帶底部 margin，上方補同樣的量才會上下對稱
+  padding: calc(var(--eqt-rule-page-gap) * 1.25) 0 0 calc(var(--eqt-rule-page-gap) / 2);
+  border-inline-start: var(--eqt-rule-page-tone-width) solid var(--eqt-rule-page-tone);
+  border-radius: var(--eqt-radius-sm);
+  background: var(--eqt-bg-stripe);
+
+  &--all { --eqt-rule-page-tone: var(--eqt-status-include); }
+  &--any { --eqt-rule-page-tone: var(--eqt-status-or); }
+  &--none { --eqt-rule-page-tone: var(--eqt-status-exclude); }
+
+  > .eqt-rule-page__tray {
+    flex: 0 1 auto;
+    min-height: 0;
+  }
+
+  > .eqt-rule-page__folder-head,
+  > .eqt-rule-page__chip-remove {
+    margin: var(--eqt-rule-page-item-margin);
+  }
+
+  // chip 裡的移除鈕會承接外框色畫分隔線；Folder 的 border-inline-start 是色條，不能被承接
+  > .eqt-rule-page__chip-remove {
+    height: var(--eqt-rule-page-inline-h);
+    border: none;
+    border-radius: var(--eqt-radius-sm);
+  }
+}
+
+.eqt-rule-page__folder-head {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--eqt-rule-page-gap) / 2);
+  color: var(--eqt-text-hint);
+  cursor: grab;
+}
+
+// ---- 效果 ----
+
+.eqt-rule-page__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--eqt-rule-page-gap) * 2) calc(var(--eqt-rule-page-gap) * 5);
+}
+
+.eqt-rule-page__field {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--eqt-rule-page-gap) * 2);
+  min-width: 0;
+
+  > span:first-child {
+    color: var(--eqt-text-hint);
+    white-space: nowrap;
+  }
+}
+
+.eqt-rule-page__swatch {
+  flex-shrink: 0;
+  width: var(--eqt-rule-page-control-h);
+  height: var(--eqt-rule-page-control-h);
+  border: var(--eqt-border-width) solid var(--eqt-border);
+  border-radius: var(--eqt-radius-sm);
+}
+
+// ---- 摘要 ----
+
+.eqt-rule-page__digest-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--eqt-rule-page-gap) * 2);
+}
+
+.eqt-rule-page__digest-modes {
+  @include btn-split-group;
+  margin-inline-start: auto;
+}
+
+.eqt-rule-page__digest-mode {
+  @include btn-split-item;
+
+  &[aria-pressed='true'] {
+    background: var(--eqt-bg-btn);
+    color: var(--eqt-text);
+  }
+}
+
+.eqt-rule-page__digest {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--eqt-rule-page-gap) * 2);
+  padding: calc(var(--eqt-rule-page-gap) * 2.5) calc(var(--eqt-rule-page-gap) * 3) calc(var(--eqt-rule-page-gap) * 1.5);
+  border-inline-start: var(--eqt-rule-page-tone-width) solid var(--eqt-border);
+  border-radius: var(--eqt-radius-sm);
+  background: var(--eqt-bg-stripe);
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+
+  &--never { border-inline-start-color: var(--eqt-danger); }
+
+  &--raw {
+    flex-direction: row;
+    align-items: flex-start;
+    padding-block-end: calc(var(--eqt-rule-page-gap) * 2.5);
+  }
+}
+
+.eqt-rule-page__digest-raw {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space: pre-wrap;
+  user-select: text;
+}
+
+.eqt-rule-page__digest-copy {
+  @include btn-ghost;
+  flex-shrink: 0;
+  width: var(--eqt-rule-page-control-h);
+  height: var(--eqt-rule-page-control-h);
+  padding: 0;
+}
+
+// 句子裡的 chip 跟著文字排；chip 自帶的底部 margin 是給換行對齊用的，放進句子會把基線往上推
+.eqt-rule-page__digest-sentence,
+.eqt-rule-page__digest-notes {
+  margin: 0;
+  line-height: 2;
+
+  .eqt-gallery-chip {
+    margin-block: 0;
+    vertical-align: middle;
+  }
+}
+
+.eqt-rule-page__digest-rows {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--eqt-rule-page-gap) calc(var(--eqt-rule-page-gap) * 3);
+  margin: 0;
+
+  dt {
+    // 對齊 dd 第一行 chip 裡的文字：往下補 chip 的框線與 padding
+    padding: calc(var(--eqt-border-width-thin) + var(--eqt-gallery-chip-padding-block)) 0 0 calc(var(--eqt-rule-page-gap) * 1.5);
+    border-inline-start: var(--eqt-rule-page-tone-width) solid var(--eqt-rule-page-tone);
+    color: var(--eqt-text-hint);
+    white-space: nowrap;
+  }
+
+  dd {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    min-width: 0;
+    margin: 0;
+  }
+}
+
+.eqt-rule-page__digest-row {
+  display: contents;
+
+  &--all { --eqt-rule-page-tone: var(--eqt-status-include); }
+  &--any { --eqt-rule-page-tone: var(--eqt-status-or); }
+  &--none { --eqt-rule-page-tone: var(--eqt-status-exclude); }
+}
+
+.eqt-rule-page__digest-cases {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding-inline-start: calc(var(--eqt-rule-page-gap) * 5);
+
+  > li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+
+    &::marker { color: var(--eqt-text-hint); }
+
+    > small {
+      margin: var(--eqt-rule-page-item-margin);
+      color: var(--eqt-danger);
+    }
+  }
+}
+
+// 不可能的情況照樣列出來，不然看不出是哪一種組合被擋掉
+.eqt-rule-page__digest-case--impossible > :not(small) { opacity: 0.45; }
+
+.eqt-rule-page__digest-caption {
+  margin: 0;
+  color: var(--eqt-text-hint);
+  font-size: var(--eqt-fs-sm);
+}
+
+.eqt-rule-page__digest-notes {
+  padding: 0;
+  list-style: none;
+  color: var(--eqt-text-hint);
+  font-size: var(--eqt-fs-sm);
+}
+
+.eqt-rule-page__digest-note--never { color: var(--eqt-danger); }
+
+.eqt-rule-page__digest-range {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--eqt-rule-page-gap) / 2);
+  margin: var(--eqt-rule-page-item-margin);
+  white-space: nowrap;
+
+  > .eqt-rule-page__icon { color: var(--eqt-text-hint); }
+
+  > .eqt-rule-page__digest-average {
+    color: var(--eqt-text-hint);
+    font-size: var(--eqt-fs-sm);
+  }
+
+  .eqt-rule-page__digest-sentence & { margin: 0; }
+}
+
+.eqt-rule-page__range-value {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--eqt-rule-page-gap) / 2);
+}
+
+// 摘要裡的「同時」「其中一個」沿用 Folder 的色條，跟編輯區用同一套顏色語言
+.eqt-rule-page__digest-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  max-width: 100%;
+  margin: var(--eqt-rule-page-item-margin);
+  padding: calc(var(--eqt-rule-page-gap) * 1.25) 0 0 calc(var(--eqt-rule-page-gap) / 2);
+  border-inline-start: var(--eqt-rule-page-tone-width) solid var(--eqt-rule-page-tone);
+  border-radius: var(--eqt-radius-sm);
+  background: var(--eqt-bg-stripe);
+  vertical-align: middle;
+
+  &--all { --eqt-rule-page-tone: var(--eqt-status-include); }
+  &--any { --eqt-rule-page-tone: var(--eqt-status-or); }
+}
