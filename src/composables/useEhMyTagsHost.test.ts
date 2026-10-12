@@ -74,6 +74,12 @@ describe('tagSetUrl', () => {
     expect(tagSetUrl('2')).toBe('https://exhentai.org/mytags?tagset=2#eqt_hash=7kQ2mN9xR4vB')
     expect(tagSetUrl('1')).toBe('https://exhentai.org/mytags#eqt_hash=7kQ2mN9xR4vB')
   })
+
+  it('圖庫來源的 gid 與 token 一起跨標籤集保留', () => {
+    vi.stubGlobal('location', new URL('https://e-hentai.org/mytags#eqt_gid=123&eqt_token=0123456789'))
+    expect(tagSetUrl('2')).toBe('https://e-hentai.org/mytags?tagset=2#eqt_gid=123&eqt_token=0123456789')
+    expect(tagSetUrl('1')).toBe('https://e-hentai.org/mytags#eqt_gid=123&eqt_token=0123456789')
+  })
 })
 
 describe('useEhMyTagsHost 接管次數', () => {

@@ -2,10 +2,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref, type EffectScope } from 'vue'
 import { cacheGet } from '@/services/gmStorage'
 import { useMyTagsSource } from '@/composables/useMyTagsSource'
+import { fetchGallery, type GalleryDetail } from '@/composables/useEhGalleryPreview'
 
 vi.mock('@/services/gmStorage', () => ({
   cacheGet: vi.fn(), cacheSet: vi.fn(), cacheKeys: vi.fn(), cacheDelete: vi.fn(),
 }))
+vi.mock('@/composables/useEhGalleryPreview', () => ({ fetchGallery: vi.fn() }))
 
 function deferred<T>() {
   let resolve!: (value: T) => void
@@ -16,6 +18,14 @@ function deferred<T>() {
 
 function snapshot(terms: string[]): string {
   return JSON.stringify({ schema: 2, terms, savedAt: 1 })
+}
+
+function gallery(gid: number, fullTags: string[]): GalleryDetail {
+  return {
+    gid, token: '0123456789', title: 'sample', titleJp: '', category: '', uploader: '',
+    coverStyle: '', rating: '', facts: [], thumbs: [],
+    tags: fullTags.map(full => ({ full, tier: 'gt' })),
+  }
 }
 
 const scopes: EffectScope[] = []
@@ -93,5 +103,77 @@ describe('My Tags fragment 選取來源', () => {
     pending.resolve(snapshot(['female:sample']))
     await settle()
     expect(current.tags.value).toEqual([])
+  })
+})
+
+describe('My Tags 完整圖庫來源', () => {
+  it('未帶快照也能載入整本，切回快照時只留下選取內容', async () => {
+    vi.mocked(fetchGallery).mockResolvedValue(gallery(123, ['female:sample', 'other:sample', 'language:sample']))
+    vi.mocked(cacheGet).mockResolvedValue(snapshot(['-female:sample$']))
+    const current = source('#eqt_gid=123&eqt_token=0123456789')
+    await settle()
+    expect(current.tags.value).toEqual(['female:sample', 'other:sample', 'language:sample'])
+    expect(fetchGallery).toHaveBeenCalledWith(123, '0123456789')
+    current.hash.value = '#eqt_hash=selection'
+    await settle()
+    expect(current.tags.value).toEqual(['female:sample'])
+  })
+
+  it('快速切換圖庫時，只採用最新的來源結果', async () => {
+    const old = deferred<GalleryDetail | null>()
+    vi.mocked(fetchGallery).mockReturnValueOnce(old.promise).mockResolvedValueOnce(gallery(456, ['other:sample']))
+    const current = source('#eqt_gid=123&eqt_token=0123456789')
+    current.hash.value = '#eqt_gid=456&eqt_token=abcdef0123'
+    await settle()
+    expect(current.tags.value).toEqual(['other:sample'])
+    old.resolve(gallery(123, ['female:sample']))
+    await settle()
+    expect(current.tags.value).toEqual(['other:sample'])
+    expect(current.message.value).toBe('')
+  })
+
+  it('切到快照後不接受舊圖庫的失敗', async () => {
+    const old = deferred<GalleryDetail | null>()
+    vi.mocked(fetchGallery).mockReturnValueOnce(old.promise)
+    vi.mocked(cacheGet).mockResolvedValue(snapshot(['~male:sample$']))
+    const current = source('#eqt_gid=123&eqt_token=0123456789')
+    current.hash.value = '#eqt_hash=selection'
+    await settle()
+    old.resolve(null)
+    await settle()
+    expect(current.tags.value).toEqual(['male:sample'])
+    expect(current.message.value).toBe('')
+  })
+
+  it.each([
+    '#eqt_gid=123',
+    '#eqt_token=0123456789',
+    '#eqt_gid=invalid&eqt_token=0123456789',
+    '#eqt_gid=123&eqt_token=invalid',
+  ])('圖庫參數缺失或無效時，清掉原內容並提示：%s', async (fragment) => {
+    vi.mocked(cacheGet).mockResolvedValue(snapshot(['female:sample']))
+    const current = source()
+    await settle()
+    current.hash.value = fragment
+    expect(current.tags.value).toEqual([])
+    expect(current.message.value).toBe('panel.gallerySourceInvalid')
+    expect(fetchGallery).not.toHaveBeenCalled()
+  })
+
+  it('圖庫抓取失敗清掉原內容，後續有效來源仍能載入', async () => {
+    vi.mocked(cacheGet).mockResolvedValue(snapshot(['female:sample']))
+    vi.mocked(fetchGallery).mockResolvedValueOnce(null).mockResolvedValueOnce(gallery(456, ['other:sample']))
+    const current = source()
+    await settle()
+    current.hash.value = '#eqt_gid=123&eqt_token=0123456789'
+    expect(current.tags.value).toEqual([])
+    expect(current.message.value).toBe('gallery.loading')
+    await settle()
+    expect(current.tags.value).toEqual([])
+    expect(current.message.value).toBe('gallery.failed')
+    current.hash.value = '#eqt_gid=456&eqt_token=abcdef0123'
+    await settle()
+    expect(current.tags.value).toEqual(['other:sample'])
+    expect(current.message.value).toBe('')
   })
 })

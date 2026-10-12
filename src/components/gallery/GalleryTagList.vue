@@ -455,14 +455,25 @@ function onSearchCurrent(): void {
 
 async function onOpenInMyTags(): Promise<void> {
   const terms = selectedTerms()
-  if (!terms.length) return
+  if (!terms.length && !galleryRef) return
   try {
-    const id = await savePick(terms)
-    await GM.openInTab(pickUrl(location.origin, id), { active: true })
+    const href = terms.length
+      ? pickUrl(location.origin, await savePick(terms))
+      : galleryMyTagsUrl.href
+    await GM.openInTab(href, { active: true })
     onClearSelection()
   } catch {
-    toast.error(t('gallery.pickSaveFailed'))
+    toast.error(t('gallery.myTagsOpenFailed'))
   }
+}
+
+const galleryRef = parseGalleryUrl(location.href)
+const galleryMyTagsUrl = new URL('/mytags', location.origin)
+if (galleryRef) {
+  galleryMyTagsUrl.hash = new URLSearchParams({
+    eqt_gid: String(galleryRef.gid),
+    eqt_token: galleryRef.token,
+  }).toString()
 }
 
 function tagsFor(target: Selection): GalleryTag[] {
@@ -647,12 +658,11 @@ watch(selection, () => {
     <button
       type="button"
       class="eqt-gallery-actions__btn eqt-gallery-actions__btn--mytags"
-      :disabled="selectedCount === 0"
       :title="t('gallery.openInMyTags')"
       @click="onOpenInMyTags"
     >
       <Tags :size="14" />
-      <span>{{ t('gallery.openInMyTags') }}</span>
+      <span>{{ t('gallery.openInMyTags') }} ({{ selectedCount || t('gallery.myTagsAll') }})</span>
     </button>
 
     <a
