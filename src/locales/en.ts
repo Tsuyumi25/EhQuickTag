@@ -305,6 +305,10 @@ export default {
   'gallery.sessionExpired': 'Your session has expired. Please refresh the page to log in again.',
   'gallery.tagDbLoadFailed': 'Failed to load tag database. Please retry later or check your network.',
   'gallery.openInMyTags': 'View in My Tags',
+  'gallery.pickSaveFailed': 'Could not save or open this selection. Your selection has been kept.',
+  'panel.pickMissing': 'This selection snapshot is unavailable or has expired. Save the selection again on the source page.',
+  'panel.pickConflict': 'This link contains both a selection snapshot and a gallery source. Keep only one source.',
+  'panel.pickLoadFailed': 'Could not load the selection snapshot.',
   'gallery.myTagsColorsFailed': 'Failed to load My Tags colors.',
   'gallery.wiki': 'Wiki',
 

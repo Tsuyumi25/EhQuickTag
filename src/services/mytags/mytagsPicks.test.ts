@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { storage, cacheGet, cacheSet, cacheKeys, cacheDelete } = vi.hoisted(() => {
   const values = new Map<string, string>()
@@ -13,12 +13,14 @@ const { storage, cacheGet, cacheSet, cacheKeys, cacheDelete } = vi.hoisted(() =>
 
 vi.mock('@/services/gmStorage', () => ({ cacheGet, cacheSet, cacheKeys, cacheDelete }))
 
-import { loadPick, parsePick, savePick, stalePicks, PICKS_LIMIT } from '@/services/mytags/mytagsPicks'
+import { loadPick, parsePick, pickTags, pickUrl, savePick, stalePicks, PICKS_LIMIT } from '@/services/mytags/mytagsPicks'
 
 beforeEach(() => {
   storage.clear()
   vi.useRealTimers()
 })
+
+afterEach(() => { vi.restoreAllMocks(); vi.useRealTimers() })
 
 describe('stalePicks', () => {
   it('只留最近更新的幾筆，讀不出時間的最先清', () => {
@@ -36,38 +38,74 @@ describe('stalePicks', () => {
 describe('parsePick', () => {
   it('schema 不符、JSON 壞掉、欄位型別不對的都不收', () => {
     expect(parsePick('{')).toBeNull()
-    expect(parsePick(JSON.stringify({ schema: 0, tags: [], savedAt: 1 }))).toBeNull()
-    expect(parsePick(JSON.stringify({ schema: 1, tags: [3], savedAt: 1 }))).toBeNull()
-    expect(parsePick(JSON.stringify({ schema: 1, tags: [], savedAt: 'x' }))).toBeNull()
-    expect(parsePick(JSON.stringify({ schema: 1, tags: ['female:a'], savedAt: 1 })))
-      .toEqual({ tags: ['female:a'], savedAt: 1 })
+    expect(parsePick(JSON.stringify({ schema: 1, tags: [], savedAt: 1 }))).toBeNull()
+    expect(parsePick(JSON.stringify({ schema: 2, terms: [3], savedAt: 1 }))).toBeNull()
+    expect(parsePick(JSON.stringify({ schema: 2, terms: [], savedAt: 'x' }))).toBeNull()
+    expect(parsePick('{"schema":2,"terms":[],"savedAt":1e999}')).toBeNull()
+    expect(parsePick(JSON.stringify({ schema: 2, terms: ['female:sample'], savedAt: 1 })))
+      .toEqual({ terms: ['female:sample'], savedAt: 1 })
   })
 })
 
 describe('savePick / loadPick', () => {
-  it('每本各自讀回自己的標籤，同一本再送一次就覆蓋，查不到的 gid 回空清單', async () => {
-    await savePick(1, ['female:a'])
-    await savePick(2, ['male:b', 'parody:c'])
-    await savePick(1, ['other:d'])
-    expect(await loadPick('1')).toEqual(['other:d'])
-    expect(await loadPick('2')).toEqual(['male:b', 'parody:c'])
-    expect(await loadPick('3')).toEqual([])
+  it('每次保存各自取得短 ID，還原搜尋詞的順序與狀態', async () => {
+    const terms = ['-f:"some tag$"', '~p:sample$', 'male:sample']
+    const first = await savePick(terms)
+    const second = await savePick(['other:sample'])
+    const repeated = await savePick(terms)
+    expect(first).toMatch(/^[A-Za-z0-9_-]{12}$/)
+    expect(new Set([first, second, repeated]).size).toBe(3)
+    expect((await loadPick(first))?.terms).toEqual(terms)
+    expect((await loadPick(second))?.terms).toEqual(['other:sample'])
+    expect((await loadPick(repeated))?.terms).toEqual(terms)
+    expect(await loadPick('missing')).toBeNull()
   })
 
-  it('兩本同時送出不會互相蓋掉', async () => {
-    await Promise.all([savePick(1, ['female:a']), savePick(2, ['male:b'])])
-    expect(await loadPick('1')).toEqual(['female:a'])
-    expect(await loadPick('2')).toEqual(['male:b'])
+  it('碰到已存在的 ID 時重取，不覆蓋原快照', async () => {
+    const random = vi.spyOn(crypto, 'getRandomValues')
+      .mockReturnValueOnce(new Uint8Array(12).fill(0))
+      .mockReturnValueOnce(new Uint8Array(12).fill(0))
+      .mockReturnValueOnce(new Uint8Array(12).fill(1))
+    const first = await savePick(['female:sample'])
+    const second = await savePick(['male:sample'])
+    expect(first).not.toBe(second)
+    expect((await loadPick(first))?.terms).toEqual(['female:sample'])
+    expect((await loadPick(second))?.terms).toEqual(['male:sample'])
+    random.mockRestore()
   })
 
-  it('超過上限時清掉最舊的，剛送的一定留下', async () => {
+  it('同時送出不同選取，各自仍能讀回', async () => {
+    const [first, second] = await Promise.all([savePick(['female:sample']), savePick(['male:sample'])])
+    expect((await loadPick(first))?.terms).toEqual(['female:sample'])
+    expect((await loadPick(second))?.terms).toEqual(['male:sample'])
+  })
+
+  it.each([false, true])('有上限地清掉舊快照，剛送的一定留下（相同時間：%s）', async (sameTime) => {
     vi.useFakeTimers()
-    for (let gid = 1; gid <= PICKS_LIMIT + 1; gid++) {
-      vi.setSystemTime(gid * 1000)
-      await savePick(gid, [`x:${gid}`])
+    const ids: string[] = []
+    for (let i = 1; i <= PICKS_LIMIT + 1; i++) {
+      vi.setSystemTime(sameTime ? 1000 : i * 1000)
+      ids.push(await savePick([`other:sample${i}`]))
     }
-    expect(await loadPick('1')).toEqual([])
-    expect(await loadPick(String(PICKS_LIMIT + 1))).toEqual([`x:${PICKS_LIMIT + 1}`])
-    expect((await cacheKeys('eqt_mytags_pick:')).length).toBe(PICKS_LIMIT)
+    if (!sameTime) expect(await loadPick(ids[0])).toBeNull()
+    expect((await loadPick(ids[PICKS_LIMIT]))?.terms).toEqual([`other:sample${PICKS_LIMIT + 1}`])
+    expect((await cacheKeys('eqt_pick:')).length).toBe(PICKS_LIMIT)
+  })
+})
+
+describe('快照的 My Tags 投影', () => {
+  it('保留 tag 身份，移除修飾符、展開 namespace，合併重複身份並略過一般搜尋詞', () => {
+    expect(pickTags([
+      '-f:"some tag$"', '~p:sample$', 'female:"some tag*"',
+      'title:sample', 'gid:123', 'free text', 'other:sample',
+    ])).toEqual(['female:some tag', 'parody:sample', 'other:sample'])
+  })
+
+  it('快照留在同站 fragment，原生 query 不接收快照參數', () => {
+    const url = new URL(pickUrl('https://exhentai.org', '7kQ2mN9xR4vB'))
+    expect(url.origin).toBe('https://exhentai.org')
+    expect(url.pathname).toBe('/mytags')
+    expect(url.search).toBe('')
+    expect(url.hash).toBe('#eqt_hash=7kQ2mN9xR4vB')
   })
 })

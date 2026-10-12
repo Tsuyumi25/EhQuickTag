@@ -49,7 +49,7 @@ import { askConfirm } from '@/services/confirmDialog'
 import { tagColors, type TagColors } from '@/services/mytags/mytagsColors'
 import { useMyTagsColors } from '@/composables/useMyTagsColors'
 import { buildMyTagsPalette, saveMyTagsPalette } from '@/services/mytags/mytagsPalette'
-import { loadPick, PICK_PARAM } from '@/services/mytags/mytagsPicks'
+import { useMyTagsSource } from '@/composables/useMyTagsSource'
 import type { TagEntry } from '@/services/tags/tagDb'
 
 const host = useEhMyTagsHost()!
@@ -153,8 +153,9 @@ const galleryBusy = ref(false)
 const galleryCache = new Map<number, GalleryDetail>()
 
 const filter = ref<TagFilter>(emptyFilter())
-/** 圖庫頁用 `?eqt_gid=` 帶過來的選取 */
-const pickedTags = ref<string[]>([])
+const pickHash = ref(location.hash)
+const { tags: pickedTags, message: pickMessage } = useMyTagsSource(pickHash)
+function refreshPickHash(): void { pickHash.value = location.hash }
 
 
 // ---- 合併所有標籤集 ----
@@ -888,8 +889,8 @@ let unbind: (() => void) | null = null
 onMounted(async () => {
   unbind = host.onChange(reread)
   setAppMode(true)
-  const pickGid = new URLSearchParams(location.search).get(PICK_PARAM)
-  if (pickGid) pickedTags.value = await loadPick(pickGid)
+  window.addEventListener('hashchange', refreshPickHash)
+  refreshPickHash()
   const version = sampleClearVersion.value
   try {
     const [samples, savedEdits] = await Promise.all([sampleStore.load(), editStore.load()])
@@ -916,7 +917,13 @@ onMounted(async () => {
   publishPalette()
 })
 
-onUnmounted(() => { currentFetcher.stop(); expungedFetcher.stop(); unbind?.(); setAppMode(false) })
+onUnmounted(() => {
+  window.removeEventListener('hashchange', refreshPickHash)
+  currentFetcher.stop()
+  expungedFetcher.stop()
+  unbind?.()
+  setAppMode(false)
+})
 watch(sampleClearVersion, () => {
   currentFetcher.reset()
   expungedFetcher.reset()
@@ -1205,6 +1212,7 @@ watch(edits, () => { void flush().catch(reportStorageError) }, { deep: true })
           :label="t('bars.threshold')"
         />
       </label>
+          <p v-if="pickMessage" class="eqt-panel__hint" role="status">{{ t(pickMessage) }}</p>
           <MyTagsCatalog
             id="eqt-tag-catalog"
             :inert="isCollapsed"

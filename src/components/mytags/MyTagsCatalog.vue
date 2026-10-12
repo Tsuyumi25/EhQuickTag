@@ -57,8 +57,8 @@ const { dbReady, suggestions } = useTagSuggestions({
 })
 
 const pickedMode = ref(false)
-watch(() => props.picked.length, (count, before) => {
-  if (count && !before) pickedMode.value = true
+watch(() => props.picked, (tags) => {
+  pickedMode.value = tags.length > 0
 }, { immediate: true })
 
 // 圖庫上的標籤不一定在字典裡，也不必走字典搜尋：數量就那幾個，直接比對名稱和翻譯

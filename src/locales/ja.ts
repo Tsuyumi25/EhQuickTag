@@ -305,6 +305,10 @@ export default {
   'gallery.sessionExpired': 'セッションの有効期限が切れました。ページを再読み込みして再ログインしてください。',
   'gallery.tagDbLoadFailed': 'タグ DB の読み込みに失敗しました。後でリトライするかネットワークをご確認ください。',
   'gallery.openInMyTags': 'My Tags で表示',
+  'gallery.pickSaveFailed': '選択内容を保存または開けませんでした。現在の選択は保持されています。',
+  'panel.pickMissing': '選択スナップショットが存在しないか、削除されています。元のページで選択を保存し直してください。',
+  'panel.pickConflict': 'リンクに選択スナップショットとギャラリーの両方が指定されています。どちらか一方にしてください。',
+  'panel.pickLoadFailed': '選択スナップショットを読み込めませんでした。',
   'gallery.myTagsColorsFailed': 'My Tags の色を読み込めませんでした。',
   'gallery.wiki': 'Wiki',
 

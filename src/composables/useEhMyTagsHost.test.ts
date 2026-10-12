@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createSSRApp, defineComponent, h, ref } from 'vue'
 // 沒有 jsdom，靠 SSR renderer 取得真正的 appContext，重現 root 接管、後代取用的路徑
 import { renderToString } from 'vue/server-renderer'
-import { useEhMyTagsHost } from '@/composables/useEhMyTagsHost'
+import { tagSetUrl, useEhMyTagsHost } from '@/composables/useEhMyTagsHost'
 import { postMassAction } from '@/services/mytags/mytagsApi'
 
 vi.mock('@/services/store', () => ({ fontFamily: ref(''), fontWeight: ref('') }))
@@ -66,6 +66,14 @@ async function acquireInApp<T>(use: () => T): Promise<T[]> {
 
 afterEach(() => {
   vi.unstubAllGlobals()
+})
+
+describe('tagSetUrl', () => {
+  it('切換標籤集保留快照，第一組移除 tagset query', () => {
+    vi.stubGlobal('location', new URL('https://exhentai.org/mytags?tagset=3#eqt_hash=7kQ2mN9xR4vB'))
+    expect(tagSetUrl('2')).toBe('https://exhentai.org/mytags?tagset=2#eqt_hash=7kQ2mN9xR4vB')
+    expect(tagSetUrl('1')).toBe('https://exhentai.org/mytags#eqt_hash=7kQ2mN9xR4vB')
+  })
 })
 
 describe('useEhMyTagsHost 接管次數', () => {

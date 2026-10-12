@@ -1,21 +1,16 @@
-// 從圖庫頁選中、要帶進 /mytags 的標籤。
-//
-// ⭐ URL 只帶 gid，標籤清單放在 GM storage 用 gid 對回來：同時開兩本各自的 /mytags
-// 分頁不會互相搶同一份資料，重新整理也還在。代價是會累積，所以只留最近幾筆。
-//
-// ⚠️ 每本各佔一個 key，不共用一份表：GM storage 沒有交易，兩個分頁同時「讀出整份表、
-// 改一格、寫回去」，後寫的會把先寫的那本蓋掉。各寫各的 key 就沒有這個問題；清掉
-// 舊的那一步就算兩邊同時做，最多只是多刪或少刪一筆舊的。
+// 每份快照獨佔一個 key，避免跨分頁更新共用索引時覆蓋彼此的內容。
 
 import { cacheDelete, cacheGet, cacheKeys, cacheSet } from '@/services/gmStorage'
+import { parseTerm } from '@/services/search/searchSyntax'
 
-const PICK_PREFIX = 'eqt_mytags_pick:'
-const PICK_SCHEMA = 1
+const PICK_PREFIX = 'eqt_pick:'
+const PICK_SCHEMA = 2
 export const PICKS_LIMIT = 20
-export const PICK_PARAM = 'eqt_gid'
+export const PICK_PARAM = 'eqt_hash'
+const PICK_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_'
 
 export interface TagPick {
-  tags: string[]
+  terms: string[]
   savedAt: number
 }
 
@@ -26,10 +21,11 @@ export function parsePick(raw: string | null): TagPick | null {
     if (
       saved.schema !== PICK_SCHEMA
       || typeof saved.savedAt !== 'number'
-      || !Array.isArray(saved.tags)
-      || !saved.tags.every((tag) => typeof tag === 'string')
+      || !Number.isFinite(saved.savedAt)
+      || !Array.isArray(saved.terms)
+      || !saved.terms.every((term) => typeof term === 'string')
     ) return null
-    return { tags: saved.tags, savedAt: saved.savedAt }
+    return { terms: saved.terms, savedAt: saved.savedAt }
   } catch {
     return null
   }
@@ -46,24 +42,41 @@ export function stalePicks(
     .map((entry) => entry.key)
 }
 
-export async function savePick(gid: number, tags: string[]): Promise<void> {
-  const key = `${PICK_PREFIX}${gid}`
-  await cacheSet(key, JSON.stringify({ schema: PICK_SCHEMA, tags, savedAt: Date.now() }))
+export async function savePick(terms: readonly string[]): Promise<string> {
+  const saved = JSON.stringify({ schema: PICK_SCHEMA, terms, savedAt: Date.now() })
+  let id: string
+  let key: string
+  do {
+    id = Array.from(crypto.getRandomValues(new Uint8Array(12)), byte => PICK_ALPHABET[byte & 63]).join('')
+    key = `${PICK_PREFIX}${id}`
+  } while (await cacheGet(key) !== null)
+  await cacheSet(key, saved)
   const keys = await cacheKeys(PICK_PREFIX)
-  if (keys.length <= PICKS_LIMIT) return
-  const entries = await Promise.all(keys.map(async (k) => ({
-    key: k,
-    savedAt: parsePick(await cacheGet(k))?.savedAt ?? null,
-  })))
-  await Promise.all(stalePicks(entries).filter((k) => k !== key).map(cacheDelete))
+  if (keys.length > PICKS_LIMIT) {
+    const entries = await Promise.all(keys.filter(k => k !== key).map(async (k) => ({
+      key: k,
+      savedAt: parsePick(await cacheGet(k))?.savedAt ?? null,
+    })))
+    await Promise.all(stalePicks(entries, PICKS_LIMIT - 1).map(cacheDelete))
+  }
+  return id
 }
 
-export async function loadPick(gid: string): Promise<string[]> {
-  return parsePick(await cacheGet(`${PICK_PREFIX}${gid}`))?.tags ?? []
+export async function loadPick(id: string): Promise<TagPick | null> {
+  return parsePick(await cacheGet(`${PICK_PREFIX}${id}`))
 }
 
-export function pickUrl(origin: string, gid: number): string {
+export function pickUrl(origin: string, id: string): string {
   const url = new URL('/mytags', origin)
-  url.searchParams.set(PICK_PARAM, String(gid))
+  url.hash = new URLSearchParams({ [PICK_PARAM]: id }).toString()
   return url.href
+}
+
+export function pickTags(terms: readonly string[]): string[] {
+  const tags = new Set<string>()
+  for (const raw of terms) {
+    const term = parseTerm(raw)
+    if (term.namespace && term.tag && !term.parseError) tags.add(`${term.namespace}:${term.tag}`)
+  }
+  return [...tags]
 }

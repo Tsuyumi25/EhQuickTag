@@ -305,6 +305,10 @@ export default {
   'gallery.sessionExpired': '登入狀態已過期，請重新整理頁面後再試。',
   'gallery.tagDbLoadFailed': '標籤資料庫載入失敗，請稍後再試或檢查網路。',
   'gallery.openInMyTags': '到 My Tags 檢視',
+  'gallery.pickSaveFailed': '無法儲存或開啟這份選取，已保留目前選取。',
+  'panel.pickMissing': '選取快照不存在或已清理，請回來源頁重新保存選取。',
+  'panel.pickConflict': '連結同時指定選取快照與圖庫，請只保留一種來源。',
+  'panel.pickLoadFailed': '無法載入選取快照。',
   'gallery.myTagsColorsFailed': '無法載入 My Tags 顏色。',
   'gallery.wiki': 'Wiki',
 

@@ -415,8 +415,7 @@ function execGalleryDblClickAction(action: GalleryDblClickAction, newTabActive: 
 
 // 拆兩個 function（不用 mode 參數）避免 template `@click="onSearchNewTab"`
 // 意外把 MouseEvent 當 mode 傳進來——沒 arg 的 caller 也不會踩到預設值不 kick in 的坑
-function buildSearchUrl(): string | null {
-  if (selectedCount.value === 0) return null
+function selectedTerms(): string[] {
   const tokens: string[] = []
   for (const group of groups.value) {
     for (const chip of group.chips) {
@@ -424,6 +423,12 @@ function buildSearchUrl(): string | null {
       else if (chip.selected === 'negative') tokens.push(`-${chip.token}`)
     }
   }
+  return tokens
+}
+
+function buildSearchUrl(): string | null {
+  const tokens = selectedTerms()
+  if (!tokens.length) return null
   const url = new URL('/', window.location.href)
   url.searchParams.set('f_search', tokens.join(' '))
   return url.href
@@ -449,15 +454,15 @@ function onSearchCurrent(): void {
 }
 
 async function onOpenInMyTags(): Promise<void> {
-  const gidMatch = /^\/g\/(\d+)\//.exec(location.pathname)
-  if (!gidMatch || selectedCount.value === 0) return
-  const gid = Number(gidMatch[1])
-  const tags = allTags.value
-    .filter(t => selection.value.has(t.nsRaw))
-    .map(t => t.nsRaw)
-  await savePick(gid, tags)
-  Promise.resolve(GM.openInTab(pickUrl(location.origin, gid), { active: true })).catch(() => {})
-  onClearSelection()
+  const terms = selectedTerms()
+  if (!terms.length) return
+  try {
+    const id = await savePick(terms)
+    await GM.openInTab(pickUrl(location.origin, id), { active: true })
+    onClearSelection()
+  } catch {
+    toast.error(t('gallery.pickSaveFailed'))
+  }
 }
 
 function tagsFor(target: Selection): GalleryTag[] {

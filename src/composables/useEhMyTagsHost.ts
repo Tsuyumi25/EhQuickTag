@@ -204,9 +204,10 @@ export async function fetchTagSetIndex(): Promise<TagSetIndex | null> {
 
 /** `change_tagset` 的規則：第一組不帶參數 */
 export function tagSetUrl(value: string): string {
-  return Number(value) > 1
-    ? `${location.origin}/mytags?tagset=${encodeURIComponent(value)}`
-    : `${location.origin}/mytags`
+  const url = new URL('/mytags', location.origin)
+  if (Number(value) > 1) url.searchParams.set('tagset', value)
+  url.hash = location.hash
+  return url.href
 }
 
 function setupEhMyTagsHost(): EhMyTagsHost | null {
