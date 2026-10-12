@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { reactive, ref, watch, onMounted, nextTick, computed } from 'vue'
-import { ExternalLink, ChevronRight, Lock, MousePointerClick } from '@lucide/vue'
+import { ExternalLink, ChevronRight, Lock, MousePointerClick, Star } from '@lucide/vue'
 import ContentEditable from 'vue-contenteditable'
 import SearchTermEditor from '@/components/SearchTermEditor.vue'
 import { currentTagStyleClass } from '@/composables/useTagStyle'
 import { usePopupBehavior } from '@/composables/usePopupBehavior'
 import { makeRow, type RowState } from '@/composables/useSearchTerm'
+import { readEhSearchSnapshot } from '@/composables/ehSearchSnapshot'
+import { TERM_RE } from '@/services/search/searchSyntax'
 import { TagState, type TagButton, type TagMode } from '@/types'
 import { t, isZhLocale } from '@/composables/useI18n'
 import { loadTagDb } from '@/services/tags/tagDb'
@@ -39,6 +41,7 @@ const activeRow = ref(-1)
 const dbReady = ref(false)
 const popupEl = ref<HTMLElement | null>(null)
 const editorRefs = ref<Array<InstanceType<typeof SearchTermEditor> | null>>([])
+const snapshotAvailable = readEhSearchSnapshot() !== null
 
 watch(() => props.tag, (t) => {
   label.value = t.label ?? ''
@@ -50,6 +53,14 @@ watch(() => props.tag, (t) => {
   orEnabled.value = !disabled.has('or')
   excludeEnabled.value = !disabled.has('exclude')
 }, { immediate: true })
+
+function useCurrentSearch(): void {
+  const snapshot = readEhSearchSnapshot()
+  if (!snapshot) return
+  const terms = snapshot.keywords.match(TERM_RE) ?? []
+  activeRow.value = -1
+  rows.splice(0, rows.length, ...(terms.length ? terms : ['']).map(makeRow))
+}
 
 function addRowAfter(idx: number): void {
   rows.splice(idx + 1, 0, makeRow(''))
@@ -350,6 +361,12 @@ const simOutput = computed(() => {
       </div>
 
       <div class="eqt-popup__actions">
+        <button
+          v-if="snapshotAvailable"
+          class="eqt-popup__btn"
+          type="button"
+          @click="useCurrentSearch"
+        ><Star :size="12" /> {{ t('tagConfig.useCurrentSearch') }}</button>
         <div class="eqt-popup__spacer" />
         <button class="eqt-popup__btn" type="button" @click="emit('close')">
           {{ t('tagConfig.cancel') }} <kbd class="eqt-popup__kbd">Esc</kbd>

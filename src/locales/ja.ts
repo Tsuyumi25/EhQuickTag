@@ -211,6 +211,7 @@ export default {
   'tagConfig.delete': '削除',
   'tagConfig.cancel': 'キャンセル',
   'tagConfig.save': '保存',
+  'tagConfig.useCurrentSearch': '現在の検索語を使う',
 
   // UrlConfigPopup
   'category.doujinshi': '同人誌',

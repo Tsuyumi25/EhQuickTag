@@ -211,6 +211,7 @@ export default {
   'tagConfig.delete': 'Delete',
   'tagConfig.cancel': 'Cancel',
   'tagConfig.save': 'Save',
+  'tagConfig.useCurrentSearch': 'Use current search terms',
 
   // UrlConfigPopup
   'category.doujinshi': 'Doujinshi',
