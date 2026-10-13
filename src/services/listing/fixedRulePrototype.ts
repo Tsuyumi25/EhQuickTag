@@ -1,9 +1,10 @@
-// Fixed rule sections shared by the editor and live gallery evaluation.
+// Rule conditions shared by the editor and live gallery evaluation.
 
 import { t } from '@/composables/useI18n'
 import { parseTerm } from '@/services/search/searchSyntax'
 
-export const MAX_FOLDER_DEPTH = 2
+/** 根群組底下最多再巢狀幾層群組 */
+export const MAX_GROUP_DEPTH = 3
 
 /** 三值：true 命中、false 不命中、null 資料不足以判定 */
 export type Tri = boolean | null
@@ -64,16 +65,19 @@ export interface RangeCondition {
 
 export type FixedCondition = TagCondition | RangeCondition
 
-export type FolderMode = 'all' | 'any' | 'none'
+export type GroupMode = 'all' | 'any' | 'none'
 
-export interface ConditionFolder {
+/** 也是群組判定模式下拉選單的順序 */
+export const GROUP_MODES: readonly GroupMode[] = ['all', 'any', 'none']
+
+export interface ConditionGroup {
   id: number
-  kind: 'folder'
-  mode: FolderMode
+  kind: 'group'
+  mode: GroupMode
   conditions: FixedConditionItem[]
 }
 
-export type FixedConditionItem = FixedCondition | ConditionFolder
+export type FixedConditionItem = FixedCondition | ConditionGroup
 
 export interface FixedActions {
   background: string | null
@@ -95,9 +99,8 @@ export interface FixedRule {
   id: number
   name: string
   enabled: boolean
-  common: FixedConditionItem[]
-  alternatives: FixedConditionItem[]
-  exceptions: FixedConditionItem[]
+  /** 規則本身就是一個群組；條件不只一個時才有東西決定它們之間是「且」還是「或」 */
+  root: ConditionGroup
   actions: FixedActions
 }
 
@@ -109,7 +112,7 @@ export interface GalleryProbe {
   pages: number | null
 }
 
-// 規則 / Folder / 條件共用同一條遞增序號——UI 的 v-for key 只要全域唯一即可，
+// 規則 / 群組 / 條件共用同一條遞增序號——UI 的 v-for key 只要全域唯一即可，
 // 刪掉中間一列時後面的列不會換 key，輸入框狀態也就不會錯位
 let sequence = 0
 
@@ -118,19 +121,18 @@ export function nextEntityId(): number {
   return sequence
 }
 
-function reserveConditionIds(conditions: readonly FixedConditionItem[]): void {
-  for (const condition of conditions) {
-    sequence = Math.max(sequence, condition.id)
-    if (condition.kind === 'folder') reserveConditionIds(condition.conditions)
+/** 讀進來的資料自帶 id，序號要跳過它們，之後新建的才不會撞號 */
+function reserveIds(items: readonly FixedConditionItem[]): void {
+  for (const item of items) {
+    sequence = Math.max(sequence, item.id)
+    if (item.kind === 'group') reserveIds(item.conditions)
   }
 }
 
 export function reserveRuleIds(rules: readonly FixedRule[]): void {
   for (const rule of rules) {
     sequence = Math.max(sequence, rule.id)
-    reserveConditionIds(rule.common)
-    reserveConditionIds(rule.exceptions)
-    reserveConditionIds(rule.alternatives)
+    reserveIds([rule.root])
   }
 }
 
@@ -158,8 +160,8 @@ export function conditionRange(condition: RangeCondition): ValueRange {
   return { min: condition.value, max: condition.value }
 }
 
-export function createFolder(): ConditionFolder {
-  return { id: nextEntityId(), kind: 'folder', mode: 'all', conditions: [] }
+export function createGroup(mode: GroupMode = 'all', conditions: FixedConditionItem[] = []): ConditionGroup {
+  return { id: nextEntityId(), kind: 'group', mode, conditions }
 }
 
 /** 同一個標籤的含有與不含是兩件不同的素材，去重要連同極性一起比 */
@@ -167,9 +169,9 @@ export function tagConditionKey(condition: Pick<TagCondition, 'tag' | 'exclude'>
   return `${condition.exclude ? '-' : '+'}${condition.tag}`
 }
 
-/** Folder 自己算一層；條件本身是 0。用來判斷拖進某層之後會不會超過 MAX_FOLDER_DEPTH */
+/** 群組自己算一層；條件本身是 0。用來判斷拖進某層之後會不會超過 MAX_GROUP_DEPTH */
 export function itemHeight(item: FixedConditionItem): number {
-  if (item.kind !== 'folder') return 0
+  if (item.kind !== 'group') return 0
   return 1 + Math.max(0, ...item.conditions.map(itemHeight))
 }
 
@@ -178,9 +180,7 @@ export function createRule(index: number): FixedRule {
     id: nextEntityId(),
     name: t('rulePagePrototype.newRule', { n: index }),
     enabled: true,
-    common: [],
-    alternatives: [],
-    exceptions: [],
+    root: createGroup('all'),
     actions: { background: null, blur: 'unchanged' },
   }
 }
@@ -194,25 +194,22 @@ export function conditionReady(condition: FixedCondition): boolean {
   return condition.op !== 'between' || condition.value <= (condition.max ?? field.max)
 }
 
-function conditionItemReady(condition: FixedConditionItem, depth = 0): boolean {
-  if (condition.kind === 'folder') {
-    return depth < MAX_FOLDER_DEPTH && condition.conditions.length > 0
-      && condition.conditions.every(child => conditionItemReady(child, depth + 1))
-  }
-  return conditionReady(condition)
+/** depth 是群組自己在根底下第幾層（根是 0）；空群組與太深的群組都是未完成，不給求值 */
+function itemReady(item: FixedConditionItem, depth: number): boolean {
+  if (item.kind !== 'group') return conditionReady(item)
+  return depth <= MAX_GROUP_DEPTH && item.conditions.length > 0
+    && item.conditions.every(child => itemReady(child, depth + 1))
 }
 
 /** 規則裡有沒有用到某個數值欄位；只有用到時才值得去補那個欄位的資料 */
 export function ruleUsesField(rule: FixedRule, field: RangeField): boolean {
-  const uses = (item: FixedConditionItem): boolean => (item.kind === 'folder' ? item.conditions.some(uses) : item.kind === field)
-  return [...rule.common, ...rule.alternatives, ...rule.exceptions].some(uses)
+  const uses = (item: FixedConditionItem): boolean => (item.kind === 'group' ? item.conditions.some(uses) : item.kind === field)
+  return uses(rule.root)
 }
 
-/** 空的區塊代表「不設限」，可以求值；填一半的列或空 Folder 則是未完成，不給求值 */
+/** 根群組也一樣：一個條件都沒有的規則不知道要套到誰身上，算未完成 */
 export function isRuleComplete(rule: FixedRule): boolean {
-  return rule.common.every(condition => conditionItemReady(condition))
-    && rule.exceptions.every(condition => conditionItemReady(condition))
-    && rule.alternatives.every(condition => conditionItemReady(condition))
+  return itemReady(rule.root, 0)
 }
 
 export function evaluateCondition(condition: FixedCondition, probe: GalleryProbe): Tri {
@@ -248,27 +245,16 @@ export function kleeneAny(values: readonly Tri[]): Tri {
   return unknown ? null : false
 }
 
-function evaluateConditionItem(condition: FixedConditionItem, probe: GalleryProbe): Tri {
-  if (condition.kind !== 'folder') return evaluateCondition(condition, probe)
-  if (!condition.conditions.length) return null
-  const values = condition.conditions.map(child => evaluateConditionItem(child, probe))
-  if (condition.mode === 'all') return kleeneAll(values)
+function evaluateItem(item: FixedConditionItem, probe: GalleryProbe): Tri {
+  if (item.kind !== 'group') return evaluateCondition(item, probe)
+  const values = item.conditions.map(child => evaluateItem(child, probe))
+  if (item.mode === 'all') return kleeneAll(values)
   const matched = kleeneAny(values)
-  return condition.mode === 'none' && matched !== null ? !matched : matched
+  return item.mode === 'none' && matched !== null ? !matched : matched
 }
 
 export function evaluateRule(rule: FixedRule, probe: GalleryProbe): Tri {
-  if (!isRuleComplete(rule)) return null
-  const common = kleeneAll(rule.common.map(condition => evaluateConditionItem(condition, probe)))
-  // 任一成立區留空 = 不加限制；有項目才要求至少一項成立
-  const alternatives: Tri = rule.alternatives.length
-    ? kleeneAny(rule.alternatives.map(condition => evaluateConditionItem(condition, probe)))
-    : true
-  const exception: Tri = rule.exceptions.length
-    ? kleeneAny(rule.exceptions.map(condition => evaluateConditionItem(condition, probe)))
-    : false
-  const notException: Tri = exception === null ? null : !exception
-  return kleeneAll([common, alternatives, notException])
+  return isRuleComplete(rule) ? evaluateItem(rule.root, probe) : null
 }
 
 export interface RuleEffects {

@@ -1,0 +1,41 @@
+import { fc } from '@fast-check/vitest'
+import {
+  createGroup, createRangeCondition, createRule, createTagCondition, GROUP_MODES, RANGE_OPS,
+  type FixedConditionItem, type FixedRule, type GalleryProbe, type GroupMode, type RangeField, type RangeOp,
+} from '@/services/listing/fixedRulePrototype'
+
+// === 規則的 property test 共用 arbitraries ===
+// 標籤只取四個，隨機規則與隨機圖庫才會常常碰在一起；評分取半星、頁數取 1–12，區間的邊界也常碰到
+
+const TAGS = ['female:a', 'female:b', 'male:c', 'other:d']
+
+export function rule(mode: GroupMode, conditions: FixedConditionItem[]): FixedRule {
+  return { ...createRule(1), root: createGroup(mode, conditions) }
+}
+
+const ratingArb = fc.integer({ min: 0, max: 10 }).map(n => n / 2)
+const tagArb = fc.record({ tag: fc.constantFrom(...TAGS), exclude: fc.boolean() })
+  .map(({ tag, exclude }) => createTagCondition(tag, exclude))
+const pagesArb = fc.integer({ min: 1, max: 12 })
+const rangeConditionArb = (field: RangeField, valueArb: fc.Arbitrary<number>) =>
+  fc.tuple(fc.constantFrom<RangeOp>(...RANGE_OPS), valueArb, valueArb, fc.boolean())
+    .map(([op, a, b, open]) => ({
+      ...createRangeCondition(field, op, Math.min(a, b)),
+      // 頁數的介於可以不給上限
+      ...(op === 'between' && !(field === 'pages' && open) ? { max: Math.max(a, b) } : {}),
+    }))
+const leafArb = fc.oneof(
+  { weight: 4, arbitrary: tagArb },
+  { weight: 1, arbitrary: rangeConditionArb('rating', ratingArb) },
+  { weight: 1, arbitrary: rangeConditionArb('pages', pagesArb) },
+)
+const modeArb = fc.constantFrom<GroupMode>(...GROUP_MODES)
+const groupArb = (inner: fc.Arbitrary<FixedConditionItem>) =>
+  fc.tuple(modeArb, fc.array(inner, { minLength: 1, maxLength: 3 })).map(([mode, conditions]) => createGroup(mode, conditions))
+export const itemArb: fc.Arbitrary<FixedConditionItem> = fc.oneof(
+  { weight: 3, arbitrary: leafArb },
+  { weight: 1, arbitrary: groupArb(fc.oneof({ weight: 3, arbitrary: leafArb }, { weight: 1, arbitrary: groupArb(leafArb) })) },
+)
+export const ruleArb = fc.tuple(modeArb, fc.array(itemArb, { minLength: 1, maxLength: 4 })).map(([mode, conditions]) => rule(mode, conditions))
+export const probeArb = fc.record({ tags: fc.subarray(TAGS), rating: ratingArb, pages: pagesArb })
+  .map(({ tags, rating, pages }): GalleryProbe => ({ tags: new Set(tags), complete: true, rating, pages }))

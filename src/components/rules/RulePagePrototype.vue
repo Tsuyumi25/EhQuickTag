@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import Draggable from 'vuedraggable'
-import { ArrowLeft, Ban, CheckCheck, Ellipsis, Eye, GripVertical, Paintbrush, Plus, Shapes, Split, Trash2, X } from '@lucide/vue'
+import { ArrowLeft, Ellipsis, Eye, GripVertical, Paintbrush, Plus, Shapes, Trash2, X } from '@lucide/vue'
 import ContextMenu from '@/components/ContextMenu.vue'
 import { baseDragOptions } from '@/utils/drag'
-import RuleConditionList from './RuleConditionList.vue'
+import RuleConditionGroup from './RuleConditionGroup.vue'
 import RuleDigest from './RuleDigest.vue'
 import RuleMaterials from './RuleMaterials.vue'
 import RuleTagLibrary from './RuleTagLibrary.vue'
@@ -217,19 +217,8 @@ onBeforeUnmount(() => {
         <p v-if="error" class="eqt-rule-page__alert" role="alert">{{ t(error) }}</p>
 
         <template v-if="selected">
-          <section class="eqt-rule-page__section eqt-rule-page__section--all">
-            <h2><CheckCheck class="eqt-rule-page__icon" />{{ t('rulePagePrototype.common') }}</h2>
-            <RuleConditionList :conditions="selected.common" :empty-hint="t('rulePagePrototype.dropHere')" />
-          </section>
-
-          <section class="eqt-rule-page__section eqt-rule-page__section--any">
-            <h2><Split class="eqt-rule-page__icon" />{{ t('rulePagePrototype.alternatives') }}</h2>
-            <RuleConditionList :conditions="selected.alternatives" :empty-hint="t('rulePagePrototype.dropHere')" />
-          </section>
-
-          <section class="eqt-rule-page__section eqt-rule-page__section--except">
-            <h2><Ban class="eqt-rule-page__icon" />{{ t('rulePagePrototype.exceptions') }}</h2>
-            <RuleConditionList :conditions="selected.exceptions" :empty-hint="t('rulePagePrototype.dropHere')" />
+          <section class="eqt-rule-page__section">
+            <RuleConditionGroup :key="selected.root.id" :group="selected.root" :depth="0" root />
           </section>
 
           <section class="eqt-rule-page__section">

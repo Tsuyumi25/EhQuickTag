@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
-  averageOfStars, conditionReady, conditionsFromTerms, createFolder, createRangeCondition, createRule, createTagCondition,
-  evaluateCondition, itemHeight, resolveRuleEffects, starsFromAverage,
+  averageOfStars, conditionReady, conditionsFromTerms, createGroup, createRangeCondition, createRule, createTagCondition,
+  evaluateCondition, evaluateRule, itemHeight, resolveRuleEffects, starsFromAverage,
   type BlurAction, type FixedRule, type GalleryProbe, type RangeOp,
 } from '@/services/listing/fixedRulePrototype'
 
@@ -10,7 +10,7 @@ const probe = (rating: number | null, tags: string[] = [], pages: number | null 
 
 function ruleWith(tag: string, background: string | null, blur: BlurAction, enabled = true): FixedRule {
   const rule = createRule(1)
-  rule.common.push(createTagCondition(tag))
+  rule.root.conditions.push(createTagCondition(tag))
   rule.actions = { background, blur }
   rule.enabled = enabled
   return rule
@@ -90,16 +90,34 @@ describe('頁數', () => {
 })
 
 describe('itemHeight', () => {
-  it('條件是 0 層，Folder 依最深的子 Folder 往上加', () => {
-    const inner = createFolder()
-    inner.conditions.push(createTagCondition('male:b'))
-    const outer = createFolder()
-    outer.conditions.push(createTagCondition('male:a'), inner)
+  it('條件是 0 層，群組依最深的子群組往上加', () => {
+    const inner = createGroup('all', [createTagCondition('male:b')])
+    const outer = createGroup('any', [createTagCondition('male:a'), inner])
 
     expect(itemHeight(createTagCondition('male:a'))).toBe(0)
     expect(itemHeight(createRangeCondition('rating'))).toBe(0)
-    expect(itemHeight(createFolder())).toBe(1)
+    expect(itemHeight(createGroup())).toBe(1)
     expect(itemHeight(outer)).toBe(2)
+  })
+})
+
+describe('根群組', () => {
+  it('新規則的根群組是空的，算未完成，不套用到任何圖庫', () => {
+    expect(evaluateRule(createRule(1), probe(5, ['female:a']))).toBeNull()
+  })
+
+  it('根群組照判定模式求值，切成任一成立就是 OR', () => {
+    const rule = createRule(1)
+    rule.root.conditions.push(createTagCondition('female:a'), createTagCondition('female:b'))
+    expect(evaluateRule(rule, probe(null, ['female:a']))).toBe(false)
+    rule.root.mode = 'any'
+    expect(evaluateRule(rule, probe(null, ['female:a']))).toBe(true)
+  })
+
+  it('巢狀超過上限的群組不給求值', () => {
+    const rule = createRule(1)
+    rule.root.conditions.push(createGroup('all', [createGroup('all', [createGroup('all', [createGroup('all', [createTagCondition('female:a')])])])]))
+    expect(evaluateRule(rule, probe(null, ['female:a']))).toBeNull()
   })
 })
 

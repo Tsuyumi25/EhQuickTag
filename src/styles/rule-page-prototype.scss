@@ -10,7 +10,7 @@
   --eqt-rule-page-tone-width: calc(var(--eqt-border-width) * 1.5);
   // 句子裡的控制項跟標籤 chip 的內容同高；em 在使用處才解析，跟著各自的字級走
   --eqt-rule-page-inline-h: calc(1.4em + var(--eqt-gallery-chip-padding-block) * 2);
-  // 跟 .eqt-gallery-chip 自帶的 margin 同一組，評分、Folder、摘要裡的項目才能排在 chip 旁邊對齊
+  // 跟 .eqt-gallery-chip 自帶的 margin 同一組，數值條件、群組、摘要裡的項目才能排在 chip 旁邊對齊
   --eqt-rule-page-item-margin: 0 calc(var(--eqt-rule-page-gap) / 2) calc(var(--eqt-rule-page-gap) * 1.25);
   // 四周留出一圈搜尋頁：規則頁是浮在搜尋頁上的一張卡，不是換到另一個頁面
   --eqt-rule-page-margin: calc(var(--eqt-rule-page-gap) * 6);
@@ -344,21 +344,6 @@
   & + & {
     border-top: var(--eqt-border-width) solid var(--eqt-border);
   }
-
-  // 三區條件借用搜尋狀態的顏色：全部成立 = include、任一成立 = OR、
-  // 例外 = exclude。色條只畫在最外層，Folder 內不重複
-  &--all { --eqt-rule-page-tone: var(--eqt-status-include); }
-  &--any { --eqt-rule-page-tone: var(--eqt-status-or); }
-  &--except { --eqt-rule-page-tone: var(--eqt-status-exclude); }
-
-  &--all,
-  &--any,
-  &--except {
-    > .eqt-rule-page__tray {
-      padding-inline-start: calc(var(--eqt-rule-page-gap) * 3);
-      border-inline-start: var(--eqt-rule-page-tone-width) solid var(--eqt-rule-page-tone);
-    }
-  }
 }
 
 .eqt-rule-page__section > h2,
@@ -387,7 +372,7 @@
   min-height: calc(var(--eqt-row-h) + var(--eqt-rule-page-gap) * 1.25);
 
   > .eqt-rule-page__range,
-  > .eqt-rule-page__folder,
+  > .eqt-rule-page__group,
   > .eqt-rule-page__source {
     margin: var(--eqt-rule-page-item-margin);
   }
@@ -400,7 +385,7 @@
     font-size: var(--eqt-fs-sm);
   }
 
-  .eqt-rule-page__folder > &:not(:has(> .eqt-rule-page__item, > .eqt-popup__suggestion))::before {
+  .eqt-rule-page__group:not(.eqt-rule-page__group--root) > &:not(:has(> .eqt-rule-page__item, > .eqt-popup__suggestion))::before {
     color: var(--eqt-danger);
   }
 
@@ -552,7 +537,7 @@
   &--half > .eqt-rule-page__star-front { clip-path: inset(0 50% 0 0); }
 }
 
-// 嵌在句子裡的下拉（數值條件的運算子、Folder 的判定模式）：平常是一段字，hover 才浮出底色
+// 嵌在句子裡的下拉（數值條件的運算子、群組的判定模式）：平常是一段字，hover 才浮出底色
 .eqt-rule-page__inline-select {
   appearance: none;
   min-width: 0;
@@ -642,6 +627,17 @@
     background: var(--eqt-bg-hover);
     color: var(--eqt-text);
   }
+
+  // 群組的產生器帶著它的色條，拖出去之前就看得出是哪一種
+  &--all { --eqt-rule-page-tone: var(--eqt-status-include); }
+  &--any { --eqt-rule-page-tone: var(--eqt-status-or); }
+  &--none { --eqt-rule-page-tone: var(--eqt-status-exclude); }
+
+  &--all,
+  &--any,
+  &--none {
+    border-inline-start: var(--eqt-rule-page-tone-width) solid var(--eqt-rule-page-tone);
+  }
 }
 
 .eqt-rule-page__material-tray {
@@ -698,48 +694,55 @@
   }
 }
 
-// Folder 跟 chip 排在同一行，是一段內嵌的小區塊。用底色分組而不是外框，巢狀時底色自然疊深一階；
-// 色條沿用三區那一套：全部成立 = include、任一成立 = OR、全部不成立 = exclude
-.eqt-rule-page__folder {
+// 群組沿用原本三區的樣子：標題列（判定模式的圖示與下拉）加上左側色條的托盤。
+// 色條借用搜尋狀態的顏色：全部成立 = include、任一成立 = OR、全部不成立 = exclude
+.eqt-rule-page__group {
   display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
+  flex-direction: column;
+  gap: var(--eqt-rule-page-gap);
   min-width: 0;
   max-width: 100%;
-  // 子項目自帶底部 margin，上方補同樣的量才會上下對稱
-  padding: calc(var(--eqt-rule-page-gap) * 1.25) 0 0 calc(var(--eqt-rule-page-gap) / 2);
-  border-inline-start: var(--eqt-rule-page-tone-width) solid var(--eqt-rule-page-tone);
-  border-radius: var(--eqt-radius-sm);
-  background: var(--eqt-bg-stripe);
 
   &--all { --eqt-rule-page-tone: var(--eqt-status-include); }
   &--any { --eqt-rule-page-tone: var(--eqt-status-or); }
   &--none { --eqt-rule-page-tone: var(--eqt-status-exclude); }
 
   > .eqt-rule-page__tray {
-    flex: 0 1 auto;
-    min-height: 0;
+    padding-inline-start: calc(var(--eqt-rule-page-gap) * 3);
+    border-inline-start: var(--eqt-rule-page-tone-width) solid var(--eqt-rule-page-tone);
   }
 
-  > .eqt-rule-page__folder-head,
-  > .eqt-rule-page__chip-remove {
-    margin: var(--eqt-rule-page-item-margin);
+  // 根群組就是整個條件區：撐滿寬度，標題用 section 標題的字級
+  &--root {
+    display: flex;
+    gap: calc(var(--eqt-rule-page-gap) * 1.5);
+
+    > .eqt-rule-page__group-head {
+      font-size: var(--eqt-fs-lg);
+      font-weight: bold;
+    }
   }
 
-  // chip 裡的移除鈕會承接外框色畫分隔線；Folder 的 border-inline-start 是色條，不能被承接
+  // 巢狀的群組跟 chip 排在同一行，標題列就是拖曳把手
+  &:not(.eqt-rule-page__group--root) > .eqt-rule-page__group-head {
+    font-size: var(--eqt-fs-sm);
+    cursor: grab;
+  }
+}
+
+.eqt-rule-page__group-head {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--eqt-rule-page-gap) / 2);
+
+  > .eqt-rule-page__icon { color: var(--eqt-text-hint); }
+
+  // chip 裡的移除鈕會承接外框色畫分隔線；標題列沒有外框，不能承接
   > .eqt-rule-page__chip-remove {
     height: var(--eqt-rule-page-inline-h);
     border: none;
     border-radius: var(--eqt-radius-sm);
   }
-}
-
-.eqt-rule-page__folder-head {
-  display: inline-flex;
-  align-items: center;
-  gap: calc(var(--eqt-rule-page-gap) / 2);
-  color: var(--eqt-text-hint);
-  cursor: grab;
 }
 
 // ---- 效果 ----
@@ -935,7 +938,7 @@
   gap: calc(var(--eqt-rule-page-gap) / 2);
 }
 
-// 摘要裡的「同時」「其中一個」沿用 Folder 的色條，跟編輯區用同一套顏色語言
+// 摘要裡的「同時」「其中一個」沿用群組的色條，跟編輯區用同一套顏色語言
 .eqt-rule-page__digest-group {
   display: inline-flex;
   flex-wrap: wrap;

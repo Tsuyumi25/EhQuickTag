@@ -1,22 +1,28 @@
 <script setup lang="ts">
+import type { Component } from 'vue'
 import Draggable from 'vuedraggable'
-import { BrushCleaning, FolderOpen, Shapes } from '@lucide/vue'
+import { BrushCleaning, Shapes } from '@lucide/vue'
 import RuleTagChip from './RuleTagChip.vue'
+import { GROUP_MODE_ICONS } from './groupModeIcons'
 import { RANGE_FIELD_ICONS } from './rangeFieldIcons'
 import { RULE_CONDITIONS_GROUP, ruleDragOptions } from './ruleDrag'
 import { t } from '@/composables/useI18n'
 import { ruleMaterials } from '@/services/appOverlays'
 import {
-  createFolder, createRangeCondition, createTagCondition, tagConditionKey,
-  type FixedConditionItem, type RangeField, type TagCondition,
+  createGroup, createRangeCondition, createTagCondition, tagConditionKey,
+  type FixedConditionItem, type GroupMode, type RangeField, type TagCondition,
 } from '@/services/listing/fixedRulePrototype'
 
-interface Source { id: RangeField | 'folder' }
+type Source = { id: RangeField; kind: 'range' } | { id: GroupMode; kind: 'group' }
 
-// 素材拖出去的是複本，原件留著：同一個素材可以放進好幾條規則、好幾個區塊
-const SOURCES: Source[] = [{ id: 'rating' }, { id: 'pages' }, { id: 'folder' }]
+// 素材拖出去的是複本，原件留著：同一個素材可以放進好幾條規則、好幾個群組。
+// 三種群組本質上是同一種東西、拖進去後也能改判定模式，分成三個只是讓拖曳少一步
+const SOURCES: Source[] = [
+  { id: 'rating', kind: 'range' }, { id: 'pages', kind: 'range' },
+  { id: 'all', kind: 'group' }, { id: 'any', kind: 'group' }, { id: 'none', kind: 'group' },
+]
 const sourceGroup = { name: RULE_CONDITIONS_GROUP, pull: 'clone', put: false }
-// 標籤（條件區的 chip、候選清單的項目）可以丟進來當素材；數值條件與 Folder 不收，
+// 標籤（條件區的 chip、候選清單的項目）可以丟進來當素材；數值條件與群組不收，
 // 它們隨時能從產生器再拉一個
 const materialGroup = {
   name: RULE_CONDITIONS_GROUP,
@@ -25,7 +31,14 @@ const materialGroup = {
 }
 
 function cloneSource(source: Source): FixedConditionItem {
-  return source.id === 'folder' ? createFolder() : createRangeCondition(source.id)
+  return source.kind === 'group' ? createGroup(source.id) : createRangeCondition(source.id)
+}
+
+// Draggable 的 slot 把 element 給成 any，圖示與文字在這裡用 Source 型別查好
+function sourceView(source: Source): { icon: Component; label: string } {
+  return source.kind === 'group'
+    ? { icon: GROUP_MODE_ICONS[source.id], label: t(`rulePagePrototype.groupMode.${source.id}`) }
+    : { icon: RANGE_FIELD_ICONS[source.id], label: t(`rulePagePrototype.${source.id}`) }
 }
 
 function cloneMaterial(material: TagCondition): TagCondition {
@@ -57,11 +70,11 @@ function dropDuplicate(event: { added?: { element: TagCondition; newIndex: numbe
       :clone="cloneSource" class="eqt-rule-page__sources"
     >
       <template #item="{ element: source }">
-        <div class="eqt-rule-page__item eqt-rule-page__source" :data-height="source.id === 'folder' ? 1 : 0">
-          <template v-if="source.id === 'folder'"><FolderOpen class="eqt-rule-page__icon" />{{ t('rulePagePrototype.folder') }}</template>
-          <template v-else>
-            <component :is="RANGE_FIELD_ICONS[source.id as RangeField]" class="eqt-rule-page__icon" />{{ t(`rulePagePrototype.${source.id}`) }}
-          </template>
+        <div
+          class="eqt-rule-page__item eqt-rule-page__source" :class="source.kind === 'group' && `eqt-rule-page__source--${source.id}`"
+          :data-height="source.kind === 'group' ? 1 : 0"
+        >
+          <component :is="sourceView(source).icon" class="eqt-rule-page__icon" />{{ sourceView(source).label }}
         </div>
       </template>
     </Draggable>

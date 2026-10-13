@@ -1,5 +1,5 @@
-// 摘要不照抄三區：先把規則化成「一定要／至少一個／只要有就不算」的標準形，
-// 攤平 Folder、合併數值區間，三區分開看時看不到的衝突與多餘條件才算得出來。
+// 摘要不照抄規則的樹：先把它化成「一定要／至少一個／只要有就不算」的標準形，
+// 攤平巢狀群組、合併數值區間，逐層看時看不到的衝突與多餘條件才算得出來。
 
 import {
   averageOfStars, conditionRange, normalizeTag, RANGE_FIELDS,
@@ -22,7 +22,6 @@ export type DigestNote =
   | { kind: 'groupRedundant'; terms: DigestTerm[] }
   | { kind: 'rangeMerged'; field: RangeField; range: ValueRange }
   | { kind: 'incomplete' }
-  | { kind: 'matchAll' }
 
 export type DigestRanges = Partial<Record<RangeField, ValueRange>>
 
@@ -90,7 +89,7 @@ function itemExpr(item: FixedConditionItem, neg: boolean, ctx: Context): Expr | 
     }
     return { k: 'tag', tag, neg: neg !== item.exclude }
   }
-  if (item.kind !== 'folder') return { k: 'range', field: item.kind, range: conditionRange(item), neg }
+  if (item.kind !== 'group') return { k: 'range', field: item.kind, range: conditionRange(item), neg }
   if (!item.conditions.length) {
     ctx.incomplete = true
     return null
@@ -137,12 +136,7 @@ export function rangeTerms(ranges: DigestRanges): DigestTerm[] {
 
 export function digestRule(rule: FixedRule): RuleDigest {
   const ctx: Context = { incomplete: false }
-  // 例外區是 NOT(任一項)，等於每一項各自取反後全部成立
-  const root = junction('and', [
-    ...rule.common.map(item => itemExpr(item, false, ctx)),
-    rule.alternatives.length ? junction('or', rule.alternatives.map(item => itemExpr(item, false, ctx))) : null,
-    ...rule.exceptions.map(item => itemExpr(item, true, ctx)),
-  ])
+  const root = itemExpr(rule.root, false, ctx)
   const conjuncts = !root ? [] : root.k === 'and' ? root.xs : [root]
 
   const tags: string[] = []
@@ -209,7 +203,6 @@ export function digestRule(rule: FixedRule): RuleDigest {
   }
 
   if (ctx.incomplete) notes.push({ kind: 'incomplete' })
-  else if (!tags.length && !Object.keys(ranges).length && !groups.length && !unless.length) notes.push({ kind: 'matchAll' })
 
   return { tags, ranges, groups, unless, notes, never: notes.some(note => NEVER_NOTES[note.kind] === true) }
 }
@@ -319,7 +312,7 @@ function rawItem(item: FixedConditionItem): string {
     if (!tag) return '(EMPTY)'
     return item.exclude ? `NOT ${rawTag(tag)}` : rawTag(tag)
   }
-  if (item.kind !== 'folder') {
+  if (item.kind !== 'group') {
     const field = RAW_FIELD[item.kind]
     if (item.op === 'between') return `${item.value} <= ${field} <= ${item.max ?? RANGE_FIELDS[item.kind].max}`
     return `${field} ${RAW_OP[item.op]} ${item.value}`
@@ -329,14 +322,12 @@ function rawItem(item: FixedConditionItem): string {
   return item.mode === 'none' ? `NOT (${body})` : `(${body})`
 }
 
-/** 每個頂層條件一行，第二行起以 AND 開頭；三區都空就是 TRUE */
+// 根群組照判定模式一行一個條件：全部成立以 AND、任一成立以 OR 接在行首；
+// 全部不成立整段包在 NOT ( ) 裡，NOT 的範圍不能靠讀的人去猜
 export function ruleExpression(rule: FixedRule): string {
-  const alternatives = rule.alternatives.map(rawItem).join(' OR ')
-  const lines = [
-    ...rule.common.map(rawItem),
-    ...(rule.alternatives.length ? [rule.alternatives.length > 1 ? `(${alternatives})` : alternatives] : []),
-    // 一律加括號：NOT 的範圍不能靠讀的人去猜，例外裡的「不含」也不會寫成 NOT NOT
-    ...(rule.exceptions.length ? [`NOT (${rule.exceptions.map(rawItem).join(' OR ')})`] : []),
-  ]
-  return lines.length ? lines.map((line, index) => (index ? `AND ${line}` : line)).join('\n') : 'TRUE'
+  const lines = rule.root.conditions.map(rawItem)
+  if (!lines.length) return '(EMPTY)'
+  if (rule.root.mode === 'none') return `NOT (\n  ${lines.join('\n  OR ')}\n)`
+  const joiner = rule.root.mode === 'all' ? 'AND' : 'OR'
+  return lines.map((line, index) => (index ? `${joiner} ${line}` : line)).join('\n')
 }
