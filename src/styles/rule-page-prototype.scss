@@ -961,12 +961,6 @@
   font-variant-numeric: tabular-nums;
 
   &--never { border-inline-start-color: var(--eqt-danger); }
-
-  &--raw {
-    flex-direction: row;
-    align-items: flex-start;
-    padding-block-end: calc(var(--eqt-rule-page-gap) * 2.5);
-  }
 }
 
 .eqt-rule-page__digest-raw {

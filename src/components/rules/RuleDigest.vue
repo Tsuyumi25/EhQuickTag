@@ -9,8 +9,9 @@ import { t } from '@/composables/useI18n'
 import { ruleDigestMode } from '@/services/appOverlays'
 import type { FixedRule } from '@/services/listing/fixedRulePrototype'
 import {
-  digestCases, digestRule, NEVER_NOTES, rangeTerms, ruleExpression, type DigestMode, type DigestNote, type DigestTerm,
+  digestCases, digestRule, NEVER_NOTES, rangeTerms, ruleExpression, type DigestMode, type DigestTerm,
 } from '@/services/listing/ruleDigest'
+import { casesMarkdown, noteParams, noteTerms, rowsMarkdown, sentenceMarkdown } from '@/services/listing/ruleDigestMarkdown'
 
 const props = defineProps<{ rule: FixedRule }>()
 const MODES: readonly DigestMode[] = ['sentence', 'rows', 'cases', 'raw']
@@ -23,15 +24,13 @@ const mustRanges = computed(() => rangeTerms(digest.value.ranges))
 const cases = computed(() => (ruleDigestMode.value === 'cases' ? digestCases(digest.value) : null))
 const hasMust = computed(() => digest.value.tags.length > 0 || mustRanges.value.length > 0)
 
-function noteTerms(note: DigestNote): DigestTerm[] {
-  if (note.kind === 'conflict') return note.tags.map(tag => ({ kind: 'tag', tag, exclude: false }))
-  if (note.kind === 'rangeMerged') return [{ kind: 'range', field: note.field, range: note.range, exclude: false }]
-  return note.kind === 'groupImpossible' || note.kind === 'groupRedundant' ? note.terms : []
-}
-
-function noteParams(note: DigestNote): Record<string, string> | undefined {
-  if (note.kind !== 'rangeEmpty' && note.kind !== 'rangeExcluded' && note.kind !== 'rangeMerged') return undefined
-  return { field: t(`rulePagePrototype.${note.field}`) }
+// 原始算式複製的就是畫面上那段；其他三種寫成 Markdown，貼到別處不看畫面也讀得懂
+function copyCurrent() {
+  const mode = ruleDigestMode.value
+  if (mode === 'raw') clipboard.copy(expression.value)
+  else if (mode === 'sentence') clipboard.copy(sentenceMarkdown(t, props.rule, digest.value))
+  else if (mode === 'rows') clipboard.copy(rowsMarkdown(t, props.rule, digest.value))
+  else clipboard.copy(casesMarkdown(t, props.rule, digest.value, digestCases(digest.value)))
 }
 </script>
 
@@ -45,16 +44,16 @@ function noteParams(note: DigestNote): Record<string, string> | undefined {
           :aria-pressed="ruleDigestMode === mode" @click="ruleDigestMode = mode"
         >{{ t(`rulePagePrototype.digest.mode.${mode}`) }}</button>
       </div>
-    </div>
-
-    <div v-if="ruleDigestMode === 'raw'" class="eqt-rule-page__digest eqt-rule-page__digest--raw">
-      <pre class="eqt-rule-page__digest-raw">{{ expression }}</pre>
       <button
         type="button" class="eqt-rule-page__digest-copy"
         :title="t(clipboard.copied.value ? 'settings.editorCopied' : 'settings.editorCopy')"
         :aria-label="t(clipboard.copied.value ? 'settings.editorCopied' : 'settings.editorCopy')"
-        @click="clipboard.copy(expression)"
+        @click="copyCurrent"
       ><component :is="clipboard.copied.value ? Check : Copy" class="eqt-rule-page__icon" /></button>
+    </div>
+
+    <div v-if="ruleDigestMode === 'raw'" class="eqt-rule-page__digest">
+      <pre class="eqt-rule-page__digest-raw">{{ expression }}</pre>
     </div>
 
     <div v-else class="eqt-rule-page__digest" :class="{ 'eqt-rule-page__digest--never': digest.never }">
@@ -145,7 +144,7 @@ function noteParams(note: DigestNote): Record<string, string> | undefined {
         >
           <RuleDigestPhrase
             :text-key="`rulePagePrototype.digest.note.${note.kind}`"
-            :params="noteParams(note)"
+            :params="noteParams(t, note)"
           >
             <RuleDigestTerm v-for="(term, termIndex) in noteTerms(note)" :key="termIndex" :term="term" />
           </RuleDigestPhrase>
