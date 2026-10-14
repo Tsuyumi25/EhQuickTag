@@ -878,6 +878,9 @@
   display: inline-flex;
   align-items: center;
   gap: calc(var(--eqt-rule-page-gap) / 2);
+
+  // 沿用上一層的效果：看得出這一支實際會變成什麼，但不是自己設的
+  &--inherited { opacity: 0.45; }
 }
 
 .eqt-rule-page__action-swatch {

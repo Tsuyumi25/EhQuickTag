@@ -184,6 +184,15 @@ export function hasActions(actions: FixedActions): boolean {
   return actions.background !== null || actions.blur !== 'unchanged' || actions.showName
 }
 
+/** 自己沒指定的效果沿用上一層；顯示名稱是疊加的，任一層有勾就算 */
+export function inheritActions(own: FixedActions, inherited: FixedActions): FixedActions {
+  return {
+    background: own.background ?? inherited.background,
+    blur: own.blur === 'unchanged' ? inherited.blur : own.blur,
+    showName: own.showName || inherited.showName,
+  }
+}
+
 export function createGroup(mode: GroupMode = 'all', conditions: FixedConditionItem[] = [], negate = false): ConditionGroup {
   return { id: nextEntityId(), kind: 'group', mode, negate, conditions, actions: createActions() }
 }
@@ -301,22 +310,14 @@ function firedActions(group: ConditionGroup, probe: GalleryProbe, out: FixedActi
 
 /**
  * 子群組蓋過上一層；不同分支同時成立時，越上面越優先。
- * 背景與模糊沒指定就往上一層找；顯示名稱只要成立的任一層有勾就顯示。
+ * 合併用的是規則頁顯示「沿用」的同一個 inheritActions，畫面上看到的沿用結果跟實際套用的不會分家。
  * 規則沒命中（含未知）是 null；停用與否由呼叫端決定，編輯中的停用規則也要能預覽
  */
 export function resolveRuleOutcome(rule: FixedRule, probe: GalleryProbe): RuleOutcome | null {
   if (evaluateRule(rule, probe) !== true) return null
   const fired: FixedActions[] = []
   firedActions(rule.root, probe, fired)
-  let background: string | null = null
-  let blur: BlurAction = 'unchanged'
-  let showName = false
-  for (const actions of fired) {
-    background ??= actions.background
-    if (blur === 'unchanged') blur = actions.blur
-    showName ||= actions.showName
-  }
-  return { background, blur, showName }
+  return fired.reduce((merged, actions) => inheritActions(merged, actions), createActions())
 }
 
 export interface RuleEffects {

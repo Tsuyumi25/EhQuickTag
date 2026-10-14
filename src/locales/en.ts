@@ -67,6 +67,7 @@ export default {
   'rulePagePrototype.background': 'Background',
   'rulePagePrototype.unchanged': 'Leave unchanged',
   'rulePagePrototype.noAction': 'No action',
+  'rulePagePrototype.inherited': 'Inherits',
   'rulePagePrototype.backgroundIs': '{color} background',
   'rulePagePrototype.showNameShort': 'Show name',
   'rulePagePrototype.clear': 'Keep cover sharp',
