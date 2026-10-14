@@ -6,12 +6,15 @@ import { normalizeTitlePrefix, type FixedActions } from '@/services/listing/fixe
 
 const props = defineProps<{ actions: FixedActions }>()
 
-const FLAGS = [
-  { key: 'blur', label: 'rulePrototype.blur' },
-  { key: 'showName', label: 'rulePagePrototype.showName', hint: 'rulePagePrototype.showNameHint' },
-  { key: 'dim', label: 'rulePagePrototype.dim' },
-  { key: 'strike', label: 'rulePagePrototype.strike' },
-  { key: 'hide', label: 'rulePagePrototype.hide' },
+// 模糊、淡化、隱藏是同一件事的三種強度，排在同一行；其他各佔一行
+const FLAG_ROWS = [
+  [
+    { key: 'blur', label: 'rulePrototype.blur' },
+    { key: 'dim', label: 'rulePagePrototype.dim' },
+    { key: 'hide', label: 'rulePagePrototype.hide' },
+  ],
+  [{ key: 'showName', label: 'rulePagePrototype.showName', hint: 'rulePagePrototype.showNameHint' }],
+  [{ key: 'strike', label: 'rulePagePrototype.strike' }],
 ] as const
 
 // 跟 My Tags 的標籤顏色同一組：色盤選、或直接貼色碼；色碼框留空就是不上色
@@ -34,7 +37,7 @@ function setTitlePrefix(event: Event) {
   resetInput(event, props.actions.titlePrefix)
 }
 
-function toggle(key: (typeof FLAGS)[number]['key'], event: Event) {
+function toggle(key: (typeof FLAG_ROWS)[number][number]['key'], event: Event) {
   props.actions[key] = (event.target as HTMLInputElement).checked
 }
 </script>
@@ -66,12 +69,14 @@ function toggle(key: (typeof FLAGS)[number]['key'], event: Event) {
         @change="setTitlePrefix" @keydown.enter.prevent="($event.target as HTMLInputElement).blur()"
       >
     </label>
-    <label
-      v-for="flag in FLAGS" :key="flag.key" class="eqt-rule-page__enabled"
-      :title="'hint' in flag ? t(flag.hint) : undefined"
-    >
-      <input type="checkbox" :checked="actions[flag.key]" @change="toggle(flag.key, $event)" />
-      {{ t(flag.label) }}
-    </label>
+    <div v-for="row in FLAG_ROWS" :key="row[0].key" class="eqt-rule-page__action-row">
+      <label
+        v-for="flag in row" :key="flag.key" class="eqt-rule-page__enabled"
+        :title="'hint' in flag ? t(flag.hint) : undefined"
+      >
+        <input type="checkbox" :checked="actions[flag.key]" @change="toggle(flag.key, $event)" />
+        {{ t(flag.label) }}
+      </label>
+    </div>
   </div>
 </template>

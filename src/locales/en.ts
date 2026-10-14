@@ -65,7 +65,7 @@ export default {
   'rulePagePrototype.titlePrefix': 'Title prefix',
   'rulePagePrototype.titlePrefixHint': 'Added in front of the title on a match; leave empty for none',
   'rulePagePrototype.titlePrefixIs': 'Title prefix {prefix}',
-  'rulePagePrototype.dim': 'Fade the whole gallery until hovered',
+  'rulePagePrototype.dim': 'Fade whole gallery',
   'rulePagePrototype.dimShort': 'Fade',
   'rulePagePrototype.strike': 'Strike through the title',
   'rulePagePrototype.strikeShort': 'Strikethrough',

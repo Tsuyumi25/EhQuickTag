@@ -896,6 +896,12 @@
   }
 }
 
+.eqt-rule-page__action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--eqt-rule-page-gap) * 2) calc(var(--eqt-rule-page-gap) * 4);
+}
+
 // 跟 My Tags 標籤顏色那一組同款：色盤鈕只顯示顏色，旁邊是可以直接貼上、複製的色碼
 .eqt-rule-page__color-control {
   display: inline-flex;

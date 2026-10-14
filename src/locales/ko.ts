@@ -65,7 +65,7 @@ export default {
   'rulePagePrototype.titlePrefix': '제목 접두어',
   'rulePagePrototype.titlePrefixHint': '일치하면 제목 맨 앞에 붙입니다. 비워 두면 붙이지 않습니다',
   'rulePagePrototype.titlePrefixIs': '제목 접두어 {prefix}',
-  'rulePagePrototype.dim': '전체를 흐리게, 마우스를 올리면 복원',
+  'rulePagePrototype.dim': '전체 흐리게',
   'rulePagePrototype.dimShort': '흐리게',
   'rulePagePrototype.strike': '제목에 취소선 긋기',
   'rulePagePrototype.strikeShort': '취소선',

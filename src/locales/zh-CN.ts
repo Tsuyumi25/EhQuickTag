@@ -65,7 +65,7 @@ export default {
   'rulePagePrototype.titlePrefix': '标题前缀',
   'rulePagePrototype.titlePrefixHint': '命中时加在标题最前面；留空就不加',
   'rulePagePrototype.titlePrefixIs': '标题前缀 {prefix}',
-  'rulePagePrototype.dim': '整张淡化，鼠标移上去恢复',
+  'rulePagePrototype.dim': '整张淡化',
   'rulePagePrototype.dimShort': '淡化',
   'rulePagePrototype.strike': '标题加上删除线',
   'rulePagePrototype.strikeShort': '删除线',

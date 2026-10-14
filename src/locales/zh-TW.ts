@@ -65,7 +65,7 @@ export default {
   'rulePagePrototype.titlePrefix': '標題前綴',
   'rulePagePrototype.titlePrefixHint': '命中時加在標題最前面；留空就不加',
   'rulePagePrototype.titlePrefixIs': '標題前綴 {prefix}',
-  'rulePagePrototype.dim': '整張淡化，滑鼠移上去恢復',
+  'rulePagePrototype.dim': '整張淡化',
   'rulePagePrototype.dimShort': '淡化',
   'rulePagePrototype.strike': '標題加上刪除線',
   'rulePagePrototype.strikeShort': '刪除線',

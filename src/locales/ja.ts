@@ -65,7 +65,7 @@ export default {
   'rulePagePrototype.titlePrefix': 'タイトルの接頭辞',
   'rulePagePrototype.titlePrefixHint': '一致したときタイトルの先頭に付けます。空欄なら付けません',
   'rulePagePrototype.titlePrefixIs': 'タイトルの接頭辞 {prefix}',
-  'rulePagePrototype.dim': '全体を薄く表示し、マウスを乗せると戻す',
+  'rulePagePrototype.dim': '全体を薄く',
   'rulePagePrototype.dimShort': '薄く表示',
   'rulePagePrototype.strike': 'タイトルに取り消し線を引く',
   'rulePagePrototype.strikeShort': '取り消し線',
