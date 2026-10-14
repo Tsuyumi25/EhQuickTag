@@ -10,7 +10,7 @@ import RuleMaterials from './RuleMaterials.vue'
 import RuleTagLibrary from './RuleTagLibrary.vue'
 import { useFixedRuleStore } from '@/composables/useFixedRuleStore'
 import { t } from '@/composables/useI18n'
-import { COLOR_PRESETS, createRule, type BlurAction } from '@/services/listing/fixedRulePrototype'
+import { BLUR_ACTIONS, COLOR_PRESETS, createRule, type BlurAction } from '@/services/listing/fixedRulePrototype'
 import { rulesCollapsed } from '@/services/appOverlays'
 import '@/styles/rule-page-prototype.scss'
 
@@ -20,7 +20,6 @@ const selectedId = ref<number | null>(null)
 const ruleMenuOpen = ref(false)
 const ruleMenuId = ref<number | null>(null)
 const ruleMenuTrigger = ref<HTMLButtonElement | null>(null)
-const BLUR_ACTIONS: readonly BlurAction[] = ['unchanged', 'blur', 'clear']
 
 const selected = computed(() => rules.value.find(rule => rule.id === selectedId.value) ?? null)
 watch(() => rules.value.map(rule => rule.id), ids => {
@@ -74,6 +73,10 @@ function setBackground(event: Event) {
 
 function setBlur(event: Event) {
   if (selected.value) selected.value.actions.blur = (event.target as HTMLSelectElement).value as BlurAction
+}
+
+function toggleShowName(event: Event) {
+  if (selected.value) selected.value.actions.showName = (event.target as HTMLInputElement).checked
 }
 
 // 這些元素自己就吃 Space（打字、勾選、按下按鈕、展開下拉），交給它們；只有焦點落在其他地方時才切換預覽
@@ -288,6 +291,10 @@ onBeforeUnmount(() => {
                     {{ t(action === 'blur' ? 'rulePrototype.blur' : `rulePagePrototype.${action}`) }}
                   </option>
                 </select>
+              </label>
+              <label class="eqt-rule-page__enabled" :title="t('rulePagePrototype.showNameHint')">
+                <input type="checkbox" :checked="selected.actions.showName" @change="toggleShowName" />
+                {{ t('rulePagePrototype.showName') }}
               </label>
             </div>
           </section>

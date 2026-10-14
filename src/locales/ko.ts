@@ -67,6 +67,8 @@ export default {
   'rulePagePrototype.background': '배경',
   'rulePagePrototype.unchanged': '변경하지 않음',
   'rulePagePrototype.clear': '표지를 선명하게 유지',
+  'rulePagePrototype.showName': '갤러리에 규칙 이름 표시',
+  'rulePagePrototype.showNameHint': '썸네일 모드에서 태그 목록 위에 표시되며, 일치한 규칙마다 하나씩 붙습니다',
   'rulePagePrototype.enabled': '사용',
   'rulePagePrototype.newRule': '규칙 {n}',
   'rulePagePrototype.removeRule': '규칙 삭제',

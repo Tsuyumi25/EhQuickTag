@@ -67,6 +67,8 @@ export default {
   'rulePagePrototype.background': '背景',
   'rulePagePrototype.unchanged': '変更しない',
   'rulePagePrototype.clear': '表紙をぼかさずに表示',
+  'rulePagePrototype.showName': 'ギャラリーにルール名を表示',
+  'rulePagePrototype.showNameHint': 'サムネイル表示でタグ一覧の上に表示。一致したルールごとに一つずつ並びます',
   'rulePagePrototype.enabled': '有効',
   'rulePagePrototype.newRule': 'ルール {n}',
   'rulePagePrototype.removeRule': 'ルールを削除',

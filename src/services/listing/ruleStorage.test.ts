@@ -7,7 +7,8 @@ import {
 import { decodeRules, rootFromSections, RULE_SCHEMA } from './ruleStorage'
 import { itemArb, probeArb, rule } from './test-helpers'
 
-const actions = { background: 'red', blur: 'unchanged' }
+const actions = { background: 'red', blur: 'unchanged', showName: true }
+const legacyActions = { background: 'red', blur: 'unchanged' }
 const tag = (id: number, name: string, exclude = false) => ({ id, kind: 'tag', tag: name, exclude })
 const probe = (tags: string[]): GalleryProbe => ({ tags: new Set(tags), complete: true, rating: null, pages: null })
 
@@ -64,15 +65,31 @@ describe('decodeRules', () => {
     expect(decodeRules(JSON.stringify({ schema: RULE_SCHEMA, rules: [stored] }))).toEqual([stored])
   })
 
-  it('schema 5 的全部不成立換成 NOT 任一成立，判定不變', () => {
+  it('schema 5 的全部不成立換成 NOT 任一成立，判定不變；那時還沒有顯示名稱，一律不顯示', () => {
     const none = { id: 3, kind: 'group', mode: 'none', conditions: [tag(4, 'female:a'), tag(5, 'female:b')] }
     const [rule] = decodeRules(JSON.stringify({
       schema: 5,
-      rules: [{ id: 1, name: 'r', enabled: true, actions, root: { id: 2, kind: 'group', mode: 'all', conditions: [none] } }],
+      rules: [{ id: 1, name: 'r', enabled: true, actions: legacyActions, root: { id: 2, kind: 'group', mode: 'all', conditions: [none] } }],
     }))
     expect(rule.root).toMatchObject({ mode: 'all', negate: false, conditions: [{ mode: 'any', negate: true }] })
+    expect(rule.actions.showName).toBe(false)
     expect(evaluateRule(rule, probe(['male:c']))).toBe(true)
     expect(evaluateRule(rule, probe(['female:b']))).toBe(false)
+  })
+
+  it('schema 7 的自填標示換成顯示規則名稱：有填字就顯示，空白當成沒填', () => {
+    const root = { id: 9, kind: 'group', mode: 'all', negate: false, conditions: [tag(10, 'female:a')] }
+    const rules = decodeRules(JSON.stringify({
+      schema: 7,
+      rules: [
+        { id: 1, name: 'a', enabled: true, root, actions: { ...legacyActions, label: 'some label' } },
+        { id: 2, name: 'b', enabled: true, root: { ...root, id: 11 }, actions: { ...legacyActions, label: '  ' } },
+      ],
+    }))
+    expect(rules.map(rule => rule.actions)).toEqual([
+      { ...legacyActions, showName: true },
+      { ...legacyActions, showName: false },
+    ])
   })
 
   it('格式不對就丟錯，不會讀成空清單', () => {

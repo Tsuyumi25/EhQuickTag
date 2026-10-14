@@ -189,3 +189,27 @@
 .eqt-rule-prototype__gallery--blur {
   .glthumb:not(:hover) img, .gl3t:not(:hover) img, .gl1e:not(:hover) img { filter: blur(var(--eqt-rule-prototype-blur)) !important; }
 }
+
+// 排法照原生 .gl6t：置中、可換行，單一個最寬 250px、超過用省略號。
+// 用規則自己的背景色畫左側色條與淡底，跟原生標籤的外框長得不一樣，才不會被當成圖庫本身的 tag
+.eqt-rule-prototype__labels {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--eqt-rule-prototype-gap);
+  padding: var(--eqt-rule-prototype-gap) var(--eqt-rule-prototype-gap) 0;
+}
+.eqt-rule-prototype__label {
+  --eqt-rule-prototype-label-tone: var(--eqt-border);
+
+  max-width: 250px;
+  overflow: hidden;
+  padding: 0 var(--eqt-rule-prototype-gap);
+  border-inline-start: var(--eqt-border-width) solid var(--eqt-rule-prototype-label-tone);
+  border-radius: var(--eqt-radius-sm);
+  background: color-mix(in srgb, var(--eqt-rule-prototype-label-tone) 25%, var(--eqt-bg));
+  font-size: var(--eqt-fs-sm);
+  font-weight: bold;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}

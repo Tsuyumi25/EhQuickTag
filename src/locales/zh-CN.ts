@@ -67,6 +67,8 @@ export default {
   'rulePagePrototype.background': '背景',
   'rulePagePrototype.unchanged': '保持不变',
   'rulePagePrototype.clear': '保持封面清晰',
+  'rulePagePrototype.showName': '在图库上显示规则名称',
+  'rulePagePrototype.showNameHint': '只在缩略图模式显示于标签列上方；每条命中的规则各贴一个',
   'rulePagePrototype.enabled': '启用',
   'rulePagePrototype.newRule': '规则 {n}',
   'rulePagePrototype.removeRule': '删除规则',

@@ -15,6 +15,9 @@ export type BlurAction = 'unchanged' | 'blur' | 'clear'
 /** 也是下拉選單的順序 */
 export const RANGE_OPS: readonly RangeOp[] = ['eq', 'lt', 'lte', 'gt', 'gte', 'between']
 
+/** 也是模糊下拉選單的順序 */
+export const BLUR_ACTIONS: readonly BlurAction[] = ['unchanged', 'blur', 'clear']
+
 /**
  * 每種數值欄位的合法範圍、步進與新條件的預設值；頁數沒有上限。
  * rating 是列表上顯示的星等（半星一格），條件跟頁面上看到的一致，不會出現未知
@@ -87,6 +90,8 @@ export type FixedConditionItem = FixedCondition | ConditionGroup
 export interface FixedActions {
   background: string | null
   blur: BlurAction
+  /** 命中時把規則名稱貼在縮圖模式的標籤列上方 */
+  showName: boolean
 }
 
 /** 背景色的選項；值是主題 token，淺色與深色主題各自換色 */
@@ -186,7 +191,7 @@ export function createRule(index: number): FixedRule {
     name: t('rulePagePrototype.newRule', { n: index }),
     enabled: true,
     root: createGroup('all'),
-    actions: { background: null, blur: 'unchanged' },
+    actions: { background: null, blur: 'unchanged', showName: false },
   }
 }
 
@@ -264,22 +269,27 @@ export function evaluateRule(rule: FixedRule, probe: GalleryProbe): Tri {
 export interface RuleEffects {
   background: string | null
   blur: boolean
+  /** 底色沿用該規則自己的背景色，沒選背景時是 null */
+  labels: { text: string; tone: string | null }[]
 }
 
 /**
- * 每個效果各自找：清單裡位置最高、命中且有指定該效果的規則說了算。
+ * 背景與模糊各自找：清單裡位置最高、命中且有指定該效果的規則說了算。
  * 「維持不變」與沒選背景都不算指定，讓給下面的規則。
+ * 標示不互相搶：每條命中的規則各貼一個，照清單順序排
  */
 export function resolveRuleEffects(rules: readonly FixedRule[], probe: GalleryProbe): RuleEffects {
   let background: string | null = null
   let blur: BlurAction = 'unchanged'
+  const labels: RuleEffects['labels'] = []
   for (const rule of rules) {
-    if (background !== null && blur !== 'unchanged') break
     if (!rule.enabled || evaluateRule(rule, probe) !== true) continue
     background ??= rule.actions.background
     if (blur === 'unchanged') blur = rule.actions.blur
+    const text = rule.actions.showName ? rule.name.trim() : ''
+    if (text) labels.push({ text, tone: rule.actions.background })
   }
-  return { background, blur: blur === 'blur' }
+  return { background, blur: blur === 'blur', labels }
 }
 
 /** 已經在 existing 裡的標籤（連同極性）不再重複產生 */

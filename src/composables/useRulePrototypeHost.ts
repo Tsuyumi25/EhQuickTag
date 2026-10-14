@@ -9,6 +9,8 @@ export interface PrototypeListingItem {
   id: number
   root: HTMLElement
   anchor: HTMLElement
+  /** 只有縮圖模式（.gl1t）才有：規則的標示清單，插在原生標籤列 .gl6t 前面 */
+  labelAnchor: HTMLElement | null
   tags: PrototypeListingTag[]
   tagSet: ReadonlySet<string>
   complete: boolean
@@ -78,6 +80,7 @@ export function useRulePrototypeHost() {
       bindings.delete(element)
     }
     record.item.anchor.remove()
+    record.item.labelAnchor?.remove()
     const root = record.item.root
     for (const name of [...root.classList]) {
       if (name.startsWith('eqt-rule-prototype__gallery')) root.classList.remove(name)
@@ -119,7 +122,8 @@ export function useRulePrototypeHost() {
       const pages = pageCount(root)
       const signature = JSON.stringify([complete, stars, pages, tags])
       let record = records.get(root)
-      if (record && (!root.contains(record.item.anchor) || record.signature !== signature)) {
+      if (record && (!root.contains(record.item.anchor) || (record.item.labelAnchor && !root.contains(record.item.labelAnchor))
+        || record.signature !== signature)) {
         restore(record)
         records.delete(root)
         record = undefined
@@ -135,9 +139,20 @@ export function useRulePrototypeHost() {
         if (titleLink) titleLink.after(anchor)
         else target.append(anchor)
         root.classList.add('eqt-rule-prototype__gallery')
+        // 縮圖卡片裡評分列上方是 margin: auto，評分列以下整塊貼著卡片底部，同一排卡片撐高時差距由那段 margin 吸收；
+        // 標示插在這一塊裡，封面與標題就不會因為某幾張多一行而對不齊
+        let labelAnchor: HTMLElement | null = null
+        if (root.matches('.gl1t')) {
+          labelAnchor = document.createElement('div')
+          labelAnchor.className = 'eqt-rule-prototype__mount eqt-rule-prototype__labels'
+          labelAnchor.setAttribute('translate', 'no')
+          const nativeTags = root.querySelector('.gl6t')
+          if (nativeTags) nativeTags.before(labelAnchor)
+          else root.append(labelAnchor)
+        }
         record = {
           signature,
-          item: { id: nextId++, root, anchor, tags, tagSet: names, complete, ...stars, pages, title, href: link.href },
+          item: { id: nextId++, root, anchor, labelAnchor, tags, tagSet: names, complete, ...stars, pages, title, href: link.href },
         }
         records.set(root, record)
       }

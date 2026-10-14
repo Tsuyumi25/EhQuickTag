@@ -131,6 +131,11 @@ const effects = computed(() => {
   return resolved
 })
 
+const labelTargets = computed(() => items.value.flatMap(item => {
+  const labels = effects.value.get(item.id)?.labels ?? []
+  return item.labelAnchor && labels.length ? [{ id: item.id, anchor: item.labelAnchor, labels }] : []
+}))
+
 function clearEffects(item: { root: HTMLElement }) {
   item.root.classList.remove('eqt-rule-prototype__gallery--background', 'eqt-rule-prototype__gallery--blur')
   item.root.style.removeProperty('--eqt-rule-prototype-background')
@@ -281,6 +286,13 @@ onBeforeUnmount(() => {
       :selection="selection.get(chip.name) === 1 ? 'positive' : selection.get(chip.name) === -1 ? 'negative' : undefined"
       :show-score="false" :show-marks="false"
     />
+  </Teleport>
+
+  <Teleport v-for="target in labelTargets" :key="target.id" :to="target.anchor">
+    <span
+      v-for="(label, index) in target.labels" :key="index" class="eqt-rule-prototype__label" :title="label.text"
+      :style="label.tone ? { '--eqt-rule-prototype-label-tone': label.tone } : undefined"
+    >{{ label.text }}</span>
   </Teleport>
 
   <Teleport to="body">

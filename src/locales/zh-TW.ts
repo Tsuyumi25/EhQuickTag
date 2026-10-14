@@ -67,6 +67,8 @@ export default {
   'rulePagePrototype.background': '背景',
   'rulePagePrototype.unchanged': '維持不變',
   'rulePagePrototype.clear': '保持封面清晰',
+  'rulePagePrototype.showName': '在圖庫上顯示規則名稱',
+  'rulePagePrototype.showNameHint': '只在縮圖模式顯示於標籤列上方；每條命中的規則各貼一個',
   'rulePagePrototype.enabled': '啟用',
   'rulePagePrototype.newRule': '規則 {n}',
   'rulePagePrototype.removeRule': '刪除規則',

@@ -67,6 +67,8 @@ export default {
   'rulePagePrototype.background': 'Background',
   'rulePagePrototype.unchanged': 'Leave unchanged',
   'rulePagePrototype.clear': 'Keep cover sharp',
+  'rulePagePrototype.showName': 'Show rule name on galleries',
+  'rulePagePrototype.showNameHint': 'Shown above the tag list in Thumbnail mode; every matching rule adds its own',
   'rulePagePrototype.enabled': 'Enabled',
   'rulePagePrototype.newRule': 'Rule {n}',
   'rulePagePrototype.removeRule': 'Delete rule',

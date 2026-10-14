@@ -1,13 +1,16 @@
 // 規則的儲存格式：驗證與各版本之間的轉換。
 
 import {
-  createGroup, GROUP_MODES, MAX_GROUP_DEPTH, RANGE_FIELDS, RANGE_OPS, reserveRuleIds,
-  type ConditionGroup, type FixedCondition, type FixedConditionItem, type FixedRule, type GroupMode, type RangeField, type RangeOp,
+  BLUR_ACTIONS, createGroup, GROUP_MODES, MAX_GROUP_DEPTH, RANGE_FIELDS, RANGE_OPS, reserveRuleIds,
+  type BlurAction, type ConditionGroup, type FixedActions, type FixedCondition, type FixedConditionItem, type FixedRule,
+  type GroupMode, type RangeField, type RangeOp,
 } from '@/services/listing/fixedRulePrototype'
 
+// 8：效果改成「在圖庫上顯示規則名稱」（showName）。7 存的是自填的標示文字（label），
+// 有填字就當成要顯示，文字本身不保留；7 之前的版本一律不顯示。
 // 6：NOT 是群組的獨立旗標。5 的判定模式多一種「全部不成立」，讀進來換成 NOT 任一成立；
 // 1–4 是固定三區（必要條件／任一成立／例外），讀進來時換成樹
-export const RULE_SCHEMA = 6
+export const RULE_SCHEMA = 8
 // 三區時代每一區底下最多兩層 Folder
 const LEGACY_FOLDER_DEPTH = 2
 
@@ -55,7 +58,7 @@ function validMode(mode: unknown): mode is GroupMode {
 
 /** schema 6 之前沒有 negate；當時的 none 就是 NOT any */
 function decodeMode(value: Record<string, unknown>, schema: number): Pick<ConditionGroup, 'mode' | 'negate'> {
-  if (schema < RULE_SCHEMA) {
+  if (schema < 6) {
     if (value.mode === 'none') return { mode: 'any', negate: true }
     if (!validMode(value.mode)) throw new Error('Invalid fixed rule storage')
     return { mode: value.mode, negate: false }
@@ -102,31 +105,49 @@ function decodeSection(value: unknown, bare = false): FixedConditionItem[] {
   return value.map((item: unknown) => decodeLegacyItem(item, 0, bare))
 }
 
-function decodeHeader(rule: unknown): Omit<FixedRule, 'root'> & Record<string, unknown> {
-  if (!isObject(rule) || !Number.isSafeInteger(rule.id) || typeof rule.name !== 'string' || typeof rule.enabled !== 'boolean'
-    || !isObject(rule.actions) || (rule.actions.background !== null && typeof rule.actions.background !== 'string')
-    || typeof rule.actions.blur !== 'string' || !['unchanged', 'blur', 'clear'].includes(rule.actions.blur)) {
+function decodeShowName(actions: Record<string, unknown>, schema: number): boolean {
+  if (schema >= 8) {
+    if (typeof actions.showName !== 'boolean') throw new Error('Invalid fixed rule storage')
+    return actions.showName
+  }
+  if (schema === 7) {
+    if (typeof actions.label !== 'string') throw new Error('Invalid fixed rule storage')
+    return actions.label.trim() !== ''
+  }
+  return false
+}
+
+function decodeActions(actions: unknown, schema: number): FixedActions {
+  if (!isObject(actions) || (actions.background !== null && typeof actions.background !== 'string')
+    || typeof actions.blur !== 'string' || !BLUR_ACTIONS.includes(actions.blur as BlurAction)) {
     throw new Error('Invalid fixed rule storage')
   }
-  return rule as Omit<FixedRule, 'root'> & Record<string, unknown>
+  return { background: actions.background, blur: actions.blur as BlurAction, showName: decodeShowName(actions, schema) }
+}
+
+function decodeHeader(rule: unknown, schema: number): Omit<FixedRule, 'root'> & Record<string, unknown> {
+  if (!isObject(rule) || !Number.isSafeInteger(rule.id) || typeof rule.name !== 'string' || typeof rule.enabled !== 'boolean') {
+    throw new Error('Invalid fixed rule storage')
+  }
+  return { ...rule, actions: decodeActions(rule.actions, schema) } as Omit<FixedRule, 'root'> & Record<string, unknown>
 }
 
 /** 讀出存著的規則；格式不對就丟錯，呼叫端不能把壞資料當成空清單覆寫回去 */
 export function decodeRules(raw: string | null): FixedRule[] {
   if (raw === null) return []
   const data: unknown = JSON.parse(raw)
-  if (!isObject(data) || ![1, 2, 3, 4, 5, RULE_SCHEMA].includes(data.schema as number) || !Array.isArray(data.rules)) {
+  if (!isObject(data) || ![1, 2, 3, 4, 5, 6, 7, RULE_SCHEMA].includes(data.schema as number) || !Array.isArray(data.rules)) {
     throw new Error('Invalid fixed rule storage')
   }
   const schema = data.schema as number
   if (schema >= 5) {
     return data.rules.map((rule: unknown): FixedRule => {
-      const header = decodeHeader(rule)
+      const header = decodeHeader(rule, schema)
       return { id: header.id, name: header.name, enabled: header.enabled, root: decodeGroup(header.root, 0, schema), actions: header.actions }
     })
   }
   const legacy = data.rules.map((rule: unknown) => {
-    const header = decodeHeader(rule)
+    const header = decodeHeader(rule, schema)
     // schema 1–2 的任一成立叫 groups
     const alternatives = data.schema === 1 || data.schema === 2 ? header.groups : header.alternatives
     return {

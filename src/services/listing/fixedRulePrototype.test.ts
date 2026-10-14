@@ -8,10 +8,11 @@ import {
 const probe = (rating: number | null, tags: string[] = [], pages: number | null = null): GalleryProbe =>
   ({ tags: new Set(tags), complete: true, rating, pages })
 
-function ruleWith(tag: string, background: string | null, blur: BlurAction, enabled = true): FixedRule {
+function ruleWith(tag: string, background: string | null, blur: BlurAction, enabled = true, name = ''): FixedRule {
   const rule = createRule(1)
   rule.root.conditions.push(createTagCondition(tag))
-  rule.actions = { background, blur }
+  rule.name = name
+  rule.actions = { background, blur, showName: name !== '' }
   rule.enabled = enabled
   return rule
 }
@@ -23,7 +24,7 @@ describe('resolveRuleEffects', () => {
       ruleWith('female:a', 'red', 'blur'),
       ruleWith('female:a', 'green', 'blur'),
     ]
-    expect(resolveRuleEffects(rules, probe(null, ['female:a']))).toEqual({ background: 'red', blur: false })
+    expect(resolveRuleEffects(rules, probe(null, ['female:a']))).toMatchObject({ background: 'red', blur: false })
   })
 
   it('沒命中、停用或「維持不變」的規則都讓給下面', () => {
@@ -33,7 +34,24 @@ describe('resolveRuleEffects', () => {
       ruleWith('female:a', null, 'unchanged'),
       ruleWith('female:a', 'blue', 'blur'),
     ]
-    expect(resolveRuleEffects(rules, probe(null, ['female:a']))).toEqual({ background: 'blue', blur: true })
+    expect(resolveRuleEffects(rules, probe(null, ['female:a']))).toMatchObject({ background: 'blue', blur: true })
+  })
+
+  it('勾了顯示名稱的規則各貼一個名稱，照清單順序，帶著自己的背景色', () => {
+    const hidden = ruleWith('female:a', 'blue', 'unchanged', true, 'hidden')
+    hidden.actions.showName = false
+    const rules = [
+      ruleWith('female:a', 'red', 'blur', true, ' first '),
+      ruleWith('female:b', 'green', 'unchanged', true, 'missed'),
+      ruleWith('female:a', null, 'unchanged', false, 'disabled'),
+      hidden,
+      ruleWith('female:a', null, 'unchanged', true, '  '),
+      ruleWith('female:a', null, 'unchanged', true, 'last'),
+    ]
+    expect(resolveRuleEffects(rules, probe(null, ['female:a'])).labels).toEqual([
+      { text: 'first', tone: 'red' },
+      { text: 'last', tone: null },
+    ])
   })
 })
 
