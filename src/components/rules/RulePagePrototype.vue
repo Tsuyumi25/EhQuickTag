@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import Draggable from 'vuedraggable'
-import { ArrowLeft, Ellipsis, Eye, GripVertical, Plus, Shapes, Trash2, X } from '@lucide/vue'
+import { ArrowLeft, Ellipsis, Eye, GripVertical, Paintbrush, Plus, Shapes, Trash2, X } from '@lucide/vue'
 import ContextMenu from '@/components/ContextMenu.vue'
 import { baseDragOptions } from '@/utils/drag'
+import RuleActionsEditor from './RuleActionsEditor.vue'
 import RuleConditionGroup from './RuleConditionGroup.vue'
 import RuleDigest from './RuleDigest.vue'
 import RuleMaterials from './RuleMaterials.vue'
@@ -262,7 +263,12 @@ onBeforeUnmount(() => {
 
         <template v-if="selected">
           <section class="eqt-rule-page__section">
-            <RuleConditionGroup :key="selected.root.id" :group="selected.root" :depth="0" root :actions="selected.actions" />
+            <RuleConditionGroup :key="selected.root.id" :group="selected.root" :depth="0" root />
+          </section>
+
+          <section class="eqt-rule-page__section">
+            <h2><Paintbrush class="eqt-rule-page__icon" />{{ t('rulePrototype.actions') }}</h2>
+            <RuleActionsEditor :actions="selected.actions" />
           </section>
 
           <RuleDigest :rule="selected" />

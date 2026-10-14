@@ -1,16 +1,12 @@
 <script setup lang="ts">
 import { X } from '@lucide/vue'
-import RuleActionSegment from './RuleActionSegment.vue'
 import RuleConditionList from './RuleConditionList.vue'
 import { t } from '@/composables/useI18n'
-import { GROUP_MODE_OPERATORS, GROUP_MODES, type ConditionGroup, type FixedActions } from '@/services/listing/fixedRulePrototype'
+import { GROUP_MODE_OPERATORS, GROUP_MODES, type ConditionGroup } from '@/services/listing/fixedRulePrototype'
 
-// root：規則本身的那個群組，不能刪也不能拖，標題用 section 的字級；整條規則的動作接在它的標題列後面。
+// root：規則本身的那個群組，不能刪也不能拖，標題用 section 的字級。
 // depth 是這個群組裡那份清單在根底下第幾層（根的清單是 0），拖曳時用來擋超過上限的巢狀
-const props = withDefaults(
-  defineProps<{ group: ConditionGroup; depth: number; root?: boolean; actions?: FixedActions }>(),
-  { root: false, actions: undefined },
-)
+const props = withDefaults(defineProps<{ group: ConditionGroup; depth: number; root?: boolean }>(), { root: false })
 const emit = defineEmits<{ remove: [] }>()
 
 // 跟 AND / OR 一樣是運算子，不翻譯
@@ -47,7 +43,6 @@ function toggleMode(): void {
           :class="{ 'eqt-rule-page__segment-spare': group.mode !== mode }"
         >{{ GROUP_MODE_OPERATORS[mode] }}</span>
       </button>
-      <RuleActionSegment v-if="actions" :actions="actions" />
       <button
         v-if="!root" type="button" class="eqt-rule-page__chip-remove"
         :aria-label="t('rulePagePrototype.removeGroup')" :title="t('rulePagePrototype.removeGroup')"

@@ -835,12 +835,11 @@
 
 // ---- 效果 ----
 
-.eqt-rule-page__action-editor {
+.eqt-rule-page__actions {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: calc(var(--eqt-rule-page-gap) * 2);
-  padding: calc(var(--eqt-rule-page-gap) * 1.5);
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--eqt-rule-page-gap) * 2) calc(var(--eqt-rule-page-gap) * 5);
 }
 
 .eqt-rule-page__action-summary {

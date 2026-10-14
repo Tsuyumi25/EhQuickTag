@@ -18,7 +18,7 @@ function toggleShowName(event: Event) {
 </script>
 
 <template>
-  <div class="eqt-rule-page__action-editor">
+  <div class="eqt-rule-page__actions">
     <label class="eqt-rule-page__field">
       <span>{{ t('rulePagePrototype.background') }}</span>
       <select class="eqt-rule-page__select" :value="actions.background ?? ''" @change="setBackground">
