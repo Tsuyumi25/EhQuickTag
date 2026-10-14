@@ -84,6 +84,9 @@ function noteParams(note: DigestNote): Record<string, string> | undefined {
           </RuleDigestPhrase>
         </template>
         <template v-if="hasMust || digest.groups.length || digest.unless.length">{{ t('rulePagePrototype.digest.end') }}</template>
+        <span class="eqt-rule-page__digest-outcome">
+          <span aria-hidden="true">→</span><RuleActionSummary v-bind="rule.actions" verbose />
+        </span>
       </p>
 
       <dl v-else-if="ruleDigestMode === 'rows'" class="eqt-rule-page__digest-rows">
@@ -101,6 +104,10 @@ function noteParams(note: DigestNote): Record<string, string> | undefined {
         <div v-if="digest.unless.length" class="eqt-rule-page__digest-row eqt-rule-page__digest-row--none">
           <dt>{{ t('rulePagePrototype.digest.none') }}</dt>
           <dd><RuleDigestTerm v-for="(term, index) in digest.unless" :key="index" :term="term" /></dd>
+        </div>
+        <div class="eqt-rule-page__digest-row eqt-rule-page__digest-row--action">
+          <dt>{{ t('rulePrototype.actions') }}</dt>
+          <dd><RuleActionSummary class="eqt-rule-page__digest-action" v-bind="rule.actions" verbose /></dd>
         </div>
       </dl>
 

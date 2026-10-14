@@ -1027,6 +1027,7 @@
   &--all { --eqt-rule-page-tone: var(--eqt-status-include); }
   &--any { --eqt-rule-page-tone: var(--eqt-status-or); }
   &--none { --eqt-rule-page-tone: var(--eqt-status-exclude); }
+  &--action { --eqt-rule-page-tone: var(--eqt-border); }
 }
 
 .eqt-rule-page__digest-cases {
@@ -1060,6 +1061,11 @@
   color: var(--eqt-text-hint);
 
   > .eqt-rule-page__action-summary { color: var(--eqt-text); }
+}
+
+// 分行裡的動作沒有 chip 自帶的 margin，補上同一組，才跟上面幾列的第一顆 chip 對齊
+.eqt-rule-page__digest-action {
+  margin: var(--eqt-rule-page-item-margin);
 }
 
 .eqt-rule-page__digest-caption {
