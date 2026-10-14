@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import Draggable from 'vuedraggable'
 import { ArrowLeft, Ellipsis, Eye, GripVertical, Paintbrush, Plus, Shapes, Trash2, X } from '@lucide/vue'
 import ContextMenu from '@/components/ContextMenu.vue'
@@ -78,26 +78,67 @@ function setBlur(event: Event) {
 
 // 這些元素自己就吃 Space（打字、勾選、按下按鈕、展開下拉），交給它們；只有焦點落在其他地方時才切換預覽
 const SPACE_OWNERS = 'input, textarea, select, button, a[href], summary, [contenteditable]:not([contenteditable="false"]), [role="slider"], [role="button"]'
+const TABBABLE = 'a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"]), [contenteditable]:not([contenteditable="false"])'
 
 // 規則頁是非模態的：四周露出的搜尋頁照樣能點、能捲，點下去也不會關掉規則頁。
-// 最後一次按下的位置在搜尋頁上，就代表使用者在操作搜尋頁，Space 與 Esc 留給搜尋頁自己用
+// 最後一次按下或聚焦的位置在搜尋頁上，就代表使用者在操作搜尋頁，Space、Esc 與 Tab 留給搜尋頁自己用。
+// 鍵盤要離開規則頁走預覽：預覽時不再接 Tab，焦點能一路走進搜尋頁
 const root = ref<HTMLElement | null>(null)
+const previewToggle = ref<HTMLButtonElement | null>(null)
 let engaged = true
+// 關掉時把焦點還給打開規則頁的那顆按鈕
+const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
 
-function onPointerdown(event: PointerEvent) {
-  const target = event.target
-  if (!(target instanceof Element)) return
+function ownsTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false
   // 規則操作選單 Teleport 到 body，不在 root 裡面，但仍是規則頁的一部分
-  engaged = !!root.value?.contains(target) || !!target.closest('.eqt-context-menu')
+  return !!root.value?.contains(target) || !!target.closest('.eqt-context-menu')
 }
 
-watch(rulesCollapsed, () => {
+function onPointerdown(event: PointerEvent) {
+  if (event.target instanceof Element) engaged = ownsTarget(event.target)
+}
+
+function onFocusin(event: FocusEvent) {
+  engaged = ownsTarget(event.target)
+}
+
+watch(rulesCollapsed, async collapsed => {
   ruleMenuOpen.value = false
   engaged = true
+  await nextTick()
+  const active = document.activeElement
+  // 預覽時只剩這顆按鈕看得見，焦點留在被藏起來的元素上會無處可去
+  if (collapsed && ownsTarget(active)) previewToggle.value?.focus({ preventScroll: true })
+  else if (!collapsed && !ownsTarget(active)) root.value?.focus({ preventScroll: true })
 })
+
+function tabbables(): HTMLElement[] {
+  return [...root.value?.querySelectorAll<HTMLElement>(TABBABLE) ?? []]
+    .filter(el => el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden')
+}
+
+// 只在頭尾接手：中間照瀏覽器原本的順序走，走到最後一個再繞回第一個，反之亦然
+function containTab(event: KeyboardEvent) {
+  const items = tabbables()
+  const index = items.indexOf(document.activeElement as HTMLElement)
+  const target = event.shiftKey
+    ? (index <= 0 ? items.at(-1) : undefined)
+    : (index < 0 || index === items.length - 1 ? items[0] : undefined)
+  if (!target) return
+  event.preventDefault()
+  target.focus()
+}
 
 function onKeydown(event: KeyboardEvent) {
   if (event.defaultPrevented) return
+  if (event.key === 'Tab') {
+    if (rulesCollapsed.value || !engaged || event.ctrlKey || event.metaKey || event.altKey) return
+    // 規則操作選單有自己的焦點，交給它
+    if (document.activeElement?.closest('.eqt-context-menu')) return
+    containTab(event)
+    return
+  }
   // 預覽中規則頁只剩返回鈕，Space 一律用來返回；平常只有正在操作規則頁時才接手
   if (!rulesCollapsed.value && !engaged) return
   if (event.key === ' ') {
@@ -115,6 +156,8 @@ function onKeydown(event: KeyboardEvent) {
 onMounted(() => {
   window.addEventListener('keydown', onKeydown)
   window.addEventListener('pointerdown', onPointerdown, true)
+  window.addEventListener('focusin', onFocusin, true)
+  root.value?.focus({ preventScroll: true })
 })
 watch(ready, loaded => {
   if (!loaded || initialized) return
@@ -127,13 +170,16 @@ watch(ready, loaded => {
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeydown)
   window.removeEventListener('pointerdown', onPointerdown, true)
+  window.removeEventListener('focusin', onFocusin, true)
+  const active = document.activeElement
+  if (opener?.isConnected && (!active || active === document.body || ownsTarget(active))) opener.focus({ preventScroll: true })
 })
 </script>
 
 <template>
   <div
     ref="root" class="eqt-rule-page" :class="{ 'eqt-rule-page--collapsed': rulesCollapsed }"
-    role="dialog" :aria-label="t('rulePagePrototype.title')" translate="no"
+    role="dialog" :aria-label="t('rulePagePrototype.title')" translate="no" tabindex="-1"
   >
     <aside class="eqt-rule-page__side">
       <h1 class="eqt-rule-page__title">{{ t('rulePrototype.rules') }}</h1>
@@ -256,7 +302,7 @@ onBeforeUnmount(() => {
           <Shapes class="eqt-rule-page__icon" />{{ t('rulePagePrototype.previewHint') }}
         </p>
         <button
-          type="button" class="eqt-rule-page__toggle" :aria-pressed="rulesCollapsed" aria-keyshortcuts="Space"
+          ref="previewToggle" type="button" class="eqt-rule-page__toggle" :aria-pressed="rulesCollapsed" aria-keyshortcuts="Space"
           @click="rulesCollapsed = !rulesCollapsed"
         >
           <component :is="rulesCollapsed ? ArrowLeft : Eye" class="eqt-rule-page__icon" />

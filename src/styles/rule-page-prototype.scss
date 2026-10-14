@@ -46,6 +46,9 @@
   text-align: start;
   white-space: normal;
 
+  // 打開時焦點先落在整個規則頁上（讀屏念出標題），不是可操作的控制項，不畫焦點框
+  &:focus { outline: none; }
+
   &--collapsed {
     visibility: hidden;
     pointer-events: none;
