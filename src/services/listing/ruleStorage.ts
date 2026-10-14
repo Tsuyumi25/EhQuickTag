@@ -1,16 +1,17 @@
 // 規則的儲存格式：驗證與各版本之間的轉換。
 
 import {
-  BLUR_ACTIONS, createGroup, GROUP_MODES, MAX_GROUP_DEPTH, RANGE_FIELDS, RANGE_OPS, reserveRuleIds,
+  BLUR_ACTIONS, createActions, createGroup, GROUP_MODES, MAX_GROUP_DEPTH, RANGE_FIELDS, RANGE_OPS, reserveRuleIds,
   type BlurAction, type ConditionGroup, type FixedActions, type FixedCondition, type FixedConditionItem, type FixedRule,
   type GroupMode, type RangeField, type RangeOp,
 } from '@/services/listing/fixedRulePrototype'
 
+// 9：動作從規則搬進每個群組。之前的版本整條規則只有一組動作，讀進來放到根群組，子群組沒有動作。
 // 8：效果改成「在圖庫上顯示規則名稱」（showName）。7 存的是自填的標示文字（label），
 // 有填字就當成要顯示，文字本身不保留；7 之前的版本一律不顯示。
 // 6：NOT 是群組的獨立旗標。5 的判定模式多一種「全部不成立」，讀進來換成 NOT 任一成立；
 // 1–4 是固定三區（必要條件／任一成立／例外），讀進來時換成樹
-export const RULE_SCHEMA = 8
+export const RULE_SCHEMA = 9
 // 三區時代每一區底下最多兩層 Folder
 const LEGACY_FOLDER_DEPTH = 2
 
@@ -80,6 +81,7 @@ function decodeGroup(value: unknown, depth: number, schema: number): ConditionGr
       if (!validCondition(child)) throw new Error('Invalid fixed rule storage')
       return child
     }),
+    actions: schema >= 9 ? decodeActions(value.actions, schema) : createActions(),
   }
 }
 
@@ -94,6 +96,7 @@ function decodeLegacyItem(value: unknown, depth: number, bare: boolean): FixedCo
       kind: 'group',
       ...(value.kind === 'folder' ? decodeMode(value, 0) : { mode: 'all', negate: false }),
       conditions: value.conditions.map((child: unknown) => decodeLegacyItem(child, depth + 1, false)),
+      actions: createActions(),
     }
   }
   if (!validCondition(value)) throw new Error('Invalid fixed rule storage')
@@ -125,29 +128,35 @@ function decodeActions(actions: unknown, schema: number): FixedActions {
   return { background: actions.background, blur: actions.blur as BlurAction, showName: decodeShowName(actions, schema) }
 }
 
-function decodeHeader(rule: unknown, schema: number): Omit<FixedRule, 'root'> & Record<string, unknown> {
+function decodeHeader(rule: unknown): Omit<FixedRule, 'root'> & Record<string, unknown> {
   if (!isObject(rule) || !Number.isSafeInteger(rule.id) || typeof rule.name !== 'string' || typeof rule.enabled !== 'boolean') {
     throw new Error('Invalid fixed rule storage')
   }
-  return { ...rule, actions: decodeActions(rule.actions, schema) } as Omit<FixedRule, 'root'> & Record<string, unknown>
+  return rule as Omit<FixedRule, 'root'> & Record<string, unknown>
+}
+
+/** schema 9 之前動作掛在規則上，搬到根群組當預設 */
+function withRuleActions(root: ConditionGroup, header: Record<string, unknown>, schema: number): ConditionGroup {
+  return schema >= 9 ? root : { ...root, actions: decodeActions(header.actions, schema) }
 }
 
 /** 讀出存著的規則；格式不對就丟錯，呼叫端不能把壞資料當成空清單覆寫回去 */
 export function decodeRules(raw: string | null): FixedRule[] {
   if (raw === null) return []
   const data: unknown = JSON.parse(raw)
-  if (!isObject(data) || ![1, 2, 3, 4, 5, 6, 7, RULE_SCHEMA].includes(data.schema as number) || !Array.isArray(data.rules)) {
+  if (!isObject(data) || ![1, 2, 3, 4, 5, 6, 7, 8, RULE_SCHEMA].includes(data.schema as number) || !Array.isArray(data.rules)) {
     throw new Error('Invalid fixed rule storage')
   }
   const schema = data.schema as number
   if (schema >= 5) {
     return data.rules.map((rule: unknown): FixedRule => {
-      const header = decodeHeader(rule, schema)
-      return { id: header.id, name: header.name, enabled: header.enabled, root: decodeGroup(header.root, 0, schema), actions: header.actions }
+      const header = decodeHeader(rule)
+      const root = withRuleActions(decodeGroup(header.root, 0, schema), header, schema)
+      return { id: header.id, name: header.name, enabled: header.enabled, root }
     })
   }
   const legacy = data.rules.map((rule: unknown) => {
-    const header = decodeHeader(rule, schema)
+    const header = decodeHeader(rule)
     // schema 1–2 的任一成立叫 groups
     const alternatives = data.schema === 1 || data.schema === 2 ? header.groups : header.alternatives
     return {
@@ -159,10 +168,14 @@ export function decodeRules(raw: string | null): FixedRule[] {
   })
   // 換成樹時會新建群組，序號要先跳過所有舊 id；三區先暫時裝進一個沿用規則 id 的群組，只為了一次掃完
   reserveRuleIds(legacy.map(({ header, common, alternatives, exceptions }) => ({
-    ...header, root: { id: header.id, kind: 'group' as const, mode: 'all' as const, negate: false, conditions: [...common, ...alternatives, ...exceptions] },
+    ...header,
+    root: {
+      id: header.id, kind: 'group' as const, mode: 'all' as const, negate: false,
+      conditions: [...common, ...alternatives, ...exceptions], actions: createActions(),
+    },
   })))
   return legacy.map(({ header, common, alternatives, exceptions }): FixedRule => ({
     id: header.id, name: header.name, enabled: header.enabled,
-    root: rootFromSections(common, alternatives, exceptions), actions: header.actions,
+    root: withRuleActions(rootFromSections(common, alternatives, exceptions), header, schema),
   }))
 }

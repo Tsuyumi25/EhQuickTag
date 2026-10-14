@@ -2,13 +2,14 @@
 import { computed } from 'vue'
 import { useClipboard } from '@vueuse/core'
 import { Check, Copy, ScrollText } from '@lucide/vue'
+import RuleActionSummary from './RuleActionSummary.vue'
 import RuleDigestPhrase from './RuleDigestPhrase.vue'
 import RuleDigestTerm from './RuleDigestTerm.vue'
 import { t } from '@/composables/useI18n'
 import { ruleDigestMode } from '@/services/appOverlays'
 import type { FixedRule } from '@/services/listing/fixedRulePrototype'
 import {
-  digestCases, digestRule, NEVER_NOTES, rangeTerms, ruleExpression, type DigestMode, type DigestNote, type DigestTerm,
+  caseOutcome, digestCases, digestRule, NEVER_NOTES, rangeTerms, ruleExpression, type DigestMode, type DigestNote, type DigestTerm,
 } from '@/services/listing/ruleDigest'
 
 const props = defineProps<{ rule: FixedRule }>()
@@ -20,6 +21,7 @@ const digest = computed(() => digestRule(props.rule))
 const mustTerms = computed((): DigestTerm[] => digest.value.tags.map(tag => ({ kind: 'tag', tag, exclude: false })))
 const mustRanges = computed(() => rangeTerms(digest.value.ranges))
 const cases = computed(() => (ruleDigestMode.value === 'cases' ? digestCases(digest.value) : null))
+const caseOutcomes = computed(() => cases.value?.cases.map(item => caseOutcome(props.rule, item)) ?? [])
 const hasMust = computed(() => digest.value.tags.length > 0 || mustRanges.value.length > 0)
 
 function noteTerms(note: DigestNote): DigestTerm[] {
@@ -111,6 +113,9 @@ function noteParams(note: DigestNote): Record<string, string> | undefined {
             :class="{ 'eqt-rule-page__digest-case--impossible': item.impossible }"
           >
             <RuleDigestTerm v-for="(term, termIndex) in item.terms" :key="termIndex" :term="term" />
+            <span v-if="caseOutcomes[index]" class="eqt-rule-page__digest-outcome">
+              <span aria-hidden="true">→</span><RuleActionSummary v-bind="caseOutcomes[index]!" />
+            </span>
             <small v-if="item.impossible">{{ t('rulePagePrototype.digest.impossible') }}</small>
           </li>
         </ol>

@@ -836,11 +836,31 @@
 
 // ---- 效果 ----
 
-.eqt-rule-page__actions {
+.eqt-rule-page__action-editor {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: calc(var(--eqt-rule-page-gap) * 2);
+  padding: calc(var(--eqt-rule-page-gap) * 1.5);
+}
+
+.eqt-rule-page__action-summary {
+  display: inline-flex;
   align-items: center;
-  gap: calc(var(--eqt-rule-page-gap) * 2) calc(var(--eqt-rule-page-gap) * 5);
+  gap: calc(var(--eqt-rule-page-gap) / 2);
+  white-space: nowrap;
+}
+
+.eqt-rule-page__action-swatch {
+  width: 0.9em;
+  height: 0.9em;
+  border: var(--eqt-border-width-thin) solid var(--eqt-border);
+  border-radius: var(--eqt-radius-sm);
+}
+
+.eqt-rule-page__action-icon {
+  width: 1em;
+  height: 1em;
 }
 
 .eqt-rule-page__field {
@@ -988,6 +1008,16 @@
 
 // 不可能的情況照樣列出來，不然看不出是哪一種組合被擋掉
 .eqt-rule-page__digest-case--impossible > :not(small) { opacity: 0.45; }
+
+.eqt-rule-page__digest-outcome {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--eqt-rule-page-gap);
+  margin: var(--eqt-rule-page-item-margin);
+  color: var(--eqt-text-hint);
+
+  > .eqt-rule-page__action-summary { color: var(--eqt-text); }
+}
 
 .eqt-rule-page__digest-caption {
   margin: 0;

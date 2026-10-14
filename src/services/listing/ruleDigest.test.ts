@@ -4,7 +4,7 @@ import {
   createGroup, createRangeCondition, createTagCondition, evaluateRule,
   type GalleryProbe, type RangeField, type ValueRange,
 } from '@/services/listing/fixedRulePrototype'
-import { digestCases, digestRule, formatRange, ruleExpression, type DigestTerm, type RuleDigest } from './ruleDigest'
+import { caseOutcome, digestCases, digestRule, formatRange, ruleExpression, type DigestTerm, type RuleDigest } from './ruleDigest'
 import { probeArb, rule, ruleArb } from './test-helpers'
 
 const inRange = (range: ValueRange, value: number) => range.min <= value && value <= range.max
@@ -87,6 +87,15 @@ describe('digestCases', () => {
     const { cases, total } = digestCases(digestRule(rule('all', [pair(), pair(), pair()])), 5)
     expect(total).toBe(8)
     expect(cases).toHaveLength(5)
+  })
+
+  it('每一列的結果照那一列成立的分支算：分支有動作就用分支的，沒有就回到預設', () => {
+    const branch = createGroup('all', [createTagCondition('female:b')])
+    branch.actions.background = 'green'
+    const fixedRule = rule('all', [createTagCondition('female:a'), createGroup('any', [branch, createTagCondition('male:c')])])
+    fixedRule.root.actions.background = 'red'
+    const { cases } = digestCases(digestRule(fixedRule))
+    expect(cases.map(item => caseOutcome(fixedRule, item)?.background)).toEqual(['green', 'red'])
   })
 })
 

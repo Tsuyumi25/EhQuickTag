@@ -83,6 +83,8 @@ export interface ConditionGroup {
   /** 套在判定模式外面的 NOT：all + negate = 任一不成立、any + negate = 全部不成立 */
   negate: boolean
   conditions: FixedConditionItem[]
+  /** 根群組的動作是整條規則的預設；子群組的動作在它這一支成立時蓋過上一層 */
+  actions: FixedActions
 }
 
 export type FixedConditionItem = FixedCondition | ConditionGroup
@@ -111,7 +113,6 @@ export interface FixedRule {
   enabled: boolean
   /** 規則本身就是一個群組；條件不只一個時才有東西決定它們之間是「且」還是「或」 */
   root: ConditionGroup
-  actions: FixedActions
 }
 
 /** 受測圖庫：tags 不完整時「沒看到」不等於「沒有」，complete 才允許推斷缺席 */
@@ -170,8 +171,13 @@ export function conditionRange(condition: RangeCondition): ValueRange {
   return { min: condition.value, max: condition.value }
 }
 
+/** 背景沒選、模糊維持不變都代表「沒指定」，讓給上一層或下一條規則 */
+export function createActions(): FixedActions {
+  return { background: null, blur: 'unchanged', showName: false }
+}
+
 export function createGroup(mode: GroupMode = 'all', conditions: FixedConditionItem[] = [], negate = false): ConditionGroup {
-  return { id: nextEntityId(), kind: 'group', mode, negate, conditions }
+  return { id: nextEntityId(), kind: 'group', mode, negate, conditions, actions: createActions() }
 }
 
 /** 同一個標籤的含有與不含是兩件不同的素材，去重要連同極性一起比 */
@@ -191,7 +197,6 @@ export function createRule(index: number): FixedRule {
     name: t('rulePagePrototype.newRule', { n: index }),
     enabled: true,
     root: createGroup('all'),
-    actions: { background: null, blur: 'unchanged', showName: false },
   }
 }
 
@@ -266,15 +271,51 @@ export function evaluateRule(rule: FixedRule, probe: GalleryProbe): Tri {
   return isRuleComplete(rule) ? evaluateItem(rule.root, probe) : null
 }
 
+/** 一條規則對一本圖庫的最後結果；blur 保留「維持不變」，跨規則合併時才知道要不要讓給下一條 */
+export interface RuleOutcome {
+  background: string | null
+  blur: BlurAction
+  showName: boolean
+}
+
+// 一個群組的動作要生效，從根一路到它的每一層都得成立；判定未知也算不成立。
+// 收集的順序就是優先順序：子群組排在上一層前面，先出現的分支排在後出現的前面
+function firedActions(group: ConditionGroup, probe: GalleryProbe, out: FixedActions[]): void {
+  for (const child of group.conditions) {
+    if (child.kind === 'group' && evaluateItem(child, probe) === true) firedActions(child, probe, out)
+  }
+  out.push(group.actions)
+}
+
+/**
+ * 子群組蓋過上一層；不同分支同時成立時，越上面越優先。
+ * 背景與模糊沒指定就往上一層找；顯示名稱只要成立的任一層有勾就顯示。
+ * 規則沒命中（含未知）是 null；停用與否由呼叫端決定，編輯中的停用規則也要能預覽
+ */
+export function resolveRuleOutcome(rule: FixedRule, probe: GalleryProbe): RuleOutcome | null {
+  if (evaluateRule(rule, probe) !== true) return null
+  const fired: FixedActions[] = []
+  firedActions(rule.root, probe, fired)
+  let background: string | null = null
+  let blur: BlurAction = 'unchanged'
+  let showName = false
+  for (const actions of fired) {
+    background ??= actions.background
+    if (blur === 'unchanged') blur = actions.blur
+    showName ||= actions.showName
+  }
+  return { background, blur, showName }
+}
+
 export interface RuleEffects {
   background: string | null
   blur: boolean
-  /** 底色沿用該規則自己的背景色，沒選背景時是 null；ruleId 讓點標示時能打開那一條 */
+  /** 底色沿用該規則最後的背景色，沒有背景時是 null；ruleId 讓點標示時能打開那一條 */
   labels: { ruleId: number; text: string; tone: string | null }[]
 }
 
 /**
- * 背景與模糊各自找：清單裡位置最高、命中且有指定該效果的規則說了算。
+ * 每條規則先算出自己的結果，背景與模糊再各自找：清單裡位置最高、命中且有指定該效果的規則說了算。
  * 「維持不變」與沒選背景都不算指定，讓給下面的規則。
  * 標示不互相搶：每條命中的規則各貼一個，照清單順序排
  */
@@ -283,11 +324,12 @@ export function resolveRuleEffects(rules: readonly FixedRule[], probe: GalleryPr
   let blur: BlurAction = 'unchanged'
   const labels: RuleEffects['labels'] = []
   for (const rule of rules) {
-    if (!rule.enabled || evaluateRule(rule, probe) !== true) continue
-    background ??= rule.actions.background
-    if (blur === 'unchanged') blur = rule.actions.blur
-    const text = rule.actions.showName ? rule.name.trim() : ''
-    if (text) labels.push({ ruleId: rule.id, text, tone: rule.actions.background })
+    const outcome = rule.enabled ? resolveRuleOutcome(rule, probe) : null
+    if (!outcome) continue
+    background ??= outcome.background
+    if (blur === 'unchanged') blur = outcome.blur
+    const text = outcome.showName ? rule.name.trim() : ''
+    if (text) labels.push({ ruleId: rule.id, text, tone: outcome.background })
   }
   return { background, blur: blur === 'blur', labels }
 }

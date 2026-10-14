@@ -2,8 +2,9 @@
 // 攤平巢狀群組、合併數值區間，逐層看時看不到的衝突與多餘條件才算得出來。
 
 import {
-  averageOfStars, conditionRange, GROUP_MODE_OPERATORS, normalizeTag, RANGE_FIELDS,
-  type FixedConditionItem, type FixedRule, type RangeCondition, type RangeField, type ValueRange,
+  averageOfStars, conditionRange, evaluateRule, GROUP_MODE_OPERATORS, normalizeTag, RANGE_FIELDS, resolveRuleOutcome,
+  type FixedConditionItem, type FixedRule, type GalleryProbe, type RangeCondition, type RangeField, type RuleOutcome,
+  type ValueRange,
 } from '@/services/listing/fixedRulePrototype'
 
 export type DigestMode = 'sentence' | 'rows' | 'cases' | 'raw'
@@ -257,6 +258,72 @@ export function digestCases(digest: RuleDigest, limit = CASE_LIMIT): { cases: Di
     }
   }
   return { cases, total }
+}
+
+function termHolds(term: DigestTerm, probe: GalleryProbe): boolean {
+  if (term.kind === 'tag') return probe.tags.has(term.tag) !== term.exclude
+  if (term.kind === 'range') {
+    const value = probe[term.field]
+    return value !== null && (term.range.min <= value && value <= term.range.max) !== term.exclude
+  }
+  return term.kind === 'all' ? term.terms.every(child => termHolds(child, probe)) : term.terms.some(child => termHolds(child, probe))
+}
+
+/** 數值只需要試規則裡出現過的邊界與邊界外一格；星等是半星一格，全部試一遍也只有 11 個 */
+function candidateValues(rule: FixedRule, field: RangeField): number[] {
+  const { min, max, step } = RANGE_FIELDS[field]
+  if (Number.isFinite(max)) return Array.from({ length: Math.round((max - min) / step) + 1 }, (_, index) => min + index * step)
+  const values = new Set([min])
+  const visit = (item: FixedConditionItem) => {
+    if (item.kind === 'group') item.conditions.forEach(visit)
+    else if (item.kind === field) {
+      for (const edge of [item.value, item.max ?? item.value]) for (const value of [edge - step, edge, edge + step]) if (value >= min) values.add(value)
+    }
+  }
+  visit(rule.root)
+  return [...values].sort((a, b) => a - b)
+}
+
+// 「至少一個」裡的標籤各自可有可無，最多試這麼多個的所有組合；再多就只試全部不帶
+const OPTIONAL_TAG_LIMIT = 6
+
+/**
+ * 情境的一列只寫出「至少要有」的條件。拿這一列湊出最小的圖庫（列出的標籤，加上「至少一個」裡最少需要的幾個），
+ * 實際跑一次判定與動作，結果就跟列表上同樣的圖庫一模一樣；湊不出來或不可能的列不給結果
+ */
+export function caseOutcome(rule: FixedRule, item: DigestCase): RuleOutcome | null {
+  if (item.impossible) return null
+  const required = new Set<string>()
+  const optional = new Set<string>()
+  const collect = (term: DigestTerm, inAny: boolean) => {
+    if (term.kind === 'tag') {
+      if (!term.exclude) (inAny ? optional : required).add(term.tag)
+    } else if (term.kind !== 'range') {
+      term.terms.forEach(child => collect(child, inAny || term.kind === 'any'))
+    }
+  }
+  item.terms.forEach(term => collect(term, false))
+  const extras = [...optional].filter(tag => !required.has(tag))
+  const subsets = extras.length > OPTIONAL_TAG_LIMIT ? [0] : Array.from({ length: 1 << extras.length }, (_, mask) => mask)
+    .sort((a, b) => bitCount(a) - bitCount(b))
+  const ratings = candidateValues(rule, 'rating')
+  const pages = candidateValues(rule, 'pages')
+  for (const mask of subsets) {
+    const tags = new Set([...required, ...extras.filter((_, index) => mask & (1 << index))])
+    for (const rating of ratings) {
+      for (const pageCount of pages) {
+        const probe: GalleryProbe = { tags, complete: true, rating, pages: pageCount }
+        if (item.terms.every(term => termHolds(term, probe)) && evaluateRule(rule, probe) === true) return resolveRuleOutcome(rule, probe)
+      }
+    }
+  }
+  return null
+}
+
+function bitCount(mask: number): number {
+  let count = 0
+  for (let rest = mask; rest; rest &= rest - 1) count += 1
+  return count
 }
 
 export type RangeShape =

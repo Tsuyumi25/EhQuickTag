@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   averageOfStars, conditionReady, conditionsFromTerms, createGroup, createRangeCondition, createRule, createTagCondition,
-  evaluateCondition, evaluateRule, itemHeight, resolveRuleEffects, starsFromAverage,
-  type BlurAction, type FixedRule, type GalleryProbe, type RangeOp,
+  evaluateCondition, evaluateRule, itemHeight, resolveRuleEffects, resolveRuleOutcome, starsFromAverage,
+  type BlurAction, type ConditionGroup, type FixedActions, type FixedRule, type GalleryProbe, type RangeOp,
 } from '@/services/listing/fixedRulePrototype'
 
 const probe = (rating: number | null, tags: string[] = [], pages: number | null = null): GalleryProbe =>
@@ -12,7 +12,7 @@ function ruleWith(tag: string, background: string | null, blur: BlurAction, enab
   const rule = createRule(1)
   rule.root.conditions.push(createTagCondition(tag))
   rule.name = name
-  rule.actions = { background, blur, showName: name !== '' }
+  rule.root.actions = { background, blur, showName: name !== '' }
   rule.enabled = enabled
   return rule
 }
@@ -39,7 +39,7 @@ describe('resolveRuleEffects', () => {
 
   it('勾了顯示名稱的規則各貼一個名稱，照清單順序，帶著自己的背景色', () => {
     const hidden = ruleWith('female:a', 'blue', 'unchanged', true, 'hidden')
-    hidden.actions.showName = false
+    hidden.root.actions.showName = false
     const rules = [
       ruleWith('female:a', 'red', 'blur', true, ' first '),
       ruleWith('female:b', 'green', 'unchanged', true, 'missed'),
@@ -52,6 +52,44 @@ describe('resolveRuleEffects', () => {
       { ruleId: rules[0].id, text: 'first', tone: 'red' },
       { ruleId: rules[5].id, text: 'last', tone: null },
     ])
+  })
+})
+
+describe('resolveRuleOutcome', () => {
+  const withActions = (group: ConditionGroup, actions: Partial<FixedActions>) => Object.assign(group.actions, actions) && group
+  // a AND (B OR c)，B 是只含 b 的子群組
+  function branchingRule() {
+    const rule = createRule(1)
+    const b = withActions(createGroup('all', [createTagCondition('female:b')]), { background: 'green' })
+    const or = withActions(createGroup('any', [b, createTagCondition('male:c')]), { background: 'yellow' })
+    rule.root.conditions.push(createTagCondition('female:a'), or)
+    withActions(rule.root, { background: 'red', blur: 'blur' })
+    return rule
+  }
+
+  it('子群組成立時蓋過上一層，沒指定的效果往上一層找', () => {
+    const rule = branchingRule()
+    expect(resolveRuleOutcome(rule, probe(null, ['female:a', 'female:b']))).toEqual({ background: 'green', blur: 'blur', showName: false })
+    expect(resolveRuleOutcome(rule, probe(null, ['female:a', 'male:c']))).toEqual({ background: 'yellow', blur: 'blur', showName: false })
+    expect(resolveRuleOutcome(rule, probe(null, ['female:b']))).toBeNull()
+  })
+
+  it('不同分支同時成立時越上面越優先；顯示名稱只要任一層有勾就顯示', () => {
+    const rule = createRule(1)
+    const first = withActions(createGroup('all', [createTagCondition('female:a')]), { background: 'green' })
+    const second = withActions(createGroup('all', [createTagCondition('female:b')]), { background: 'blue', showName: true })
+    rule.root.mode = 'any'
+    rule.root.conditions.push(first, second)
+    expect(resolveRuleOutcome(rule, probe(null, ['female:a', 'female:b']))).toEqual({ background: 'green', blur: 'unchanged', showName: true })
+  })
+
+  it('掛在 NOT OR 底下的子群組，規則命中時一定不成立，動作永遠不生效', () => {
+    const rule = createRule(1)
+    const dead = withActions(createGroup('all', [createTagCondition('female:b')]), { background: 'green' })
+    rule.root.conditions.push(createTagCondition('female:a'), createGroup('any', [dead], true))
+    withActions(rule.root, { background: 'red' })
+    expect(resolveRuleOutcome(rule, probe(null, ['female:a']))).toMatchObject({ background: 'red' })
+    expect(resolveRuleOutcome(rule, probe(null, ['female:a', 'female:b']))).toBeNull()
   })
 })
 
