@@ -96,15 +96,15 @@ export interface FixedActions {
   showName: boolean
 }
 
-/** 背景色的選項；值是主題 token，淺色與深色主題各自換色 */
-export const COLOR_PRESETS: readonly { value: string; labelKey: string }[] = [
-  { value: 'var(--eqt-status-or)', labelKey: 'rulePrototype.colorOr' },
-  { value: 'var(--eqt-status-include)', labelKey: 'rulePrototype.colorInclude' },
-  { value: 'var(--eqt-status-exclude)', labelKey: 'rulePrototype.colorExclude' },
-  { value: 'var(--eqt-green)', labelKey: 'rulePrototype.colorGreen' },
-  { value: 'var(--eqt-danger)', labelKey: 'rulePrototype.colorDanger' },
-  { value: 'var(--eqt-border)', labelKey: 'rulePrototype.colorBorder' },
-  { value: 'var(--eqt-text-hint)', labelKey: 'rulePrototype.colorHint' },
+/** 背景色的選項；值是主題 token，淺色與深色主題各自換色。name 是原始算式裡的寫法，不翻譯 */
+export const COLOR_PRESETS: readonly { value: string; name: string; labelKey: string }[] = [
+  { value: 'var(--eqt-status-or)', name: 'yellow', labelKey: 'rulePrototype.colorOr' },
+  { value: 'var(--eqt-status-include)', name: 'green', labelKey: 'rulePrototype.colorInclude' },
+  { value: 'var(--eqt-status-exclude)', name: 'red', labelKey: 'rulePrototype.colorExclude' },
+  { value: 'var(--eqt-green)', name: 'deep-green', labelKey: 'rulePrototype.colorGreen' },
+  { value: 'var(--eqt-danger)', name: 'deep-red', labelKey: 'rulePrototype.colorDanger' },
+  { value: 'var(--eqt-border)', name: 'border', labelKey: 'rulePrototype.colorBorder' },
+  { value: 'var(--eqt-text-hint)', name: 'muted', labelKey: 'rulePrototype.colorHint' },
 ]
 
 export interface FixedRule {

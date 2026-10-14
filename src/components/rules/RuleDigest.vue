@@ -114,7 +114,7 @@ function noteParams(note: DigestNote): Record<string, string> | undefined {
           >
             <RuleDigestTerm v-for="(term, termIndex) in item.terms" :key="termIndex" :term="term" />
             <span v-if="caseOutcomes[index]" class="eqt-rule-page__digest-outcome">
-              <span aria-hidden="true">→</span><RuleActionSummary v-bind="caseOutcomes[index]!" />
+              <span aria-hidden="true">→</span><RuleActionSummary v-bind="caseOutcomes[index]!" verbose />
             </span>
             <small v-if="item.impossible">{{ t('rulePagePrototype.digest.impossible') }}</small>
           </li>

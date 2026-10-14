@@ -127,6 +127,18 @@ describe('ruleExpression', () => {
       .toBe('female:"some tag"\nAND (EMPTY)')
     expect(ruleExpression(rule('all', []))).toBe('(EMPTY)')
   })
+
+  it('動作緊接在群組括號後面，根群組的動作另起一行；沒指定動作的群組照舊', () => {
+    const branch = createGroup('all', [createTagCondition('female:b')])
+    Object.assign(branch.actions, { background: 'var(--eqt-status-include)', showName: true })
+    const fixedRule = rule('all', [createTagCondition('female:a'), createGroup('any', [branch, createTagCondition('male:c')])])
+    Object.assign(fixedRule.root.actions, { background: 'var(--eqt-status-exclude)', blur: 'blur' })
+    expect(ruleExpression(fixedRule)).toBe([
+      'female:a',
+      'AND ((female:b){background: green, show-name} OR male:c)',
+      '=> {background: red, blur}',
+    ].join('\n'))
+  })
 })
 
 describe('formatRange', () => {

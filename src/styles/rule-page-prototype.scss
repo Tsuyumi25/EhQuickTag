@@ -849,6 +849,18 @@
   align-items: center;
   gap: calc(var(--eqt-rule-page-gap) / 2);
   white-space: nowrap;
+
+  // 情境裡每一項是一段字，項與項之間拉開，換行時以項為單位
+  &--verbose {
+    flex-wrap: wrap;
+    gap: calc(var(--eqt-rule-page-gap) / 2) calc(var(--eqt-rule-page-gap) * 2);
+  }
+}
+
+.eqt-rule-page__action-item {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--eqt-rule-page-gap) / 2);
 }
 
 .eqt-rule-page__action-swatch {
