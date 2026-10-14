@@ -181,10 +181,11 @@
   a { color: var(--eqt-text); white-space: nowrap; }
 }
 
-.eqt-rule-prototype__gallery--background {
-  &, > td {
-    background: color-mix(in srgb, var(--eqt-rule-prototype-background) 25%, var(--eqt-bg)) !important;
-  }
+// 背景色帶透明度，疊在 EH 原本的底色上（縮圖卡片每格的底色本來就深淺交錯）。
+// 列表模式的 tr 底下每格 td 也有自己的底色，只疊在 td 上，不然同一格會疊兩層
+.eqt-rule-prototype__gallery--background:not(tr),
+tr.eqt-rule-prototype__gallery--background > td {
+  background-image: linear-gradient(var(--eqt-rule-prototype-background), var(--eqt-rule-prototype-background)) !important;
 }
 .eqt-rule-prototype__gallery--blur {
   .glthumb:not(:hover) img, .gl3t:not(:hover) img, .gl1e:not(:hover) img { filter: blur(var(--eqt-rule-prototype-blur)) !important; }
@@ -208,9 +209,10 @@
   overflow: hidden;
   padding: 0 var(--eqt-rule-prototype-gap);
   border: none;
-  border-inline-start: var(--eqt-border-width) solid var(--eqt-rule-prototype-label-tone);
+  // 色條拿掉透明度，背景色很淡的規則色條才看得出來；底色照規則設的透明度
+  border-inline-start: var(--eqt-border-width) solid rgb(from var(--eqt-rule-prototype-label-tone) r g b);
   border-radius: var(--eqt-radius-sm);
-  background: color-mix(in srgb, var(--eqt-rule-prototype-label-tone) 25%, var(--eqt-bg));
+  background: linear-gradient(var(--eqt-rule-prototype-label-tone), var(--eqt-rule-prototype-label-tone)), var(--eqt-bg);
   color: var(--eqt-text);
   font-size: var(--eqt-fs-sm);
   font-weight: bold;
@@ -219,7 +221,9 @@
 
   &:hover:not(:disabled),
   &:focus-visible {
-    background: color-mix(in srgb, var(--eqt-rule-prototype-label-tone) 45%, var(--eqt-bg));
+    background:
+      linear-gradient(var(--eqt-bg-hover), var(--eqt-bg-hover)),
+      linear-gradient(var(--eqt-rule-prototype-label-tone), var(--eqt-rule-prototype-label-tone)), var(--eqt-bg);
   }
 
   &:focus-visible {

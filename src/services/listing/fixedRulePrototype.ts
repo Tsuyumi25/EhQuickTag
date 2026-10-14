@@ -88,22 +88,12 @@ export interface ConditionGroup {
 export type FixedConditionItem = FixedCondition | ConditionGroup
 
 export interface FixedActions {
+  /** #rrggbbaa；透明度直接決定疊在圖庫原本底色上有多濃 */
   background: string | null
   blur: BlurAction
   /** 命中時把規則名稱貼在縮圖模式的標籤列上方 */
   showName: boolean
 }
-
-/** 背景色的選項；值是主題 token，淺色與深色主題各自換色。name 是原始算式裡的寫法，不翻譯 */
-export const COLOR_PRESETS: readonly { value: string; name: string; labelKey: string }[] = [
-  { value: 'var(--eqt-status-or)', name: 'yellow', labelKey: 'rulePrototype.colorOr' },
-  { value: 'var(--eqt-status-include)', name: 'green', labelKey: 'rulePrototype.colorInclude' },
-  { value: 'var(--eqt-status-exclude)', name: 'red', labelKey: 'rulePrototype.colorExclude' },
-  { value: 'var(--eqt-green)', name: 'deep-green', labelKey: 'rulePrototype.colorGreen' },
-  { value: 'var(--eqt-danger)', name: 'deep-red', labelKey: 'rulePrototype.colorDanger' },
-  { value: 'var(--eqt-border)', name: 'border', labelKey: 'rulePrototype.colorBorder' },
-  { value: 'var(--eqt-text-hint)', name: 'muted', labelKey: 'rulePrototype.colorHint' },
-]
 
 // 一條規則只有一組動作：條件裡不分岔出不同的動作。想要不同的結果就另開一條規則，
 // 誰優先由規則清單的順序決定，跟只有一條規則時是同一套讀法

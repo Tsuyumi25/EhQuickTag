@@ -10,14 +10,6 @@ export default {
   'rulePrototype.actions': 'Actions',
   'rulePrototype.removeCondition': 'Remove condition',
   'rulePrototype.emptyTag': 'no tag',
-  'rulePrototype.colorNone': 'None',
-  'rulePrototype.colorOr': 'Yellow',
-  'rulePrototype.colorInclude': 'Green',
-  'rulePrototype.colorExclude': 'Red',
-  'rulePrototype.colorGreen': 'Deep green',
-  'rulePrototype.colorDanger': 'Deep red',
-  'rulePrototype.colorBorder': 'Theme border',
-  'rulePrototype.colorHint': 'Muted',
 
   // Rule page prototype
   'rulePagePrototype.title': 'Gallery rule editor · prototype',
@@ -67,7 +59,7 @@ export default {
   'rulePagePrototype.background': 'Background',
   'rulePagePrototype.unchanged': 'Leave unchanged',
   'rulePagePrototype.noAction': 'No action',
-  'rulePagePrototype.backgroundIs': '{color} background',
+  'rulePagePrototype.backgroundIs': 'Background {color}',
   'rulePagePrototype.showNameShort': 'Show name',
   'rulePagePrototype.clear': 'Keep cover sharp',
   'rulePagePrototype.showName': 'Show rule name on galleries',

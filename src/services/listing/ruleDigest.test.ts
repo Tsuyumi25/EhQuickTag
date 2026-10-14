@@ -121,8 +121,8 @@ describe('ruleExpression', () => {
 
   it('規則的動作另起一行，以 => 開頭；沒指定動作時不寫', () => {
     const fixedRule = rule('all', [createTagCondition('female:a')])
-    Object.assign(fixedRule.actions, { background: 'var(--eqt-status-exclude)', blur: 'blur', showName: true })
-    expect(ruleExpression(fixedRule)).toBe('female:a\n=> {background: red, blur, show-name}')
+    Object.assign(fixedRule.actions, { background: '#cc000080', blur: 'blur', showName: true })
+    expect(ruleExpression(fixedRule)).toBe('female:a\n=> {background: #cc000080, blur, show-name}')
   })
 })
 

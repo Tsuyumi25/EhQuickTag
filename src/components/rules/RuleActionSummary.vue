@@ -2,15 +2,12 @@
 import { computed } from 'vue'
 import { Eye, EyeOff, Tag } from '@lucide/vue'
 import { t } from '@/composables/useI18n'
-import { COLOR_PRESETS, type BlurAction } from '@/services/listing/fixedRulePrototype'
+import type { BlurAction } from '@/services/listing/fixedRulePrototype'
 
-// verbose：情境裡要讀得出做了什麼，每一項都寫成字；標題列的箭頭段只有圖示，放得下
+// verbose：情境裡要讀得出做了什麼，每一項都寫成字；空間小的地方只放圖示
 const props = defineProps<{ background: string | null; blur: BlurAction; showName: boolean; verbose?: boolean }>()
 
-const colorName = computed(() => {
-  const preset = COLOR_PRESETS.find(item => item.value === props.background)
-  return preset ? t(preset.labelKey) : props.background ?? ''
-})
+const colorName = computed(() => props.background ?? '')
 const empty = computed(() => !props.background && props.blur === 'unchanged' && !props.showName)
 </script>
 
@@ -18,7 +15,7 @@ const empty = computed(() => !props.background && props.blur === 'unchanged' && 
   <span class="eqt-rule-page__action-summary" :class="{ 'eqt-rule-page__action-summary--verbose': verbose }">
     <span v-if="background" class="eqt-rule-page__action-item">
       <span
-        class="eqt-rule-page__action-swatch" :style="{ background }"
+        class="eqt-rule-page__action-swatch" :style="{ '--eqt-rule-page-color-preview': background }"
         :role="verbose ? undefined : 'img'" :aria-label="verbose ? undefined : t('rulePagePrototype.backgroundIs', { color: colorName })"
         :title="t('rulePagePrototype.backgroundIs', { color: colorName })"
       />

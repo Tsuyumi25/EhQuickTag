@@ -835,11 +835,12 @@
 
 // ---- 效果 ----
 
+// 目前動作還少，一個動作一行；之後動作多了再看要不要分組
 .eqt-rule-page__actions {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: calc(var(--eqt-rule-page-gap) * 2) calc(var(--eqt-rule-page-gap) * 5);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: calc(var(--eqt-rule-page-gap) * 2);
 }
 
 .eqt-rule-page__action-summary {
@@ -861,11 +862,21 @@
   gap: calc(var(--eqt-rule-page-gap) / 2);
 }
 
+// 底下墊棋盤格，半透明的顏色看得出有多透
+.eqt-rule-page__action-swatch,
+.eqt-rule-page__color-swatch.eqt-line-color__trigger {
+  --eqt-rule-page-checker: calc(var(--eqt-rule-page-control-h) / 3);
+
+  border: var(--eqt-border-width-thin) solid var(--eqt-border);
+  border-radius: var(--eqt-radius-sm);
+  background:
+    linear-gradient(var(--eqt-rule-page-color-preview, transparent), var(--eqt-rule-page-color-preview, transparent)),
+    repeating-conic-gradient(var(--eqt-bg-active) 0 25%, var(--eqt-bg-elevated) 0 50%) 0 0 / var(--eqt-rule-page-checker) var(--eqt-rule-page-checker);
+}
+
 .eqt-rule-page__action-swatch {
   width: 0.9em;
   height: 0.9em;
-  border: var(--eqt-border-width-thin) solid var(--eqt-border);
-  border-radius: var(--eqt-radius-sm);
 }
 
 .eqt-rule-page__action-icon {
@@ -885,12 +896,34 @@
   }
 }
 
-.eqt-rule-page__swatch {
-  flex-shrink: 0;
+// 跟 My Tags 標籤顏色那一組同款：色盤鈕只顯示顏色，旁邊是可以直接貼上、複製的色碼
+.eqt-rule-page__color-control {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--eqt-rule-page-gap);
+}
+
+.eqt-rule-page__color-swatch.eqt-line-color__trigger {
+  flex: 0 0 var(--eqt-rule-page-control-h);
   width: var(--eqt-rule-page-control-h);
   height: var(--eqt-rule-page-control-h);
-  border: var(--eqt-border-width) solid var(--eqt-border);
-  border-radius: var(--eqt-radius-sm);
+  padding: 0;
+
+  &:hover:not(:disabled) {
+    border-color: var(--eqt-text-hint);
+  }
+
+  &:focus-visible {
+    outline: var(--eqt-border-width) solid var(--eqt-green);
+  }
+
+  > svg { visibility: hidden; }
+}
+
+.eqt-rule-page__color {
+  width: calc(var(--eqt-fs-md) * 7);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  text-transform: uppercase;
 }
 
 // ---- 摘要 ----

@@ -10,14 +10,6 @@ export default {
   'rulePrototype.actions': 'アクション',
   'rulePrototype.removeCondition': '条件を削除',
   'rulePrototype.emptyTag': 'タグなし',
-  'rulePrototype.colorNone': 'なし',
-  'rulePrototype.colorOr': '黄',
-  'rulePrototype.colorInclude': '緑',
-  'rulePrototype.colorExclude': '赤',
-  'rulePrototype.colorGreen': '濃い緑',
-  'rulePrototype.colorDanger': '濃い赤',
-  'rulePrototype.colorBorder': 'テーマの枠線色',
-  'rulePrototype.colorHint': '補助テキスト色',
 
   // Rule page prototype
   'rulePagePrototype.title': 'ギャラリールールエディター · プロトタイプ',

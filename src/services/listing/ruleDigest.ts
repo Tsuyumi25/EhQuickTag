@@ -2,7 +2,7 @@
 // 攤平巢狀群組、合併數值區間，逐層看時看不到的衝突與多餘條件才算得出來。
 
 import {
-  averageOfStars, COLOR_PRESETS, conditionRange, GROUP_MODE_OPERATORS, normalizeTag, RANGE_FIELDS,
+  averageOfStars, conditionRange, GROUP_MODE_OPERATORS, normalizeTag, RANGE_FIELDS,
   type FixedActions, type FixedConditionItem, type FixedRule, type RangeCondition, type RangeField, type ValueRange,
 } from '@/services/listing/fixedRulePrototype'
 
@@ -309,7 +309,7 @@ function rawTag(tag: string): string {
 /** 沒指定任何動作時是空字串 */
 function rawActions(actions: FixedActions): string {
   const parts: string[] = []
-  if (actions.background) parts.push(`background: ${COLOR_PRESETS.find(preset => preset.value === actions.background)?.name ?? actions.background}`)
+  if (actions.background) parts.push(`background: ${actions.background}`)
   if (actions.blur === 'blur') parts.push('blur')
   if (actions.blur === 'clear') parts.push('no-blur')
   if (actions.showName) parts.push('show-name')

@@ -10,14 +10,6 @@ export default {
   'rulePrototype.actions': '动作',
   'rulePrototype.removeCondition': '移除条件',
   'rulePrototype.emptyTag': '尚无标签',
-  'rulePrototype.colorNone': '无',
-  'rulePrototype.colorOr': '黄色',
-  'rulePrototype.colorInclude': '绿色',
-  'rulePrototype.colorExclude': '红色',
-  'rulePrototype.colorGreen': '深绿',
-  'rulePrototype.colorDanger': '深红',
-  'rulePrototype.colorBorder': '主题边框色',
-  'rulePrototype.colorHint': '次要文字色',
 
   // Rule page prototype
   'rulePagePrototype.title': '图库规则编辑器 · 原型',
@@ -67,7 +59,7 @@ export default {
   'rulePagePrototype.background': '背景',
   'rulePagePrototype.unchanged': '保持不变',
   'rulePagePrototype.noAction': '无动作',
-  'rulePagePrototype.backgroundIs': '{color}背景',
+  'rulePagePrototype.backgroundIs': '背景 {color}',
   'rulePagePrototype.showNameShort': '显示名称',
   'rulePagePrototype.clear': '保持封面清晰',
   'rulePagePrototype.showName': '在图库上显示规则名称',

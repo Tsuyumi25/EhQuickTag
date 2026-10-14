@@ -7,8 +7,12 @@ import {
 import { decodeRules, rootFromSections, RULE_SCHEMA } from './ruleStorage'
 import { itemArb, probeArb, rule } from './test-helpers'
 
-const actions: FixedActions = { background: 'red', blur: 'unchanged', showName: true }
-const legacyActions = { background: 'red', blur: 'unchanged' }
+const RED = '#cc000080'
+const GREEN = '#00cc0080'
+const actions: FixedActions = { background: RED, blur: 'unchanged', showName: true }
+// 12 之前的背景色是主題 token
+const legacyActions = { background: 'var(--eqt-status-exclude)', blur: 'unchanged' }
+const migratedActions = { background: '#8c333340', blur: 'unchanged' }
 const noActions: FixedActions = { background: null, blur: 'unchanged', showName: false }
 const tag = (id: number, name: string, exclude = false) => ({ id, kind: 'tag', tag: name, exclude })
 const probe = (tags: string[], rating: number | null = null): GalleryProbe => ({ tags: new Set(tags), complete: true, rating, pages: null })
@@ -68,20 +72,20 @@ describe('decodeRules', () => {
   })
 
   it('schema 10 的支線動作拆成各自的規則，排在原規則上面', () => {
-    const branch = { ...tag(4, 'female:b'), actions: { ...noActions, background: 'green' } }
+    const branch = { ...tag(4, 'female:b'), actions: { ...noActions, background: GREEN } }
     const stars = { id: 5, kind: 'rating', op: 'gte', value: 4, actions: { ...noActions, blur: 'blur' } }
     const or = { id: 3, kind: 'group', mode: 'any', negate: false, conditions: [branch, { ...tag(6, 'male:c'), actions: noActions }, stars], actions: noActions }
-    const root = { id: 2, kind: 'group', mode: 'all', negate: false, conditions: [{ ...tag(7, 'female:a'), actions: noActions }, or], actions: { ...noActions, background: 'red' } }
+    const root = { id: 2, kind: 'group', mode: 'all', negate: false, conditions: [{ ...tag(7, 'female:a'), actions: noActions }, or], actions: { ...noActions, background: RED } }
     const rules = decodeRules(JSON.stringify({ schema: 10, rules: [{ id: 1, name: 'r', enabled: true, root }] }))
     expect(rules.map(item => [item.name, item.actions.background, item.actions.blur])).toEqual([
-      ['r · 1', 'green', 'unchanged'],
+      ['r · 1', GREEN, 'unchanged'],
       ['r · 2', null, 'blur'],
-      ['r', 'red', 'unchanged'],
+      ['r', RED, 'unchanged'],
     ])
     expect(rules[0].root.conditions).toMatchObject([{ tag: 'female:a' }, { kind: 'group' }, { tag: 'female:b' }])
-    expect(resolveRuleEffects(rules, probe(['female:a', 'female:b']))).toMatchObject({ background: 'green', blur: false })
-    expect(resolveRuleEffects(rules, probe(['female:a', 'male:c']))).toMatchObject({ background: 'red', blur: false })
-    expect(resolveRuleEffects(rules, probe(['female:a', 'male:c'], 4.5))).toMatchObject({ background: 'red', blur: true })
+    expect(resolveRuleEffects(rules, probe(['female:a', 'female:b']))).toMatchObject({ background: GREEN, blur: false })
+    expect(resolveRuleEffects(rules, probe(['female:a', 'male:c']))).toMatchObject({ background: RED, blur: false })
+    expect(resolveRuleEffects(rules, probe(['female:a', 'male:c'], 4.5))).toMatchObject({ background: RED, blur: true })
     const all = rules.flatMap(item => [item.id, ...ids(item.root)])
     expect(new Set(all).size).toBe(all.length)
   })
@@ -124,8 +128,8 @@ describe('decodeRules', () => {
       ],
     }))
     expect(rules.map(item => item.actions)).toEqual([
-      { ...legacyActions, showName: true },
-      { ...legacyActions, showName: false },
+      { ...migratedActions, showName: true },
+      { ...migratedActions, showName: false },
     ])
   })
 
@@ -141,6 +145,7 @@ describe('decodeRules', () => {
     expect(() => decodeRules(JSON.stringify({ schema: RULE_SCHEMA, rules: [{ id: 1, name: 'r', enabled: true, actions }] }))).toThrow()
     expect(() => decodeRules(ruleWith({ id: 2, kind: 'group', mode: 'all', conditions: [tag(3, 'female:a')] }))).toThrow()
     expect(() => decodeRules(ruleWith(deep(1), null))).toThrow()
+    expect(() => decodeRules(ruleWith(deep(1), { ...actions, background: 'var(--eqt-status-or)' }))).toThrow()
   })
 })
 
@@ -173,7 +178,7 @@ function evaluateGroup(group: ConditionGroup, galleryProbe: GalleryProbe): Tri {
 }
 
 const actionsArb: fc.Arbitrary<FixedActions> = fc.record({
-  background: fc.constantFrom(null, 'red', 'green'),
+  background: fc.constantFrom(null, RED, GREEN),
   blur: fc.constantFrom<BlurAction>('unchanged', 'blur', 'clear'),
   showName: fc.constant(false),
 })

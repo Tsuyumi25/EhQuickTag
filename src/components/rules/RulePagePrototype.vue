@@ -83,8 +83,8 @@ const opener = document.activeElement instanceof HTMLElement ? document.activeEl
 
 function ownsTarget(target: EventTarget | null): boolean {
   if (!(target instanceof Element)) return false
-  // 規則操作選單 Teleport 到 body，不在 root 裡面，但仍是規則頁的一部分
-  return !!root.value?.contains(target) || !!target.closest('.eqt-context-menu')
+  // 規則操作選單與背景色的色盤 Teleport 到 body，不在 root 裡面，但仍是規則頁的一部分
+  return !!root.value?.contains(target) || !!target.closest('.eqt-context-menu, .eqt-anchored-popover')
 }
 
 function onPointerdown(event: PointerEvent) {
@@ -126,8 +126,8 @@ function onKeydown(event: KeyboardEvent) {
   if (event.defaultPrevented) return
   if (event.key === 'Tab') {
     if (rulesCollapsed.value || !engaged || event.ctrlKey || event.metaKey || event.altKey) return
-    // 規則操作選單有自己的焦點，交給它
-    if (document.activeElement?.closest('.eqt-context-menu')) return
+    // 規則操作選單與色盤有自己的焦點，交給它們
+    if (document.activeElement?.closest('.eqt-context-menu, .eqt-anchored-popover')) return
     containTab(event)
     return
   }

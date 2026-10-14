@@ -10,14 +10,6 @@ export default {
   'rulePrototype.actions': '동작',
   'rulePrototype.removeCondition': '조건 제거',
   'rulePrototype.emptyTag': '태그 없음',
-  'rulePrototype.colorNone': '없음',
-  'rulePrototype.colorOr': '노랑',
-  'rulePrototype.colorInclude': '초록',
-  'rulePrototype.colorExclude': '빨강',
-  'rulePrototype.colorGreen': '짙은 초록',
-  'rulePrototype.colorDanger': '짙은 빨강',
-  'rulePrototype.colorBorder': '테마 테두리색',
-  'rulePrototype.colorHint': '보조 글자색',
 
   // Rule page prototype
   'rulePagePrototype.title': '갤러리 규칙 편집기 · 프로토타입',

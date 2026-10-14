@@ -1,5 +1,6 @@
 // 規則的儲存格式：驗證與各版本之間的轉換。
 
+import { parseColorInput } from '@/services/color'
 import {
   BLUR_ACTIONS, createActions, createGroup, GROUP_MODES, hasActions, isRuleComplete, itemHeight, MAX_GROUP_DEPTH, nextEntityId,
   RANGE_FIELDS, RANGE_OPS, reserveRuleIds,
@@ -7,14 +8,26 @@ import {
   type GroupMode, type RangeField, type RangeOp,
 } from '@/services/listing/fixedRulePrototype'
 
+// 12：背景色是自選的 #rrggbbaa。之前只能從幾個主題 token 裡選，讀進來換成淺色主題的色值，
+// 透明度 25% 對應當時「跟底色混 25%」的畫法（LEGACY_BACKGROUNDS）。
 // 11：一條規則只有一組動作，掛回規則上。9–10 的子群組與條件各自帶動作，讀進來拆成各自的規則（splitBranchActions）。
 // 8：效果改成「在圖庫上顯示規則名稱」（showName）。7 存的是自填的標示文字（label），
 // 有填字就當成要顯示，文字本身不保留；7 之前的版本一律不顯示。
 // 6：NOT 是群組的獨立旗標。5 的判定模式多一種「全部不成立」，讀進來換成 NOT 任一成立；
 // 1–4 是固定三區（必要條件／任一成立／例外），讀進來時換成樹
-export const RULE_SCHEMA = 11
+export const RULE_SCHEMA = 12
 // 三區時代每一區底下最多兩層 Folder
 const LEGACY_FOLDER_DEPTH = 2
+
+const LEGACY_BACKGROUNDS: Record<string, string> = {
+  'var(--eqt-status-or)': '#f5c51840',
+  'var(--eqt-status-include)': '#7ad09440',
+  'var(--eqt-status-exclude)': '#8c333340',
+  'var(--eqt-green)': '#4a7c5940',
+  'var(--eqt-danger)': '#8c333340',
+  'var(--eqt-border)': '#b5a4a440',
+  'var(--eqt-text-hint)': '#8a827140',
+}
 
 /** 9–10 存在群組與條件身上的動作，拆規則時才用得到 */
 type BranchActions = Map<FixedConditionItem, FixedActions>
@@ -133,12 +146,23 @@ function decodeShowName(actions: Record<string, unknown>, schema: number): boole
   return false
 }
 
+function decodeBackground(value: unknown, schema: number): string | null {
+  if (value === null) return null
+  if (typeof value !== 'string') throw new Error('Invalid fixed rule storage')
+  const color = schema < 12 ? LEGACY_BACKGROUNDS[value] ?? parseColorInput(value, true) : parseColorInput(value, true)
+  if (!color || (schema >= 12 && color !== value)) throw new Error('Invalid fixed rule storage')
+  return color
+}
+
 function decodeActions(actions: unknown, schema: number): FixedActions {
-  if (!isObject(actions) || (actions.background !== null && typeof actions.background !== 'string')
-    || typeof actions.blur !== 'string' || !BLUR_ACTIONS.includes(actions.blur as BlurAction)) {
+  if (!isObject(actions) || typeof actions.blur !== 'string' || !BLUR_ACTIONS.includes(actions.blur as BlurAction)) {
     throw new Error('Invalid fixed rule storage')
   }
-  return { background: actions.background, blur: actions.blur as BlurAction, showName: decodeShowName(actions, schema) }
+  return {
+    background: decodeBackground(actions.background, schema),
+    blur: actions.blur as BlurAction,
+    showName: decodeShowName(actions, schema),
+  }
 }
 
 function decodeHeader(rule: unknown): Omit<FixedRule, 'root' | 'actions'> & Record<string, unknown> {
@@ -203,7 +227,7 @@ export function splitBranchActions(rule: FixedRule, branches: BranchActions): Fi
 export function decodeRules(raw: string | null): FixedRule[] {
   if (raw === null) return []
   const data: unknown = JSON.parse(raw)
-  if (!isObject(data) || ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, RULE_SCHEMA].includes(data.schema as number) || !Array.isArray(data.rules)) {
+  if (!isObject(data) || ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, RULE_SCHEMA].includes(data.schema as number) || !Array.isArray(data.rules)) {
     throw new Error('Invalid fixed rule storage')
   }
   const schema = data.schema as number

@@ -1,11 +1,23 @@
 <script setup lang="ts">
+import LineColorSwatch from '@/components/LineColorSwatch.vue'
 import { t } from '@/composables/useI18n'
-import { BLUR_ACTIONS, COLOR_PRESETS, type BlurAction, type FixedActions } from '@/services/listing/fixedRulePrototype'
+import { parseColorInput } from '@/services/color'
+import { BLUR_ACTIONS, type BlurAction, type FixedActions } from '@/services/listing/fixedRulePrototype'
 
 const props = defineProps<{ actions: FixedActions }>()
 
-function setBackground(event: Event) {
-  props.actions.background = (event.target as HTMLSelectElement).value || null
+// 跟 My Tags 的標籤顏色同一組：色盤選、或直接貼色碼；色碼框留空就是不上色
+function onHexInput(event: Event) {
+  const raw = (event.target as HTMLInputElement).value
+  if (!raw.trim()) props.actions.background = null
+  else {
+    const color = parseColorInput(raw, true)
+    if (color) props.actions.background = color
+  }
+}
+
+function onHexBlur(event: Event) {
+  (event.target as HTMLInputElement).value = props.actions.background ?? ''
 }
 
 function setBlur(event: Event) {
@@ -19,14 +31,24 @@ function toggleShowName(event: Event) {
 
 <template>
   <div class="eqt-rule-page__actions">
-    <label class="eqt-rule-page__field">
+    <div class="eqt-rule-page__field">
       <span>{{ t('rulePagePrototype.background') }}</span>
-      <select class="eqt-rule-page__select" :value="actions.background ?? ''" @change="setBackground">
-        <option value="">{{ t('rulePrototype.colorNone') }}</option>
-        <option v-for="preset in COLOR_PRESETS" :key="preset.value" :value="preset.value">{{ t(preset.labelKey) }}</option>
-      </select>
-      <span v-if="actions.background" class="eqt-rule-page__swatch" :style="{ background: actions.background }" />
-    </label>
+      <span class="eqt-rule-page__color-control">
+        <LineColorSwatch
+          class="eqt-rule-page__color-swatch"
+          :model-value="actions.background ?? undefined"
+          :style="actions.background ? { '--eqt-rule-page-color-preview': actions.background } : undefined"
+          :title="t('rulePagePrototype.background')"
+          @update:model-value="actions.background = $event ?? null"
+        />
+        <input
+          class="eqt-rule-page__input eqt-rule-page__color" type="text" :value="actions.background ?? ''"
+          placeholder="#rrggbbaa" maxlength="9" spellcheck="false" autocomplete="off"
+          :aria-label="t('rulePagePrototype.background')"
+          @input="onHexInput" @blur="onHexBlur" @keydown.enter.prevent="($event.target as HTMLInputElement).blur()"
+        >
+      </span>
+    </div>
     <label class="eqt-rule-page__field">
       <span>{{ t('rulePrototype.blur') }}</span>
       <select class="eqt-rule-page__select" :value="actions.blur" @change="setBlur">

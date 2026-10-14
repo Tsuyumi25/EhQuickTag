@@ -10,14 +10,6 @@ export default {
   'rulePrototype.actions': '動作',
   'rulePrototype.removeCondition': '移除條件',
   'rulePrototype.emptyTag': '尚無標籤',
-  'rulePrototype.colorNone': '無',
-  'rulePrototype.colorOr': '黃色',
-  'rulePrototype.colorInclude': '綠色',
-  'rulePrototype.colorExclude': '紅色',
-  'rulePrototype.colorGreen': '深綠',
-  'rulePrototype.colorDanger': '深紅',
-  'rulePrototype.colorBorder': '主題邊框色',
-  'rulePrototype.colorHint': '次要文字色',
 
   // Rule page prototype
   'rulePagePrototype.title': '圖庫規則編輯器 · 雛形',
@@ -67,7 +59,7 @@ export default {
   'rulePagePrototype.background': '背景',
   'rulePagePrototype.unchanged': '維持不變',
   'rulePagePrototype.noAction': '無動作',
-  'rulePagePrototype.backgroundIs': '{color}背景',
+  'rulePagePrototype.backgroundIs': '背景 {color}',
   'rulePagePrototype.showNameShort': '顯示名稱',
   'rulePagePrototype.clear': '保持封面清晰',
   'rulePagePrototype.showName': '在圖庫上顯示規則名稱',
