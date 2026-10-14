@@ -3,13 +3,12 @@ import type { Component } from 'vue'
 import Draggable from 'vuedraggable'
 import { BrushCleaning, Shapes } from '@lucide/vue'
 import RuleTagChip from './RuleTagChip.vue'
-import { GROUP_MODE_ICONS } from './groupModeIcons'
 import { RANGE_FIELD_ICONS } from './rangeFieldIcons'
 import { RULE_CONDITIONS_GROUP, ruleDragOptions } from './ruleDrag'
 import { t } from '@/composables/useI18n'
 import { ruleMaterials } from '@/services/appOverlays'
 import {
-  createGroup, createRangeCondition, createTagCondition, tagConditionKey,
+  createGroup, createRangeCondition, createTagCondition, GROUP_MODE_OPERATORS, tagConditionKey,
   type FixedConditionItem, type GroupMode, type RangeField, type TagCondition,
 } from '@/services/listing/fixedRulePrototype'
 
@@ -34,10 +33,10 @@ function cloneSource(source: Source): FixedConditionItem {
   return source.kind === 'group' ? createGroup(source.id) : createRangeCondition(source.id)
 }
 
-// Draggable 的 slot 把 element 給成 any，圖示與文字在這裡用 Source 型別查好
-function sourceView(source: Source): { icon: Component; label: string } {
+// Draggable 的 slot 把 element 給成 any，圖示與文字在這裡用 Source 型別查好；群組跟標題列一樣只寫運算子
+function sourceView(source: Source): { icon?: Component; label: string } {
   return source.kind === 'group'
-    ? { icon: GROUP_MODE_ICONS[source.id], label: t(`rulePagePrototype.groupMode.${source.id}`) }
+    ? { label: GROUP_MODE_OPERATORS[source.id] }
     : { icon: RANGE_FIELD_ICONS[source.id], label: t(`rulePagePrototype.${source.id}`) }
 }
 
@@ -74,7 +73,7 @@ function dropDuplicate(event: { added?: { element: TagCondition; newIndex: numbe
           class="eqt-rule-page__item eqt-rule-page__source" :class="source.kind === 'group' && `eqt-rule-page__source--${source.id}`"
           :data-height="source.kind === 'group' ? 1 : 0"
         >
-          <component :is="sourceView(source).icon" class="eqt-rule-page__icon" />{{ sourceView(source).label }}
+          <component :is="sourceView(source).icon" v-if="sourceView(source).icon" class="eqt-rule-page__icon" />{{ sourceView(source).label }}
         </div>
       </template>
     </Draggable>

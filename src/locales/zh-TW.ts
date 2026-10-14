@@ -29,8 +29,6 @@ export default {
   'rulePagePrototype.clearMaterials': '清空素材',
   'rulePagePrototype.removeGroup': '刪除群組',
   'rulePagePrototype.groupMode': '群組判定模式',
-  'rulePagePrototype.groupMode.all': '全部成立',
-  'rulePagePrototype.groupMode.any': '任一成立',
   'rulePagePrototype.negateHint': '把整個群組的判定結果反過來',
   'rulePagePrototype.emptyGroup': '空的，把條件拖進來',
   'rulePagePrototype.contains': '含有標籤',

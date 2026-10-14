@@ -29,8 +29,6 @@ export default {
   'rulePagePrototype.clearMaterials': '素材を空にする',
   'rulePagePrototype.removeGroup': 'グループを削除',
   'rulePagePrototype.groupMode': 'グループの判定モード',
-  'rulePagePrototype.groupMode.all': 'すべて成立',
-  'rulePagePrototype.groupMode.any': 'いずれかが成立',
   'rulePagePrototype.negateHint': 'グループ全体の判定を反転',
   'rulePagePrototype.emptyGroup': '空：条件をドロップ',
   'rulePagePrototype.contains': 'タグを含む',

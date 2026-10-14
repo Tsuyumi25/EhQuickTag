@@ -67,8 +67,11 @@ export type FixedCondition = TagCondition | RangeCondition
 
 export type GroupMode = 'all' | 'any'
 
-/** 也是群組判定模式下拉選單的順序 */
+/** 也是群組判定模式切換的順序 */
 export const GROUP_MODES: readonly GroupMode[] = ['all', 'any']
+
+/** 群組標題、素材產生器與原始算式共用同一套寫法；是運算子，不翻譯 */
+export const GROUP_MODE_OPERATORS: Record<GroupMode, string> = { all: 'AND', any: 'OR' }
 
 export interface ConditionGroup {
   id: number

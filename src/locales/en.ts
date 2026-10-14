@@ -29,8 +29,6 @@ export default {
   'rulePagePrototype.clearMaterials': 'Clear materials',
   'rulePagePrototype.removeGroup': 'Remove group',
   'rulePagePrototype.groupMode': 'Group mode',
-  'rulePagePrototype.groupMode.all': 'All match',
-  'rulePagePrototype.groupMode.any': 'Any match',
   'rulePagePrototype.negateHint': 'Invert the result of the whole group',
   'rulePagePrototype.emptyGroup': 'Empty: drop conditions here',
   'rulePagePrototype.contains': 'Contains tag',

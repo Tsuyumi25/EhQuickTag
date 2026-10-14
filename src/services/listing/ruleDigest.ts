@@ -2,7 +2,7 @@
 // 攤平巢狀群組、合併數值區間，逐層看時看不到的衝突與多餘條件才算得出來。
 
 import {
-  averageOfStars, conditionRange, normalizeTag, RANGE_FIELDS,
+  averageOfStars, conditionRange, GROUP_MODE_OPERATORS, normalizeTag, RANGE_FIELDS,
   type FixedConditionItem, type FixedRule, type RangeCondition, type RangeField, type ValueRange,
 } from '@/services/listing/fixedRulePrototype'
 
@@ -318,16 +318,16 @@ function rawItem(item: FixedConditionItem): string {
     return `${field} ${RAW_OP[item.op]} ${item.value}`
   }
   if (!item.conditions.length) return '(EMPTY)'
-  const body = item.conditions.map(rawItem).join(item.mode === 'all' ? ' AND ' : ' OR ')
+  const body = item.conditions.map(rawItem).join(` ${GROUP_MODE_OPERATORS[item.mode]} `)
   return item.negate ? `NOT (${body})` : `(${body})`
 }
 
-// 根群組照判定模式一行一個條件：全部成立以 AND、任一成立以 OR 接在行首；
+// 根群組照判定模式一行一個條件，AND / OR 接在行首；
 // 有 NOT 時整段包在 NOT ( ) 裡，NOT 的範圍不能靠讀的人去猜
 export function ruleExpression(rule: FixedRule): string {
   const lines = rule.root.conditions.map(rawItem)
   if (!lines.length) return '(EMPTY)'
-  const joiner = rule.root.mode === 'all' ? 'AND' : 'OR'
+  const joiner = GROUP_MODE_OPERATORS[rule.root.mode]
   if (rule.root.negate) return `NOT (\n  ${lines.join(`\n  ${joiner} `)}\n)`
   return lines.map((line, index) => (index ? `${joiner} ${line}` : line)).join('\n')
 }

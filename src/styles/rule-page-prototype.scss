@@ -745,8 +745,6 @@
   align-items: center;
   gap: calc(var(--eqt-rule-page-gap) / 2);
 
-  > .eqt-rule-page__icon { color: var(--eqt-text-hint); }
-
   > .eqt-rule-page__toggle {
     display: inline-grid;
     align-items: center;
@@ -756,8 +754,9 @@
     border: none;
     border-radius: var(--eqt-radius-sm);
     background: transparent;
-    color: var(--eqt-text);
+    color: var(--eqt-text-hint);
     font: inherit;
+    font-weight: bold;
     white-space: nowrap;
     cursor: pointer;
     transition: var(--eqt-transition-base);
@@ -770,11 +769,6 @@
       outline: none;
       background: var(--eqt-bg-hover);
     }
-  }
-
-  > .eqt-rule-page__toggle--negate {
-    color: var(--eqt-text-hint);
-    font-weight: bold;
   }
 
   // 深色主題的底色跟 exclude 紅幾乎同亮度，紅字會看不見；改成紅底白字

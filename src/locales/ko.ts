@@ -29,8 +29,6 @@ export default {
   'rulePagePrototype.clearMaterials': '소재 비우기',
   'rulePagePrototype.removeGroup': '그룹 삭제',
   'rulePagePrototype.groupMode': '그룹 판정 모드',
-  'rulePagePrototype.groupMode.all': '모두 일치',
-  'rulePagePrototype.groupMode.any': '하나 이상 일치',
   'rulePagePrototype.negateHint': '그룹 전체의 판정을 반전',
   'rulePagePrototype.emptyGroup': '비어 있음: 조건을 끌어 놓기',
   'rulePagePrototype.contains': '태그 포함',
