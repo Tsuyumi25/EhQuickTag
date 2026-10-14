@@ -56,7 +56,7 @@ describe('resolveRuleEffects', () => {
 })
 
 describe('resolveRuleOutcome', () => {
-  const withActions = (group: ConditionGroup, actions: Partial<FixedActions>) => Object.assign(group.actions, actions) && group
+  const withActions = <T extends { actions: FixedActions }>(item: T, actions: Partial<FixedActions>): T => Object.assign(item.actions, actions) && item
   // a AND (B OR c)，B 是只含 b 的子群組
   function branchingRule() {
     const rule = createRule(1)
@@ -90,6 +90,17 @@ describe('resolveRuleOutcome', () => {
     withActions(rule.root, { background: 'red' })
     expect(resolveRuleOutcome(rule, probe(null, ['female:a']))).toMatchObject({ background: 'red' })
     expect(resolveRuleOutcome(rule, probe(null, ['female:a', 'female:b']))).toBeNull()
+  })
+
+  it('OR 底下的標籤與數值條件各自帶動作，成立的那條支線蓋過 OR 自己的動作', () => {
+    const rule = createRule(1)
+    const b = withActions(createTagCondition('female:b'), { background: 'green' })
+    const stars = withActions(createRangeCondition('rating', 'gte', 4), { blur: 'blur' })
+    const or = withActions(createGroup('any', [b, createTagCondition('male:c'), stars]), { background: 'yellow' })
+    rule.root.conditions.push(or)
+    expect(resolveRuleOutcome(rule, probe(1, ['female:b']))).toEqual({ background: 'green', blur: 'unchanged', showName: false })
+    expect(resolveRuleOutcome(rule, probe(1, ['male:c']))).toEqual({ background: 'yellow', blur: 'unchanged', showName: false })
+    expect(resolveRuleOutcome(rule, probe(4.5, ['male:c']))).toEqual({ background: 'yellow', blur: 'blur', showName: false })
   })
 })
 

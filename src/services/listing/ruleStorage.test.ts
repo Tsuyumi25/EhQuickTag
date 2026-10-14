@@ -60,10 +60,21 @@ describe('decodeRules', () => {
   })
 
   it('目前的格式原樣讀回來', () => {
-    const child: ConditionGroup = { id: 3, kind: 'group', mode: 'all', negate: false, conditions: [tag(4, 'female:a') as FixedConditionItem], actions }
+    const leaf = { ...tag(4, 'female:a'), actions } as FixedConditionItem
+    const child: ConditionGroup = { id: 3, kind: 'group', mode: 'all', negate: false, conditions: [leaf], actions }
     const root: ConditionGroup = { id: 2, kind: 'group', mode: 'any', negate: true, conditions: [child], actions: { ...actions, showName: false } }
     const stored = { id: 1, name: 'r', enabled: false, root }
     expect(decodeRules(JSON.stringify({ schema: RULE_SCHEMA, rules: [stored] }))).toEqual([stored])
+  })
+
+  it('schema 9 的條件沒有動作，讀進來補空的', () => {
+    const noActions = { background: null, blur: 'unchanged', showName: false }
+    const [rule] = decodeRules(JSON.stringify({
+      schema: 9,
+      rules: [{ id: 1, name: 'r', enabled: true, root: { id: 2, kind: 'group', mode: 'any', negate: false, conditions: [tag(3, 'female:a')], actions } }],
+    }))
+    expect(rule.root.actions).toEqual(actions)
+    expect(rule.root.conditions[0]).toMatchObject({ kind: 'tag', actions: noActions })
   })
 
   it('schema 8 的規則動作搬到根群組當預設，子群組沒有動作', () => {
@@ -105,16 +116,17 @@ describe('decodeRules', () => {
 
   it('格式不對就丟錯，不會讀成空清單', () => {
     const noActions = { background: null, blur: 'unchanged', showName: false }
+    const leaf = { ...tag(1, 'female:a'), actions: noActions }
     const deep = (depth: number): unknown => (depth
       ? { id: 100 + depth, kind: 'group', mode: 'all', negate: false, conditions: [deep(depth - 1)], actions: noActions }
-      : tag(1, 'female:a'))
-    expect(() => decodeRules(JSON.stringify({ schema: RULE_SCHEMA, rules: [{ id: 1, name: 'r', enabled: true, root: deep(5) }] }))).toThrow()
+      : leaf)
+    const ruleWith = (root: unknown) => JSON.stringify({ schema: RULE_SCHEMA, rules: [{ id: 1, name: 'r', enabled: true, root }] })
+    expect(() => decodeRules(ruleWith(deep(5)))).toThrow()
     expect(() => decodeRules(JSON.stringify({ schema: 99, rules: [] }))).toThrow()
     expect(() => decodeRules(JSON.stringify({ schema: RULE_SCHEMA, rules: [{ id: 1, name: 'r', enabled: true }] }))).toThrow()
-    const withoutNegate = { id: 2, kind: 'group', mode: 'all', conditions: [tag(3, 'female:a')], actions: noActions }
-    expect(() => decodeRules(JSON.stringify({ schema: RULE_SCHEMA, rules: [{ id: 1, name: 'r', enabled: true, root: withoutNegate }] }))).toThrow()
-    const withoutActions = { id: 2, kind: 'group', mode: 'all', negate: false, conditions: [tag(3, 'female:a')] }
-    expect(() => decodeRules(JSON.stringify({ schema: RULE_SCHEMA, rules: [{ id: 1, name: 'r', enabled: true, root: withoutActions }] }))).toThrow()
+    expect(() => decodeRules(ruleWith({ id: 2, kind: 'group', mode: 'all', conditions: [leaf], actions: noActions }))).toThrow()
+    expect(() => decodeRules(ruleWith({ id: 2, kind: 'group', mode: 'all', negate: false, conditions: [leaf] }))).toThrow()
+    expect(() => decodeRules(ruleWith({ id: 2, kind: 'group', mode: 'all', negate: false, conditions: [tag(3, 'female:a')], actions: noActions }))).toThrow()
   })
 })
 

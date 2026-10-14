@@ -374,10 +374,16 @@
   // 空的托盤也要留一列高，素材才有地方放
   min-height: calc(var(--eqt-row-h) + var(--eqt-rule-page-gap) * 1.25);
 
-  > .eqt-rule-page__range,
   > .eqt-rule-page__group,
   > .eqt-rule-page__source {
     margin: var(--eqt-rule-page-item-margin);
+  }
+
+  // OR 底下每個子項是一條支線：一條一行，行尾接動作
+  &--branches {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
   }
 
   // 拖曳中的 ghost 也算項目，滑進來提示字就讓位
@@ -408,6 +414,18 @@
 }
 
 .eqt-rule-page__item--ghost { opacity: 0.4; }
+
+// 標籤與數值條件外面包的一層：拖曳以它為單位，動作箭頭段跟在條件後面
+.eqt-rule-page__leaf {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+
+  > .eqt-rule-page__range,
+  > .eqt-rule-page__segment {
+    margin: var(--eqt-rule-page-item-margin);
+  }
+}
 
 // body 不再負責切換，抓著就是拖
 .eqt-rule-page__chip .eqt-gallery-chip__body {
@@ -743,80 +761,12 @@
   flex: 1 1 100%;
 }
 
-// IS／IS NOT 與 AND／OR 排成終端機提示列（powerline）那種箭頭段：前一段的箭頭剛好嵌進下一段的缺口。
+// IS／IS NOT、AND／OR 與動作排成終端機提示列（powerline）那種箭頭段：前一段的箭頭剛好嵌進下一段的缺口。
 // 底色跟搜尋列的 chip 同一種混法；NOT 取 exclude、判定模式取群組自己的色條色，段落跟紅框、色條講同一件事
 .eqt-rule-page__group-head {
-  --eqt-rule-page-arrow: calc(var(--eqt-rule-page-inline-h) / 3);
-
   display: inline-flex;
   align-items: center;
   gap: calc(var(--eqt-rule-page-gap) / 2);
-
-  // 形狀畫在 ::before，按鈕本身不裁切：clip-path 會連 outline 一起裁掉，filter 又排在 clip-path 之前套用，
-  // 掛在同一個元素上的 drop-shadow 一樣會被裁。焦點框改由 ::after 畫在箭頭與缺口之間的長方形本體上。
-  // 按鈕的長方形會蓋到前一段的箭頭，所以點擊交給照形狀裁過的 ::before 判定，按鈕本身不接
-  > .eqt-rule-page__segment {
-    --eqt-rule-page-seg: var(--eqt-border);
-    --eqt-rule-page-notch: 0px;
-
-    position: relative;
-    isolation: isolate;
-    display: inline-grid;
-    align-items: center;
-    justify-items: center;
-    height: var(--eqt-rule-page-inline-h);
-    padding: 0 calc(var(--eqt-rule-page-arrow) + var(--eqt-rule-page-gap) / 2) 0 var(--eqt-rule-page-gap);
-    border: none;
-    background: none;
-    color: var(--eqt-text);
-    font: inherit;
-    font-weight: bold;
-    white-space: nowrap;
-    pointer-events: none;
-
-    &::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      z-index: -1;
-      background: color-mix(in srgb, var(--eqt-rule-page-seg) 55%, transparent);
-      clip-path: polygon(
-        0 0, calc(100% - var(--eqt-rule-page-arrow)) 0, 100% 50%,
-        calc(100% - var(--eqt-rule-page-arrow)) 100%, 0 100%, var(--eqt-rule-page-notch) 50%
-      );
-      cursor: pointer;
-      pointer-events: auto;
-      transition: var(--eqt-transition-base);
-    }
-
-    // 每個狀態的字都放進同一格，按鈕寬度取最寬的那個
-    > span { grid-area: 1 / 1; }
-
-    &:hover::before,
-    &:focus-visible::before {
-      background: color-mix(in srgb, var(--eqt-rule-page-seg) 70%, transparent);
-    }
-
-    &:focus-visible { outline: none; }
-
-    // 段落底色可能就是綠色，沿用 repo 慣例的綠色焦點框會看不見；跟字同色才在三種底色上都看得到
-    &:focus-visible::after {
-      content: '';
-      position: absolute;
-      inset: var(--eqt-border-width-thin) var(--eqt-rule-page-arrow) var(--eqt-border-width-thin)
-        calc(var(--eqt-rule-page-notch) + var(--eqt-border-width-thin));
-      border: var(--eqt-border-width) solid currentColor;
-      border-radius: var(--eqt-radius-sm);
-    }
-  }
-
-  // 往回疊進前一段的箭頭，只留一條細縫分開兩段
-  > .eqt-rule-page__segment + .eqt-rule-page__segment {
-    --eqt-rule-page-notch: var(--eqt-rule-page-arrow);
-
-    margin-inline-start: calc(var(--eqt-border-width-thin) - var(--eqt-rule-page-arrow) - var(--eqt-rule-page-gap) / 2);
-    padding-inline-start: calc(var(--eqt-rule-page-arrow) + var(--eqt-rule-page-gap) / 2);
-  }
 
   > .eqt-rule-page__segment--on { --eqt-rule-page-seg: var(--eqt-status-exclude); }
   > .eqt-rule-page__segment--mode { --eqt-rule-page-seg: var(--eqt-rule-page-tone); }
@@ -826,6 +776,73 @@
     height: var(--eqt-rule-page-inline-h);
     border: none;
     border-radius: var(--eqt-radius-sm);
+  }
+}
+
+// 形狀畫在 ::before，按鈕本身不裁切：clip-path 會連 outline 一起裁掉，filter 又排在 clip-path 之前套用，
+// 掛在同一個元素上的 drop-shadow 一樣會被裁。焦點框改由 ::after 畫在箭頭與缺口之間的長方形本體上。
+// 按鈕的長方形會蓋到前一段的箭頭，所以點擊交給照形狀裁過的 ::before 判定，按鈕本身不接
+.eqt-rule-page__segment {
+  --eqt-rule-page-arrow: calc(var(--eqt-rule-page-inline-h) / 3);
+  --eqt-rule-page-seg: var(--eqt-border);
+  --eqt-rule-page-notch: 0px;
+
+  position: relative;
+  isolation: isolate;
+  display: inline-grid;
+  align-items: center;
+  justify-items: center;
+  height: var(--eqt-rule-page-inline-h);
+  padding: 0 calc(var(--eqt-rule-page-arrow) + var(--eqt-rule-page-gap) / 2) 0 var(--eqt-rule-page-gap);
+  border: none;
+  background: none;
+  color: var(--eqt-text);
+  font: inherit;
+  font-weight: bold;
+  white-space: nowrap;
+  pointer-events: none;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: color-mix(in srgb, var(--eqt-rule-page-seg) 55%, transparent);
+    clip-path: polygon(
+      0 0, calc(100% - var(--eqt-rule-page-arrow)) 0, 100% 50%,
+      calc(100% - var(--eqt-rule-page-arrow)) 100%, 0 100%, var(--eqt-rule-page-notch) 50%
+    );
+    cursor: pointer;
+    pointer-events: auto;
+    transition: var(--eqt-transition-base);
+  }
+
+  // 每個狀態的字都放進同一格，按鈕寬度取最寬的那個
+  > span { grid-area: 1 / 1; }
+
+  &:hover::before,
+  &:focus-visible::before {
+    background: color-mix(in srgb, var(--eqt-rule-page-seg) 70%, transparent);
+  }
+
+  &:focus-visible { outline: none; }
+
+  // 段落底色可能就是綠色，沿用 repo 慣例的綠色焦點框會看不見；跟字同色才在三種底色上都看得到
+  &:focus-visible::after {
+    content: '';
+    position: absolute;
+    inset: var(--eqt-border-width-thin) var(--eqt-rule-page-arrow) var(--eqt-border-width-thin)
+      calc(var(--eqt-rule-page-notch) + var(--eqt-border-width-thin));
+    border: var(--eqt-border-width) solid currentColor;
+    border-radius: var(--eqt-radius-sm);
+  }
+
+  // 往回疊進前一段的箭頭，只留一條細縫分開兩段
+  & + & {
+    --eqt-rule-page-notch: var(--eqt-rule-page-arrow);
+
+    margin-inline-start: calc(var(--eqt-border-width-thin) - var(--eqt-rule-page-arrow) - var(--eqt-rule-page-gap) / 2);
+    padding-inline-start: calc(var(--eqt-rule-page-arrow) + var(--eqt-rule-page-gap) / 2);
   }
 }
 

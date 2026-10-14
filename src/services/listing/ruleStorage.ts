@@ -6,12 +6,13 @@ import {
   type GroupMode, type RangeField, type RangeOp,
 } from '@/services/listing/fixedRulePrototype'
 
+// 10：標籤與數值條件也帶動作（OR 的每條支線各自的動作）。之前的版本讀進來一律沒有動作。
 // 9：動作從規則搬進每個群組。之前的版本整條規則只有一組動作，讀進來放到根群組，子群組沒有動作。
 // 8：效果改成「在圖庫上顯示規則名稱」（showName）。7 存的是自填的標示文字（label），
 // 有填字就當成要顯示，文字本身不保留；7 之前的版本一律不顯示。
 // 6：NOT 是群組的獨立旗標。5 的判定模式多一種「全部不成立」，讀進來換成 NOT 任一成立；
 // 1–4 是固定三區（必要條件／任一成立／例外），讀進來時換成樹
-export const RULE_SCHEMA = 9
+export const RULE_SCHEMA = 10
 // 三區時代每一區底下最多兩層 Folder
 const LEGACY_FOLDER_DEPTH = 2
 
@@ -78,8 +79,7 @@ function decodeGroup(value: unknown, depth: number, schema: number): ConditionGr
     ...decodeMode(value, schema),
     conditions: value.conditions.map((child: unknown) => {
       if (isObject(child) && child.kind === 'group') return decodeGroup(child, depth + 1, schema)
-      if (!validCondition(child)) throw new Error('Invalid fixed rule storage')
-      return child
+      return decodeCondition(child, schema)
     }),
     actions: schema >= 9 ? decodeActions(value.actions, schema) : createActions(),
   }
@@ -99,8 +99,7 @@ function decodeLegacyItem(value: unknown, depth: number, bare: boolean): FixedCo
       actions: createActions(),
     }
   }
-  if (!validCondition(value)) throw new Error('Invalid fixed rule storage')
-  return value
+  return decodeCondition(value, 0)
 }
 
 function decodeSection(value: unknown, bare = false): FixedConditionItem[] {
@@ -135,6 +134,11 @@ function decodeHeader(rule: unknown): Omit<FixedRule, 'root'> & Record<string, u
   return rule as Omit<FixedRule, 'root'> & Record<string, unknown>
 }
 
+function decodeCondition(value: unknown, schema: number): FixedCondition {
+  if (!validCondition(value)) throw new Error('Invalid fixed rule storage')
+  return { ...value, actions: schema >= 10 ? decodeActions(value.actions, schema) : createActions() }
+}
+
 /** schema 9 之前動作掛在規則上，搬到根群組當預設 */
 function withRuleActions(root: ConditionGroup, header: Record<string, unknown>, schema: number): ConditionGroup {
   return schema >= 9 ? root : { ...root, actions: decodeActions(header.actions, schema) }
@@ -144,7 +148,7 @@ function withRuleActions(root: ConditionGroup, header: Record<string, unknown>, 
 export function decodeRules(raw: string | null): FixedRule[] {
   if (raw === null) return []
   const data: unknown = JSON.parse(raw)
-  if (!isObject(data) || ![1, 2, 3, 4, 5, 6, 7, 8, RULE_SCHEMA].includes(data.schema as number) || !Array.isArray(data.rules)) {
+  if (!isObject(data) || ![1, 2, 3, 4, 5, 6, 7, 8, 9, RULE_SCHEMA].includes(data.schema as number) || !Array.isArray(data.rules)) {
     throw new Error('Invalid fixed rule storage')
   }
   const schema = data.schema as number

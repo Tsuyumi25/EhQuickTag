@@ -55,6 +55,8 @@ export interface TagCondition {
   kind: 'tag'
   tag: string
   exclude: boolean
+  /** OR 底下的每一條支線各自的動作；放在 AND 底下時，上一層成立它就一定成立，等於跟上一層一起生效 */
+  actions: FixedActions
 }
 
 export interface RangeCondition {
@@ -64,6 +66,8 @@ export interface RangeCondition {
   value: number
   /** 只有 between 用到，value 是下限、這欄是上限；舊資料沒有這欄，視為欄位上限 */
   max?: number
+  /** 同 TagCondition.actions */
+  actions: FixedActions
 }
 
 export type FixedCondition = TagCondition | RangeCondition
@@ -152,11 +156,11 @@ export function normalizeTag(tag: string): string {
 }
 
 export function createTagCondition(tag = '', exclude = false): TagCondition {
-  return { id: nextEntityId(), kind: 'tag', tag, exclude }
+  return { id: nextEntityId(), kind: 'tag', tag, exclude, actions: createActions() }
 }
 
 export function createRangeCondition(kind: RangeField, op: RangeOp = 'gte', value = RANGE_FIELDS[kind].initial): RangeCondition {
-  return { id: nextEntityId(), kind, op, value }
+  return { id: nextEntityId(), kind, op, value, actions: createActions() }
 }
 
 // 每個欄位都是離散的（半星一格、整數頁），所以 < 正好等於「≤ 往下一格」，
@@ -174,6 +178,10 @@ export function conditionRange(condition: RangeCondition): ValueRange {
 /** 背景沒選、模糊維持不變都代表「沒指定」，讓給上一層或下一條規則 */
 export function createActions(): FixedActions {
   return { background: null, blur: 'unchanged', showName: false }
+}
+
+export function hasActions(actions: FixedActions): boolean {
+  return actions.background !== null || actions.blur !== 'unchanged' || actions.showName
 }
 
 export function createGroup(mode: GroupMode = 'all', conditions: FixedConditionItem[] = [], negate = false): ConditionGroup {
@@ -279,10 +287,14 @@ export interface RuleOutcome {
 }
 
 // 一個群組的動作要生效，從根一路到它的每一層都得成立；判定未知也算不成立。
-// 收集的順序就是優先順序：子群組排在上一層前面，先出現的分支排在後出現的前面
+// 收集的順序就是優先順序：子項排在上一層前面，先出現的支線排在後出現的前面
 function firedActions(group: ConditionGroup, probe: GalleryProbe, out: FixedActions[]): void {
   for (const child of group.conditions) {
-    if (child.kind === 'group' && evaluateItem(child, probe) === true) firedActions(child, probe, out)
+    if (child.kind === 'group') {
+      if (evaluateItem(child, probe) === true) firedActions(child, probe, out)
+    } else if (evaluateCondition(child, probe) === true) {
+      out.push(child.actions)
+    }
   }
   out.push(group.actions)
 }

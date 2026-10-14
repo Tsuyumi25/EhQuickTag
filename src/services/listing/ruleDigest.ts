@@ -3,7 +3,8 @@
 
 import {
   averageOfStars, COLOR_PRESETS, conditionRange, evaluateRule, GROUP_MODE_OPERATORS, normalizeTag, RANGE_FIELDS, resolveRuleOutcome,
-  type FixedActions, type FixedConditionItem, type FixedRule, type GalleryProbe, type RangeCondition, type RangeField, type RuleOutcome,
+  type FixedActions, type FixedCondition, type FixedConditionItem, type FixedRule, type GalleryProbe, type RangeCondition, type RangeField,
+  type RuleOutcome,
   type ValueRange,
 } from '@/services/listing/fixedRulePrototype'
 
@@ -384,16 +385,22 @@ export function rawActions(actions: FixedActions): string {
   return parts.length ? `{${parts.join(', ')}}` : ''
 }
 
-function rawItem(item: FixedConditionItem): string {
+function rawCondition(item: FixedCondition): string {
   if (item.kind === 'tag') {
     const tag = normalizeTag(item.tag)
     if (!tag) return '(EMPTY)'
     return item.exclude ? `NOT ${rawTag(tag)}` : rawTag(tag)
   }
+  const field = RAW_FIELD[item.kind]
+  if (item.op === 'between') return `${item.value} <= ${field} <= ${item.max ?? RANGE_FIELDS[item.kind].max}`
+  return `${field} ${RAW_OP[item.op]} ${item.value}`
+}
+
+function rawItem(item: FixedConditionItem): string {
   if (item.kind !== 'group') {
-    const field = RAW_FIELD[item.kind]
-    if (item.op === 'between') return `${item.value} <= ${field} <= ${item.max ?? RANGE_FIELDS[item.kind].max}`
-    return `${field} ${RAW_OP[item.op]} ${item.value}`
+    const actions = rawActions(item.actions)
+    // 條件帶動作時也包一層括號，{ } 才看得出是接在整個條件後面，不是只接在最後一個字上
+    return actions ? `(${rawCondition(item)})${actions}` : rawCondition(item)
   }
   if (!item.conditions.length) return `(EMPTY)${rawActions(item.actions)}`
   const body = item.conditions.map(rawItem).join(` ${GROUP_MODE_OPERATORS[item.mode]} `)

@@ -139,6 +139,15 @@ describe('ruleExpression', () => {
       '=> {background: red, blur}',
     ].join('\n'))
   })
+
+  it('條件帶動作時包一層括號再接動作', () => {
+    const b = createTagCondition('female:b')
+    b.actions.background = 'var(--eqt-status-include)'
+    const stars = createRangeCondition('rating', 'gte', 4)
+    stars.actions.blur = 'blur'
+    expect(ruleExpression(rule('any', [b, createTagCondition('male:c'), stars])))
+      .toBe('(female:b){background: green}\nOR male:c\nOR (stars >= 4){blur}')
+  })
 })
 
 describe('formatRange', () => {
