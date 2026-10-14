@@ -79,7 +79,6 @@ export default {
   'rulePagePrototype.preview': '预览',
   'rulePagePrototype.backFromPreview': '返回',
   'rulePagePrototype.spaceKey': '空格键',
-  'rulePagePrototype.previewHint': '在搜索页点选标签，按「带回素材」就会加进素材并返回',
   'rulePagePrototype.orderHint': '每个效果分别判定；列表中位置越高的规则越优先。“保持不变”不会占用效果，由下方的规则决定。',
   'rulePagePrototype.loadFailed': '无法加载规则，已保存的规则未被覆盖。请刷新页面重试。',
   'rulePagePrototype.saveFailed': '无法保存规则，编辑内容仍留在此页，请先不要关闭。',

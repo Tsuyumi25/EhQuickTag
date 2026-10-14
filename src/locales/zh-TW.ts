@@ -79,7 +79,6 @@ export default {
   'rulePagePrototype.preview': '預覽',
   'rulePagePrototype.backFromPreview': '返回',
   'rulePagePrototype.spaceKey': '空白鍵',
-  'rulePagePrototype.previewHint': '在搜尋頁點選標籤，按「帶回素材」就會加進素材並返回',
   'rulePagePrototype.orderHint': '每個效果分別判定；列表中位置越高的規則越優先。「維持不變」不會佔用效果，由下方的規則決定。',
   'rulePagePrototype.loadFailed': '無法載入規則，已保存的規則未被覆寫。請重新整理頁面再試。',
   'rulePagePrototype.saveFailed': '無法保存規則，編輯內容仍留在此頁，請先不要關閉。',

@@ -3,7 +3,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch, watchEffect } from 'vue'
 import { GM } from '$'
 import { useFloating, autoUpdate, flip, offset, shift } from '@floating-ui/vue'
-import { ChevronDown, Funnel, ListChecks, Search, Settings, Shapes, Tags, X } from '@lucide/vue'
+import { ArrowLeft, ChevronDown, Eye, Funnel, ListChecks, Search, Settings, Shapes, Tags, X } from '@lucide/vue'
 import TagChip from '@/components/TagChip.vue'
 import GalleryTagListRows, { type GalleryTagListGroup } from '@/components/gallery/GalleryTagListRows.vue'
 import { useDragSelect } from '@/composables/useDragSelect'
@@ -116,9 +116,8 @@ const sessionGroups = computed<GalleryTagListGroup[]>(() => {
   }
   return [...groups.values()]
 })
-const dockVisible = computed(() => items.value.length > 0 && dockSessionTerms.value.length > 0)
-// 規則頁預覽中：選好的標籤可以直接帶回規則頁當素材，按一下就順便返回
-const previewingRules = computed(() => showRules.value && rulesCollapsed.value)
+// 規則頁開著時 dock 一直在：預覽、返回與關閉都在這裡，沒選標籤也要按得到
+const dockVisible = computed(() => showRules.value || (items.value.length > 0 && dockSessionTerms.value.length > 0))
 watch(dockVisible, visible => {
   if (visible) return
   closeSearchMenu()
@@ -362,14 +361,13 @@ onBeforeUnmount(() => {
   </Teleport>
 
   <Teleport to="body">
-    <aside
-      v-if="dockVisible" ref="dock" class="eqt-rule-prototype__floating"
-      :class="{ 'eqt-rule-prototype__floating--previewing': previewingRules }" translate="no"
-    >
+    <aside v-if="dockVisible" ref="dock" class="eqt-rule-prototype__floating" translate="no">
       <div class="eqt-rule-prototype__dock">
         <div class="eqt-rule-prototype__dock-tools">
-          <button type="button" class="eqt-rule-prototype__settings" :title="t('settings.title')" disabled><Settings aria-hidden="true" />{{ t('settings.title') }}</button>
-          <span class="eqt-rule-prototype__separator" aria-hidden="true" />
+          <template v-if="!showRules">
+            <button type="button" class="eqt-rule-prototype__settings" :title="t('settings.title')" disabled><Settings aria-hidden="true" />{{ t('settings.title') }}</button>
+            <span class="eqt-rule-prototype__separator" aria-hidden="true" />
+          </template>
           <div
             class="eqt-rule-prototype__search-menu"
             @mouseenter="searchHovered = true"
@@ -403,19 +401,37 @@ onBeforeUnmount(() => {
             </div>
           </div>
           <span class="eqt-rule-prototype__separator" aria-hidden="true" />
-          <button
-            v-if="previewingRules" type="button" class="eqt-rule-prototype__rules-toggle eqt-rule-prototype__rules-toggle--carry"
-            @click="openRulesEditor"
-          ><Shapes aria-hidden="true" />{{ t('rulePrototype.carryToMaterials') }}</button>
-          <button v-else type="button" class="eqt-rule-prototype__rules-toggle" @click="openRulesEditor"><Funnel aria-hidden="true" />{{ t('rulePrototype.rules') }}</button>
-          <span class="eqt-rule-prototype__separator" aria-hidden="true" />
-          <button type="button" class="eqt-rule-prototype__mytags" :disabled="selection.size === 0" @click="openMyTags"><Tags aria-hidden="true" />{{ t('gallery.openInMyTags') }}</button>
-          <span class="eqt-rule-prototype__separator" aria-hidden="true" />
-          <a v-if="searchHref" class="eqt-rule-prototype__search" :href="searchHref" target="_blank" rel="noopener noreferrer"><Search aria-hidden="true" />{{ t('tagbar.search') }}</a>
-          <button v-else type="button" class="eqt-rule-prototype__search" disabled><Search aria-hidden="true" />{{ t('tagbar.search') }}</button>
+          <!-- 規則介面開著時 dock 只做規則的事；出口只有規則介面自己的關閉鈕，關掉之後才回到平常的 dock -->
+          <template v-if="showRules">
+            <button
+              type="button" class="eqt-rule-prototype__carry" :disabled="selection.size === 0" @click="openRulesEditor"
+            ><Shapes aria-hidden="true" />{{ t('rulePrototype.carryToMaterials') }}</button>
+            <button
+              type="button" class="eqt-rule-prototype__preview" :aria-pressed="rulesCollapsed" aria-keyshortcuts="Space"
+              @click="rulesCollapsed = !rulesCollapsed"
+            >
+              <component :is="rulesCollapsed ? ArrowLeft : Eye" aria-hidden="true" />
+              {{ t(rulesCollapsed ? 'rulePagePrototype.backFromPreview' : 'rulePagePrototype.preview') }}
+              <kbd class="eqt-rule-prototype__kbd">{{ t('rulePagePrototype.spaceKey') }}</kbd>
+            </button>
+            <span class="eqt-rule-prototype__separator" aria-hidden="true" />
+            <button type="button" class="eqt-rule-prototype__deselect" :disabled="selection.size === 0" @click="clearSelection">
+              <X aria-hidden="true" />{{ t('gallery.clearSelection') }}
+            </button>
+          </template>
+          <template v-else>
+            <button type="button" class="eqt-rule-prototype__rules-toggle" @click="openRulesEditor"><Funnel aria-hidden="true" />{{ t('rulePrototype.rules') }}</button>
+            <span class="eqt-rule-prototype__separator" aria-hidden="true" />
+            <button type="button" class="eqt-rule-prototype__mytags" :disabled="selection.size === 0" @click="openMyTags"><Tags aria-hidden="true" />{{ t('gallery.openInMyTags') }}</button>
+            <span class="eqt-rule-prototype__separator" aria-hidden="true" />
+            <a v-if="searchHref" class="eqt-rule-prototype__search" :href="searchHref" target="_blank" rel="noopener noreferrer"><Search aria-hidden="true" />{{ t('tagbar.search') }}</a>
+            <button v-else type="button" class="eqt-rule-prototype__search" disabled><Search aria-hidden="true" />{{ t('tagbar.search') }}</button>
+          </template>
         </div>
-        <span class="eqt-rule-prototype__separator" aria-hidden="true" />
-        <button type="button" class="eqt-rule-prototype__clear" :aria-label="t('gallery.clearSelection')" :title="t('gallery.clearSelection')" @click="clearSelection"><X aria-hidden="true" /></button>
+        <template v-if="!showRules">
+          <span class="eqt-rule-prototype__separator" aria-hidden="true" />
+          <button type="button" class="eqt-rule-prototype__clear" :aria-label="t('gallery.clearSelection')" :title="t('gallery.clearSelection')" @click="clearSelection"><X aria-hidden="true" /></button>
+        </template>
       </div>
     </aside>
   </Teleport>

@@ -4,6 +4,11 @@
   --eqt-rule-prototype-gap: var(--eqt-gallery-chip-content-gap);
   --eqt-rule-prototype-panel-width: calc(var(--eqt-row-h) * 18);
   --eqt-rule-prototype-dock-height: calc(var(--eqt-row-h) * 3);
+  // 視窗底部到 dock 頂端再留一段間距：dock 離底的距離 + 框線 + 內距 + 按鈕高。
+  // 規則頁的底邊停在這裡，dock 才不會蓋住它；改 dock 的間距或按鈕高時要一起對
+  --eqt-rule-prototype-dock-clearance: calc(
+    var(--eqt-rule-prototype-gap) * 4 + var(--eqt-border-width) * 2 + var(--eqt-rule-prototype-gap) * 2 + var(--eqt-row-h)
+  );
   --eqt-rule-prototype-blur: calc(var(--eqt-gallery-chip-content-gap) * 4);
   --eqt-rule-prototype-faded: 0.35;
 }
@@ -59,13 +64,12 @@
   width: max-content;
   max-width: calc(100vw - var(--eqt-rule-prototype-gap) * 4);
 }
-// 規則頁預覽中，規則頁的返回鈕留在畫面底部；dock 墊高到它上面，兩個不會疊在一起
-.eqt-rule-prototype__floating--previewing {
-  bottom: calc(var(--eqt-rule-page-footer-clearance) + var(--eqt-rule-prototype-gap) * 2);
-}
 .eqt-rule-prototype__dock {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  // 規則介面開著時沒有右端的清除鈕，只剩工具列一欄
+  grid-template-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  grid-auto-columns: auto;
   gap: var(--eqt-rule-prototype-gap);
   align-items: center;
   width: 100%;
@@ -102,12 +106,21 @@
       background: var(--eqt-bg-active);
     }
   }
-  // 預覽中這顆會把選好的標籤帶回規則頁，是這時候 dock 上的主要動作；
+  // 規則頁開著時，把選好的標籤帶回規則頁是 dock 上的主要動作；
   // 要壓過上面 dock-tools > button 的 btn-toned
-  .eqt-rule-prototype__dock-tools > .eqt-rule-prototype__rules-toggle--carry {
+  .eqt-rule-prototype__dock-tools > .eqt-rule-prototype__carry {
     @include btn-green;
     border: none;
   }
+  .eqt-rule-prototype__preview[aria-pressed='true'] { background: var(--eqt-bg-active); }
+}
+.eqt-rule-prototype__kbd {
+  padding: 0 var(--eqt-rule-prototype-gap);
+  border: var(--eqt-border-width-thin) solid var(--eqt-border);
+  border-radius: var(--eqt-radius-sm);
+  color: var(--eqt-text-hint);
+  font: inherit;
+  font-size: var(--eqt-fs-xs);
 }
 .eqt-rule-prototype__dock-tools {
   display: flex;

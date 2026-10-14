@@ -14,18 +14,14 @@
   --eqt-rule-page-item-margin: 0 calc(var(--eqt-rule-page-gap) / 2) calc(var(--eqt-rule-page-gap) * 1.25);
   // 四周留出一圈搜尋頁：規則頁是浮在搜尋頁上的一張卡，不是換到另一個頁面
   --eqt-rule-page-margin: calc(var(--eqt-rule-page-gap) * 6);
-  // 從視窗底部到預覽返回鈕頂端的距離：卡片外距 + 框線 + 卡片下內距 + 按鈕高。
-  // 列表的 dock 在預覽時墊高到這裡之上，改 footer 或卡片的間距時要一起對
-  --eqt-rule-page-footer-clearance: calc(
-    var(--eqt-rule-page-margin) + var(--eqt-border-width) + var(--eqt-rule-page-gap) * 2.5 + var(--eqt-rule-page-control-h)
-  );
 }
 
 // 三欄沿用 /mytags 工作台：兩側是 stripe 卡片，左欄底部 dock 放主要動作；
 // 每一欄各自捲動，所以標題列與 dock 不需要 sticky。
 .eqt-rule-page {
   position: fixed;
-  inset: var(--eqt-rule-page-margin);
+  // 底下讓出列表的 dock：預覽、返回與關閉在 dock 上（--eqt-rule-prototype-dock-clearance 定義在 rule-prototype.scss）
+  inset: var(--eqt-rule-page-margin) var(--eqt-rule-page-margin) var(--eqt-rule-prototype-dock-clearance);
   z-index: var(--eqt-z-overlay);
   display: grid;
   grid-template-columns:
@@ -33,7 +29,7 @@
   gap: calc(var(--eqt-rule-page-gap) * 3);
   overflow: hidden;
   // 背景搜尋頁可以捲動，但滾輪落在規則頁上時不能捲到後面去；
-  // 欄內的清單與編輯區各自 contain，這裡擋的是標題列、footer 這些本身不能捲的地方
+  // 欄內的清單與編輯區各自 contain，這裡擋的是標題列這些本身不能捲的地方
   overscroll-behavior: contain;
   padding: calc(var(--eqt-rule-page-gap) * 2.5) calc(var(--eqt-rule-page-gap) * 3);
   border: var(--eqt-border-width) solid var(--eqt-border);
@@ -52,15 +48,6 @@
   &--collapsed {
     visibility: hidden;
     pointer-events: none;
-
-    // 版面還在，按鈕與提示留在 footer 原本的位置，只有它們看得見；提示只是文字，點擊穿過去給搜尋頁
-    .eqt-rule-page__toggle,
-    .eqt-rule-page__preview-hint {
-      visibility: visible;
-      box-shadow: var(--eqt-shadow-popover);
-    }
-
-    .eqt-rule-page__toggle { pointer-events: auto; }
   }
 }
 
@@ -283,56 +270,6 @@
   overflow: auto;
   overscroll-behavior: contain;
   padding-inline-end: calc(var(--eqt-rule-page-gap) * 2);
-}
-
-.eqt-rule-page__footer {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: flex-end;
-  gap: calc(var(--eqt-rule-page-gap) * 2);
-  padding-top: calc(var(--eqt-rule-page-gap) * 2.5);
-  border-top: var(--eqt-border-width) solid var(--eqt-border);
-}
-
-// 預覽時底下就是搜尋頁，提示自己帶底色與框，才讀得出來
-.eqt-rule-page__preview-hint {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--eqt-rule-page-gap);
-  min-width: 0;
-  height: var(--eqt-rule-page-control-h);
-  margin: 0;
-  padding: 0 calc(var(--eqt-rule-page-gap) * 2.5);
-  border: var(--eqt-border-width) solid var(--eqt-border);
-  border-radius: var(--eqt-radius-sm);
-  background: var(--eqt-bg);
-  color: var(--eqt-text-hint);
-  white-space: nowrap;
-
-  > .eqt-rule-page__icon { color: var(--eqt-green); }
-}
-
-.eqt-rule-page__toggle {
-  @include btn-toned;
-  gap: calc(var(--eqt-rule-page-gap) * 1.5);
-  height: var(--eqt-rule-page-control-h);
-  padding: 0 calc(var(--eqt-rule-page-gap) * 2.5);
-
-  // btn-toned 的 hover 換成半透明的 --eqt-bg-hover；預覽時整頁隱藏、按鈕底下就是搜尋頁，
-  // 會整顆變透明。疊在原本的底色上，只讓它暗一階
-  &:hover:not(:disabled) {
-    background: linear-gradient(var(--eqt-bg-hover), var(--eqt-bg-hover)), var(--eqt-bg-btn);
-  }
-}
-
-.eqt-rule-page__kbd {
-  padding: 0 var(--eqt-rule-page-gap);
-  border: var(--eqt-border-width-thin) solid var(--eqt-border);
-  border-radius: var(--eqt-radius-sm);
-  color: var(--eqt-text-hint);
-  font: inherit;
-  font-size: var(--eqt-fs-xs);
 }
 
 // 層級同 settings：粗體標題 + hint 色 icon、section 之間 --eqt-border 分隔、

@@ -79,7 +79,6 @@ export default {
   'rulePagePrototype.preview': 'プレビュー',
   'rulePagePrototype.backFromPreview': '戻る',
   'rulePagePrototype.spaceKey': 'Space',
-  'rulePagePrototype.previewHint': 'このページでタグを選び、「素材に追加」を押すとギャラリールール画面に戻ります',
   'rulePagePrototype.orderHint': '効果ごとに判定し、一覧で上にあるルールほど優先されます。「変更しない」は効果を確定させず、下のルールに任せます。',
   'rulePagePrototype.loadFailed': 'ルールを読み込めませんでした。保存済みのルールは上書きされていません。ページを再読み込みしてください。',
   'rulePagePrototype.saveFailed': 'ルールを保存できませんでした。編集内容はこのページに残っています。まだ閉じないでください。',

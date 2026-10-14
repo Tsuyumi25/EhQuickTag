@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import Draggable from 'vuedraggable'
-import { ArrowLeft, Ellipsis, Eye, GripVertical, Paintbrush, Plus, Shapes, Trash2, X } from '@lucide/vue'
+import { Ellipsis, GripVertical, Paintbrush, Plus, Trash2, X } from '@lucide/vue'
 import ContextMenu from '@/components/ContextMenu.vue'
 import { baseDragOptions } from '@/utils/drag'
 import RuleActionsEditor from './RuleActionsEditor.vue'
@@ -74,17 +74,18 @@ const TABBABLE = 'a[href], button:not(:disabled), input:not(:disabled), select:n
 
 // 規則頁是非模態的：四周露出的搜尋頁照樣能點、能捲，點下去也不會關掉規則頁。
 // 最後一次按下或聚焦的位置在搜尋頁上，就代表使用者在操作搜尋頁，Space、Esc 與 Tab 留給搜尋頁自己用。
-// 鍵盤要離開規則頁走預覽：預覽時不再接 Tab，焦點能一路走進搜尋頁
+// 鍵盤要離開規則頁走預覽：預覽時不再接 Tab，焦點能一路走進搜尋頁。
+// 預覽、返回與關閉放在列表的 dock 上（ListingRulesPrototype），dock 也算規則頁的一部分
+const DOCK = '.eqt-rule-prototype__floating'
 const root = ref<HTMLElement | null>(null)
-const previewToggle = ref<HTMLButtonElement | null>(null)
 let engaged = true
 // 關掉時把焦點還給打開規則頁的那顆按鈕
 const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
 
 function ownsTarget(target: EventTarget | null): boolean {
   if (!(target instanceof Element)) return false
-  // 規則操作選單與背景色的色盤 Teleport 到 body，不在 root 裡面，但仍是規則頁的一部分
-  return !!root.value?.contains(target) || !!target.closest('.eqt-context-menu, .eqt-anchored-popover')
+  // 規則操作選單、背景色的色盤與 dock 都不在 root 裡面，但仍是規則頁的一部分
+  return !!root.value?.contains(target) || !!target.closest(`.eqt-context-menu, .eqt-anchored-popover, ${DOCK}`)
 }
 
 function onPointerdown(event: PointerEvent) {
@@ -100,13 +101,14 @@ watch(rulesCollapsed, async collapsed => {
   engaged = true
   await nextTick()
   const active = document.activeElement
-  // 預覽時只剩這顆按鈕看得見，焦點留在被藏起來的元素上會無處可去
-  if (collapsed && ownsTarget(active)) previewToggle.value?.focus({ preventScroll: true })
+  // 預覽時規則頁整個藏起來，焦點留在裡面會無處可去，移到 dock 上同一顆按鈕，再按一次就返回
+  if (collapsed && root.value?.contains(active)) document.querySelector<HTMLElement>(`${DOCK} .eqt-rule-prototype__preview`)?.focus({ preventScroll: true })
   else if (!collapsed && !ownsTarget(active)) root.value?.focus({ preventScroll: true })
 })
 
 function tabbables(): HTMLElement[] {
-  return [...root.value?.querySelectorAll<HTMLElement>(TABBABLE) ?? []]
+  const dock = document.querySelector(DOCK)
+  return [...root.value?.querySelectorAll<HTMLElement>(TABBABLE) ?? [], ...dock?.querySelectorAll<HTMLElement>(TABBABLE) ?? []]
     .filter(el => el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden')
 }
 
@@ -131,7 +133,7 @@ function onKeydown(event: KeyboardEvent) {
     containTab(event)
     return
   }
-  // 預覽中規則頁只剩返回鈕，Space 一律用來返回；平常只有正在操作規則頁時才接手
+  // 預覽中規則頁整個藏起來，Space 一律用來返回；平常只有正在操作規則頁時才接手
   if (!rulesCollapsed.value && !engaged) return
   if (event.key === ' ') {
     if (event.repeat || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey || event.isComposing) return
@@ -171,7 +173,10 @@ onBeforeUnmount(() => {
   window.removeEventListener('pointerdown', onPointerdown, true)
   window.removeEventListener('focusin', onFocusin, true)
   const active = document.activeElement
-  if (opener?.isConnected && (!active || active === document.body || ownsTarget(active))) opener.focus({ preventScroll: true })
+  if (active && active !== document.body && !ownsTarget(active)) return
+  if (opener?.isConnected) opener.focus({ preventScroll: true })
+  // 從 dock 打開的話，那顆「圖庫規則」在規則頁開著時不在 dock 上；等 dock 換回來再把焦點交給它
+  else void nextTick(() => document.querySelector<HTMLElement>(`${DOCK} .eqt-rule-prototype__rules-toggle`)?.focus({ preventScroll: true }))
 })
 </script>
 
@@ -274,21 +279,6 @@ onBeforeUnmount(() => {
           <RuleDigest :rule="selected" />
         </template>
       </div>
-
-      <footer class="eqt-rule-page__footer">
-        <!-- 預覽時整頁 visibility: hidden 但版面還在，這顆按鈕照樣留在原處，同一個位置再按一次就返回 -->
-        <p v-if="rulesCollapsed" class="eqt-rule-page__preview-hint" role="note">
-          <Shapes class="eqt-rule-page__icon" />{{ t('rulePagePrototype.previewHint') }}
-        </p>
-        <button
-          ref="previewToggle" type="button" class="eqt-rule-page__toggle" :aria-pressed="rulesCollapsed" aria-keyshortcuts="Space"
-          @click="rulesCollapsed = !rulesCollapsed"
-        >
-          <component :is="rulesCollapsed ? ArrowLeft : Eye" class="eqt-rule-page__icon" />
-          {{ t(rulesCollapsed ? 'rulePagePrototype.backFromPreview' : 'rulePagePrototype.preview') }}
-          <kbd class="eqt-rule-page__kbd">{{ t('rulePagePrototype.spaceKey') }}</kbd>
-        </button>
-      </footer>
     </main>
 
     <aside class="eqt-rule-page__library">

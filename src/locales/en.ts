@@ -79,7 +79,6 @@ export default {
   'rulePagePrototype.preview': 'Preview',
   'rulePagePrototype.backFromPreview': 'Back',
   'rulePagePrototype.spaceKey': 'Space',
-  'rulePagePrototype.previewHint': 'Pick tags on this page, then press “Add to materials” to bring them back',
   'rulePagePrototype.orderHint': 'For each effect, the highest matching rule in this list wins. Leave unchanged does not claim the effect, so rules below can still set it.',
   'rulePagePrototype.loadFailed': 'Could not load rules. Stored rules have not been overwritten; reload the page to try again.',
   'rulePagePrototype.saveFailed': 'Could not save rules. Keep this page open; your edits are still here.',
