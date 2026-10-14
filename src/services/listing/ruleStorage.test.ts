@@ -1,19 +1,26 @@
 import { describe, expect, it } from 'vitest'
 import { test, fc } from '@fast-check/vitest'
 import {
-  createGroup, createRule, evaluateCondition, evaluateRule, kleeneAll, kleeneAny, resolveRuleEffects,
-  type BlurAction, type ConditionGroup, type FixedActions, type FixedConditionItem, type GalleryProbe, type Tri,
+  createActions, createGroup, createRule, evaluateCondition, evaluateRule, kleeneAll, kleeneAny, resolveRuleEffects,
+  type ConditionGroup, type FixedActions, type FixedConditionItem, type GalleryProbe, type Tri,
 } from '@/services/listing/fixedRulePrototype'
 import { decodeRules, rootFromSections, RULE_SCHEMA } from './ruleStorage'
 import { itemArb, probeArb, rule } from './test-helpers'
 
 const RED = '#cc000080'
 const GREEN = '#00cc0080'
-const actions: FixedActions = { background: RED, blur: 'unchanged', showName: true }
+const actions: FixedActions = { ...createActions(), background: RED, showName: true }
+// 每一欄都填上非預設值，確認每一欄都存得回來
+const fullActions: FixedActions = {
+  background: RED, blur: true, showName: true, titlePrefix: 'some prefix', dim: true, strike: true, hide: true,
+}
 // 12 之前的背景色是主題 token
 const legacyActions = { background: 'var(--eqt-status-exclude)', blur: 'unchanged' }
-const migratedActions = { background: '#8c333340', blur: 'unchanged' }
-const noActions: FixedActions = { background: null, blur: 'unchanged', showName: false }
+const migratedActions = { background: '#8c333340', blur: false }
+// 15 之前的模糊是三選一的字串
+const storedBefore15 = { ...actions, blur: 'unchanged' }
+const noneBefore15 = { ...createActions(), blur: 'unchanged' }
+const noActions: FixedActions = createActions()
 const tag = (id: number, name: string, exclude = false) => ({ id, kind: 'tag', tag: name, exclude })
 const probe = (tags: string[], rating: number | null = null): GalleryProbe => ({ tags: new Set(tags), complete: true, rating, pages: null })
 
@@ -26,7 +33,7 @@ describe('decodeRules', () => {
     const [rule] = decodeRules(JSON.stringify({
       schema: 4,
       rules: [{
-        id: 1, name: 'r', enabled: true, actions,
+        id: 1, name: 'r', enabled: true, actions: storedBefore15,
         common: [tag(2, 'female:a')],
         alternatives: [tag(3, 'female:b'), { id: 4, kind: 'folder', mode: 'all', conditions: [tag(5, 'male:c'), tag(6, 'other:d')] }],
         exceptions: [tag(7, 'male:e')],
@@ -44,7 +51,7 @@ describe('decodeRules', () => {
   it('換成樹時新建的群組不會撞到舊 id，之後新建的規則也不會', () => {
     const [rule] = decodeRules(JSON.stringify({
       schema: 4,
-      rules: [{ id: 50, name: 'r', enabled: true, actions, common: [], alternatives: [tag(60, 'female:a'), tag(61, 'female:b')], exceptions: [] }],
+      rules: [{ id: 50, name: 'r', enabled: true, actions: storedBefore15, common: [], alternatives: [tag(60, 'female:a'), tag(61, 'female:b')], exceptions: [] }],
     }))
     const all = [rule.id, ...ids(rule.root)]
     expect(new Set(all).size).toBe(all.length)
@@ -56,7 +63,7 @@ describe('decodeRules', () => {
     const [rule] = decodeRules(JSON.stringify({
       schema: 2,
       rules: [{
-        id: 1, name: 'r', enabled: true, actions, common: [], exceptions: [],
+        id: 1, name: 'r', enabled: true, actions: storedBefore15, common: [], exceptions: [],
         groups: [{ id: 2, conditions: [tag(3, 'female:a'), tag(4, 'female:b')] }],
       }],
     }))
@@ -67,20 +74,20 @@ describe('decodeRules', () => {
   it('目前的格式原樣讀回來', () => {
     const child: ConditionGroup = { id: 3, kind: 'group', mode: 'all', negate: false, conditions: [tag(4, 'female:a') as FixedConditionItem] }
     const root: ConditionGroup = { id: 2, kind: 'group', mode: 'any', negate: true, conditions: [child] }
-    const stored = { id: 1, name: 'r', enabled: false, root, actions }
+    const stored = { id: 1, name: 'r', enabled: false, root, actions: fullActions }
     expect(decodeRules(JSON.stringify({ schema: RULE_SCHEMA, rules: [stored] }))).toEqual([stored])
   })
 
   it('schema 10 的支線動作拆成各自的規則，排在原規則上面', () => {
-    const branch = { ...tag(4, 'female:b'), actions: { ...noActions, background: GREEN } }
-    const stars = { id: 5, kind: 'rating', op: 'gte', value: 4, actions: { ...noActions, blur: 'blur' } }
-    const or = { id: 3, kind: 'group', mode: 'any', negate: false, conditions: [branch, { ...tag(6, 'male:c'), actions: noActions }, stars], actions: noActions }
-    const root = { id: 2, kind: 'group', mode: 'all', negate: false, conditions: [{ ...tag(7, 'female:a'), actions: noActions }, or], actions: { ...noActions, background: RED } }
+    const branch = { ...tag(4, 'female:b'), actions: { ...noneBefore15, background: GREEN } }
+    const stars = { id: 5, kind: 'rating', op: 'gte', value: 4, actions: { ...noneBefore15, blur: 'blur' } }
+    const or = { id: 3, kind: 'group', mode: 'any', negate: false, conditions: [branch, { ...tag(6, 'male:c'), actions: noneBefore15 }, stars], actions: noneBefore15 }
+    const root = { id: 2, kind: 'group', mode: 'all', negate: false, conditions: [{ ...tag(7, 'female:a'), actions: noneBefore15 }, or], actions: { ...noneBefore15, background: RED } }
     const rules = decodeRules(JSON.stringify({ schema: 10, rules: [{ id: 1, name: 'r', enabled: true, root }] }))
     expect(rules.map(item => [item.name, item.actions.background, item.actions.blur])).toEqual([
-      ['r · 1', GREEN, 'unchanged'],
-      ['r · 2', null, 'blur'],
-      ['r', RED, 'unchanged'],
+      ['r · 1', GREEN, false],
+      ['r · 2', null, true],
+      ['r', RED, false],
     ])
     expect(rules[0].root.conditions).toMatchObject([{ tag: 'female:a' }, { kind: 'group' }, { tag: 'female:b' }])
     expect(resolveRuleEffects(rules, probe(['female:a', 'female:b']))).toMatchObject({ background: GREEN, blur: false })
@@ -91,19 +98,45 @@ describe('decodeRules', () => {
   })
 
   it('schema 9 只有群組帶動作；沒填完的規則拆出來先停用', () => {
-    const branch = { id: 3, kind: 'group', mode: 'all', negate: false, conditions: [tag(4, 'female:b')], actions: { ...noActions, blur: 'blur' } }
-    const empty = { id: 5, kind: 'group', mode: 'all', negate: false, conditions: [], actions: noActions }
-    const root = { id: 2, kind: 'group', mode: 'any', negate: false, conditions: [branch, empty], actions: noActions }
+    const branch = { id: 3, kind: 'group', mode: 'all', negate: false, conditions: [tag(4, 'female:b')], actions: { ...noneBefore15, blur: 'blur' } }
+    const empty = { id: 5, kind: 'group', mode: 'all', negate: false, conditions: [], actions: noneBefore15 }
+    const root = { id: 2, kind: 'group', mode: 'any', negate: false, conditions: [branch, empty], actions: noneBefore15 }
     const rules = decodeRules(JSON.stringify({ schema: 9, rules: [{ id: 1, name: 'r', enabled: true, root }] }))
-    expect(rules.map(item => [item.name, item.enabled, item.actions.blur])).toEqual([['r · 1', false, 'blur'], ['r', true, 'unchanged']])
+    expect(rules.map(item => [item.name, item.enabled, item.actions.blur])).toEqual([['r · 1', false, true], ['r', true, false]])
   })
 
   it('schema 8 的動作掛在規則上，照舊讀回來', () => {
     const [decoded] = decodeRules(JSON.stringify({
       schema: 8,
-      rules: [{ id: 1, name: 'r', enabled: true, actions, root: { id: 2, kind: 'group', mode: 'all', negate: false, conditions: [tag(3, 'female:a')] } }],
+      rules: [{ id: 1, name: 'r', enabled: true, actions: storedBefore15, root: { id: 2, kind: 'group', mode: 'all', negate: false, conditions: [tag(3, 'female:a')] } }],
     }))
     expect(decoded.actions).toEqual(actions)
+  })
+
+  it('schema 13 的標題前綴是勾選，勾了換成規則名稱；卡片大小、布幕與排到最後不再保留', () => {
+    const { background, showName } = fullActions
+    const stored = { background, blur: 'blur', showName, sticker: '👍🏽', size: 'large', titlePrefix: true, dim: false, curtain: true, strike: false, moveToEnd: true, hide: false }
+    const root = { id: 2, kind: 'group', mode: 'all', negate: false, conditions: [tag(3, 'female:a')] }
+    const rules = decodeRules(JSON.stringify({
+      schema: 13,
+      rules: [
+        { id: 1, name: ' some rule ', enabled: true, actions: stored, root },
+        { id: 4, name: 'other', enabled: true, actions: { ...stored, titlePrefix: false }, root: { ...root, id: 5 } },
+      ],
+    }))
+    expect(rules.map(item => item.actions)).toEqual([
+      { ...noActions, background, blur: true, showName, titlePrefix: 'some rule' },
+      { ...noActions, background, blur: true, showName },
+    ])
+  })
+
+  it('schema 12 還沒有貼紙之後的動作，讀進來一律不做', () => {
+    const { background, showName } = fullActions
+    const [decoded] = decodeRules(JSON.stringify({
+      schema: 12,
+      rules: [{ id: 1, name: 'r', enabled: true, actions: { background, blur: 'clear', showName }, root: { id: 2, kind: 'group', mode: 'all', negate: false, conditions: [tag(3, 'female:a')] } }],
+    }))
+    expect(decoded.actions).toEqual({ ...noActions, background, showName })
   })
 
   it('schema 5 的全部不成立換成 NOT 任一成立，判定不變；那時還沒有顯示名稱，一律不顯示', () => {
@@ -128,8 +161,8 @@ describe('decodeRules', () => {
       ],
     }))
     expect(rules.map(item => item.actions)).toEqual([
-      { ...migratedActions, showName: true },
-      { ...migratedActions, showName: false },
+      { ...noActions, ...migratedActions, showName: true },
+      { ...noActions, ...migratedActions, showName: false },
     ])
   })
 
@@ -146,12 +179,20 @@ describe('decodeRules', () => {
     expect(() => decodeRules(ruleWith({ id: 2, kind: 'group', mode: 'all', conditions: [tag(3, 'female:a')] }))).toThrow()
     expect(() => decodeRules(ruleWith(deep(1), null))).toThrow()
     expect(() => decodeRules(ruleWith(deep(1), { ...actions, background: 'var(--eqt-status-or)' }))).toThrow()
+    expect(() => decodeRules(ruleWith(deep(1), { ...actions, blur: 'blur' }))).toThrow()
+    expect(() => decodeRules(ruleWith(deep(1), { ...actions, titlePrefix: ' padded ' }))).toThrow()
+    expect(() => decodeRules(ruleWith(deep(1), { ...actions, titlePrefix: true }))).toThrow()
+    const { hide: _, ...missingFlag } = actions
+    expect(() => decodeRules(ruleWith(deep(1), missingFlag))).toThrow()
   })
 })
 
 // 拆規則之前的算法：從根一路成立的節點，子項先於上一層、上面的支線先於下面的，每個效果取第一個有指定的
-function branchOutcome(root: ConditionGroup, branches: Map<FixedConditionItem, FixedActions>, galleryProbe: GalleryProbe) {
-  const fired: FixedActions[] = []
+type ActionsBefore15 = { background: string | null; blur: 'unchanged' | 'blur' | 'clear'; showName: boolean }
+
+// 背景取第一個有指定的；模糊從 15 起只剩要或不要，任一個要就模糊，保持清晰當成不要
+function branchOutcome(root: ConditionGroup, branches: Map<FixedConditionItem, ActionsBefore15>, galleryProbe: GalleryProbe) {
+  const fired: ActionsBefore15[] = []
   const visit = (group: ConditionGroup) => {
     for (const child of group.conditions) {
       if (child.kind === 'group') {
@@ -164,12 +205,8 @@ function branchOutcome(root: ConditionGroup, branches: Map<FixedConditionItem, F
   }
   visit(root)
   let background: string | null = null
-  let blur: BlurAction = 'unchanged'
-  for (const item of fired) {
-    background ??= item.background
-    if (blur === 'unchanged') blur = item.blur
-  }
-  return { background, blur: blur === 'blur' }
+  for (const item of fired) background ??= item.background
+  return { background, blur: fired.some(item => item.blur === 'blur') }
 }
 
 function evaluateGroup(group: ConditionGroup, galleryProbe: GalleryProbe): Tri {
@@ -177,9 +214,9 @@ function evaluateGroup(group: ConditionGroup, galleryProbe: GalleryProbe): Tri {
   return evaluateRule(asRule, galleryProbe)
 }
 
-const actionsArb: fc.Arbitrary<FixedActions> = fc.record({
+const actionsArb: fc.Arbitrary<ActionsBefore15> = fc.record({
   background: fc.constantFrom(null, RED, GREEN),
-  blur: fc.constantFrom<BlurAction>('unchanged', 'blur', 'clear'),
+  blur: fc.constantFrom<ActionsBefore15['blur']>('unchanged', 'blur', 'clear'),
   showName: fc.constant(false),
 })
 
@@ -189,9 +226,9 @@ describe('支線動作拆成規則', () => {
     fc.infiniteStream(actionsArb), probeArb,
   ])('拆出來的規則跟拆之前算出一樣的背景與模糊', ([mode, negate, conditions], stream, galleryProbe) => {
     const root = createGroup(mode, conditions, negate)
-    const branches = new Map<FixedConditionItem, FixedActions>()
+    const branches = new Map<FixedConditionItem, ActionsBefore15>()
     const toStored = (item: FixedConditionItem): unknown => {
-      const own = stream.next().value as FixedActions
+      const own = stream.next().value as ActionsBefore15
       branches.set(item, own)
       if (item.kind !== 'group') return { ...item, actions: own }
       return { ...item, conditions: item.conditions.map(toStored), actions: own }

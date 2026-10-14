@@ -5,6 +5,7 @@
   --eqt-rule-prototype-panel-width: calc(var(--eqt-row-h) * 18);
   --eqt-rule-prototype-dock-height: calc(var(--eqt-row-h) * 3);
   --eqt-rule-prototype-blur: calc(var(--eqt-gallery-chip-content-gap) * 2);
+  --eqt-rule-prototype-faded: 0.35;
 }
 
 .eqt-rule-prototype,
@@ -191,6 +192,58 @@ tr.eqt-rule-prototype__gallery--background > td {
   .glthumb:not(:hover) img, .gl3t:not(:hover) img, .gl1e:not(:hover) img { filter: blur(var(--eqt-rule-prototype-blur)) !important; }
 }
 
+.eqt-rule-prototype__gallery--dim {
+  transition: opacity var(--eqt-transition-base);
+
+  &:not(:hover) { opacity: var(--eqt-rule-prototype-faded); }
+}
+.eqt-rule-prototype__gallery--strike .glink { text-decoration: line-through; }
+.eqt-rule-prototype__gallery--hidden { display: none !important; }
+
+// 規則的顏色：背景色帶透明度，色條與文字要用不透明的版本才看得出來
+.eqt-rule-prototype__label,
+.eqt-rule-prototype__prefix,
+.eqt-rule-prototype__why {
+  --eqt-rule-prototype-tone: var(--eqt-border);
+  --eqt-rule-prototype-solid: rgb(from var(--eqt-rule-prototype-tone) r g b);
+}
+
+// 標題前綴插在原生標題文字裡，字型跟著標題走，蓋掉 mount 的重設
+.eqt-rule-prototype__mount.eqt-rule-prototype__prefixes {
+  display: inline;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  white-space: inherit;
+}
+.eqt-rule-prototype__prefix {
+  margin-inline-end: 0.3em;
+  color: color-mix(in srgb, var(--eqt-rule-prototype-solid) 65%, currentColor);
+  font-weight: bold;
+}
+
+// 貼在規則名稱下方的浮層；不接滑鼠，移開名稱就收起來
+.eqt-rule-prototype__why {
+  z-index: var(--eqt-z-popover);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--eqt-rule-prototype-gap);
+  max-width: calc(var(--eqt-rule-prototype-panel-width) / 1.5);
+  padding: var(--eqt-rule-prototype-gap) calc(var(--eqt-rule-prototype-gap) * 2);
+  border-inline-start: var(--eqt-border-width) solid var(--eqt-rule-prototype-solid);
+  border-radius: var(--eqt-radius-md);
+  background: var(--eqt-bg-elevated);
+  box-shadow: var(--eqt-shadow-popover);
+  font-size: var(--eqt-fs-sm);
+  pointer-events: none;
+}
+.eqt-rule-prototype__why-term {
+  padding: 0 var(--eqt-rule-prototype-gap);
+  border-radius: var(--eqt-radius-sm);
+  background: color-mix(in srgb, var(--eqt-rule-prototype-solid) 20%, transparent);
+}
+
 // 排法照原生 .gl6t：置中、可換行，單一個最寬 250px、超過用省略號。
 // 用規則自己的背景色畫左側色條與淡底，跟原生標籤的外框長得不一樣，才不會被當成圖庫本身的 tag
 .eqt-rule-prototype__labels {
@@ -202,17 +255,15 @@ tr.eqt-rule-prototype__gallery--background > td {
 }
 // 前面加上容器提高權重，蓋過 mount 底下 button 一律套用的 btn-filled
 .eqt-rule-prototype__labels > .eqt-rule-prototype__label {
-  --eqt-rule-prototype-label-tone: var(--eqt-border);
-
   display: block;
   max-width: 250px;
   overflow: hidden;
   padding: 0 var(--eqt-rule-prototype-gap);
   border: none;
   // 色條拿掉透明度，背景色很淡的規則色條才看得出來；底色照規則設的透明度
-  border-inline-start: var(--eqt-border-width) solid rgb(from var(--eqt-rule-prototype-label-tone) r g b);
+  border-inline-start: var(--eqt-border-width) solid var(--eqt-rule-prototype-solid);
   border-radius: var(--eqt-radius-sm);
-  background: linear-gradient(var(--eqt-rule-prototype-label-tone), var(--eqt-rule-prototype-label-tone)), var(--eqt-bg);
+  background: linear-gradient(var(--eqt-rule-prototype-tone), var(--eqt-rule-prototype-tone)), var(--eqt-bg);
   color: var(--eqt-text);
   font-size: var(--eqt-fs-sm);
   font-weight: bold;
@@ -223,7 +274,7 @@ tr.eqt-rule-prototype__gallery--background > td {
   &:focus-visible {
     background:
       linear-gradient(var(--eqt-bg-hover), var(--eqt-bg-hover)),
-      linear-gradient(var(--eqt-rule-prototype-label-tone), var(--eqt-rule-prototype-label-tone)), var(--eqt-bg);
+      linear-gradient(var(--eqt-rule-prototype-tone), var(--eqt-rule-prototype-tone)), var(--eqt-bg);
   }
 
   &:focus-visible {

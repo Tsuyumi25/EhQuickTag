@@ -10,13 +10,9 @@ export const MAX_GROUP_DEPTH = 3
 export type Tri = boolean | null
 export type RangeField = 'rating' | 'pages'
 export type RangeOp = 'eq' | 'lt' | 'lte' | 'gt' | 'gte' | 'between'
-export type BlurAction = 'unchanged' | 'blur' | 'clear'
 
 /** 也是下拉選單的順序 */
 export const RANGE_OPS: readonly RangeOp[] = ['eq', 'lt', 'lte', 'gt', 'gte', 'between']
-
-/** 也是模糊下拉選單的順序 */
-export const BLUR_ACTIONS: readonly BlurAction[] = ['unchanged', 'blur', 'clear']
 
 /**
  * 每種數值欄位的合法範圍、步進與新條件的預設值；頁數沒有上限。
@@ -90,9 +86,15 @@ export type FixedConditionItem = FixedCondition | ConditionGroup
 export interface FixedActions {
   /** #rrggbbaa；透明度直接決定疊在圖庫原本底色上有多濃 */
   background: string | null
-  blur: BlurAction
+  blur: boolean
   /** 命中時把規則名稱貼在縮圖模式的標籤列上方 */
   showName: boolean
+  /** 加在標題最前面的自填文字 */
+  titlePrefix: string | null
+  dim: boolean
+  strike: boolean
+  /** 從列表上拿掉，不留痕跡 */
+  hide: boolean
 }
 
 // 一條規則只有一組動作：條件裡不分岔出不同的動作。想要不同的結果就另開一條規則，
@@ -162,13 +164,19 @@ export function conditionRange(condition: RangeCondition): ValueRange {
   return { min: condition.value, max: condition.value }
 }
 
-/** 背景沒選、模糊維持不變都代表「沒指定」，讓給下一條規則 */
+/** 背景沒選代表「沒指定」，讓給下一條規則 */
 export function createActions(): FixedActions {
-  return { background: null, blur: 'unchanged', showName: false }
+  return { background: null, blur: false, showName: false, titlePrefix: null, dim: false, strike: false, hide: false }
 }
 
 export function hasActions(actions: FixedActions): boolean {
-  return actions.background !== null || actions.blur !== 'unchanged' || actions.showName
+  return actions.background !== null || actions.blur || actions.showName || actions.titlePrefix !== null
+    || actions.dim || actions.strike || actions.hide
+}
+
+/** 前後的空白沒有意義，標題本身會跟前綴隔開；只剩空白就是不加 */
+export function normalizeTitlePrefix(raw: string): string | null {
+  return raw.trim() || null
 }
 
 export function createGroup(mode: GroupMode = 'all', conditions: FixedConditionItem[] = [], negate = false): ConditionGroup {
@@ -267,30 +275,72 @@ export function evaluateRule(rule: FixedRule, probe: GalleryProbe): Tri {
   return isRuleComplete(rule) ? evaluateItem(rule.root, probe) : null
 }
 
-export interface RuleEffects {
-  background: string | null
-  blur: boolean
-  /** 底色沿用該規則自己的背景色，沒選背景時是 null；ruleId 讓點標示時能打開那一條 */
-  labels: { ruleId: number; text: string; tone: string | null }[]
+/** 命中原因：讓規則成立的「含有」標籤與數值條件 */
+export interface RuleEvidence {
+  tags: string[]
+  ranges: RangeCondition[]
 }
 
 /**
- * 背景與模糊各自找：清單裡位置最高、命中且有指定該效果的規則說了算。
- * 「維持不變」與沒選背景都不算指定，讓給下面的規則。
- * 標示不互相搶：每條命中的規則各貼一個，照清單順序排
+ * 只走成立的分支：任一成立底下沒成立的那幾支不算原因。
+ * NOT 群組與「不含」成立靠的是缺了什麼，指不出是哪個標籤，略過
+ */
+export function ruleEvidence(rule: FixedRule, probe: GalleryProbe): RuleEvidence {
+  const tags = new Set<string>()
+  const ranges: RangeCondition[] = []
+  const walk = (item: FixedConditionItem) => {
+    if (evaluateItem(item, probe) !== true) return
+    if (item.kind === 'group') {
+      if (!item.negate) item.conditions.forEach(walk)
+    } else if (item.kind === 'tag') {
+      if (!item.exclude) tags.add(normalizeTag(item.tag))
+    } else {
+      ranges.push(item)
+    }
+  }
+  walk(rule.root)
+  return { tags: [...tags], ranges }
+}
+
+/** 規則掛在圖庫上的一段文字（名稱標示、標題前綴）；tone 是規則自己的背景色，沒選背景時是 null */
+export interface RuleMark {
+  ruleId: number
+  text: string
+  tone: string | null
+}
+
+export interface RuleEffects {
+  background: string | null
+  blur: boolean
+  /** ruleId 讓點標示時能打開那一條；evidence 是滑鼠移上去看到的命中原因 */
+  labels: (RuleMark & { evidence: RuleEvidence })[]
+  prefixes: RuleMark[]
+  dim: boolean
+  strike: boolean
+  hide: boolean
+}
+
+/**
+ * 背景由清單裡位置最高、命中且有選背景的規則決定；沒選背景讓給下面的規則。
+ * 標示與標題前綴不互相搶：每條命中的規則各加一個，照清單順序排。
+ * 模糊、淡化、刪除線與隱藏只要有一條命中的規則要就做
  */
 export function resolveRuleEffects(rules: readonly FixedRule[], probe: GalleryProbe): RuleEffects {
-  let background: string | null = null
-  let blur: BlurAction = 'unchanged'
-  const labels: RuleEffects['labels'] = []
+  const effects: RuleEffects = { background: null, blur: false, labels: [], prefixes: [], dim: false, strike: false, hide: false }
   for (const rule of rules) {
     if (!rule.enabled || evaluateRule(rule, probe) !== true) continue
-    background ??= rule.actions.background
-    if (blur === 'unchanged') blur = rule.actions.blur
-    const text = rule.actions.showName ? rule.name.trim() : ''
-    if (text) labels.push({ ruleId: rule.id, text, tone: rule.actions.background })
+    const { actions } = rule
+    const name = rule.name.trim()
+    const tone = actions.background
+    effects.background ??= tone
+    if (actions.showName && name) effects.labels.push({ ruleId: rule.id, text: name, tone, evidence: ruleEvidence(rule, probe) })
+    if (actions.titlePrefix) effects.prefixes.push({ ruleId: rule.id, text: actions.titlePrefix, tone })
+    effects.blur ||= actions.blur
+    effects.dim ||= actions.dim
+    effects.strike ||= actions.strike
+    effects.hide ||= actions.hide
   }
-  return { background, blur: blur === 'blur', labels }
+  return effects
 }
 
 /** 已經在 existing 裡的標籤（連同極性）不再重複產生 */

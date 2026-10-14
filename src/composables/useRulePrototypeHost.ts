@@ -11,6 +11,8 @@ export interface PrototypeListingItem {
   anchor: HTMLElement
   /** 只有縮圖模式（.gl1t）才有：規則的標示清單，插在原生標籤列 .gl6t 前面 */
   labelAnchor: HTMLElement | null
+  /** 標題文字最前面：標題前綴 */
+  titleAnchor: HTMLElement | null
   tags: PrototypeListingTag[]
   tagSet: ReadonlySet<string>
   complete: boolean
@@ -81,6 +83,7 @@ export function useRulePrototypeHost() {
     }
     record.item.anchor.remove()
     record.item.labelAnchor?.remove()
+    record.item.titleAnchor?.remove()
     const root = record.item.root
     for (const name of [...root.classList]) {
       if (name.startsWith('eqt-rule-prototype__gallery')) root.classList.remove(name)
@@ -122,8 +125,9 @@ export function useRulePrototypeHost() {
       const pages = pageCount(root)
       const signature = JSON.stringify([complete, stars, pages, tags])
       let record = records.get(root)
-      if (record && (!root.contains(record.item.anchor) || (record.item.labelAnchor && !root.contains(record.item.labelAnchor))
-        || record.signature !== signature)) {
+      const detached = (anchor: HTMLElement | null) => !!anchor && !root.contains(anchor)
+      if (record && (detached(record.item.anchor) || detached(record.item.labelAnchor)
+        || detached(record.item.titleAnchor) || record.signature !== signature)) {
         restore(record)
         records.delete(root)
         record = undefined
@@ -150,9 +154,20 @@ export function useRulePrototypeHost() {
           if (nativeTags) nativeTags.before(labelAnchor)
           else root.append(labelAnchor)
         }
+        const titleText = root.querySelector<HTMLElement>('.glink')
+        let titleAnchor: HTMLElement | null = null
+        if (titleText) {
+          titleAnchor = document.createElement('span')
+          titleAnchor.className = 'eqt-rule-prototype__mount eqt-rule-prototype__prefixes'
+          titleAnchor.setAttribute('translate', 'no')
+          titleText.prepend(titleAnchor)
+        }
         record = {
           signature,
-          item: { id: nextId++, root, anchor, labelAnchor, tags, tagSet: names, complete, ...stars, pages, title, href: link.href },
+          item: {
+            id: nextId++, root, anchor, labelAnchor, titleAnchor,
+            tags, tagSet: names, complete, ...stars, pages, title, href: link.href,
+          },
         }
         records.set(root, record)
       }

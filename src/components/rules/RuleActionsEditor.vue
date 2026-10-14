@@ -2,9 +2,17 @@
 import LineColorSwatch from '@/components/LineColorSwatch.vue'
 import { t } from '@/composables/useI18n'
 import { parseColorInput } from '@/services/color'
-import { BLUR_ACTIONS, type BlurAction, type FixedActions } from '@/services/listing/fixedRulePrototype'
+import { normalizeTitlePrefix, type FixedActions } from '@/services/listing/fixedRulePrototype'
 
 const props = defineProps<{ actions: FixedActions }>()
+
+const FLAGS = [
+  { key: 'blur', label: 'rulePrototype.blur' },
+  { key: 'showName', label: 'rulePagePrototype.showName', hint: 'rulePagePrototype.showNameHint' },
+  { key: 'dim', label: 'rulePagePrototype.dim' },
+  { key: 'strike', label: 'rulePagePrototype.strike' },
+  { key: 'hide', label: 'rulePagePrototype.hide' },
+] as const
 
 // 跟 My Tags 的標籤顏色同一組：色盤選、或直接貼色碼；色碼框留空就是不上色
 function onHexInput(event: Event) {
@@ -16,16 +24,18 @@ function onHexInput(event: Event) {
   }
 }
 
-function onHexBlur(event: Event) {
-  (event.target as HTMLInputElement).value = props.actions.background ?? ''
+function resetInput(event: Event, value: string | null) {
+  (event.target as HTMLInputElement).value = value ?? ''
 }
 
-function setBlur(event: Event) {
-  props.actions.blur = (event.target as HTMLSelectElement).value as BlurAction
+// 輸入法組字中間的半成品也會觸發 input，等離開欄位再收
+function setTitlePrefix(event: Event) {
+  props.actions.titlePrefix = normalizeTitlePrefix((event.target as HTMLInputElement).value)
+  resetInput(event, props.actions.titlePrefix)
 }
 
-function toggleShowName(event: Event) {
-  props.actions.showName = (event.target as HTMLInputElement).checked
+function toggle(key: (typeof FLAGS)[number]['key'], event: Event) {
+  props.actions[key] = (event.target as HTMLInputElement).checked
 }
 </script>
 
@@ -45,21 +55,23 @@ function toggleShowName(event: Event) {
           class="eqt-rule-page__input eqt-rule-page__color" type="text" :value="actions.background ?? ''"
           placeholder="#rrggbbaa" maxlength="9" spellcheck="false" autocomplete="off"
           :aria-label="t('rulePagePrototype.background')"
-          @input="onHexInput" @blur="onHexBlur" @keydown.enter.prevent="($event.target as HTMLInputElement).blur()"
+          @input="onHexInput" @blur="resetInput($event, actions.background)" @keydown.enter.prevent="($event.target as HTMLInputElement).blur()"
         >
       </span>
     </div>
-    <label class="eqt-rule-page__field">
-      <span>{{ t('rulePrototype.blur') }}</span>
-      <select class="eqt-rule-page__select" :value="actions.blur" @change="setBlur">
-        <option v-for="action in BLUR_ACTIONS" :key="action" :value="action">
-          {{ t(action === 'blur' ? 'rulePrototype.blur' : `rulePagePrototype.${action}`) }}
-        </option>
-      </select>
+    <label class="eqt-rule-page__field" :title="t('rulePagePrototype.titlePrefixHint')">
+      <span>{{ t('rulePagePrototype.titlePrefix') }}</span>
+      <input
+        class="eqt-rule-page__input" type="text" :value="actions.titlePrefix ?? ''" autocomplete="off"
+        @change="setTitlePrefix" @keydown.enter.prevent="($event.target as HTMLInputElement).blur()"
+      >
     </label>
-    <label class="eqt-rule-page__enabled" :title="t('rulePagePrototype.showNameHint')">
-      <input type="checkbox" :checked="actions.showName" @change="toggleShowName" />
-      {{ t('rulePagePrototype.showName') }}
+    <label
+      v-for="flag in FLAGS" :key="flag.key" class="eqt-rule-page__enabled"
+      :title="'hint' in flag ? t(flag.hint) : undefined"
+    >
+      <input type="checkbox" :checked="actions[flag.key]" @change="toggle(flag.key, $event)" />
+      {{ t(flag.label) }}
     </label>
   </div>
 </template>

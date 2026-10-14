@@ -310,9 +310,12 @@ function rawTag(tag: string): string {
 function rawActions(actions: FixedActions): string {
   const parts: string[] = []
   if (actions.background) parts.push(`background: ${actions.background}`)
-  if (actions.blur === 'blur') parts.push('blur')
-  if (actions.blur === 'clear') parts.push('no-blur')
+  if (actions.blur) parts.push('blur')
   if (actions.showName) parts.push('show-name')
+  if (actions.titlePrefix) parts.push(`title-prefix: ${JSON.stringify(actions.titlePrefix)}`)
+  if (actions.dim) parts.push('dim')
+  if (actions.strike) parts.push('strike')
+  if (actions.hide) parts.push('hide')
   return parts.length ? `{${parts.join(', ')}}` : ''
 }
 

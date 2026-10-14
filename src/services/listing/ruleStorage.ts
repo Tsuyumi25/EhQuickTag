@@ -2,12 +2,16 @@
 
 import { parseColorInput } from '@/services/color'
 import {
-  BLUR_ACTIONS, createActions, createGroup, GROUP_MODES, hasActions, isRuleComplete, itemHeight, MAX_GROUP_DEPTH, nextEntityId,
-  RANGE_FIELDS, RANGE_OPS, reserveRuleIds,
-  type BlurAction, type ConditionGroup, type FixedActions, type FixedCondition, type FixedConditionItem, type FixedRule,
-  type GroupMode, type RangeField, type RangeOp,
+  createActions, createGroup, GROUP_MODES, hasActions, isRuleComplete, itemHeight, MAX_GROUP_DEPTH,
+  nextEntityId, normalizeTitlePrefix, RANGE_FIELDS, RANGE_OPS, reserveRuleIds,
+  type ConditionGroup, type FixedActions, type FixedCondition, type FixedConditionItem,
+  type FixedRule, type GroupMode, type RangeField, type RangeOp,
 } from '@/services/listing/fixedRulePrototype'
 
+// 15：模糊封面只剩要或不要；之前還有「保持清晰」可以擋下更下面的規則的模糊，讀進來當成不要。
+// 貼紙拿掉了，13–14 存的貼紙不再保留。
+// 14：拿掉卡片大小、布幕與排到最後；標題前綴從「加上規則名稱」改成自填文字，13 有勾的換成當時的規則名稱。
+// 13：多了貼紙、標題前綴、淡化、刪除線與隱藏（還有 14 拿掉的那三個）；之前的規則一律不做這些。
 // 12：背景色是自選的 #rrggbbaa。之前只能從幾個主題 token 裡選，讀進來換成淺色主題的色值，
 // 透明度 25% 對應當時「跟底色混 25%」的畫法（LEGACY_BACKGROUNDS）。
 // 11：一條規則只有一組動作，掛回規則上。9–10 的子群組與條件各自帶動作，讀進來拆成各自的規則（splitBranchActions）。
@@ -15,7 +19,7 @@ import {
 // 有填字就當成要顯示，文字本身不保留；7 之前的版本一律不顯示。
 // 6：NOT 是群組的獨立旗標。5 的判定模式多一種「全部不成立」，讀進來換成 NOT 任一成立；
 // 1–4 是固定三區（必要條件／任一成立／例外），讀進來時換成樹
-export const RULE_SCHEMA = 12
+export const RULE_SCHEMA = 15
 // 三區時代每一區底下最多兩層 Folder
 const LEGACY_FOLDER_DEPTH = 2
 
@@ -154,15 +158,43 @@ function decodeBackground(value: unknown, schema: number): string | null {
   return color
 }
 
-function decodeActions(actions: unknown, schema: number): FixedActions {
-  if (!isObject(actions) || typeof actions.blur !== 'string' || !BLUR_ACTIONS.includes(actions.blur as BlurAction)) {
-    throw new Error('Invalid fixed rule storage')
+const FLAG_ACTIONS = ['dim', 'strike', 'hide'] as const
+
+const LEGACY_BLUR_ACTIONS: readonly unknown[] = ['unchanged', 'blur', 'clear']
+
+function decodeBlur(value: unknown, schema: number): boolean {
+  if (schema >= 15) {
+    if (typeof value !== 'boolean') throw new Error('Invalid fixed rule storage')
+    return value
   }
-  return {
+  if (!LEGACY_BLUR_ACTIONS.includes(value)) throw new Error('Invalid fixed rule storage')
+  return value === 'blur'
+}
+
+function decodeTitlePrefix(value: unknown, schema: number, ruleName: string): string | null {
+  if (schema === 13) {
+    if (typeof value !== 'boolean') throw new Error('Invalid fixed rule storage')
+    return value ? normalizeTitlePrefix(ruleName) : null
+  }
+  if (value === null) return null
+  if (typeof value !== 'string' || normalizeTitlePrefix(value) !== value) throw new Error('Invalid fixed rule storage')
+  return value
+}
+
+/** ruleName 只有 13 的標題前綴用得到：那時勾了就是加上規則名稱 */
+function decodeActions(actions: unknown, schema: number, ruleName = ''): FixedActions {
+  if (!isObject(actions)) throw new Error('Invalid fixed rule storage')
+  const decoded: FixedActions = {
+    ...createActions(),
     background: decodeBackground(actions.background, schema),
-    blur: actions.blur as BlurAction,
+    blur: decodeBlur(actions.blur, schema),
     showName: decodeShowName(actions, schema),
   }
+  if (schema < 13) return decoded
+  if (FLAG_ACTIONS.some(key => typeof actions[key] !== 'boolean')) throw new Error('Invalid fixed rule storage')
+  decoded.titlePrefix = decodeTitlePrefix(actions.titlePrefix, schema, ruleName)
+  for (const key of FLAG_ACTIONS) decoded[key] = actions[key] as boolean
+  return decoded
 }
 
 function decodeHeader(rule: unknown): Omit<FixedRule, 'root' | 'actions'> & Record<string, unknown> {
@@ -227,7 +259,7 @@ export function splitBranchActions(rule: FixedRule, branches: BranchActions): Fi
 export function decodeRules(raw: string | null): FixedRule[] {
   if (raw === null) return []
   const data: unknown = JSON.parse(raw)
-  if (!isObject(data) || ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, RULE_SCHEMA].includes(data.schema as number) || !Array.isArray(data.rules)) {
+  if (!isObject(data) || ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, RULE_SCHEMA].includes(data.schema as number) || !Array.isArray(data.rules)) {
     throw new Error('Invalid fixed rule storage')
   }
   const schema = data.schema as number
@@ -236,7 +268,7 @@ export function decodeRules(raw: string | null): FixedRule[] {
     const rules = data.rules.map((rule: unknown): FixedRule => {
       const header = decodeHeader(rule)
       const root = decodeGroup(header.root, 0, schema, branches)
-      const actions = schema === 9 || schema === 10 ? branches.get(root)! : decodeActions(header.actions, schema)
+      const actions = schema === 9 || schema === 10 ? branches.get(root)! : decodeActions(header.actions, schema, header.name)
       return { id: header.id, name: header.name, enabled: header.enabled, root, actions }
     })
     if (schema !== 9 && schema !== 10) return rules

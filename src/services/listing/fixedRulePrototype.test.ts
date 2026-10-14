@@ -1,57 +1,86 @@
 import { describe, expect, it } from 'vitest'
 import {
-  averageOfStars, conditionReady, conditionsFromTerms, createGroup, createRangeCondition, createRule, createTagCondition,
-  evaluateCondition, evaluateRule, itemHeight, resolveRuleEffects, starsFromAverage,
-  type BlurAction, type FixedRule, type GalleryProbe, type RangeOp,
+  averageOfStars, conditionReady, conditionsFromTerms, createActions, createGroup, createRangeCondition, createRule, createTagCondition,
+  evaluateCondition, evaluateRule, itemHeight, resolveRuleEffects, ruleEvidence, starsFromAverage,
+  type FixedRule, type GalleryProbe, type RangeOp,
 } from '@/services/listing/fixedRulePrototype'
 
 const probe = (rating: number | null, tags: string[] = [], pages: number | null = null): GalleryProbe =>
   ({ tags: new Set(tags), complete: true, rating, pages })
 
-function ruleWith(tag: string, background: string | null, blur: BlurAction, enabled = true, name = ''): FixedRule {
+function ruleWith(tag: string, background: string | null, blur: boolean, enabled = true, name = ''): FixedRule {
   const rule = createRule(1)
   rule.root.conditions.push(createTagCondition(tag))
   rule.name = name
-  rule.actions = { background, blur, showName: name !== '' }
+  rule.actions = { ...createActions(), background, blur, showName: name !== '' }
   rule.enabled = enabled
   return rule
 }
 
 describe('resolveRuleEffects', () => {
-  it('每個效果由清單中位置最高、命中且有指定的規則決定', () => {
+  it('背景由清單中位置最高、命中且有選背景的規則決定；模糊有一條要就做', () => {
     const rules = [
-      ruleWith('female:a', null, 'clear'),
-      ruleWith('female:a', 'red', 'blur'),
-      ruleWith('female:a', 'green', 'blur'),
+      ruleWith('female:a', null, false),
+      ruleWith('female:a', 'red', false),
+      ruleWith('female:a', 'green', true),
     ]
-    expect(resolveRuleEffects(rules, probe(null, ['female:a']))).toMatchObject({ background: 'red', blur: false })
+    expect(resolveRuleEffects(rules, probe(null, ['female:a']))).toMatchObject({ background: 'red', blur: true })
   })
 
-  it('沒命中、停用或「維持不變」的規則都讓給下面', () => {
+  it('沒命中、停用或沒選背景的規則都讓給下面', () => {
     const rules = [
-      ruleWith('female:b', 'red', 'blur'),
-      ruleWith('female:a', 'green', 'blur', false),
-      ruleWith('female:a', null, 'unchanged'),
-      ruleWith('female:a', 'blue', 'blur'),
+      ruleWith('female:b', 'red', true),
+      ruleWith('female:a', 'green', true, false),
+      ruleWith('female:a', null, false),
+      ruleWith('female:a', 'blue', true),
     ]
     expect(resolveRuleEffects(rules, probe(null, ['female:a']))).toMatchObject({ background: 'blue', blur: true })
   })
 
   it('勾了顯示名稱的規則各貼一個名稱，照清單順序，帶著自己的背景色', () => {
-    const hidden = ruleWith('female:a', 'blue', 'unchanged', true, 'hidden')
+    const hidden = ruleWith('female:a', 'blue', false, true, 'hidden')
     hidden.actions.showName = false
     const rules = [
-      ruleWith('female:a', 'red', 'blur', true, ' first '),
-      ruleWith('female:b', 'green', 'unchanged', true, 'missed'),
-      ruleWith('female:a', null, 'unchanged', false, 'disabled'),
+      ruleWith('female:a', 'red', true, true, ' first '),
+      ruleWith('female:b', 'green', false, true, 'missed'),
+      ruleWith('female:a', null, false, false, 'disabled'),
       hidden,
-      ruleWith('female:a', null, 'unchanged', true, '  '),
-      ruleWith('female:a', null, 'unchanged', true, 'last'),
+      ruleWith('female:a', null, false, true, '  '),
+      ruleWith('female:a', null, false, true, 'last'),
     ]
     expect(resolveRuleEffects(rules, probe(null, ['female:a'])).labels).toEqual([
-      { ruleId: rules[0].id, text: 'first', tone: 'red' },
-      { ruleId: rules[5].id, text: 'last', tone: null },
+      { ruleId: rules[0].id, text: 'first', tone: 'red', evidence: { tags: ['female:a'], ranges: [] } },
+      { ruleId: rules[5].id, text: 'last', tone: null, evidence: { tags: ['female:a'], ranges: [] } },
     ])
+  })
+
+  it('標題前綴每條命中的規則各加一個；淡化、刪除線與隱藏有一條要就做', () => {
+    const top = ruleWith('female:a', null, false, true, 'top')
+    Object.assign(top.actions, { titlePrefix: 'first' })
+    const middle = ruleWith('female:a', 'red', false, true, 'middle')
+    Object.assign(middle.actions, { hide: true })
+    const bottom = ruleWith('female:a', null, false, true, 'bottom')
+    Object.assign(bottom.actions, { titlePrefix: 'second', dim: true, strike: true })
+    const missed = ruleWith('female:b', null, false, true, 'missed')
+    Object.assign(missed.actions, { titlePrefix: 'missed' })
+    const effects = resolveRuleEffects([top, missed, middle, bottom], probe(null, ['female:a']))
+    expect(effects).toMatchObject({ dim: true, strike: true, hide: true })
+    expect(effects.prefixes.map(prefix => prefix.text)).toEqual(['first', 'second'])
+  })
+})
+
+describe('ruleEvidence', () => {
+  it('只列出成立的分支裡、讓規則成立的「含有」標籤與數值條件', () => {
+    const stars = createRangeCondition('rating', 'gte', 4)
+    const rule = createRule(1)
+    rule.root.conditions.push(
+      createTagCondition('Female:A'),
+      createTagCondition('female:x', true),
+      createGroup('any', [createGroup('all', [createTagCondition('male:b'), createTagCondition('male:c')]), stars]),
+      createGroup('any', [createTagCondition('female:d')], true),
+    )
+    expect(ruleEvidence(rule, probe(4.5, ['female:a', 'male:b']))).toEqual({ tags: ['female:a'], ranges: [stars] })
+    expect(ruleEvidence(rule, probe(4.5, ['female:a', 'male:b', 'male:c']))).toEqual({ tags: ['female:a', 'male:b', 'male:c'], ranges: [stars] })
   })
 })
 

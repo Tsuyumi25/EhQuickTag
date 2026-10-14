@@ -2,7 +2,7 @@
 // 列表頁：選標籤送規則頁，並把規則頁存下來的固定規則套回真實畫廊外觀。
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch, watchEffect } from 'vue'
 import { GM } from '$'
-import { useFloating, autoUpdate, flip, shift } from '@floating-ui/vue'
+import { useFloating, autoUpdate, flip, offset, shift } from '@floating-ui/vue'
 import { ChevronDown, Funnel, ListChecks, Search, Settings, Shapes, Tags, X } from '@lucide/vue'
 import TagChip from '@/components/TagChip.vue'
 import GalleryTagListRows, { type GalleryTagListGroup } from '@/components/gallery/GalleryTagListRows.vue'
@@ -15,7 +15,10 @@ import { parseGalleryRef } from '@/composables/useEhSearchListing'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
 import { isZhLocale, t } from '@/composables/useI18n'
 import { DEFAULT_NS_ORDER, entryForTag, tagDbVersion } from '@/services/tags/tagDb'
-import { resolveRuleEffects, type GalleryProbe, type RuleEffects } from '@/services/listing/fixedRulePrototype'
+import {
+  conditionRange, resolveRuleEffects, type GalleryProbe, type RangeCondition, type RuleEffects,
+} from '@/services/listing/fixedRulePrototype'
+import { formatRange } from '@/services/listing/ruleDigest'
 import { parseTerm, serializeEntry } from '@/services/search/searchSyntax'
 import { tokenIdentity } from '@/services/search/tagState'
 import { markEntriesOffPure, syncFromSearchPure, type TermEntry } from '@/services/search/sessionState'
@@ -136,16 +139,59 @@ const labelTargets = computed(() => items.value.flatMap(item => {
   return item.labelAnchor && labels.length ? [{ id: item.id, anchor: item.labelAnchor, labels }] : []
 }))
 
+const prefixTargets = computed(() => items.value.flatMap(item => {
+  const prefixes = effects.value.get(item.id)?.prefixes ?? []
+  return item.titleAnchor && prefixes.length ? [{ id: item.id, anchor: item.titleAnchor, prefixes }] : []
+}))
+
+function toneStyle(tone: string | null) {
+  return tone ? { '--eqt-rule-prototype-tone': tone } : undefined
+}
+function rangeText(condition: RangeCondition) {
+  return `${t(`rulePagePrototype.${condition.kind}`)} ${formatRange(condition.kind, conditionRange(condition))}`
+}
+
+// 命中原因：滑鼠停在（或鍵盤移到）圖庫上的規則名稱時浮出來
+type ShownLabel = RuleEffects['labels'][number]
+const whyAnchor = shallowRef<HTMLElement | null>(null)
+const whyLabel = shallowRef<ShownLabel | null>(null)
+const whyPanel = ref<HTMLElement | null>(null)
+const { floatingStyles: whyFloatingStyles } = useFloating(whyAnchor, whyPanel, {
+  placement: 'bottom',
+  middleware: [offset(4), flip(), shift({ padding: 8 })],
+  whileElementsMounted: autoUpdate,
+})
+function showWhy(event: Event, label: ShownLabel) {
+  whyAnchor.value = event.currentTarget as HTMLElement
+  whyLabel.value = label
+}
+function hideWhy() {
+  whyAnchor.value = null
+  whyLabel.value = null
+}
+watch(labelTargets, targets => {
+  if (whyAnchor.value && !targets.some(target => target.anchor.contains(whyAnchor.value))) hideWhy()
+})
+
+const MODIFIERS = ['background', 'blur', 'dim', 'strike', 'hidden'] as const
+type Modifier = (typeof MODIFIERS)[number]
+
 function clearEffects(item: { root: HTMLElement }) {
-  item.root.classList.remove('eqt-rule-prototype__gallery--background', 'eqt-rule-prototype__gallery--blur')
+  item.root.classList.remove(...MODIFIERS.map(name => `eqt-rule-prototype__gallery--${name}`))
   item.root.style.removeProperty('--eqt-rule-prototype-background')
 }
 
 watchEffect(() => {
   for (const item of items.value) {
     const effect = effects.value.get(item.id)!
-    item.root.classList.toggle('eqt-rule-prototype__gallery--background', !!effect.background)
-    item.root.classList.toggle('eqt-rule-prototype__gallery--blur', effect.blur)
+    const active: Record<Modifier, boolean> = {
+      'background': !!effect.background,
+      'blur': effect.blur,
+      'dim': effect.dim,
+      'strike': effect.strike,
+      'hidden': effect.hide,
+    }
+    for (const name of MODIFIERS) item.root.classList.toggle(`eqt-rule-prototype__gallery--${name}`, active[name])
     if (effect.background) item.root.style.setProperty('--eqt-rule-prototype-background', effect.background)
     else item.root.style.removeProperty('--eqt-rule-prototype-background')
   }
@@ -290,9 +336,29 @@ onBeforeUnmount(() => {
 
   <Teleport v-for="target in labelTargets" :key="target.id" :to="target.anchor">
     <button
-      v-for="label in target.labels" :key="label.ruleId" type="button" class="eqt-rule-prototype__label" :title="label.text"
-      :style="label.tone ? { '--eqt-rule-prototype-label-tone': label.tone } : undefined" @click="openRule(label.ruleId)"
+      v-for="label in target.labels" :key="label.ruleId" type="button" class="eqt-rule-prototype__label"
+      :style="toneStyle(label.tone)" @click="openRule(label.ruleId)"
+      @mouseenter="showWhy($event, label)" @mouseleave="hideWhy" @focus="showWhy($event, label)" @blur="hideWhy"
     >{{ label.text }}</button>
+  </Teleport>
+
+  <Teleport v-for="target in prefixTargets" :key="target.id" :to="target.anchor">
+    <span
+      v-for="prefix in target.prefixes" :key="prefix.ruleId" class="eqt-rule-prototype__prefix" :style="toneStyle(prefix.tone)"
+    >{{ prefix.text }}</span>
+  </Teleport>
+
+  <Teleport to="body">
+    <div
+      v-if="whyLabel" ref="whyPanel" class="eqt-rule-prototype eqt-rule-prototype__why" :style="[whyFloatingStyles, toneStyle(whyLabel.tone)]"
+      role="tooltip" translate="no"
+    >
+      <b>{{ whyLabel.text }}</b>
+      <span v-for="tag in whyLabel.evidence.tags" :key="tag" class="eqt-rule-prototype__why-term">{{ display(tag) }}</span>
+      <span
+        v-for="condition in whyLabel.evidence.ranges" :key="condition.id" class="eqt-rule-prototype__why-term"
+      >{{ rangeText(condition) }}</span>
+    </div>
   </Teleport>
 
   <Teleport to="body">

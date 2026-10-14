@@ -1,41 +1,45 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { Eye, EyeOff, Tag } from '@lucide/vue'
+import { computed, type Component } from 'vue'
+import { EyeClosed, EyeOff, Strikethrough, SunDim, Tag, Type } from '@lucide/vue'
 import { t } from '@/composables/useI18n'
-import type { BlurAction } from '@/services/listing/fixedRulePrototype'
+import type { FixedActions } from '@/services/listing/fixedRulePrototype'
 
 // verbose：情境裡要讀得出做了什麼，每一項都寫成字；空間小的地方只放圖示
-const props = defineProps<{ background: string | null; blur: BlurAction; showName: boolean; verbose?: boolean }>()
+const props = defineProps<FixedActions & { verbose?: boolean }>()
 
-const colorName = computed(() => props.background ?? '')
-const empty = computed(() => !props.background && props.blur === 'unchanged' && !props.showName)
+type Item = { key: string; text: string; icon?: Component; swatch?: string }
+
+const items = computed(() => {
+  const list: Item[] = []
+  if (props.background) {
+    list.push({ key: 'background', text: t('rulePagePrototype.backgroundIs', { color: props.background }), swatch: props.background })
+  }
+  if (props.blur) list.push({ key: 'blur', text: t('rulePrototype.blur'), icon: EyeOff })
+  if (props.showName) list.push({ key: 'showName', text: t('rulePagePrototype.showNameShort'), icon: Tag })
+  if (props.titlePrefix) {
+    list.push({ key: 'titlePrefix', text: t('rulePagePrototype.titlePrefixIs', { prefix: props.titlePrefix }), icon: Type })
+  }
+  const flags = [['dim', SunDim], ['strike', Strikethrough], ['hide', EyeClosed]] as const
+  for (const [key, icon] of flags) {
+    if (props[key]) list.push({ key, text: t(`rulePagePrototype.${key}Short`), icon })
+  }
+  return list
+})
 </script>
 
 <template>
   <span class="eqt-rule-page__action-summary" :class="{ 'eqt-rule-page__action-summary--verbose': verbose }">
-    <span v-if="background" class="eqt-rule-page__action-item">
+    <span v-for="item in items" :key="item.key" class="eqt-rule-page__action-item" :title="item.text">
       <span
-        class="eqt-rule-page__action-swatch" :style="{ '--eqt-rule-page-color-preview': background }"
-        :role="verbose ? undefined : 'img'" :aria-label="verbose ? undefined : t('rulePagePrototype.backgroundIs', { color: colorName })"
-        :title="t('rulePagePrototype.backgroundIs', { color: colorName })"
+        v-if="item.swatch" class="eqt-rule-page__action-swatch" :style="{ '--eqt-rule-page-color-preview': item.swatch }"
+        :role="verbose ? undefined : 'img'" :aria-label="verbose ? undefined : item.text"
       />
-      <template v-if="verbose">{{ t('rulePagePrototype.backgroundIs', { color: colorName }) }}</template>
-    </span>
-    <span v-if="blur !== 'unchanged'" class="eqt-rule-page__action-item">
       <component
-        :is="blur === 'blur' ? EyeOff : Eye" class="eqt-rule-page__action-icon"
-        :role="verbose ? undefined : 'img'" :aria-hidden="verbose || undefined"
-        :aria-label="verbose ? undefined : t(blur === 'blur' ? 'rulePrototype.blur' : 'rulePagePrototype.clear')"
+        :is="item.icon" v-else-if="item.icon" class="eqt-rule-page__action-icon"
+        :role="verbose ? undefined : 'img'" :aria-hidden="verbose || undefined" :aria-label="verbose ? undefined : item.text"
       />
-      <template v-if="verbose">{{ t(blur === 'blur' ? 'rulePrototype.blur' : 'rulePagePrototype.clear') }}</template>
+      <template v-if="verbose">{{ item.text }}</template>
     </span>
-    <span v-if="showName" class="eqt-rule-page__action-item">
-      <Tag
-        class="eqt-rule-page__action-icon" :role="verbose ? undefined : 'img'" :aria-hidden="verbose || undefined"
-        :aria-label="verbose ? undefined : t('rulePagePrototype.showNameShort')"
-      />
-      <template v-if="verbose">{{ t('rulePagePrototype.showNameShort') }}</template>
-    </span>
-    <span v-if="empty">{{ t('rulePagePrototype.noAction') }}</span>
+    <span v-if="!items.length">{{ t('rulePagePrototype.noAction') }}</span>
   </span>
 </template>
