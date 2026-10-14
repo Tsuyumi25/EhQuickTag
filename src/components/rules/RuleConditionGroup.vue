@@ -34,7 +34,10 @@ function toggleMode(): void {
           :class="{ 'eqt-rule-page__toggle-spare': group.negate !== (index === 1) }"
         >{{ label }}</span>
       </button>
-      <button type="button" class="eqt-rule-page__toggle" :title="t('rulePagePrototype.groupMode')" @click="toggleMode">
+      <button
+        type="button" class="eqt-rule-page__toggle eqt-rule-page__toggle--mode"
+        :title="t('rulePagePrototype.groupMode')" @click="toggleMode"
+      >
         <span
           v-for="mode in GROUP_MODES" :key="mode"
           :class="{ 'eqt-rule-page__toggle-spare': group.mode !== mode }"

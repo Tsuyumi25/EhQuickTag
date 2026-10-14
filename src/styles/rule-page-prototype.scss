@@ -740,25 +740,35 @@
   flex: 1 1 100%;
 }
 
+// IS／IS NOT 與 AND／OR 排成終端機提示列（powerline）那種箭頭段：前一段的箭頭剛好嵌進下一段的缺口。
+// 底色跟搜尋列的 chip 同一種混法；NOT 取 exclude、判定模式取群組自己的色條色，段落跟紅框、色條講同一件事
 .eqt-rule-page__group-head {
+  --eqt-rule-page-arrow: calc(var(--eqt-rule-page-inline-h) / 3);
+
   display: inline-flex;
   align-items: center;
   gap: calc(var(--eqt-rule-page-gap) / 2);
 
   > .eqt-rule-page__toggle {
+    --eqt-rule-page-seg: var(--eqt-border);
+
     display: inline-grid;
     align-items: center;
     justify-items: center;
     height: var(--eqt-rule-page-inline-h);
-    padding: 0 calc(var(--eqt-rule-page-gap) / 2);
+    padding: 0 calc(var(--eqt-rule-page-arrow) + var(--eqt-rule-page-gap) / 2) 0 var(--eqt-rule-page-gap);
     border: none;
-    border-radius: var(--eqt-radius-sm);
-    background: transparent;
-    color: var(--eqt-text-hint);
+    background: color-mix(in srgb, var(--eqt-rule-page-seg) 55%, transparent);
+    color: var(--eqt-text);
     font: inherit;
     font-weight: bold;
     white-space: nowrap;
     cursor: pointer;
+    // clip-path 也會裁掉 outline，鍵盤焦點跟 hover 一樣靠底色加深表示
+    clip-path: polygon(
+      0 0, calc(100% - var(--eqt-rule-page-arrow)) 0, 100% 50%,
+      calc(100% - var(--eqt-rule-page-arrow)) 100%, 0 100%
+    );
     transition: var(--eqt-transition-base);
 
     // 每個狀態的字都放進同一格，按鈕寬度取最寬的那個
@@ -767,17 +777,22 @@
     &:hover,
     &:focus-visible {
       outline: none;
-      background: var(--eqt-bg-hover);
+      background: color-mix(in srgb, var(--eqt-rule-page-seg) 70%, transparent);
     }
   }
 
-  // 深色主題的底色跟 exclude 紅幾乎同亮度，紅字會看不見；改成紅底白字
-  > .eqt-rule-page__toggle--on,
-  > .eqt-rule-page__toggle--on:hover,
-  > .eqt-rule-page__toggle--on:focus-visible {
-    background: var(--eqt-status-exclude);
-    color: var(--eqt-text-on-color);
+  // 往回疊進前一段的箭頭，只留一條細縫分開兩段
+  > .eqt-rule-page__toggle + .eqt-rule-page__toggle {
+    margin-inline-start: calc(var(--eqt-border-width-thin) - var(--eqt-rule-page-arrow) - var(--eqt-rule-page-gap) / 2);
+    padding-inline-start: calc(var(--eqt-rule-page-arrow) + var(--eqt-rule-page-gap) / 2);
+    clip-path: polygon(
+      0 0, calc(100% - var(--eqt-rule-page-arrow)) 0, 100% 50%,
+      calc(100% - var(--eqt-rule-page-arrow)) 100%, 0 100%, var(--eqt-rule-page-arrow) 50%
+    );
   }
+
+  > .eqt-rule-page__toggle--on { --eqt-rule-page-seg: var(--eqt-status-exclude); }
+  > .eqt-rule-page__toggle--mode { --eqt-rule-page-seg: var(--eqt-rule-page-tone); }
 
   // chip 裡的移除鈕會承接外框色畫分隔線；標題列沒有外框，不能承接
   > .eqt-rule-page__chip-remove {
