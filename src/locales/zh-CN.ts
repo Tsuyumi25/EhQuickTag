@@ -31,7 +31,6 @@ export default {
   'rulePagePrototype.groupMode': '群组判定模式',
   'rulePagePrototype.groupMode.all': '全部成立',
   'rulePagePrototype.groupMode.any': '任一成立',
-  'rulePagePrototype.negate': 'NOT',
   'rulePagePrototype.negateHint': '把整个群组的判定结果反过来',
   'rulePagePrototype.emptyGroup': '空的，把条件拖进来',
   'rulePagePrototype.contains': '含有标签',
