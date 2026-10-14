@@ -269,8 +269,8 @@ export function evaluateRule(rule: FixedRule, probe: GalleryProbe): Tri {
 export interface RuleEffects {
   background: string | null
   blur: boolean
-  /** 底色沿用該規則自己的背景色，沒選背景時是 null */
-  labels: { text: string; tone: string | null }[]
+  /** 底色沿用該規則自己的背景色，沒選背景時是 null；ruleId 讓點標示時能打開那一條 */
+  labels: { ruleId: number; text: string; tone: string | null }[]
 }
 
 /**
@@ -287,7 +287,7 @@ export function resolveRuleEffects(rules: readonly FixedRule[], probe: GalleryPr
     background ??= rule.actions.background
     if (blur === 'unchanged') blur = rule.actions.blur
     const text = rule.actions.showName ? rule.name.trim() : ''
-    if (text) labels.push({ text, tone: rule.actions.background })
+    if (text) labels.push({ ruleId: rule.id, text, tone: rule.actions.background })
   }
   return { background, blur: blur === 'blur', labels }
 }

@@ -199,17 +199,31 @@
   gap: var(--eqt-rule-prototype-gap);
   padding: var(--eqt-rule-prototype-gap) var(--eqt-rule-prototype-gap) 0;
 }
-.eqt-rule-prototype__label {
+// 前面加上容器提高權重，蓋過 mount 底下 button 一律套用的 btn-filled
+.eqt-rule-prototype__labels > .eqt-rule-prototype__label {
   --eqt-rule-prototype-label-tone: var(--eqt-border);
 
+  display: block;
   max-width: 250px;
   overflow: hidden;
   padding: 0 var(--eqt-rule-prototype-gap);
+  border: none;
   border-inline-start: var(--eqt-border-width) solid var(--eqt-rule-prototype-label-tone);
   border-radius: var(--eqt-radius-sm);
   background: color-mix(in srgb, var(--eqt-rule-prototype-label-tone) 25%, var(--eqt-bg));
+  color: var(--eqt-text);
   font-size: var(--eqt-fs-sm);
   font-weight: bold;
   white-space: nowrap;
   text-overflow: ellipsis;
+
+  &:hover:not(:disabled),
+  &:focus-visible {
+    background: color-mix(in srgb, var(--eqt-rule-prototype-label-tone) 45%, var(--eqt-bg));
+  }
+
+  &:focus-visible {
+    outline: var(--eqt-border-width) solid currentColor;
+    outline-offset: 1px;
+  }
 }

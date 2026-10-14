@@ -11,7 +11,7 @@ import RuleTagLibrary from './RuleTagLibrary.vue'
 import { useFixedRuleStore } from '@/composables/useFixedRuleStore'
 import { t } from '@/composables/useI18n'
 import { BLUR_ACTIONS, COLOR_PRESETS, createRule, type BlurAction } from '@/services/listing/fixedRulePrototype'
-import { rulesCollapsed } from '@/services/appOverlays'
+import { requestedRuleId, rulesCollapsed } from '@/services/appOverlays'
 import '@/styles/rule-page-prototype.scss'
 
 const emit = defineEmits<{ close: [] }>()
@@ -168,6 +168,13 @@ watch(ready, loaded => {
   namedRules = rules.value.length
   selectedId.value = rules.value[0]?.id ?? null
   if (!rules.value.length) addRule()
+}, { immediate: true })
+
+// 從縮圖上的規則名稱打開時選中那一條；排在上面那個初始化之後，才不會被「選第一條」蓋掉
+watch([requestedRuleId, ready], ([id, loaded]) => {
+  if (id === null || !loaded) return
+  if (rules.value.some(rule => rule.id === id)) selectedId.value = id
+  requestedRuleId.value = null
 }, { immediate: true })
 
 onBeforeUnmount(() => {

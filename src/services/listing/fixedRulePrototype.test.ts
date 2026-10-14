@@ -49,8 +49,8 @@ describe('resolveRuleEffects', () => {
       ruleWith('female:a', null, 'unchanged', true, 'last'),
     ]
     expect(resolveRuleEffects(rules, probe(null, ['female:a'])).labels).toEqual([
-      { text: 'first', tone: 'red' },
-      { text: 'last', tone: null },
+      { ruleId: rules[0].id, text: 'first', tone: 'red' },
+      { ruleId: rules[5].id, text: 'last', tone: null },
     ])
   })
 })

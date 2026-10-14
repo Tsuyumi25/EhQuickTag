@@ -21,7 +21,7 @@ import { tokenIdentity } from '@/services/search/tagState'
 import { markEntriesOffPure, syncFromSearchPure, type TermEntry } from '@/services/search/sessionState'
 import { loadMyTagsPalette, type MyTagsPalette } from '@/services/mytags/mytagsPalette'
 import { pickUrl, savePick } from '@/services/mytags/mytagsPicks'
-import { openRules, rulesCollapsed, showRules } from '@/services/appOverlays'
+import { openRule, openRules, rulesCollapsed, showRules } from '@/services/appOverlays'
 import { galleryMyTagsColorsEnabled, nsFormat, defaultExactMatch } from '@/services/store'
 import { useEqtToast } from '@/composables/useEqtToast'
 import { pageWindow } from '@/utils/pageWindow'
@@ -289,10 +289,10 @@ onBeforeUnmount(() => {
   </Teleport>
 
   <Teleport v-for="target in labelTargets" :key="target.id" :to="target.anchor">
-    <span
-      v-for="(label, index) in target.labels" :key="index" class="eqt-rule-prototype__label" :title="label.text"
-      :style="label.tone ? { '--eqt-rule-prototype-label-tone': label.tone } : undefined"
-    >{{ label.text }}</span>
+    <button
+      v-for="label in target.labels" :key="label.ruleId" type="button" class="eqt-rule-prototype__label" :title="label.text"
+      :style="label.tone ? { '--eqt-rule-prototype-label-tone': label.tone } : undefined" @click="openRule(label.ruleId)"
+    >{{ label.text }}</button>
   </Teleport>
 
   <Teleport to="body">
