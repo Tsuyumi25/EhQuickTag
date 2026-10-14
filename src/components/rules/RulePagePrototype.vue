@@ -262,7 +262,7 @@ onBeforeUnmount(() => {
 
         <template v-if="selected">
           <section class="eqt-rule-page__section">
-            <RuleConditionGroup :key="selected.root.id" :group="selected.root" :depth="0" root />
+            <RuleConditionGroup :key="selected.root.id" :group="selected.root" :depth="0" root :actions="selected.actions" />
           </section>
 
           <RuleDigest :rule="selected" />

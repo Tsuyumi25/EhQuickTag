@@ -374,16 +374,10 @@
   // 空的托盤也要留一列高，素材才有地方放
   min-height: calc(var(--eqt-row-h) + var(--eqt-rule-page-gap) * 1.25);
 
+  > .eqt-rule-page__range,
   > .eqt-rule-page__group,
   > .eqt-rule-page__source {
     margin: var(--eqt-rule-page-item-margin);
-  }
-
-  // OR 底下每個子項是一條支線：一條一行，行尾接動作
-  &--branches {
-    flex-direction: column;
-    flex-wrap: nowrap;
-    align-items: stretch;
   }
 
   // 拖曳中的 ghost 也算項目，滑進來提示字就讓位
@@ -414,18 +408,6 @@
 }
 
 .eqt-rule-page__item--ghost { opacity: 0.4; }
-
-// 標籤與數值條件外面包的一層：拖曳以它為單位，動作箭頭段跟在條件後面
-.eqt-rule-page__leaf {
-  display: inline-flex;
-  align-items: center;
-  min-width: 0;
-
-  > .eqt-rule-page__range,
-  > .eqt-rule-page__segment {
-    margin: var(--eqt-rule-page-item-margin);
-  }
-}
 
 // body 不再負責切換，抓著就是拖
 .eqt-rule-page__chip .eqt-gallery-chip__body {
@@ -878,9 +860,6 @@
   display: inline-flex;
   align-items: center;
   gap: calc(var(--eqt-rule-page-gap) / 2);
-
-  // 沿用上一層的效果：看得出這一支實際會變成什麼，但不是自己設的
-  &--inherited { opacity: 0.45; }
 }
 
 .eqt-rule-page__action-swatch {

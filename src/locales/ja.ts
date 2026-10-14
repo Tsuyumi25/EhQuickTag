@@ -67,7 +67,6 @@ export default {
   'rulePagePrototype.background': '背景',
   'rulePagePrototype.unchanged': '変更しない',
   'rulePagePrototype.noAction': 'アクションなし',
-  'rulePagePrototype.inherited': '継承',
   'rulePagePrototype.backgroundIs': '背景：{color}',
   'rulePagePrototype.showNameShort': '名前を表示',
   'rulePagePrototype.clear': '表紙をぼかさずに表示',

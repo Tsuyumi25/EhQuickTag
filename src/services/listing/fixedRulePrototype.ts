@@ -55,8 +55,6 @@ export interface TagCondition {
   kind: 'tag'
   tag: string
   exclude: boolean
-  /** OR 底下的每一條支線各自的動作；放在 AND 底下時，上一層成立它就一定成立，等於跟上一層一起生效 */
-  actions: FixedActions
 }
 
 export interface RangeCondition {
@@ -66,8 +64,6 @@ export interface RangeCondition {
   value: number
   /** 只有 between 用到，value 是下限、這欄是上限；舊資料沒有這欄，視為欄位上限 */
   max?: number
-  /** 同 TagCondition.actions */
-  actions: FixedActions
 }
 
 export type FixedCondition = TagCondition | RangeCondition
@@ -87,8 +83,6 @@ export interface ConditionGroup {
   /** 套在判定模式外面的 NOT：all + negate = 任一不成立、any + negate = 全部不成立 */
   negate: boolean
   conditions: FixedConditionItem[]
-  /** 根群組的動作是整條規則的預設；子群組的動作在它這一支成立時蓋過上一層 */
-  actions: FixedActions
 }
 
 export type FixedConditionItem = FixedCondition | ConditionGroup
@@ -111,12 +105,15 @@ export const COLOR_PRESETS: readonly { value: string; name: string; labelKey: st
   { value: 'var(--eqt-text-hint)', name: 'muted', labelKey: 'rulePrototype.colorHint' },
 ]
 
+// 一條規則只有一組動作：條件裡不分岔出不同的動作。想要不同的結果就另開一條規則，
+// 誰優先由規則清單的順序決定，跟只有一條規則時是同一套讀法
 export interface FixedRule {
   id: number
   name: string
   enabled: boolean
   /** 規則本身就是一個群組；條件不只一個時才有東西決定它們之間是「且」還是「或」 */
   root: ConditionGroup
+  actions: FixedActions
 }
 
 /** 受測圖庫：tags 不完整時「沒看到」不等於「沒有」，complete 才允許推斷缺席 */
@@ -156,11 +153,11 @@ export function normalizeTag(tag: string): string {
 }
 
 export function createTagCondition(tag = '', exclude = false): TagCondition {
-  return { id: nextEntityId(), kind: 'tag', tag, exclude, actions: createActions() }
+  return { id: nextEntityId(), kind: 'tag', tag, exclude }
 }
 
 export function createRangeCondition(kind: RangeField, op: RangeOp = 'gte', value = RANGE_FIELDS[kind].initial): RangeCondition {
-  return { id: nextEntityId(), kind, op, value, actions: createActions() }
+  return { id: nextEntityId(), kind, op, value }
 }
 
 // 每個欄位都是離散的（半星一格、整數頁），所以 < 正好等於「≤ 往下一格」，
@@ -175,7 +172,7 @@ export function conditionRange(condition: RangeCondition): ValueRange {
   return { min: condition.value, max: condition.value }
 }
 
-/** 背景沒選、模糊維持不變都代表「沒指定」，讓給上一層或下一條規則 */
+/** 背景沒選、模糊維持不變都代表「沒指定」，讓給下一條規則 */
 export function createActions(): FixedActions {
   return { background: null, blur: 'unchanged', showName: false }
 }
@@ -184,17 +181,8 @@ export function hasActions(actions: FixedActions): boolean {
   return actions.background !== null || actions.blur !== 'unchanged' || actions.showName
 }
 
-/** 自己沒指定的效果沿用上一層；顯示名稱是疊加的，任一層有勾就算 */
-export function inheritActions(own: FixedActions, inherited: FixedActions): FixedActions {
-  return {
-    background: own.background ?? inherited.background,
-    blur: own.blur === 'unchanged' ? inherited.blur : own.blur,
-    showName: own.showName || inherited.showName,
-  }
-}
-
 export function createGroup(mode: GroupMode = 'all', conditions: FixedConditionItem[] = [], negate = false): ConditionGroup {
-  return { id: nextEntityId(), kind: 'group', mode, negate, conditions, actions: createActions() }
+  return { id: nextEntityId(), kind: 'group', mode, negate, conditions }
 }
 
 /** 同一個標籤的含有與不含是兩件不同的素材，去重要連同極性一起比 */
@@ -214,6 +202,7 @@ export function createRule(index: number): FixedRule {
     name: t('rulePagePrototype.newRule', { n: index }),
     enabled: true,
     root: createGroup('all'),
+    actions: createActions(),
   }
 }
 
@@ -288,47 +277,15 @@ export function evaluateRule(rule: FixedRule, probe: GalleryProbe): Tri {
   return isRuleComplete(rule) ? evaluateItem(rule.root, probe) : null
 }
 
-/** 一條規則對一本圖庫的最後結果；blur 保留「維持不變」，跨規則合併時才知道要不要讓給下一條 */
-export interface RuleOutcome {
-  background: string | null
-  blur: BlurAction
-  showName: boolean
-}
-
-// 一個群組的動作要生效，從根一路到它的每一層都得成立；判定未知也算不成立。
-// 收集的順序就是優先順序：子項排在上一層前面，先出現的支線排在後出現的前面
-function firedActions(group: ConditionGroup, probe: GalleryProbe, out: FixedActions[]): void {
-  for (const child of group.conditions) {
-    if (child.kind === 'group') {
-      if (evaluateItem(child, probe) === true) firedActions(child, probe, out)
-    } else if (evaluateCondition(child, probe) === true) {
-      out.push(child.actions)
-    }
-  }
-  out.push(group.actions)
-}
-
-/**
- * 子群組蓋過上一層；不同分支同時成立時，越上面越優先。
- * 合併用的是規則頁顯示「沿用」的同一個 inheritActions，畫面上看到的沿用結果跟實際套用的不會分家。
- * 規則沒命中（含未知）是 null；停用與否由呼叫端決定，編輯中的停用規則也要能預覽
- */
-export function resolveRuleOutcome(rule: FixedRule, probe: GalleryProbe): RuleOutcome | null {
-  if (evaluateRule(rule, probe) !== true) return null
-  const fired: FixedActions[] = []
-  firedActions(rule.root, probe, fired)
-  return fired.reduce((merged, actions) => inheritActions(merged, actions), createActions())
-}
-
 export interface RuleEffects {
   background: string | null
   blur: boolean
-  /** 底色沿用該規則最後的背景色，沒有背景時是 null；ruleId 讓點標示時能打開那一條 */
+  /** 底色沿用該規則自己的背景色，沒選背景時是 null；ruleId 讓點標示時能打開那一條 */
   labels: { ruleId: number; text: string; tone: string | null }[]
 }
 
 /**
- * 每條規則先算出自己的結果，背景與模糊再各自找：清單裡位置最高、命中且有指定該效果的規則說了算。
+ * 背景與模糊各自找：清單裡位置最高、命中且有指定該效果的規則說了算。
  * 「維持不變」與沒選背景都不算指定，讓給下面的規則。
  * 標示不互相搶：每條命中的規則各貼一個，照清單順序排
  */
@@ -337,12 +294,11 @@ export function resolveRuleEffects(rules: readonly FixedRule[], probe: GalleryPr
   let blur: BlurAction = 'unchanged'
   const labels: RuleEffects['labels'] = []
   for (const rule of rules) {
-    const outcome = rule.enabled ? resolveRuleOutcome(rule, probe) : null
-    if (!outcome) continue
-    background ??= outcome.background
-    if (blur === 'unchanged') blur = outcome.blur
-    const text = outcome.showName ? rule.name.trim() : ''
-    if (text) labels.push({ ruleId: rule.id, text, tone: outcome.background })
+    if (!rule.enabled || evaluateRule(rule, probe) !== true) continue
+    background ??= rule.actions.background
+    if (blur === 'unchanged') blur = rule.actions.blur
+    const text = rule.actions.showName ? rule.name.trim() : ''
+    if (text) labels.push({ ruleId: rule.id, text, tone: rule.actions.background })
   }
   return { background, blur: blur === 'blur', labels }
 }

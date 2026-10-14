@@ -67,7 +67,6 @@ export default {
   'rulePagePrototype.background': '背景',
   'rulePagePrototype.unchanged': '保持不变',
   'rulePagePrototype.noAction': '无动作',
-  'rulePagePrototype.inherited': '沿用',
   'rulePagePrototype.backgroundIs': '{color}背景',
   'rulePagePrototype.showNameShort': '显示名称',
   'rulePagePrototype.clear': '保持封面清晰',

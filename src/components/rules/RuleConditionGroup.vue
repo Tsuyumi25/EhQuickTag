@@ -1,22 +1,17 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import { X } from '@lucide/vue'
 import RuleActionSegment from './RuleActionSegment.vue'
 import RuleConditionList from './RuleConditionList.vue'
 import { t } from '@/composables/useI18n'
-import {
-  createActions, GROUP_MODE_OPERATORS, GROUP_MODES, inheritActions, type ConditionGroup, type FixedActions,
-} from '@/services/listing/fixedRulePrototype'
+import { GROUP_MODE_OPERATORS, GROUP_MODES, type ConditionGroup, type FixedActions } from '@/services/listing/fixedRulePrototype'
 
-// root：規則本身的那個群組，不能刪也不能拖，標題用 section 的字級；它的動作就是整條規則的預設。
-// depth 是這個群組裡那份清單在根底下第幾層（根的清單是 0），拖曳時用來擋超過上限的巢狀。
-// inherited 是上一層一路疊下來的動作，根群組上面沒有東西
+// root：規則本身的那個群組，不能刪也不能拖，標題用 section 的字級；整條規則的動作接在它的標題列後面。
+// depth 是這個群組裡那份清單在根底下第幾層（根的清單是 0），拖曳時用來擋超過上限的巢狀
 const props = withDefaults(
-  defineProps<{ group: ConditionGroup; depth: number; root?: boolean; inherited?: FixedActions }>(),
-  { root: false, inherited: createActions },
+  defineProps<{ group: ConditionGroup; depth: number; root?: boolean; actions?: FixedActions }>(),
+  { root: false, actions: undefined },
 )
 const emit = defineEmits<{ remove: [] }>()
-const passed = computed(() => inheritActions(props.group.actions, props.inherited))
 
 // 跟 AND / OR 一樣是運算子，不翻譯
 const NEGATE_LABELS = ['IS', 'IS NOT'] as const
@@ -52,7 +47,7 @@ function toggleMode(): void {
           :class="{ 'eqt-rule-page__segment-spare': group.mode !== mode }"
         >{{ GROUP_MODE_OPERATORS[mode] }}</span>
       </button>
-      <RuleActionSegment :actions="group.actions" :inherited="inherited" />
+      <RuleActionSegment v-if="actions" :actions="actions" />
       <button
         v-if="!root" type="button" class="eqt-rule-page__chip-remove"
         :aria-label="t('rulePagePrototype.removeGroup')" :title="t('rulePagePrototype.removeGroup')"
@@ -60,7 +55,7 @@ function toggleMode(): void {
       ><X /></button>
     </div>
     <RuleConditionList
-      :conditions="group.conditions" :depth="depth" :branching="group.mode === 'any'" :inherited="passed"
+      :conditions="group.conditions" :depth="depth"
       :empty-hint="t(root ? 'rulePagePrototype.dropHere' : 'rulePagePrototype.emptyGroup')"
     />
   </div>

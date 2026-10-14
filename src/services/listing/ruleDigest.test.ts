@@ -4,7 +4,7 @@ import {
   createGroup, createRangeCondition, createTagCondition, evaluateRule,
   type GalleryProbe, type RangeField, type ValueRange,
 } from '@/services/listing/fixedRulePrototype'
-import { caseOutcome, digestCases, digestRule, formatRange, ruleExpression, type DigestTerm, type RuleDigest } from './ruleDigest'
+import { digestCases, digestRule, formatRange, ruleExpression, type DigestTerm, type RuleDigest } from './ruleDigest'
 import { probeArb, rule, ruleArb } from './test-helpers'
 
 const inRange = (range: ValueRange, value: number) => range.min <= value && value <= range.max
@@ -88,15 +88,6 @@ describe('digestCases', () => {
     expect(total).toBe(8)
     expect(cases).toHaveLength(5)
   })
-
-  it('每一列的結果照那一列成立的分支算：分支有動作就用分支的，沒有就回到預設', () => {
-    const branch = createGroup('all', [createTagCondition('female:b')])
-    branch.actions.background = 'green'
-    const fixedRule = rule('all', [createTagCondition('female:a'), createGroup('any', [branch, createTagCondition('male:c')])])
-    fixedRule.root.actions.background = 'red'
-    const { cases } = digestCases(digestRule(fixedRule))
-    expect(cases.map(item => caseOutcome(fixedRule, item)?.background)).toEqual(['green', 'red'])
-  })
 })
 
 describe('ruleExpression', () => {
@@ -128,25 +119,10 @@ describe('ruleExpression', () => {
     expect(ruleExpression(rule('all', []))).toBe('(EMPTY)')
   })
 
-  it('動作緊接在群組括號後面，根群組的動作另起一行；沒指定動作的群組照舊', () => {
-    const branch = createGroup('all', [createTagCondition('female:b')])
-    Object.assign(branch.actions, { background: 'var(--eqt-status-include)', showName: true })
-    const fixedRule = rule('all', [createTagCondition('female:a'), createGroup('any', [branch, createTagCondition('male:c')])])
-    Object.assign(fixedRule.root.actions, { background: 'var(--eqt-status-exclude)', blur: 'blur' })
-    expect(ruleExpression(fixedRule)).toBe([
-      'female:a',
-      'AND ((female:b){background: green, show-name} OR male:c)',
-      '=> {background: red, blur}',
-    ].join('\n'))
-  })
-
-  it('條件帶動作時包一層括號再接動作', () => {
-    const b = createTagCondition('female:b')
-    b.actions.background = 'var(--eqt-status-include)'
-    const stars = createRangeCondition('rating', 'gte', 4)
-    stars.actions.blur = 'blur'
-    expect(ruleExpression(rule('any', [b, createTagCondition('male:c'), stars])))
-      .toBe('(female:b){background: green}\nOR male:c\nOR (stars >= 4){blur}')
+  it('規則的動作另起一行，以 => 開頭；沒指定動作時不寫', () => {
+    const fixedRule = rule('all', [createTagCondition('female:a')])
+    Object.assign(fixedRule.actions, { background: 'var(--eqt-status-exclude)', blur: 'blur', showName: true })
+    expect(ruleExpression(fixedRule)).toBe('female:a\n=> {background: red, blur, show-name}')
   })
 })
 

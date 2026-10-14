@@ -7,7 +7,7 @@ import { t } from '@/composables/useI18n'
 import { rulesCollapsed } from '@/services/appOverlays'
 import type { FixedActions } from '@/services/listing/fixedRulePrototype'
 
-defineProps<{ actions: FixedActions; inherited?: FixedActions }>()
+defineProps<{ actions: FixedActions }>()
 
 const open = ref(false)
 const trigger = ref<HTMLButtonElement | null>(null)
@@ -22,7 +22,7 @@ watch(rulesCollapsed, () => { open.value = false })
     :title="t('rulePrototype.actions')" aria-haspopup="dialog" :aria-expanded="open"
     @click="open = !open"
   >
-    <RuleActionSummary v-bind="actions" :inherited="inherited" />
+    <RuleActionSummary v-bind="actions" />
   </button>
   <ContextMenu
     v-model:open="open" :anchor-el="trigger" :ignore="[trigger]"

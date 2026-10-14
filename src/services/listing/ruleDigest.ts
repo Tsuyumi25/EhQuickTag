@@ -2,10 +2,8 @@
 // 攤平巢狀群組、合併數值區間，逐層看時看不到的衝突與多餘條件才算得出來。
 
 import {
-  averageOfStars, COLOR_PRESETS, conditionRange, evaluateRule, GROUP_MODE_OPERATORS, normalizeTag, RANGE_FIELDS, resolveRuleOutcome,
-  type FixedActions, type FixedCondition, type FixedConditionItem, type FixedRule, type GalleryProbe, type RangeCondition, type RangeField,
-  type RuleOutcome,
-  type ValueRange,
+  averageOfStars, COLOR_PRESETS, conditionRange, GROUP_MODE_OPERATORS, normalizeTag, RANGE_FIELDS,
+  type FixedActions, type FixedConditionItem, type FixedRule, type RangeCondition, type RangeField, type ValueRange,
 } from '@/services/listing/fixedRulePrototype'
 
 export type DigestMode = 'sentence' | 'rows' | 'cases' | 'raw'
@@ -261,72 +259,6 @@ export function digestCases(digest: RuleDigest, limit = CASE_LIMIT): { cases: Di
   return { cases, total }
 }
 
-function termHolds(term: DigestTerm, probe: GalleryProbe): boolean {
-  if (term.kind === 'tag') return probe.tags.has(term.tag) !== term.exclude
-  if (term.kind === 'range') {
-    const value = probe[term.field]
-    return value !== null && (term.range.min <= value && value <= term.range.max) !== term.exclude
-  }
-  return term.kind === 'all' ? term.terms.every(child => termHolds(child, probe)) : term.terms.some(child => termHolds(child, probe))
-}
-
-/** 數值只需要試規則裡出現過的邊界與邊界外一格；星等是半星一格，全部試一遍也只有 11 個 */
-function candidateValues(rule: FixedRule, field: RangeField): number[] {
-  const { min, max, step } = RANGE_FIELDS[field]
-  if (Number.isFinite(max)) return Array.from({ length: Math.round((max - min) / step) + 1 }, (_, index) => min + index * step)
-  const values = new Set([min])
-  const visit = (item: FixedConditionItem) => {
-    if (item.kind === 'group') item.conditions.forEach(visit)
-    else if (item.kind === field) {
-      for (const edge of [item.value, item.max ?? item.value]) for (const value of [edge - step, edge, edge + step]) if (value >= min) values.add(value)
-    }
-  }
-  visit(rule.root)
-  return [...values].sort((a, b) => a - b)
-}
-
-// 「至少一個」裡的標籤各自可有可無，最多試這麼多個的所有組合；再多就只試全部不帶
-const OPTIONAL_TAG_LIMIT = 6
-
-/**
- * 情境的一列只寫出「至少要有」的條件。拿這一列湊出最小的圖庫（列出的標籤，加上「至少一個」裡最少需要的幾個），
- * 實際跑一次判定與動作，結果就跟列表上同樣的圖庫一模一樣；湊不出來或不可能的列不給結果
- */
-export function caseOutcome(rule: FixedRule, item: DigestCase): RuleOutcome | null {
-  if (item.impossible) return null
-  const required = new Set<string>()
-  const optional = new Set<string>()
-  const collect = (term: DigestTerm, inAny: boolean) => {
-    if (term.kind === 'tag') {
-      if (!term.exclude) (inAny ? optional : required).add(term.tag)
-    } else if (term.kind !== 'range') {
-      term.terms.forEach(child => collect(child, inAny || term.kind === 'any'))
-    }
-  }
-  item.terms.forEach(term => collect(term, false))
-  const extras = [...optional].filter(tag => !required.has(tag))
-  const subsets = extras.length > OPTIONAL_TAG_LIMIT ? [0] : Array.from({ length: 1 << extras.length }, (_, mask) => mask)
-    .sort((a, b) => bitCount(a) - bitCount(b))
-  const ratings = candidateValues(rule, 'rating')
-  const pages = candidateValues(rule, 'pages')
-  for (const mask of subsets) {
-    const tags = new Set([...required, ...extras.filter((_, index) => mask & (1 << index))])
-    for (const rating of ratings) {
-      for (const pageCount of pages) {
-        const probe: GalleryProbe = { tags, complete: true, rating, pages: pageCount }
-        if (item.terms.every(term => termHolds(term, probe)) && evaluateRule(rule, probe) === true) return resolveRuleOutcome(rule, probe)
-      }
-    }
-  }
-  return null
-}
-
-function bitCount(mask: number): number {
-  let count = 0
-  for (let rest = mask; rest; rest &= rest - 1) count += 1
-  return count
-}
-
 export type RangeShape =
   | { op: 'empty' }
   | { op: 'eq' | 'gte' | 'lte'; value: number }
@@ -364,8 +296,7 @@ export function formatAverage(stars: ValueRange): string {
 }
 
 // 原始算式照規則原本的結構寫，不做任何合併或換算，用的是純 ASCII 的 AND / OR / NOT 與 < <=：
-// 要的是能整段貼給別人或 AI 判讀，不需要再看畫面。
-// 動作用 { } 緊接在群組的括號後面，不會跟 AND / OR 搶優先順序；根群組的動作另起一行，以 => 開頭
+// 要的是能整段貼給別人或 AI 判讀，不需要再看畫面。動作另起一行，以 => 開頭
 const RAW_FIELD: Record<RangeField, string> = { rating: 'stars', pages: 'pages' }
 const RAW_OP: Record<Exclude<RangeCondition['op'], 'between'>, string> = { eq: '=', lt: '<', lte: '<=', gt: '>', gte: '>=' }
 
@@ -376,7 +307,7 @@ function rawTag(tag: string): string {
 }
 
 /** 沒指定任何動作時是空字串 */
-export function rawActions(actions: FixedActions): string {
+function rawActions(actions: FixedActions): string {
   const parts: string[] = []
   if (actions.background) parts.push(`background: ${COLOR_PRESETS.find(preset => preset.value === actions.background)?.name ?? actions.background}`)
   if (actions.blur === 'blur') parts.push('blur')
@@ -385,33 +316,27 @@ export function rawActions(actions: FixedActions): string {
   return parts.length ? `{${parts.join(', ')}}` : ''
 }
 
-function rawCondition(item: FixedCondition): string {
+function rawItem(item: FixedConditionItem): string {
   if (item.kind === 'tag') {
     const tag = normalizeTag(item.tag)
     if (!tag) return '(EMPTY)'
     return item.exclude ? `NOT ${rawTag(tag)}` : rawTag(tag)
   }
-  const field = RAW_FIELD[item.kind]
-  if (item.op === 'between') return `${item.value} <= ${field} <= ${item.max ?? RANGE_FIELDS[item.kind].max}`
-  return `${field} ${RAW_OP[item.op]} ${item.value}`
-}
-
-function rawItem(item: FixedConditionItem): string {
   if (item.kind !== 'group') {
-    const actions = rawActions(item.actions)
-    // 條件帶動作時也包一層括號，{ } 才看得出是接在整個條件後面，不是只接在最後一個字上
-    return actions ? `(${rawCondition(item)})${actions}` : rawCondition(item)
+    const field = RAW_FIELD[item.kind]
+    if (item.op === 'between') return `${item.value} <= ${field} <= ${item.max ?? RANGE_FIELDS[item.kind].max}`
+    return `${field} ${RAW_OP[item.op]} ${item.value}`
   }
-  if (!item.conditions.length) return `(EMPTY)${rawActions(item.actions)}`
+  if (!item.conditions.length) return '(EMPTY)'
   const body = item.conditions.map(rawItem).join(` ${GROUP_MODE_OPERATORS[item.mode]} `)
-  return `${item.negate ? 'NOT ' : ''}(${body})${rawActions(item.actions)}`
+  return item.negate ? `NOT (${body})` : `(${body})`
 }
 
 // 根群組照判定模式一行一個條件，AND / OR 接在行首；
 // 有 NOT 時整段包在 NOT ( ) 裡，NOT 的範圍不能靠讀的人去猜
 export function ruleExpression(rule: FixedRule): string {
   const lines = rule.root.conditions.map(rawItem)
-  const actions = rawActions(rule.root.actions)
+  const actions = rawActions(rule.actions)
   const tail = actions ? `\n=> ${actions}` : ''
   if (!lines.length) return `(EMPTY)${tail}`
   const joiner = GROUP_MODE_OPERATORS[rule.root.mode]

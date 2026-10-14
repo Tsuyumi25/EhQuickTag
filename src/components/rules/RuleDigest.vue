@@ -9,7 +9,7 @@ import { t } from '@/composables/useI18n'
 import { ruleDigestMode } from '@/services/appOverlays'
 import type { FixedRule } from '@/services/listing/fixedRulePrototype'
 import {
-  caseOutcome, digestCases, digestRule, NEVER_NOTES, rangeTerms, ruleExpression, type DigestMode, type DigestNote, type DigestTerm,
+  digestCases, digestRule, NEVER_NOTES, rangeTerms, ruleExpression, type DigestMode, type DigestNote, type DigestTerm,
 } from '@/services/listing/ruleDigest'
 
 const props = defineProps<{ rule: FixedRule }>()
@@ -21,7 +21,6 @@ const digest = computed(() => digestRule(props.rule))
 const mustTerms = computed((): DigestTerm[] => digest.value.tags.map(tag => ({ kind: 'tag', tag, exclude: false })))
 const mustRanges = computed(() => rangeTerms(digest.value.ranges))
 const cases = computed(() => (ruleDigestMode.value === 'cases' ? digestCases(digest.value) : null))
-const caseOutcomes = computed(() => cases.value?.cases.map(item => caseOutcome(props.rule, item)) ?? [])
 const hasMust = computed(() => digest.value.tags.length > 0 || mustRanges.value.length > 0)
 
 function noteTerms(note: DigestNote): DigestTerm[] {
@@ -106,16 +105,18 @@ function noteParams(note: DigestNote): Record<string, string> | undefined {
       </dl>
 
       <template v-else-if="cases">
-        <p class="eqt-rule-page__digest-caption">{{ t('rulePagePrototype.digest.cases', { n: cases.total }) }}</p>
+        <p class="eqt-rule-page__digest-caption">
+          {{ t('rulePagePrototype.digest.cases', { n: cases.total }) }}
+          <span class="eqt-rule-page__digest-outcome">
+            <span aria-hidden="true">→</span><RuleActionSummary v-bind="rule.actions" verbose />
+          </span>
+        </p>
         <ol class="eqt-rule-page__digest-cases">
           <li
             v-for="(item, index) in cases.cases" :key="index"
             :class="{ 'eqt-rule-page__digest-case--impossible': item.impossible }"
           >
             <RuleDigestTerm v-for="(term, termIndex) in item.terms" :key="termIndex" :term="term" />
-            <span v-if="caseOutcomes[index]" class="eqt-rule-page__digest-outcome">
-              <span aria-hidden="true">→</span><RuleActionSummary v-bind="caseOutcomes[index]!" verbose />
-            </span>
             <small v-if="item.impossible">{{ t('rulePagePrototype.digest.impossible') }}</small>
           </li>
         </ol>

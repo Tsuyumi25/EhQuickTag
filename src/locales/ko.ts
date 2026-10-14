@@ -67,7 +67,6 @@ export default {
   'rulePagePrototype.background': '배경',
   'rulePagePrototype.unchanged': '변경하지 않음',
   'rulePagePrototype.noAction': '동작 없음',
-  'rulePagePrototype.inherited': '상속',
   'rulePagePrototype.backgroundIs': '배경 {color}',
   'rulePagePrototype.showNameShort': '이름 표시',
   'rulePagePrototype.clear': '표지를 선명하게 유지',
