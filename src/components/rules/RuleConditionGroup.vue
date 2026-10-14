@@ -25,22 +25,22 @@ function toggleMode(): void {
     <div class="eqt-rule-page__group-head">
       <!-- 兩種字都疊在同一格，按鈕寬度固定成較寬的那個，切換時後面的字不會跳動 -->
       <button
-        type="button" class="eqt-rule-page__toggle"
-        :class="{ 'eqt-rule-page__toggle--on': group.negate }"
+        type="button" class="eqt-rule-page__segment"
+        :class="{ 'eqt-rule-page__segment--on': group.negate }"
         :title="t('rulePagePrototype.negateHint')" @click="group.negate = !group.negate"
       >
         <span
           v-for="(label, index) in NEGATE_LABELS" :key="label"
-          :class="{ 'eqt-rule-page__toggle-spare': group.negate !== (index === 1) }"
+          :class="{ 'eqt-rule-page__segment-spare': group.negate !== (index === 1) }"
         >{{ label }}</span>
       </button>
       <button
-        type="button" class="eqt-rule-page__toggle eqt-rule-page__toggle--mode"
+        type="button" class="eqt-rule-page__segment eqt-rule-page__segment--mode"
         :title="t('rulePagePrototype.groupMode')" @click="toggleMode"
       >
         <span
           v-for="mode in GROUP_MODES" :key="mode"
-          :class="{ 'eqt-rule-page__toggle-spare': group.mode !== mode }"
+          :class="{ 'eqt-rule-page__segment-spare': group.mode !== mode }"
         >{{ GROUP_MODE_OPERATORS[mode] }}</span>
       </button>
       <button

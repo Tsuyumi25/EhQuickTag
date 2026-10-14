@@ -752,7 +752,7 @@
   // 形狀畫在 ::before，按鈕本身不裁切：clip-path 會連 outline 一起裁掉，filter 又排在 clip-path 之前套用，
   // 掛在同一個元素上的 drop-shadow 一樣會被裁。焦點框改由 ::after 畫在箭頭與缺口之間的長方形本體上。
   // 按鈕的長方形會蓋到前一段的箭頭，所以點擊交給照形狀裁過的 ::before 判定，按鈕本身不接
-  > .eqt-rule-page__toggle {
+  > .eqt-rule-page__segment {
     --eqt-rule-page-seg: var(--eqt-border);
     --eqt-rule-page-notch: 0px;
 
@@ -808,15 +808,15 @@
   }
 
   // 往回疊進前一段的箭頭，只留一條細縫分開兩段
-  > .eqt-rule-page__toggle + .eqt-rule-page__toggle {
+  > .eqt-rule-page__segment + .eqt-rule-page__segment {
     --eqt-rule-page-notch: var(--eqt-rule-page-arrow);
 
     margin-inline-start: calc(var(--eqt-border-width-thin) - var(--eqt-rule-page-arrow) - var(--eqt-rule-page-gap) / 2);
     padding-inline-start: calc(var(--eqt-rule-page-arrow) + var(--eqt-rule-page-gap) / 2);
   }
 
-  > .eqt-rule-page__toggle--on { --eqt-rule-page-seg: var(--eqt-status-exclude); }
-  > .eqt-rule-page__toggle--mode { --eqt-rule-page-seg: var(--eqt-rule-page-tone); }
+  > .eqt-rule-page__segment--on { --eqt-rule-page-seg: var(--eqt-status-exclude); }
+  > .eqt-rule-page__segment--mode { --eqt-rule-page-seg: var(--eqt-rule-page-tone); }
 
   // chip 裡的移除鈕會承接外框色畫分隔線；標題列沒有外框，不能承接
   > .eqt-rule-page__chip-remove {
@@ -827,7 +827,7 @@
 }
 
 // 佔位用：撐開寬度但看不見，也不進無障礙名稱
-.eqt-rule-page__toggle-spare {
+.eqt-rule-page__segment-spare {
   visibility: hidden;
 }
 
