@@ -59,16 +59,29 @@ describe('decodeRules', () => {
   })
 
   it('目前的格式原樣讀回來', () => {
-    const root: ConditionGroup = { id: 2, kind: 'group', mode: 'any', conditions: [tag(3, 'female:a') as FixedConditionItem] }
+    const root: ConditionGroup = { id: 2, kind: 'group', mode: 'any', negate: true, conditions: [tag(3, 'female:a') as FixedConditionItem] }
     const stored = { id: 1, name: 'r', enabled: false, root, actions }
     expect(decodeRules(JSON.stringify({ schema: RULE_SCHEMA, rules: [stored] }))).toEqual([stored])
   })
 
+  it('schema 5 的全部不成立換成 NOT 任一成立，判定不變', () => {
+    const none = { id: 3, kind: 'group', mode: 'none', conditions: [tag(4, 'female:a'), tag(5, 'female:b')] }
+    const [rule] = decodeRules(JSON.stringify({
+      schema: 5,
+      rules: [{ id: 1, name: 'r', enabled: true, actions, root: { id: 2, kind: 'group', mode: 'all', conditions: [none] } }],
+    }))
+    expect(rule.root).toMatchObject({ mode: 'all', negate: false, conditions: [{ mode: 'any', negate: true }] })
+    expect(evaluateRule(rule, probe(['male:c']))).toBe(true)
+    expect(evaluateRule(rule, probe(['female:b']))).toBe(false)
+  })
+
   it('格式不對就丟錯，不會讀成空清單', () => {
-    const deep = (depth: number): unknown => (depth ? { id: 100 + depth, kind: 'group', mode: 'all', conditions: [deep(depth - 1)] } : tag(1, 'female:a'))
+    const deep = (depth: number): unknown => (depth ? { id: 100 + depth, kind: 'group', mode: 'all', negate: false, conditions: [deep(depth - 1)] } : tag(1, 'female:a'))
     expect(() => decodeRules(JSON.stringify({ schema: RULE_SCHEMA, rules: [{ id: 1, name: 'r', enabled: true, actions, root: deep(5) }] }))).toThrow()
     expect(() => decodeRules(JSON.stringify({ schema: 99, rules: [] }))).toThrow()
     expect(() => decodeRules(JSON.stringify({ schema: RULE_SCHEMA, rules: [{ id: 1, name: 'r', enabled: true, actions }] }))).toThrow()
+    const withoutNegate = { id: 2, kind: 'group', mode: 'all', conditions: [tag(3, 'female:a')] }
+    expect(() => decodeRules(JSON.stringify({ schema: RULE_SCHEMA, rules: [{ id: 1, name: 'r', enabled: true, actions, root: withoutNegate }] }))).toThrow()
   })
 })
 

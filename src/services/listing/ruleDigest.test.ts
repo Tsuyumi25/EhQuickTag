@@ -35,15 +35,15 @@ describe('digestRule', () => {
     expect(digest.never).toBe(true)
   })
 
-  it('「全部不成立」裡的「不含」其實是一定要含有', () => {
-    const digest = digestRule(rule('all', [createGroup('none', [createTagCondition('female:a', true)])]))
+  it('「NOT 任一成立」裡的「不含」其實是一定要含有', () => {
+    const digest = digestRule(rule('all', [createGroup('any', [createTagCondition('female:a', true)], true)]))
     expect(digest.tags).toEqual(['female:a'])
     expect(digest.unless).toEqual([])
   })
 
-  it('「全部成立」包在「全部不成立」裡，讀成「同時含有就不算」', () => {
+  it('「全部成立」包在「NOT 任一成立」裡，讀成「同時含有就不算」', () => {
     const digest = digestRule(rule('all', [
-      createGroup('none', [createGroup('all', [createTagCondition('female:a'), createTagCondition('female:b')])]),
+      createGroup('any', [createGroup('all', [createTagCondition('female:a'), createTagCondition('female:b')])], true),
     ]))
     expect(digest.unless).toEqual([{
       kind: 'all',
@@ -52,7 +52,7 @@ describe('digestRule', () => {
   })
 
   it('同一個標籤既一定要有又不能有時永遠不會命中', () => {
-    const digest = digestRule(rule('all', [createTagCondition('female:a'), createGroup('none', [createTagCondition('female:a')])]))
+    const digest = digestRule(rule('all', [createTagCondition('female:a'), createGroup('any', [createTagCondition('female:a')], true)]))
     expect(digest.notes).toContainEqual({ kind: 'conflict', tags: ['female:a'] })
     expect(digest.never).toBe(true)
   })
@@ -75,7 +75,7 @@ describe('digestCases', () => {
     const digest = digestRule(rule('all', [
       createTagCondition('female:a'),
       createGroup('any', [createTagCondition('female:b'), createTagCondition('male:c')]),
-      createGroup('none', [createTagCondition('male:c')]),
+      createGroup('any', [createTagCondition('male:c')], true),
     ]))
     const { cases, total } = digestCases(digest)
     expect(total).toBe(2)
@@ -91,12 +91,12 @@ describe('digestCases', () => {
 })
 
 describe('ruleExpression', () => {
-  it('根群組一行一個條件，子群組照原本的結構寫，全部不成立包在 NOT ( ) 裡', () => {
+  it('根群組一行一個條件，子群組照原本的結構寫，NOT 包在 NOT ( ) 裡', () => {
     const expression = ruleExpression(rule('all', [
       createTagCondition('female:a'),
       createGroup('any', [createTagCondition('female:b'), createRangeCondition('rating', 'lt', 4)]),
       createGroup('any', [createTagCondition('male:c'), { ...createRangeCondition('pages', 'between', 20), max: 80 }]),
-      createGroup('none', [createTagCondition('other:d', true)]),
+      createGroup('any', [createTagCondition('other:d', true)], true),
     ]))
     expect(expression).toBe([
       'female:a',
@@ -106,10 +106,11 @@ describe('ruleExpression', () => {
     ].join('\n'))
   })
 
-  it('根群組的判定模式決定行首的運算子', () => {
+  it('根群組的判定模式決定行首的運算子，NOT 時整段包起來', () => {
     const tags = () => [createTagCondition('female:a'), createTagCondition('female:b')]
     expect(ruleExpression(rule('any', tags()))).toBe('female:a\nOR female:b')
-    expect(ruleExpression(rule('none', tags()))).toBe('NOT (\n  female:a\n  OR female:b\n)')
+    expect(ruleExpression(rule('any', tags(), true))).toBe('NOT (\n  female:a\n  OR female:b\n)')
+    expect(ruleExpression(rule('all', tags(), true))).toBe('NOT (\n  female:a\n  AND female:b\n)')
   })
 
   it('名稱有空白的標籤加引號，空群組與空規則都標成 EMPTY', () => {

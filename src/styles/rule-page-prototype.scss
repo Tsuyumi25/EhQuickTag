@@ -631,11 +631,9 @@
   // 群組的產生器帶著它的色條，拖出去之前就看得出是哪一種
   &--all { --eqt-rule-page-tone: var(--eqt-status-include); }
   &--any { --eqt-rule-page-tone: var(--eqt-status-or); }
-  &--none { --eqt-rule-page-tone: var(--eqt-status-exclude); }
 
   &--all,
-  &--any,
-  &--none {
+  &--any {
     border-inline-start: var(--eqt-rule-page-tone-width) solid var(--eqt-rule-page-tone);
   }
 }
@@ -695,7 +693,7 @@
 }
 
 // 群組沿用原本三區的樣子：標題列（判定模式的圖示與下拉）加上左側色條的托盤。
-// 色條借用搜尋狀態的顏色：全部成立 = include、任一成立 = OR、全部不成立 = exclude。
+// 色條借用搜尋狀態的顏色：全部成立 = include、任一成立 = OR；NOT 在外側再貼一條 exclude。
 // 群組一律獨佔一整行，像程式碼的縮排：每往下一層，就多疊一條色條、往右縮一格，
 // 看左邊有幾條色條就知道是第幾層；跟 chip 排在同一行時層級看不出來
 .eqt-rule-page__group {
@@ -706,11 +704,17 @@
 
   &--all { --eqt-rule-page-tone: var(--eqt-status-include); }
   &--any { --eqt-rule-page-tone: var(--eqt-status-or); }
-  &--none { --eqt-rule-page-tone: var(--eqt-status-exclude); }
 
   > .eqt-rule-page__tray {
     padding-inline-start: calc(var(--eqt-rule-page-gap) * 3);
     border-inline-start: var(--eqt-rule-page-tone-width) solid var(--eqt-rule-page-tone);
+  }
+
+  // 兩條緊貼、中間不留縫，數色條時仍算一層；inset 陰影吃掉的寬度要補回 padding，內容才不會往左擠
+  &--negate > .eqt-rule-page__tray {
+    padding-inline-start: calc(var(--eqt-rule-page-gap) * 3 + var(--eqt-rule-page-tone-width));
+    border-inline-start-color: var(--eqt-status-exclude);
+    box-shadow: inset var(--eqt-rule-page-tone-width) 0 0 var(--eqt-rule-page-tone);
   }
 
   // 根群組就是整個條件區，標題用 section 標題的字級
@@ -742,6 +746,34 @@
   gap: calc(var(--eqt-rule-page-gap) / 2);
 
   > .eqt-rule-page__icon { color: var(--eqt-text-hint); }
+
+  > .eqt-rule-page__negate {
+    height: var(--eqt-rule-page-inline-h);
+    padding: 0 calc(var(--eqt-rule-page-gap) / 2);
+    border: none;
+    border-radius: var(--eqt-radius-sm);
+    background: transparent;
+    color: var(--eqt-text-hint);
+    font: inherit;
+    font-weight: bold;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: var(--eqt-transition-base);
+
+    &:hover,
+    &:focus-visible {
+      outline: none;
+      background: var(--eqt-bg-hover);
+      opacity: 1;
+    }
+
+    // 深色主題的底色跟 exclude 紅幾乎同亮度，紅字會看不見；改成紅底白字
+    &[aria-pressed='true'] {
+      background: var(--eqt-status-exclude);
+      color: var(--eqt-text-on-color);
+      opacity: 1;
+    }
+  }
 
   // chip 裡的移除鈕會承接外框色畫分隔線；標題列沒有外框，不能承接
   > .eqt-rule-page__chip-remove {

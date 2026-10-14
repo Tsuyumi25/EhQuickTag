@@ -9,8 +9,8 @@ import {
 
 const TAGS = ['female:a', 'female:b', 'male:c', 'other:d']
 
-export function rule(mode: GroupMode, conditions: FixedConditionItem[]): FixedRule {
-  return { ...createRule(1), root: createGroup(mode, conditions) }
+export function rule(mode: GroupMode, conditions: FixedConditionItem[], negate = false): FixedRule {
+  return { ...createRule(1), root: createGroup(mode, conditions, negate) }
 }
 
 const ratingArb = fc.integer({ min: 0, max: 10 }).map(n => n / 2)
@@ -31,11 +31,13 @@ const leafArb = fc.oneof(
 )
 const modeArb = fc.constantFrom<GroupMode>(...GROUP_MODES)
 const groupArb = (inner: fc.Arbitrary<FixedConditionItem>) =>
-  fc.tuple(modeArb, fc.array(inner, { minLength: 1, maxLength: 3 })).map(([mode, conditions]) => createGroup(mode, conditions))
+  fc.tuple(modeArb, fc.array(inner, { minLength: 1, maxLength: 3 }), fc.boolean())
+    .map(([mode, conditions, negate]) => createGroup(mode, conditions, negate))
 export const itemArb: fc.Arbitrary<FixedConditionItem> = fc.oneof(
   { weight: 3, arbitrary: leafArb },
   { weight: 1, arbitrary: groupArb(fc.oneof({ weight: 3, arbitrary: leafArb }, { weight: 1, arbitrary: groupArb(leafArb) })) },
 )
-export const ruleArb = fc.tuple(modeArb, fc.array(itemArb, { minLength: 1, maxLength: 4 })).map(([mode, conditions]) => rule(mode, conditions))
+export const ruleArb = fc.tuple(modeArb, fc.array(itemArb, { minLength: 1, maxLength: 4 }), fc.boolean())
+  .map(([mode, conditions, negate]) => rule(mode, conditions, negate))
 export const probeArb = fc.record({ tags: fc.subarray(TAGS), rating: ratingArb, pages: pagesArb })
   .map(({ tags, rating, pages }): GalleryProbe => ({ tags: new Set(tags), complete: true, rating, pages }))

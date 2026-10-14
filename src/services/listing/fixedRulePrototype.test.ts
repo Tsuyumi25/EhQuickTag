@@ -114,6 +114,14 @@ describe('根群組', () => {
     expect(evaluateRule(rule, probe(null, ['female:a']))).toBe(true)
   })
 
+  it('NOT 把判定模式的結果反過來：NOT 全部成立在缺任何一項時命中', () => {
+    const rule = createRule(1)
+    rule.root.conditions.push(createTagCondition('female:a'), createTagCondition('female:b'))
+    rule.root.negate = true
+    expect(evaluateRule(rule, probe(null, ['female:a']))).toBe(true)
+    expect(evaluateRule(rule, probe(null, ['female:a', 'female:b']))).toBe(false)
+  })
+
   it('巢狀超過上限的群組不給求值', () => {
     const rule = createRule(1)
     rule.root.conditions.push(createGroup('all', [createGroup('all', [createGroup('all', [createGroup('all', [createTagCondition('female:a')])])])]))

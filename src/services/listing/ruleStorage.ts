@@ -5,14 +5,15 @@ import {
   type ConditionGroup, type FixedCondition, type FixedConditionItem, type FixedRule, type GroupMode, type RangeField, type RangeOp,
 } from '@/services/listing/fixedRulePrototype'
 
-// 5：規則是一棵以根群組為頂的樹。1–4 是固定三區（必要條件／任一成立／例外），讀進來時換成樹
-export const RULE_SCHEMA = 5
+// 6：NOT 是群組的獨立旗標。5 的判定模式多一種「全部不成立」，讀進來換成 NOT 任一成立；
+// 1–4 是固定三區（必要條件／任一成立／例外），讀進來時換成樹
+export const RULE_SCHEMA = 6
 // 三區時代每一區底下最多兩層 Folder
 const LEGACY_FOLDER_DEPTH = 2
 
 /**
  * 舊版的三區（必要條件 ∧ 任一成立 ∧ ¬例外）換成一棵樹，判定結果不變。
- * 例外裡的標籤直接翻轉極性放進根群組（¬(a ∨ b) = ¬a ∧ ¬b），其餘的例外收進一個「全部不成立」；
+ * 例外裡的標籤直接翻轉極性放進根群組（¬(a ∨ b) = ¬a ∧ ¬b），其餘的例外收進一個 NOT 任一成立；
  * 任一成立只有一項時就是那一項本身。呼叫前要先 reserveRuleIds，新建的群組才不會撞到舊 id
  */
 export function rootFromSections(
@@ -26,7 +27,7 @@ export function rootFromSections(
     ...common,
     ...(alternatives.length === 1 ? alternatives : alternatives.length ? [createGroup('any', [...alternatives])] : []),
     ...flipped,
-    ...(rest.length ? [createGroup('none', rest)] : []),
+    ...(rest.length ? [createGroup('any', rest, true)] : []),
   ])
 }
 
@@ -52,16 +53,27 @@ function validMode(mode: unknown): mode is GroupMode {
   return typeof mode === 'string' && GROUP_MODES.includes(mode as GroupMode)
 }
 
+/** schema 6 之前沒有 negate；當時的 none 就是 NOT any */
+function decodeMode(value: Record<string, unknown>, schema: number): Pick<ConditionGroup, 'mode' | 'negate'> {
+  if (schema < RULE_SCHEMA) {
+    if (value.mode === 'none') return { mode: 'any', negate: true }
+    if (!validMode(value.mode)) throw new Error('Invalid fixed rule storage')
+    return { mode: value.mode, negate: false }
+  }
+  if (!validMode(value.mode) || typeof value.negate !== 'boolean') throw new Error('Invalid fixed rule storage')
+  return { mode: value.mode, negate: value.negate }
+}
+
 /** depth 是群組自己在根底下第幾層（根是 0） */
-function decodeGroup(value: unknown, depth: number): ConditionGroup {
+function decodeGroup(value: unknown, depth: number, schema: number): ConditionGroup {
   if (!isObject(value) || value.kind !== 'group' || depth > MAX_GROUP_DEPTH || !Number.isSafeInteger(value.id)
-    || !validMode(value.mode) || !Array.isArray(value.conditions)) throw new Error('Invalid fixed rule storage')
+    || !Array.isArray(value.conditions)) throw new Error('Invalid fixed rule storage')
   return {
     id: value.id as number,
     kind: 'group',
-    mode: value.mode,
+    ...decodeMode(value, schema),
     conditions: value.conditions.map((child: unknown) => {
-      if (isObject(child) && child.kind === 'group') return decodeGroup(child, depth + 1)
+      if (isObject(child) && child.kind === 'group') return decodeGroup(child, depth + 1, schema)
       if (!validCondition(child)) throw new Error('Invalid fixed rule storage')
       return child
     }),
@@ -71,12 +83,13 @@ function decodeGroup(value: unknown, depth: number): ConditionGroup {
 /** 三區時代的 Folder（kind: 'folder'；schema 1–3 的任一成立連 kind 都沒有）換成群組 */
 function decodeLegacyItem(value: unknown, depth: number, bare: boolean): FixedConditionItem {
   if (isObject(value) && (value.kind === 'folder' || (bare && !('kind' in value) && 'conditions' in value))) {
-    if (depth >= LEGACY_FOLDER_DEPTH || !Number.isSafeInteger(value.id) || !Array.isArray(value.conditions)
-      || (value.kind === 'folder' && !validMode(value.mode))) throw new Error('Invalid fixed rule storage')
+    if (depth >= LEGACY_FOLDER_DEPTH || !Number.isSafeInteger(value.id) || !Array.isArray(value.conditions)) {
+      throw new Error('Invalid fixed rule storage')
+    }
     return {
       id: value.id as number,
       kind: 'group',
-      mode: value.kind === 'folder' ? value.mode as GroupMode : 'all',
+      ...(value.kind === 'folder' ? decodeMode(value, 0) : { mode: 'all', negate: false }),
       conditions: value.conditions.map((child: unknown) => decodeLegacyItem(child, depth + 1, false)),
     }
   }
@@ -102,13 +115,14 @@ function decodeHeader(rule: unknown): Omit<FixedRule, 'root'> & Record<string, u
 export function decodeRules(raw: string | null): FixedRule[] {
   if (raw === null) return []
   const data: unknown = JSON.parse(raw)
-  if (!isObject(data) || ![1, 2, 3, 4, RULE_SCHEMA].includes(data.schema as number) || !Array.isArray(data.rules)) {
+  if (!isObject(data) || ![1, 2, 3, 4, 5, RULE_SCHEMA].includes(data.schema as number) || !Array.isArray(data.rules)) {
     throw new Error('Invalid fixed rule storage')
   }
-  if (data.schema === RULE_SCHEMA) {
+  const schema = data.schema as number
+  if (schema >= 5) {
     return data.rules.map((rule: unknown): FixedRule => {
       const header = decodeHeader(rule)
-      return { id: header.id, name: header.name, enabled: header.enabled, root: decodeGroup(header.root, 0), actions: header.actions }
+      return { id: header.id, name: header.name, enabled: header.enabled, root: decodeGroup(header.root, 0, schema), actions: header.actions }
     })
   }
   const legacy = data.rules.map((rule: unknown) => {
@@ -124,7 +138,7 @@ export function decodeRules(raw: string | null): FixedRule[] {
   })
   // 換成樹時會新建群組，序號要先跳過所有舊 id；三區先暫時裝進一個沿用規則 id 的群組，只為了一次掃完
   reserveRuleIds(legacy.map(({ header, common, alternatives, exceptions }) => ({
-    ...header, root: { id: header.id, kind: 'group' as const, mode: 'all' as const, conditions: [...common, ...alternatives, ...exceptions] },
+    ...header, root: { id: header.id, kind: 'group' as const, mode: 'all' as const, negate: false, conditions: [...common, ...alternatives, ...exceptions] },
   })))
   return legacy.map(({ header, common, alternatives, exceptions }): FixedRule => ({
     id: header.id, name: header.name, enabled: header.enabled,

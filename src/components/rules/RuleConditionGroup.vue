@@ -12,8 +12,15 @@ const emit = defineEmits<{ remove: [] }>()
 </script>
 
 <template>
-  <div class="eqt-rule-page__group" :class="[`eqt-rule-page__group--${group.mode}`, { 'eqt-rule-page__group--root': root }]">
+  <div
+    class="eqt-rule-page__group"
+    :class="[`eqt-rule-page__group--${group.mode}`, { 'eqt-rule-page__group--negate': group.negate, 'eqt-rule-page__group--root': root }]"
+  >
     <div class="eqt-rule-page__group-head">
+      <button
+        type="button" class="eqt-rule-page__negate" :aria-pressed="group.negate"
+        :title="t('rulePagePrototype.negateHint')" @click="group.negate = !group.negate"
+      >{{ t('rulePagePrototype.negate') }}</button>
       <component :is="GROUP_MODE_ICONS[group.mode]" class="eqt-rule-page__icon" />
       <select v-model="group.mode" class="eqt-rule-page__inline-select" :aria-label="t('rulePagePrototype.groupMode')">
         <option v-for="mode in GROUP_MODES" :key="mode" :value="mode">{{ t(`rulePagePrototype.groupMode.${mode}`) }}</option>

@@ -65,15 +65,17 @@ export interface RangeCondition {
 
 export type FixedCondition = TagCondition | RangeCondition
 
-export type GroupMode = 'all' | 'any' | 'none'
+export type GroupMode = 'all' | 'any'
 
 /** 也是群組判定模式下拉選單的順序 */
-export const GROUP_MODES: readonly GroupMode[] = ['all', 'any', 'none']
+export const GROUP_MODES: readonly GroupMode[] = ['all', 'any']
 
 export interface ConditionGroup {
   id: number
   kind: 'group'
   mode: GroupMode
+  /** 套在判定模式外面的 NOT：all + negate = 任一不成立、any + negate = 全部不成立 */
+  negate: boolean
   conditions: FixedConditionItem[]
 }
 
@@ -160,8 +162,8 @@ export function conditionRange(condition: RangeCondition): ValueRange {
   return { min: condition.value, max: condition.value }
 }
 
-export function createGroup(mode: GroupMode = 'all', conditions: FixedConditionItem[] = []): ConditionGroup {
-  return { id: nextEntityId(), kind: 'group', mode, conditions }
+export function createGroup(mode: GroupMode = 'all', conditions: FixedConditionItem[] = [], negate = false): ConditionGroup {
+  return { id: nextEntityId(), kind: 'group', mode, negate, conditions }
 }
 
 /** 同一個標籤的含有與不含是兩件不同的素材，去重要連同極性一起比 */
@@ -248,9 +250,8 @@ export function kleeneAny(values: readonly Tri[]): Tri {
 function evaluateItem(item: FixedConditionItem, probe: GalleryProbe): Tri {
   if (item.kind !== 'group') return evaluateCondition(item, probe)
   const values = item.conditions.map(child => evaluateItem(child, probe))
-  if (item.mode === 'all') return kleeneAll(values)
-  const matched = kleeneAny(values)
-  return item.mode === 'none' && matched !== null ? !matched : matched
+  const matched = item.mode === 'all' ? kleeneAll(values) : kleeneAny(values)
+  return item.negate && matched !== null ? !matched : matched
 }
 
 export function evaluateRule(rule: FixedRule, probe: GalleryProbe): Tri {

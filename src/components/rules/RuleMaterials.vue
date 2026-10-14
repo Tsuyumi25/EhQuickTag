@@ -16,10 +16,10 @@ import {
 type Source = { id: RangeField; kind: 'range' } | { id: GroupMode; kind: 'group' }
 
 // 素材拖出去的是複本，原件留著：同一個素材可以放進好幾條規則、好幾個群組。
-// 三種群組本質上是同一種東西、拖進去後也能改判定模式，分成三個只是讓拖曳少一步
+// 兩種群組本質上是同一種東西、拖進去後也能改判定模式與 NOT，分成兩個只是讓拖曳少一步
 const SOURCES: Source[] = [
   { id: 'rating', kind: 'range' }, { id: 'pages', kind: 'range' },
-  { id: 'all', kind: 'group' }, { id: 'any', kind: 'group' }, { id: 'none', kind: 'group' },
+  { id: 'all', kind: 'group' }, { id: 'any', kind: 'group' },
 ]
 const sourceGroup = { name: RULE_CONDITIONS_GROUP, pull: 'clone', put: false }
 // 標籤（條件區的 chip、候選清單的項目）可以丟進來當素材；數值條件與群組不收，

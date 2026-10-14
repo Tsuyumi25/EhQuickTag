@@ -94,10 +94,10 @@ function itemExpr(item: FixedConditionItem, neg: boolean, ctx: Context): Expr | 
     ctx.incomplete = true
     return null
   }
-  // none = 一個都不成立 = 每一項都取反後全部成立；外層再取反時 and / or 互換
-  const childNeg = (item.mode === 'none') !== neg
-  const k = (item.mode === 'any') === neg ? 'and' : 'or'
-  return junction(k, item.conditions.map(child => itemExpr(child, childNeg, ctx)))
+  // NOT 往下推到每一項：取反後 and / or 互換；外層傳下來的取反與群組自己的 NOT 會互相抵銷
+  const flip = item.negate !== neg
+  const k = (item.mode === 'all') !== flip ? 'and' : 'or'
+  return junction(k, item.conditions.map(child => itemExpr(child, flip, ctx)))
 }
 
 function negate(expr: Expr): Expr {
@@ -319,15 +319,15 @@ function rawItem(item: FixedConditionItem): string {
   }
   if (!item.conditions.length) return '(EMPTY)'
   const body = item.conditions.map(rawItem).join(item.mode === 'all' ? ' AND ' : ' OR ')
-  return item.mode === 'none' ? `NOT (${body})` : `(${body})`
+  return item.negate ? `NOT (${body})` : `(${body})`
 }
 
 // 根群組照判定模式一行一個條件：全部成立以 AND、任一成立以 OR 接在行首；
-// 全部不成立整段包在 NOT ( ) 裡，NOT 的範圍不能靠讀的人去猜
+// 有 NOT 時整段包在 NOT ( ) 裡，NOT 的範圍不能靠讀的人去猜
 export function ruleExpression(rule: FixedRule): string {
   const lines = rule.root.conditions.map(rawItem)
   if (!lines.length) return '(EMPTY)'
-  if (rule.root.mode === 'none') return `NOT (\n  ${lines.join('\n  OR ')}\n)`
   const joiner = rule.root.mode === 'all' ? 'AND' : 'OR'
+  if (rule.root.negate) return `NOT (\n  ${lines.join(`\n  ${joiner} `)}\n)`
   return lines.map((line, index) => (index ? `${joiner} ${line}` : line)).join('\n')
 }
