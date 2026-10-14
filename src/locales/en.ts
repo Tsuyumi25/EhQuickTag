@@ -1,5 +1,5 @@
 export default {
-  'rulePrototype.rules': 'Rules',
+  'rulePrototype.rules': 'Gallery rules',
   'rulePrototype.carryToMaterials': 'Add to materials',
   'rulePrototype.selectedCount': '{n} selected',
   'rulePrototype.close': 'Close',
@@ -20,7 +20,7 @@ export default {
   'rulePrototype.colorHint': 'Muted',
 
   // Rule page prototype
-  'rulePagePrototype.title': 'Rule editor · prototype',
+  'rulePagePrototype.title': 'Gallery rule editor · prototype',
   'rulePagePrototype.togglePolarity': 'Click to switch between contains and does not contain',
   'rulePagePrototype.materials': 'Materials',
   'rulePagePrototype.materialsEmpty': 'No materials yet',

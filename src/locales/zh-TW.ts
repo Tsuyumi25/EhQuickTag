@@ -1,5 +1,5 @@
 export default {
-  'rulePrototype.rules': '規則',
+  'rulePrototype.rules': '圖庫規則',
   'rulePrototype.carryToMaterials': '帶回素材',
   'rulePrototype.selectedCount': '已選 {n} 個',
   'rulePrototype.close': '關閉',
@@ -20,7 +20,7 @@ export default {
   'rulePrototype.colorHint': '次要文字色',
 
   // Rule page prototype
-  'rulePagePrototype.title': '規則編輯器 · 雛形',
+  'rulePagePrototype.title': '圖庫規則編輯器 · 雛形',
   'rulePagePrototype.togglePolarity': '點一下切換含有／不含',
   'rulePagePrototype.materials': '素材',
   'rulePagePrototype.materialsEmpty': '還沒有素材',

@@ -1,5 +1,5 @@
 export default {
-  'rulePrototype.rules': '규칙',
+  'rulePrototype.rules': '갤러리 규칙',
   'rulePrototype.carryToMaterials': '재료에 추가',
   'rulePrototype.selectedCount': '{n}개 선택됨',
   'rulePrototype.close': '닫기',
@@ -20,7 +20,7 @@ export default {
   'rulePrototype.colorHint': '보조 글자색',
 
   // Rule page prototype
-  'rulePagePrototype.title': '규칙 편집기 · 프로토타입',
+  'rulePagePrototype.title': '갤러리 규칙 편집기 · 프로토타입',
   'rulePagePrototype.togglePolarity': '클릭하면 포함/제외가 전환됩니다',
   'rulePagePrototype.materials': '소재',
   'rulePagePrototype.materialsEmpty': '아직 소재가 없습니다',
