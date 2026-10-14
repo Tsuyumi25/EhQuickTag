@@ -693,7 +693,7 @@
 }
 
 // 群組沿用原本三區的樣子：標題列（判定模式的圖示與下拉）加上左側色條的托盤。
-// 色條借用搜尋狀態的顏色：全部成立 = include、任一成立 = OR；NOT 在外側再貼一條 exclude。
+// 色條借用搜尋狀態的顏色：全部成立 = include、任一成立 = OR；NOT 把整個群組框上 exclude 紅框。
 // 群組一律獨佔一整行，像程式碼的縮排：每往下一層，就多疊一條色條、往右縮一格，
 // 看左邊有幾條色條就知道是第幾層；跟 chip 排在同一行時層級看不出來
 .eqt-rule-page__group {
@@ -710,11 +710,11 @@
     border-inline-start: var(--eqt-rule-page-tone-width) solid var(--eqt-rule-page-tone);
   }
 
-  // 兩條緊貼、中間不留縫，數色條時仍算一層；inset 陰影吃掉的寬度要補回 padding，內容才不會往左擠
-  &--negate > .eqt-rule-page__tray {
-    padding-inline-start: calc(var(--eqt-rule-page-gap) * 3 + var(--eqt-rule-page-tone-width));
-    border-inline-start-color: var(--eqt-status-exclude);
-    box-shadow: inset var(--eqt-rule-page-tone-width) 0 0 var(--eqt-rule-page-tone);
+  // 框住標題列與托盤：NOT 套在整個群組外面，色條本身不變，數色條算層數時不受影響
+  &--negate {
+    padding: var(--eqt-rule-page-gap);
+    border: var(--eqt-border-width) solid var(--eqt-status-exclude);
+    border-radius: var(--eqt-radius-md);
   }
 
   // 根群組就是整個條件區，標題用 section 標題的字級
