@@ -75,7 +75,7 @@ export default {
   'rulePagePrototype.ruleActions': 'Rule actions',
   'rulePagePrototype.dragRule': 'Drag to reorder rules',
   'rulePagePrototype.preview': 'Preview',
-  'rulePagePrototype.backFromPreview': 'Back',
+  'rulePagePrototype.backToRules': 'Rules',
   'rulePagePrototype.spaceKey': 'Space',
   'rulePagePrototype.orderHint': 'For each effect, the highest matching rule in this list wins. Leave unchanged does not claim the effect, so rules below can still set it.',
   'rulePagePrototype.loadFailed': 'Could not load rules. Stored rules have not been overwritten; reload the page to try again.',

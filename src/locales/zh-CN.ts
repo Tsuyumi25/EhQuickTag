@@ -75,7 +75,7 @@ export default {
   'rulePagePrototype.ruleActions': '规则操作',
   'rulePagePrototype.dragRule': '拖动排序规则',
   'rulePagePrototype.preview': '预览',
-  'rulePagePrototype.backFromPreview': '返回',
+  'rulePagePrototype.backToRules': '规则',
   'rulePagePrototype.spaceKey': '空格键',
   'rulePagePrototype.orderHint': '每个效果分别判定；列表中位置越高的规则越优先。“保持不变”不会占用效果，由下方的规则决定。',
   'rulePagePrototype.loadFailed': '无法加载规则，已保存的规则未被覆盖。请刷新页面重试。',

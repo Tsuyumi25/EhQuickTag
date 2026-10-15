@@ -75,7 +75,7 @@ export default {
   'rulePagePrototype.ruleActions': 'ルールの操作',
   'rulePagePrototype.dragRule': 'ドラッグしてルールを並べ替え',
   'rulePagePrototype.preview': 'プレビュー',
-  'rulePagePrototype.backFromPreview': '戻る',
+  'rulePagePrototype.backToRules': 'ルール',
   'rulePagePrototype.spaceKey': 'Space',
   'rulePagePrototype.orderHint': '効果ごとに判定し、一覧で上にあるルールほど優先されます。「変更しない」は効果を確定させず、下のルールに任せます。',
   'rulePagePrototype.loadFailed': 'ルールを読み込めませんでした。保存済みのルールは上書きされていません。ページを再読み込みしてください。',

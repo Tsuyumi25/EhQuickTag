@@ -75,7 +75,7 @@ export default {
   'rulePagePrototype.ruleActions': '규칙 작업',
   'rulePagePrototype.dragRule': '드래그하여 규칙 순서 변경',
   'rulePagePrototype.preview': '미리보기',
-  'rulePagePrototype.backFromPreview': '돌아가기',
+  'rulePagePrototype.backToRules': '규칙',
   'rulePagePrototype.spaceKey': 'Space',
   'rulePagePrototype.orderHint': '효과별로 판정하며 목록에서 위에 있는 규칙일수록 우선합니다. “변경하지 않음”은 효과를 정하지 않고 아래 규칙에 맡깁니다.',
   'rulePagePrototype.loadFailed': '규칙을 불러오지 못했습니다. 저장된 규칙은 덮어쓰지 않았습니다. 페이지를 새로고침해 주세요.',

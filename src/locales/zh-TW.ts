@@ -75,7 +75,7 @@ export default {
   'rulePagePrototype.ruleActions': '規則操作',
   'rulePagePrototype.dragRule': '拖曳排序規則',
   'rulePagePrototype.preview': '預覽',
-  'rulePagePrototype.backFromPreview': '返回',
+  'rulePagePrototype.backToRules': '規則',
   'rulePagePrototype.spaceKey': '空白鍵',
   'rulePagePrototype.orderHint': '每個效果分別判定；列表中位置越高的規則越優先。「維持不變」不會佔用效果，由下方的規則決定。',
   'rulePagePrototype.loadFailed': '無法載入規則，已保存的規則未被覆寫。請重新整理頁面再試。',

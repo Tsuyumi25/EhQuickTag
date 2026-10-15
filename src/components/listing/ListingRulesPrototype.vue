@@ -3,7 +3,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch, watchEffect } from 'vue'
 import { GM } from '$'
 import { useFloating, autoUpdate, flip, offset, shift } from '@floating-ui/vue'
-import { ArrowLeft, ChevronDown, Eye, Funnel, ListChecks, Search, Settings, Shapes, Tags, X } from '@lucide/vue'
+import { ChevronDown, Eye, Funnel, ListChecks, Search, Settings, Shapes, Tags, X } from '@lucide/vue'
 import TagChip from '@/components/TagChip.vue'
 import GalleryTagListRows, { type GalleryTagListGroup } from '@/components/gallery/GalleryTagListRows.vue'
 import { useDragSelect } from '@/composables/useDragSelect'
@@ -426,17 +426,18 @@ onBeforeUnmount(() => {
           <span class="eqt-rule-prototype__separator" aria-hidden="true" />
           <!-- 規則介面開著時 dock 只做規則的事；右端的關閉跟規則介面的關閉同一件事，關掉之後才回到平常的 dock -->
           <template v-if="showRules">
-            <button
-              type="button" class="eqt-rule-prototype__carry" :disabled="selection.size === 0" @click="openRulesEditor"
-            ><Shapes aria-hidden="true" />{{ t('rulePrototype.carryToMaterials') }}</button>
+            <!-- 預覽排在 dock 正中間；預覽中這顆換成回到規則介面，圖示與「圖庫規則」同一個漏斗 -->
             <button
               type="button" class="eqt-rule-prototype__preview" :aria-pressed="rulesCollapsed" aria-keyshortcuts="Space"
               @click="rulesCollapsed = !rulesCollapsed"
             >
-              <component :is="rulesCollapsed ? ArrowLeft : Eye" aria-hidden="true" />
-              {{ t(rulesCollapsed ? 'rulePagePrototype.backFromPreview' : 'rulePagePrototype.preview') }}
+              <component :is="rulesCollapsed ? Funnel : Eye" aria-hidden="true" />
+              {{ t(rulesCollapsed ? 'rulePagePrototype.backToRules' : 'rulePagePrototype.preview') }}
               <kbd class="eqt-rule-prototype__kbd">{{ t('rulePagePrototype.spaceKey') }}</kbd>
             </button>
+            <button
+              type="button" class="eqt-rule-prototype__carry" :disabled="selection.size === 0" @click="openRulesEditor"
+            ><Shapes aria-hidden="true" />{{ t('rulePrototype.carryToMaterials') }}</button>
           </template>
           <template v-else>
             <button type="button" class="eqt-rule-prototype__rules-toggle" @click="openRulesEditor"><Funnel aria-hidden="true" />{{ t('rulePrototype.rules') }}</button>
