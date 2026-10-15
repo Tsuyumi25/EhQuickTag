@@ -308,13 +308,14 @@ function rawTag(tag: string): string {
 
 /** 沒指定任何動作時是空字串 */
 function rawActions(actions: FixedActions): string {
+  if (actions.hide) return '{hide}'
   const parts: string[] = []
   if (actions.background) parts.push(`background: ${actions.background}`)
   if (actions.blur) parts.push('blur')
   if (actions.showName) parts.push('show-name')
   if (actions.titlePrefix) parts.push(`title-prefix: ${JSON.stringify(actions.titlePrefix)}`)
   if (actions.strike) parts.push('strike')
-  if (actions.visibility !== 'normal') parts.push(actions.visibility)
+  if (actions.dim) parts.push('dim')
   return parts.length ? `{${parts.join(', ')}}` : ''
 }
 

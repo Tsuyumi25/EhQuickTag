@@ -9,7 +9,9 @@ const props = defineProps<FixedActions & { verbose?: boolean }>()
 
 type Item = { key: string; text: string; icon?: Component; swatch?: string }
 
+// 隱藏時其他動作都不作用，摘要只寫隱藏
 const items = computed(() => {
+  if (props.hide) return [{ key: 'hide', text: t('rulePagePrototype.hideShort'), icon: EyeClosed }] as Item[]
   const list: Item[] = []
   if (props.background) {
     list.push({ key: 'background', text: t('rulePagePrototype.backgroundIs', { color: props.background }), swatch: props.background })
@@ -20,9 +22,7 @@ const items = computed(() => {
     list.push({ key: 'titlePrefix', text: t('rulePagePrototype.titlePrefixIs', { prefix: props.titlePrefix }), icon: Type })
   }
   if (props.strike) list.push({ key: 'strike', text: t('rulePagePrototype.strikeShort'), icon: Strikethrough })
-  if (props.visibility !== 'normal') {
-    list.push({ key: 'visibility', text: t(`rulePagePrototype.${props.visibility}Short`), icon: props.visibility === 'dim' ? SunDim : EyeClosed })
-  }
+  if (props.dim) list.push({ key: 'dim', text: t('rulePagePrototype.dimShort'), icon: SunDim })
   return list
 })
 </script>

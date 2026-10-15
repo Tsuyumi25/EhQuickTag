@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import { EyeClosed, Paintbrush } from '@lucide/vue'
 import LineColorSwatch from '@/components/LineColorSwatch.vue'
 import { t } from '@/composables/useI18n'
 import { parseColorInput } from '@/services/color'
-import { CARD_VISIBILITIES, normalizeTitlePrefix, type FixedActions } from '@/services/listing/fixedRulePrototype'
+import { normalizeTitlePrefix, type FixedActions } from '@/services/listing/fixedRulePrototype'
 
 const props = defineProps<{ actions: FixedActions }>()
 
@@ -32,8 +33,16 @@ function toggle(key: 'blur' | 'strike' | 'showName', event: Event) {
 </script>
 
 <template>
-  <!-- 左欄是動作作用在圖庫卡片的哪個位置，新的動作照位置放進對應的那一行 -->
-  <div class="eqt-rule-page__actions">
+  <div class="eqt-rule-page__actions-head">
+    <h2><Paintbrush class="eqt-rule-page__icon" />{{ t('rulePrototype.actions') }}</h2>
+    <button
+      type="button" class="eqt-rule-page__hide" :aria-pressed="actions.hide" :title="t('rulePagePrototype.hideHint')"
+      @click="actions.hide = !actions.hide"
+    ><EyeClosed class="eqt-rule-page__icon" />{{ t('rulePagePrototype.hideShort') }}</button>
+  </div>
+  <!-- 左欄是動作作用在圖庫卡片的哪個位置，新的動作照位置放進對應的那一行。
+       隱藏時圖庫整個不見，其他動作都不作用：整組停用，但值留著，關掉隱藏就回來 -->
+  <fieldset class="eqt-rule-page__actions" :disabled="actions.hide">
     <span class="eqt-rule-page__action-target">{{ t('rulePagePrototype.target.card') }}</span>
     <div class="eqt-rule-page__action-row">
       <span class="eqt-rule-page__field">
@@ -56,9 +65,9 @@ function toggle(key: 'blur' | 'strike' | 'showName', event: Event) {
       </span>
       <span class="eqt-rule-page__choice" role="group" :aria-label="t('rulePagePrototype.visibility')">
         <button
-          v-for="visibility in CARD_VISIBILITIES" :key="visibility" type="button" class="eqt-rule-page__choice-item"
-          :aria-pressed="actions.visibility === visibility" @click="actions.visibility = visibility"
-        >{{ t(`rulePagePrototype.${visibility}Short`) }}</button>
+          v-for="dim in [false, true]" :key="String(dim)" type="button" class="eqt-rule-page__choice-item"
+          :aria-pressed="actions.dim === dim" @click="actions.dim = dim"
+        >{{ t(dim ? 'rulePagePrototype.dimShort' : 'rulePagePrototype.normalShort') }}</button>
       </span>
     </div>
 
@@ -93,5 +102,5 @@ function toggle(key: 'blur' | 'strike' | 'showName', event: Event) {
         {{ t('rulePagePrototype.showName') }}
       </label>
     </div>
-  </div>
+  </fieldset>
 </template>

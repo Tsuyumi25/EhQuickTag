@@ -2,13 +2,14 @@
 
 import { parseColorInput } from '@/services/color'
 import {
-  CARD_VISIBILITIES, createActions, createGroup, GROUP_MODES, hasActions, isRuleComplete, itemHeight, MAX_GROUP_DEPTH,
+  createActions, createGroup, GROUP_MODES, hasActions, isRuleComplete, itemHeight, MAX_GROUP_DEPTH,
   nextEntityId, normalizeTitlePrefix, RANGE_FIELDS, RANGE_OPS, reserveRuleIds,
-  type CardVisibility, type ConditionGroup, type FixedActions, type FixedCondition, type FixedConditionItem,
+  type ConditionGroup, type FixedActions, type FixedCondition, type FixedConditionItem,
   type FixedRule, type GroupMode, type RangeField, type RangeOp,
 } from '@/services/listing/fixedRulePrototype'
 
-// 16：淡化與隱藏併成卡片的存在感（visibility）。之前是兩個獨立的勾選，兩個都勾的讀成隱藏。
+// 17：淡化與隱藏又分回兩個獨立的值：隱藏是讓整條規則其他動作都不作用的開關，不是淡化的更強一級。
+// 16：淡化與隱藏併成一個三選一的 visibility，讀進來時 dim → 淡化、hide → 隱藏。
 // 15：模糊封面只剩要或不要；之前還有「保持清晰」可以擋下更下面的規則的模糊，讀進來當成不要。
 // 貼紙拿掉了，13–14 存的貼紙不再保留。
 // 14：拿掉卡片大小、布幕與排到最後；標題前綴從「加上規則名稱」改成自填文字，13 有勾的換成當時的規則名稱。
@@ -20,7 +21,7 @@ import {
 // 有填字就當成要顯示，文字本身不保留；7 之前的版本一律不顯示。
 // 6：NOT 是群組的獨立旗標。5 的判定模式多一種「全部不成立」，讀進來換成 NOT 任一成立；
 // 1–4 是固定三區（必要條件／任一成立／例外），讀進來時換成樹
-export const RULE_SCHEMA = 16
+export const RULE_SCHEMA = 17
 // 三區時代每一區底下最多兩層 Folder
 const LEGACY_FOLDER_DEPTH = 2
 
@@ -181,13 +182,15 @@ function decodeTitlePrefix(value: unknown, schema: number, ruleName: string): st
   return value
 }
 
-function decodeVisibility(actions: Record<string, unknown>, schema: number): CardVisibility {
-  if (schema >= 16) {
-    if (!CARD_VISIBILITIES.includes(actions.visibility as CardVisibility)) throw new Error('Invalid fixed rule storage')
-    return actions.visibility as CardVisibility
+const VISIBILITIES_16: readonly unknown[] = ['normal', 'dim', 'hide']
+
+function decodeCardFlags(actions: Record<string, unknown>, schema: number): Pick<FixedActions, 'dim' | 'hide'> {
+  if (schema === 16) {
+    if (!VISIBILITIES_16.includes(actions.visibility)) throw new Error('Invalid fixed rule storage')
+    return { dim: actions.visibility === 'dim', hide: actions.visibility === 'hide' }
   }
   if (typeof actions.dim !== 'boolean' || typeof actions.hide !== 'boolean') throw new Error('Invalid fixed rule storage')
-  return actions.hide ? 'hide' : actions.dim ? 'dim' : 'normal'
+  return { dim: actions.dim, hide: actions.hide }
 }
 
 /** ruleName 只有 13 的標題前綴用得到：那時勾了就是加上規則名稱 */
@@ -203,8 +206,7 @@ function decodeActions(actions: unknown, schema: number, ruleName = ''): FixedAc
   if (typeof actions.strike !== 'boolean') throw new Error('Invalid fixed rule storage')
   decoded.titlePrefix = decodeTitlePrefix(actions.titlePrefix, schema, ruleName)
   decoded.strike = actions.strike
-  decoded.visibility = decodeVisibility(actions, schema)
-  return decoded
+  return { ...decoded, ...decodeCardFlags(actions, schema) }
 }
 
 function decodeHeader(rule: unknown): Omit<FixedRule, 'root' | 'actions'> & Record<string, unknown> {
@@ -269,7 +271,7 @@ export function splitBranchActions(rule: FixedRule, branches: BranchActions): Fi
 export function decodeRules(raw: string | null): FixedRule[] {
   if (raw === null) return []
   const data: unknown = JSON.parse(raw)
-  if (!isObject(data) || ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, RULE_SCHEMA].includes(data.schema as number) || !Array.isArray(data.rules)) {
+  if (!isObject(data) || ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, RULE_SCHEMA].includes(data.schema as number) || !Array.isArray(data.rules)) {
     throw new Error('Invalid fixed rule storage')
   }
   const schema = data.schema as number

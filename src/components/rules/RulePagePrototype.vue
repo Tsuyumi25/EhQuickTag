@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import Draggable from 'vuedraggable'
-import { Ellipsis, GripVertical, Paintbrush, Plus, Settings, Trash2, X } from '@lucide/vue'
+import { Ellipsis, GripVertical, Plus, Settings, Trash2, X } from '@lucide/vue'
 import ContextMenu from '@/components/ContextMenu.vue'
 import { baseDragOptions } from '@/utils/drag'
 import RuleActionsEditor from './RuleActionsEditor.vue'
@@ -282,7 +282,6 @@ onBeforeUnmount(() => {
           </section>
 
           <section class="eqt-rule-page__section">
-            <h2><Paintbrush class="eqt-rule-page__icon" />{{ t('rulePrototype.actions') }}</h2>
             <RuleActionsEditor :actions="selected.actions" />
           </section>
 

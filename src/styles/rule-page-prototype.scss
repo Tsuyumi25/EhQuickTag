@@ -311,6 +311,7 @@
 }
 
 .eqt-rule-page__section > h2,
+.eqt-rule-page__actions-head > h2,
 .eqt-rule-page__digest-head > h2,
 .eqt-rule-page__materials-head > h2,
 .eqt-rule-page__finder-head > h2 {
@@ -790,7 +791,34 @@
 
 // ---- 效果 ----
 
+.eqt-rule-page__actions-head {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--eqt-rule-page-gap) * 2);
+
+  > .eqt-rule-page__hide { margin-inline-start: auto; }
+}
+
+.eqt-rule-page__hide {
+  @include btn-toned;
+  gap: calc(var(--eqt-rule-page-gap) * 1.5);
+  height: var(--eqt-rule-page-control-h);
+  padding: 0 calc(var(--eqt-rule-page-gap) * 2.5);
+  color: var(--eqt-danger);
+
+  &[aria-pressed='true'] {
+    border-color: var(--eqt-danger);
+    background: var(--eqt-danger-bg-hover);
+    font-weight: bold;
+  }
+}
+
+// fieldset 的預設框線、內距與 min-width: min-content 都拿掉，當成一般的格線容器
 .eqt-rule-page__actions {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr);
   align-items: center;
@@ -800,6 +828,12 @@
 .eqt-rule-page__action-target {
   color: var(--eqt-text-hint);
   white-space: nowrap;
+}
+
+.eqt-rule-page__actions:disabled {
+  opacity: 0.45;
+
+  label { cursor: default; }
 }
 
 .eqt-rule-page__action-summary {
