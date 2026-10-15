@@ -8,13 +8,13 @@ import { RULE_CONDITIONS_GROUP, ruleDragOptions } from './ruleDrag'
 import { t } from '@/composables/useI18n'
 import { ruleMaterials } from '@/services/appOverlays'
 import {
-  createGroup, createRangeCondition, createTagCondition, GROUP_MODE_OPERATORS, tagConditionKey,
+  createGroup, createRangeCondition, GROUP_MODE_OPERATORS, tagConditionKey,
   type FixedConditionItem, type GroupMode, type RangeField, type TagCondition,
 } from '@/services/listing/fixedRulePrototype'
 
 type Source = { id: RangeField; kind: 'range' } | { id: GroupMode; kind: 'group' }
 
-// 素材拖出去的是複本，原件留著：同一個素材可以放進好幾條規則、好幾個群組。
+// 產生器拖出去的是新建的一份，產生器本身留著。
 // 兩種群組本質上是同一種東西、拖進去後也能改判定模式與 NOT，分成兩個只是讓拖曳少一步
 const SOURCES: Source[] = [
   { id: 'rating', kind: 'range' }, { id: 'pages', kind: 'range' },
@@ -22,10 +22,10 @@ const SOURCES: Source[] = [
 ]
 const sourceGroup = { name: RULE_CONDITIONS_GROUP, pull: 'clone', put: false }
 // 標籤（條件區的 chip、候選清單的項目）可以丟進來當素材；數值條件與群組不收，
-// 它們隨時能從產生器再拉一個
+// 它們隨時能從產生器再拉一個。素材拖出去就離開素材區，留下來的就是還沒用掉的
 const materialGroup = {
   name: RULE_CONDITIONS_GROUP,
-  pull: 'clone',
+  pull: true,
   put: (_to: unknown, _from: unknown, dragged: HTMLElement) => dragged.dataset.kind === 'tag',
 }
 
@@ -38,10 +38,6 @@ function sourceView(source: Source): { icon?: Component; label: string } {
   return source.kind === 'group'
     ? { label: GROUP_MODE_OPERATORS[source.id] }
     : { icon: RANGE_FIELD_ICONS[source.id], label: t(`rulePagePrototype.${source.id}`) }
-}
-
-function cloneMaterial(material: TagCondition): TagCondition {
-  return createTagCondition(material.tag, material.exclude)
 }
 
 // 從條件區丟回來的標籤可能已經在素材裡，留先來的那顆
@@ -80,7 +76,7 @@ function dropDuplicate(event: { added?: { element: TagCondition; newIndex: numbe
 
     <Draggable
       :list="ruleMaterials" item-key="id" v-bind="ruleDragOptions" :group="materialGroup"
-      :clone="cloneMaterial" class="eqt-rule-page__tray eqt-rule-page__material-tray"
+      class="eqt-rule-page__tray eqt-rule-page__material-tray"
       :data-empty="t('rulePagePrototype.materialsEmpty')" @change="dropDuplicate"
     >
       <template #item="{ element: material, index }">

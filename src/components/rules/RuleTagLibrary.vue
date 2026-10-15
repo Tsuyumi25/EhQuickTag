@@ -12,7 +12,7 @@ import { t } from '@/composables/useI18n'
 import { ruleMaterials } from '@/services/appOverlays'
 import { createTagCondition, tagConditionKey, type TagCondition } from '@/services/listing/fixedRulePrototype'
 import { galleryMyTagsColorsEnabled } from '@/services/store'
-import { getFallbackEntries, type TagEntry } from '@/services/tags/tagDb'
+import { entryForTag, getFallbackEntries, tagDbVersion, type TagEntry } from '@/services/tags/tagDb'
 import { TagState } from '@/types'
 
 const query = ref('')
@@ -29,7 +29,18 @@ const { suggestions } = useTagSuggestions({
 const materialKeys = computed(() => new Set(ruleMaterials.value.map(tagConditionKey)))
 const palette = useMyTagsPalette()
 const chipStyle = useMyTagsColors()
-watch(suggestions, () => { selectedIdx.value = 0 })
+
+// 只看有 My Tags 顏色的標籤：清單換成 My Tags 本身，照 My Tags 的順序，查詢字串只做包含比對
+const onlyColored = ref(false)
+const coloredEntries = computed(() => {
+  void tagDbVersion.value
+  const needle = query.value.trim().toLowerCase()
+  return Object.keys(palette.value ?? {}).map(entryForTag).filter(entry =>
+    (!namespace.value || entry.ns === namespace.value)
+    && (!needle || entry.fullTag.includes(needle) || entry.rawLow.includes(needle) || entry.nameLow.includes(needle)))
+})
+const shown = computed(() => (onlyColored.value ? coloredEntries.value : suggestions.value))
+watch(shown, () => { selectedIdx.value = 0 })
 
 function stateOf(entry: TagEntry): TagState {
   if (materialKeys.value.has(tagConditionKey({ tag: entry.fullTag, exclude: false }))) return TagState.Include
@@ -38,20 +49,20 @@ function stateOf(entry: TagEntry): TagState {
 }
 
 function styleOf(entry: TagEntry) {
-  const colors = galleryMyTagsColorsEnabled.value ? palette.value?.[entry.fullTag] : undefined
+  const colors = galleryMyTagsColorsEnabled.value || onlyColored.value ? palette.value?.[entry.fullTag] : undefined
   return colors ? chipStyle(colors) : undefined
 }
 
 function onKeydown(event: KeyboardEvent) {
   if (event.key === 'ArrowDown') {
     event.preventDefault()
-    selectedIdx.value = Math.min(selectedIdx.value + 1, suggestions.value.length - 1)
+    selectedIdx.value = Math.min(selectedIdx.value + 1, shown.value.length - 1)
   } else if (event.key === 'ArrowUp') {
     event.preventDefault()
     selectedIdx.value = Math.max(selectedIdx.value - 1, 0)
   } else if (event.key === 'Enter') {
     event.preventDefault()
-    const entry = suggestions.value[selectedIdx.value]
+    const entry = shown.value[selectedIdx.value]
     if (entry && !materialKeys.value.has(tagConditionKey({ tag: entry.fullTag, exclude: false }))) {
       ruleMaterials.value.push(createTagCondition(entry.fullTag))
     }
@@ -104,7 +115,13 @@ onBeforeUnmount(() => sortable?.destroy())
 
 <template>
   <section class="eqt-rule-page__finder" :aria-label="t('rulePagePrototype.findTag')">
-    <h2><Search class="eqt-rule-page__icon" />{{ t('rulePagePrototype.findTag') }}</h2>
+    <header class="eqt-rule-page__finder-head">
+      <h2><Search class="eqt-rule-page__icon" />{{ t('rulePagePrototype.findTag') }}</h2>
+      <label class="eqt-rule-page__enabled">
+        <input v-model="onlyColored" type="checkbox" :disabled="!palette" />
+        {{ t('rulePagePrototype.onlyMyTagsColored') }}
+      </label>
+    </header>
     <input
       v-model="query" class="eqt-rule-page__input"
       :placeholder="t('rulePagePrototype.findTag')" :aria-label="t('rulePagePrototype.findTag')"
@@ -114,7 +131,7 @@ onBeforeUnmount(() => sortable?.destroy())
       <NamespaceFilter v-model="namespace" />
       <SuggestionList
         ref="list" class="eqt-rule-page__finder-list"
-        :suggestions="suggestions" :selected-idx="selectedIdx" :state-of="stateOf" :style-of="styleOf"
+        :suggestions="shown" :selected-idx="selectedIdx" :state-of="stateOf" :style-of="styleOf"
         :ns-list="namespaces" @update:selected-idx="selectedIdx = $event"
       />
     </div>

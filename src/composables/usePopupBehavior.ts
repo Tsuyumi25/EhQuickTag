@@ -40,6 +40,8 @@ export function usePopupBehavior(options: {
   useEventListener(document, 'keydown', (e: KeyboardEvent) => {
     if (confirmRequest.value) return
     if (e.key === 'Escape') {
+      // 標記這次 Esc 已經用掉：底下還開著的規則頁在 window 上聽 Esc，沒標記會跟著一起關
+      e.preventDefault()
       options.onClose()
     } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && options.onSave) {
       e.preventDefault()

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import Draggable from 'vuedraggable'
-import { Ellipsis, GripVertical, Paintbrush, Plus, Trash2, X } from '@lucide/vue'
+import { Ellipsis, GripVertical, Paintbrush, Plus, Settings, Trash2, X } from '@lucide/vue'
 import ContextMenu from '@/components/ContextMenu.vue'
 import { baseDragOptions } from '@/utils/drag'
 import RuleActionsEditor from './RuleActionsEditor.vue'
@@ -12,7 +12,7 @@ import RuleTagLibrary from './RuleTagLibrary.vue'
 import { useFixedRuleStore } from '@/composables/useFixedRuleStore'
 import { t } from '@/composables/useI18n'
 import { createRule } from '@/services/listing/fixedRulePrototype'
-import { requestedRuleId, rulesCollapsed } from '@/services/appOverlays'
+import { openSettings, requestedRuleId, rulesCollapsed, showSettings } from '@/services/appOverlays'
 import '@/styles/rule-page-prototype.scss'
 
 const emit = defineEmits<{ close: [] }>()
@@ -125,7 +125,8 @@ function containTab(event: KeyboardEvent) {
 }
 
 function onKeydown(event: KeyboardEvent) {
-  if (event.defaultPrevented) return
+  // 設定是從標題列打開、蓋在規則頁上的對話框，鍵盤整個交給它；不然 Esc 會連規則頁一起關掉
+  if (event.defaultPrevented || showSettings.value) return
   if (event.key === 'Tab') {
     if (rulesCollapsed.value || !engaged || event.ctrlKey || event.metaKey || event.altKey) return
     // 規則操作選單與色盤有自己的焦點，交給它們
@@ -185,6 +186,33 @@ onBeforeUnmount(() => {
     ref="root" class="eqt-rule-page" :class="{ 'eqt-rule-page--collapsed': rulesCollapsed }"
     role="dialog" :aria-label="t('rulePagePrototype.title')" translate="no" tabindex="-1"
   >
+    <!-- 標題列橫跨三欄：左邊是設定、中間是選中的規則、右邊是規則頁唯一的出口 -->
+    <header class="eqt-rule-page__header">
+      <div class="eqt-rule-page__header-start">
+        <button type="button" class="eqt-rule-page__settings" @click="openSettings('gallery')">
+          <Settings class="eqt-rule-page__icon" />{{ t('settings.title') }}
+        </button>
+      </div>
+      <div class="eqt-rule-page__meta">
+        <template v-if="selected">
+          <input
+            class="eqt-rule-page__input eqt-rule-page__name" :value="selected.name"
+            :aria-label="t('rulePrototype.namePlaceholder')" :placeholder="t('rulePrototype.namePlaceholder')"
+            @input="rename"
+          />
+          <label class="eqt-rule-page__enabled">
+            <input type="checkbox" :checked="selected.enabled" @change="toggleEnabled" />
+            {{ t('rulePagePrototype.enabled') }}
+          </label>
+        </template>
+      </div>
+      <div class="eqt-rule-page__header-end">
+        <button type="button" class="eqt-rule-page__close" @click="emit('close')">
+          <X class="eqt-rule-page__icon" />{{ t('rulePrototype.close') }}
+        </button>
+      </div>
+    </header>
+
     <aside class="eqt-rule-page__side">
       <h1 class="eqt-rule-page__title">{{ t('rulePrototype.rules') }}</h1>
       <Draggable
@@ -245,24 +273,6 @@ onBeforeUnmount(() => {
     </aside>
 
     <main class="eqt-rule-page__editor">
-      <header class="eqt-rule-page__meta">
-        <template v-if="selected">
-          <input
-            class="eqt-rule-page__input eqt-rule-page__name" :value="selected.name"
-            :aria-label="t('rulePrototype.namePlaceholder')" :placeholder="t('rulePrototype.namePlaceholder')"
-            @input="rename"
-          />
-          <label class="eqt-rule-page__enabled">
-            <input type="checkbox" :checked="selected.enabled" @change="toggleEnabled" />
-            {{ t('rulePagePrototype.enabled') }}
-          </label>
-        </template>
-        <button
-          type="button" class="eqt-rule-page__close"
-          :aria-label="t('rulePrototype.close')" :title="t('rulePrototype.close')" @click="emit('close')"
-        ><X class="eqt-rule-page__icon" /></button>
-      </header>
-
       <div class="eqt-rule-page__body">
         <p v-if="error" class="eqt-rule-page__alert" role="alert">{{ t(error) }}</p>
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { CircleMinus, CirclePlus, X } from '@lucide/vue'
+import { Minus, Plus, X } from '@lucide/vue'
 import TagChip from '@/components/TagChip.vue'
 import { useRuleTagView } from '@/composables/useRuleTagView'
 import { t } from '@/composables/useI18n'
@@ -21,11 +21,10 @@ const polarity = computed(() => t(props.condition.exclude ? 'rulePagePrototype.e
     <template #head>
       <button
         type="button" class="eqt-rule-page__polarity"
-        :class="{ 'eqt-rule-page__polarity--exclude': condition.exclude }"
         :aria-label="`${polarity} · ${t('rulePagePrototype.togglePolarity')}`"
         :title="`${polarity} · ${t('rulePagePrototype.togglePolarity')}`"
         @click="condition.exclude = !condition.exclude"
-      ><CircleMinus v-if="condition.exclude" /><CirclePlus v-else /></button>
+      ><Minus v-if="condition.exclude" /><Plus v-else /></button>
     </template>
     <template #trail>
       <button

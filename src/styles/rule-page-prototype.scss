@@ -26,6 +26,7 @@
   display: grid;
   grid-template-columns:
     minmax(0, var(--eqt-rule-page-sidebar)) minmax(0, 1fr) minmax(0, var(--eqt-rule-page-library));
+  grid-template-rows: auto minmax(0, 1fr);
   gap: calc(var(--eqt-rule-page-gap) * 3);
   overflow: hidden;
   // 背景搜尋頁可以捲動，但滾輪落在規則頁上時不能捲到後面去；
@@ -229,15 +230,39 @@
   min-height: 0;
 }
 
-// dark 的 --eqt-divider 與 --eqt-bg 同色，分隔線一律用 --eqt-border 才看得見
+// 三格對齊底下的三欄。dark 的 --eqt-divider 與 --eqt-bg 同色，分隔線一律用 --eqt-border 才看得見
+.eqt-rule-page__header {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: center;
+  padding-bottom: calc(var(--eqt-rule-page-gap) * 2.5);
+  border-bottom: var(--eqt-border-width) solid var(--eqt-border);
+}
+
+.eqt-rule-page__header-start,
+.eqt-rule-page__header-end {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--eqt-rule-page-gap) * 2);
+  min-width: 0;
+}
+
+.eqt-rule-page__header-end { justify-content: flex-end; }
+
 .eqt-rule-page__meta {
   display: flex;
-  flex-shrink: 0;
   flex-wrap: wrap;
   align-items: center;
   gap: calc(var(--eqt-rule-page-gap) * 2);
-  padding-bottom: calc(var(--eqt-rule-page-gap) * 2.5);
-  border-bottom: var(--eqt-border-width) solid var(--eqt-border);
+  min-width: 0;
+}
+
+.eqt-rule-page__settings {
+  @include btn-toned;
+  gap: calc(var(--eqt-rule-page-gap) * 1.5);
+  height: var(--eqt-rule-page-control-h);
+  padding: 0 calc(var(--eqt-rule-page-gap) * 2.5);
 }
 
 .eqt-rule-page__name {
@@ -258,10 +283,9 @@
 
 .eqt-rule-page__close {
   @include btn-ghost;
-  width: var(--eqt-rule-page-control-h);
+  gap: calc(var(--eqt-rule-page-gap) * 1.5);
   height: var(--eqt-rule-page-control-h);
-  margin-inline-start: auto;
-  padding: 0;
+  padding: 0 calc(var(--eqt-rule-page-gap) * 2.5);
 }
 
 .eqt-rule-page__body {
@@ -289,7 +313,7 @@
 .eqt-rule-page__section > h2,
 .eqt-rule-page__digest-head > h2,
 .eqt-rule-page__materials-head > h2,
-.eqt-rule-page__finder > h2 {
+.eqt-rule-page__finder-head > h2 {
   display: flex;
   align-items: center;
   gap: calc(var(--eqt-rule-page-gap) * 1.5);
@@ -351,31 +375,16 @@
   cursor: grab;
 }
 
-// mytags 底色只上在名稱那一段；兩側的含有／不含與移除鈕是操作，維持一般 chip 底色。
-// 三個 class 是為了壓過 gallery-taglist.scss 在整顆 chip 上鋪底色的 (0,2,0)
-.eqt-rule-page__chip.eqt-gallery-chip.eqt-gallery-chip--mytags-colored {
-  background: var(--eqt-gallery-chip-bg) padding-box;
-
-  .eqt-gallery-chip__body {
-    background: var(--eqt-mytags-background);
-
-    // 通用的 hover 會用半透明色整片換掉底色；疊在 mytags 底色上面才不會一 hover 就褪色
-    &:hover {
-      background: linear-gradient(var(--eqt-bg-hover), var(--eqt-bg-hover)), var(--eqt-mytags-background);
-    }
-  }
-}
-
-// 含有／不含：綠紅只用在這顆 icon。--eqt-status-include 是給大面積色條用的亮綠，
-// 細線 icon 在 chip 底色上要深一階才讀得出來
-.eqt-rule-page__polarity {
+// 含有／不含與移除鈕用跟名稱同一個字色的普通 icon、不另外上底色，mytags 的底色才能鋪滿整顆 chip。
+// 含有／不含靠 + 與 − 的形狀區分，不靠顏色
+.eqt-rule-page__polarity,
+.eqt-rule-page__chip > .eqt-rule-page__chip-remove {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0 calc(var(--eqt-gallery-chip-padding-inline) / 2) 0 var(--eqt-gallery-chip-padding-inline);
   border: none;
   background: transparent;
-  color: var(--eqt-green);
+  color: var(--eqt-mytags-text, var(--eqt-text));
   cursor: pointer;
   transition: var(--eqt-transition-base);
 
@@ -384,7 +393,15 @@
     height: var(--eqt-fs-md);
   }
 
-  &--exclude { color: var(--eqt-danger); }
+  &:hover { background: var(--eqt-bg-hover); }
+}
+
+.eqt-rule-page__polarity {
+  padding: 0 calc(var(--eqt-gallery-chip-padding-inline) / 2) 0 var(--eqt-gallery-chip-padding-inline);
+}
+
+.eqt-rule-page__chip > .eqt-rule-page__chip-remove {
+  padding: 0 var(--eqt-gallery-chip-padding-inline) 0 calc(var(--eqt-gallery-chip-padding-inline) / 2);
 }
 
 .eqt-rule-page__chip-remove {
@@ -527,12 +544,13 @@
   min-width: 0;
 }
 
-.eqt-rule-page__materials-head {
+.eqt-rule-page__materials-head,
+.eqt-rule-page__finder-head {
   display: flex;
   align-items: center;
   gap: calc(var(--eqt-rule-page-gap) * 2);
 
-  > .eqt-rule-page__tool { margin-inline-start: auto; }
+  > :last-child:not(h2) { margin-inline-start: auto; }
 }
 
 .eqt-rule-page__tool {
