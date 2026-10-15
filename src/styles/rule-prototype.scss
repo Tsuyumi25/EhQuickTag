@@ -42,7 +42,8 @@
     margin: 0;
     accent-color: var(--eqt-green);
   }
-  button { @include btn-filled; }
+  // 標籤樣式的 chip（TagChip）自己有一套按鈕樣式
+  button:not(.eqt-gallery-chip__body) { @include btn-filled; }
   label { display: inline-flex; align-items: center; gap: var(--eqt-rule-prototype-gap); }
   p { margin: var(--eqt-rule-prototype-gap) 0; }
   small { color: var(--eqt-text-hint); }
@@ -214,7 +215,8 @@ tr.eqt-rule-prototype__gallery--background > td {
 .eqt-rule-prototype__prefix,
 .eqt-rule-prototype__why {
   --eqt-rule-prototype-tone: var(--eqt-border);
-  --eqt-rule-prototype-solid: rgb(from var(--eqt-rule-prototype-tone) r g b);
+  // 相對色語法省略 alpha 時會沿用原色的透明度，要明寫 / 1 才真的變成不透明
+  --eqt-rule-prototype-solid: rgb(from var(--eqt-rule-prototype-tone) r g b / 1);
 }
 
 // 標題前綴插在原生標題文字裡，字型跟著標題走，蓋掉 mount 的重設
@@ -253,41 +255,34 @@ tr.eqt-rule-prototype__gallery--background > td {
   background: color-mix(in srgb, var(--eqt-rule-prototype-solid) 20%, transparent);
 }
 
-// 排法照原生 .gl6t：置中、可換行，單一個最寬 250px、超過用省略號。
-// 用規則自己的背景色畫左側色條與淡底，跟原生標籤的外框長得不一樣，才不會被當成圖庫本身的 tag
-.eqt-rule-prototype__labels {
+// 排法照原生 .gl6t：置中、可換行，間距與單一個最寬 250px 都照它；字級跟著卡片走，跟原生標籤一樣大。
+// 規則按鈕本身是 TagChip，外框、圓角、底色跟原生標籤同一款；不透明的標籤底色疊在規則的背景色上才分得出來。
+// 前面的漏斗跟 dock 上的「圖庫規則」同一個圖示，標出這是規則、不是圖庫本身的 tag
+.eqt-rule-prototype__mount.eqt-rule-prototype__labels {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: var(--eqt-rule-prototype-gap);
-  padding: var(--eqt-rule-prototype-gap) var(--eqt-rule-prototype-gap) 0;
+  padding: 5px 2px 0;
+  font-family: inherit;
+  font-size: inherit;
 }
-// 前面加上容器提高權重，蓋過 mount 底下 button 一律套用的 btn-filled
-.eqt-rule-prototype__labels > .eqt-rule-prototype__label {
-  display: block;
+// 原生標籤沒設行高，取代它的 chip 也是照抄 normal；這裡跟著用，高度才跟下面的標籤一樣
+.eqt-gallery-chip.eqt-rule-prototype__label {
   max-width: 250px;
-  overflow: hidden;
-  padding: 0 var(--eqt-rule-prototype-gap);
-  border: none;
-  // 色條拿掉透明度，背景色很淡的規則色條才看得出來；底色照規則設的透明度
-  border-inline-start: var(--eqt-border-width) solid var(--eqt-rule-prototype-solid);
-  border-radius: var(--eqt-radius-sm);
-  background: linear-gradient(var(--eqt-rule-prototype-tone), var(--eqt-rule-prototype-tone)), var(--eqt-bg);
-  color: var(--eqt-text);
-  font-size: var(--eqt-fs-sm);
-  font-weight: bold;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  margin: 0 2px 2px;
+  line-height: normal;
 
-  &:hover:not(:disabled),
-  &:focus-visible {
-    background:
-      linear-gradient(var(--eqt-bg-hover), var(--eqt-bg-hover)),
-      linear-gradient(var(--eqt-rule-prototype-tone), var(--eqt-rule-prototype-tone)), var(--eqt-bg);
+  .eqt-gallery-chip__body { min-width: 0; }
+  // 漏斗填滿：細線圖示在 12px 的標籤裡太淡。裡面用淺一階的同色，外框線維持原色，輪廓才留得住
+  .eqt-gallery-chip__lead svg { fill: color-mix(in srgb, currentColor 45%, var(--eqt-gallery-chip-bg)); }
+  .eqt-gallery-chip__name {
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
+}
+// 有背景色的規則：外框與漏斗換成拿掉透明度的規則色；沒有背景色就跟原生標籤一模一樣，只多一個漏斗
+.eqt-gallery-chip.eqt-rule-prototype__label.eqt-rule-prototype__label--toned {
+  border-color: var(--eqt-rule-prototype-solid);
 
-  &:focus-visible {
-    outline: var(--eqt-border-width) solid currentColor;
-    outline-offset: 1px;
-  }
+  .eqt-gallery-chip__lead { color: var(--eqt-rule-prototype-solid); }
 }

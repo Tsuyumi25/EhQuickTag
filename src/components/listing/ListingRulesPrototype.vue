@@ -334,11 +334,13 @@ onBeforeUnmount(() => {
   </Teleport>
 
   <Teleport v-for="target in labelTargets" :key="target.id" :to="target.anchor">
-    <button
-      v-for="label in target.labels" :key="label.ruleId" type="button" class="eqt-rule-prototype__label"
-      :style="toneStyle(label.tone)" @click="openRule(label.ruleId)"
-      @mouseenter="showWhy($event, label)" @mouseleave="hideWhy" @focus="showWhy($event, label)" @blur="hideWhy"
-    >{{ label.text }}</button>
+    <TagChip
+      v-for="label in target.labels" :key="label.ruleId"
+      class="eqt-rule-prototype__label" :class="{ 'eqt-rule-prototype__label--toned': label.tone }"
+      :full="label.text" :display="label.text" :show-score="false" :show-marks="false" :style="toneStyle(label.tone)"
+      @pick="openRule(label.ruleId)"
+      @mouseenter="showWhy($event, label)" @mouseleave="hideWhy" @focusin="showWhy($event, label)" @focusout="hideWhy"
+    ><template #lead><Funnel aria-hidden="true" /></template></TagChip>
   </Teleport>
 
   <Teleport v-for="target in prefixTargets" :key="target.id" :to="target.anchor">
