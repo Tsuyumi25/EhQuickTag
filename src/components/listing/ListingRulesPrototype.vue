@@ -25,8 +25,10 @@ import { tokenIdentity } from '@/services/search/tagState'
 import { markEntriesOffPure, syncFromSearchPure, type TermEntry } from '@/services/search/sessionState'
 import { loadMyTagsPalette, type MyTagsPalette } from '@/services/mytags/mytagsPalette'
 import { pickUrl, savePick } from '@/services/mytags/mytagsPicks'
-import { openRule, openRules, rulesCollapsed, showRules } from '@/services/appOverlays'
-import { galleryMyTagsColorsEnabled, nsFormat, defaultExactMatch } from '@/services/store'
+import { openRule, openRules, openSettings, rulesCollapsed, showRules } from '@/services/appOverlays'
+import {
+  defaultExactMatch, galleryMyTagsColorsEnabled, listingDockAlwaysVisible, listingRulesPaused, listingTagSelectEnabled, nsFormat,
+} from '@/services/store'
 import { useEqtToast } from '@/composables/useEqtToast'
 import { pageWindow } from '@/utils/pageWindow'
 import '@/styles/rule-prototype.scss'
@@ -123,7 +125,9 @@ const dockOpen = ref(false)
 watch(() => selection.value.size, (size, before) => {
   if (size > 0 && before === 0) dockOpen.value = true
 })
-const dockVisible = computed(() => showRules.value || (items.value.length > 0 && dockOpen.value))
+// 規則頁的 dock 是規則介面的一部分，不受列表的標籤選取設定影響
+const dockVisible = computed(() => showRules.value
+  || (items.value.length > 0 && listingTagSelectEnabled.value && (dockOpen.value || listingDockAlwaysVisible.value)))
 function closeDock() {
   clearSelection()
   dockOpen.value = false
@@ -142,7 +146,7 @@ const effects = computed(() => {
   for (const item of items.value) {
     const rating = item.selfRated ? selfRatedStars.value.get(parseGalleryRef(item.href)?.gid ?? -1) ?? null : item.rating
     const probe: GalleryProbe = { tags: item.tagSet, complete: item.complete, rating, pages: item.pages, category: item.category }
-    resolved.set(item.id, resolveRuleEffects(rules.value, probe))
+    resolved.set(item.id, resolveRuleEffects(listingRulesPaused.value ? [] : rules.value, probe))
   }
   return resolved
 })
@@ -325,13 +329,24 @@ const searchHref = computed(() => {
   url.searchParams.set('f_search', searchDraft.value)
   return url.href
 })
+// 關掉標籤選取時不攔任何事件，點標籤照原生行為；已經選了的一併清掉，不然標籤上的選取色會留著
+function listenTagEvents(enabled: boolean) {
+  for (const name of capturedEvents) {
+    if (enabled) document.addEventListener(name, captureTagEvent, true)
+    else document.removeEventListener(name, captureTagEvent, true)
+  }
+}
+watch(listingTagSelectEnabled, enabled => {
+  listenTagEvents(enabled)
+  if (!enabled) closeDock()
+})
 onMounted(() => {
   document.addEventListener('keydown', keydown)
-  for (const name of capturedEvents) document.addEventListener(name, captureTagEvent, true)
+  listenTagEvents(listingTagSelectEnabled.value)
 })
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', keydown)
-  for (const name of capturedEvents) document.removeEventListener(name, captureTagEvent, true)
+  listenTagEvents(false)
   for (const item of items.value) clearEffects(item)
 })
 </script>
@@ -384,7 +399,7 @@ onBeforeUnmount(() => {
       <div class="eqt-rule-prototype__dock">
         <div class="eqt-rule-prototype__dock-tools">
           <template v-if="!showRules">
-            <button type="button" class="eqt-rule-prototype__settings" :title="t('settings.title')" disabled><Settings aria-hidden="true" />{{ t('settings.title') }}</button>
+            <button type="button" class="eqt-rule-prototype__settings" @click="openSettings('listing')"><Settings aria-hidden="true" />{{ t('settings.title') }}</button>
             <span class="eqt-rule-prototype__separator" aria-hidden="true" />
           </template>
           <!-- 兩種 dock 都把取消選取放在選取數的左邊，跟它操作的東西貼在一起 -->
@@ -448,11 +463,14 @@ onBeforeUnmount(() => {
             <button v-else type="button" class="eqt-rule-prototype__search" disabled><Search aria-hidden="true" />{{ t('tagbar.search') }}</button>
           </template>
         </div>
-        <span class="eqt-rule-prototype__separator" aria-hidden="true" />
-        <!-- 規則頁開著時關的是規則頁，showRules 的 watch 會接著關 dock；兩種情況選取都會清掉 -->
-        <button type="button" class="eqt-rule-prototype__close" @click="showRules ? showRules = false : closeDock()">
-          <X aria-hidden="true" />{{ t('rulePrototype.close') }}
-        </button>
+        <!-- 規則頁開著時關的是規則頁，showRules 的 watch 會接著關 dock；兩種情況選取都會清掉。
+             設成始終顯示時，普通 dock 關不掉，清選取交給左邊的取消選取 -->
+        <template v-if="showRules || !listingDockAlwaysVisible">
+          <span class="eqt-rule-prototype__separator" aria-hidden="true" />
+          <button type="button" class="eqt-rule-prototype__close" @click="showRules ? showRules = false : closeDock()">
+            <X aria-hidden="true" />{{ t('rulePrototype.close') }}
+          </button>
+        </template>
       </div>
     </aside>
   </Teleport>

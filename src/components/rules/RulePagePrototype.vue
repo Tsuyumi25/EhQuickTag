@@ -188,7 +188,7 @@ onBeforeUnmount(() => {
     <!-- 標題列橫跨三欄：左邊是設定、中間是選中的規則、右邊是規則頁唯一的出口 -->
     <header class="eqt-rule-page__header">
       <div class="eqt-rule-page__header-start">
-        <button type="button" class="eqt-rule-page__settings" @click="openSettings('gallery')">
+        <button type="button" class="eqt-rule-page__settings" @click="openSettings('listing')">
           <Settings class="eqt-rule-page__icon" />{{ t('settings.title') }}
         </button>
       </div>

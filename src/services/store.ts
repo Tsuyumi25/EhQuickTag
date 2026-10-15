@@ -165,6 +165,12 @@ const INITIAL_SETTINGS = {
   // per-panel 點「▸ Notes」展開，切下個 chip 又回預設
   wikiPreludeExpanded: false,
   followCurrentSite: true,
+  // 列表頁接管標籤的點選（左鍵含有、右鍵排除、拖曳多選）並顯示 dock；關掉的話點標籤照原生行為
+  listingTagSelectEnabled: true,
+  // 沒選標籤時 dock 也一直在，不必先點一個標籤才叫得出來
+  listingDockAlwaysVisible: false,
+  // 暫停所有圖庫規則在列表上的效果，規則本身不動；想看沒有規則時的列表用
+  listingRulesPaused: false,
   // My Tags Enhancer：plugin 在 /mytags 是否接管原生標籤管理 UI。跟
   // taggingEnhancerEnabled 同語意、同時機——App.vue setup 階段讀一次，
   // 關掉就完全不遮蔽原生頁面，toggle 後需重新整理才生效
@@ -223,6 +229,9 @@ export const galleryDblClickLeftNewTabActive  = refs.galleryDblClickLeftNewTabAc
 export const galleryDblClickRightNewTabActive = refs.galleryDblClickRightNewTabActive
 export const wikiPreludeExpanded = refs.wikiPreludeExpanded
 export const followCurrentSite  = refs.followCurrentSite
+export const listingTagSelectEnabled = refs.listingTagSelectEnabled
+export const listingDockAlwaysVisible = refs.listingDockAlwaysVisible
+export const listingRulesPaused = refs.listingRulesPaused
 export const myTagsEnhancerEnabled = refs.myTagsEnhancerEnabled
 export const myTagsPreviewCoverScale = refs.myTagsPreviewCoverScale
 export const myTagsPanelZoom = refs.myTagsPanelZoom

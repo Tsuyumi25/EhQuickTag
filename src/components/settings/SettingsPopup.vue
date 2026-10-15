@@ -14,6 +14,7 @@ import ProfileJsonEditor from './ProfileJsonEditor.vue'
 import SettingsGeneralTab from './SettingsGeneralTab.vue'
 import SettingsTagBarTab from './SettingsTagBarTab.vue'
 import SettingsGalleryTab from './SettingsGalleryTab.vue'
+import SettingsListingTab from './SettingsListingTab.vue'
 import SettingsMyTagsTab from './SettingsMyTagsTab.vue'
 import SettingsDataTab from './SettingsDataTab.vue'
 import SettingsAboutTab from './SettingsAboutTab.vue'
@@ -31,12 +32,13 @@ const dragOptions = {
 
 // --- tabs ---
 
-const tabKeys = ['general', 'tagbar', 'gallery', 'mytags', 'data', 'about'] as const
+const tabKeys = ['general', 'tagbar', 'listing', 'gallery', 'mytags', 'data', 'about'] as const
 type TabKey = typeof tabKeys[number]
 
 const tabLabelKeys: Record<TabKey, string> = {
   general: 'settings.tabGeneral',
   tagbar: 'settings.tabTagBar',
+  listing: 'settings.tabListing',
   gallery: 'settings.tabGallery',
   mytags: 'settings.tabMyTags',
   data: 'settings.tabData',
@@ -232,6 +234,7 @@ function onEditorPurge() {
       <div class="eqt-settings__panel">
         <div v-show="editingProfileIdx < 0" class="eqt-settings__panel-inner">
           <SettingsTagBarTab v-show="activeTab === 'tagbar'" />
+          <SettingsListingTab v-show="activeTab === 'listing'" />
           <SettingsGalleryTab v-show="activeTab === 'gallery'" />
           <SettingsMyTagsTab v-show="activeTab === 'mytags'" />
           <SettingsDataTab v-show="activeTab === 'data'" />
