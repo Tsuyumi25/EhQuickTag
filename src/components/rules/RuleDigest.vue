@@ -9,28 +9,23 @@ import { t } from '@/composables/useI18n'
 import { ruleDigestMode } from '@/services/appOverlays'
 import type { FixedRule } from '@/services/listing/fixedRulePrototype'
 import {
-  digestCases, digestRule, NEVER_NOTES, rangeTerms, ruleExpression, type DigestMode, type DigestTerm,
+  digestRule, NEVER_NOTES, rangeTerms, ruleExpression, type DigestMode, type DigestTerm,
 } from '@/services/listing/ruleDigest'
-import { casesMarkdown, noteParams, noteTerms, rowsMarkdown, sentenceMarkdown } from '@/services/listing/ruleDigestMarkdown'
+import { noteParams, noteTerms, rowsMarkdown } from '@/services/listing/ruleDigestMarkdown'
 
 const props = defineProps<{ rule: FixedRule }>()
-const MODES: readonly DigestMode[] = ['sentence', 'rows', 'cases', 'raw']
+const MODES: readonly DigestMode[] = ['rows', 'raw']
 const expression = computed(() => ruleExpression(props.rule))
 const clipboard = useClipboard({ legacy: true })
 
 const digest = computed(() => digestRule(props.rule))
 const mustTerms = computed((): DigestTerm[] => digest.value.tags.map(tag => ({ kind: 'tag', tag, exclude: false })))
 const mustRanges = computed(() => rangeTerms(digest.value.ranges))
-const cases = computed(() => (ruleDigestMode.value === 'cases' ? digestCases(digest.value) : null))
 const hasMust = computed(() => digest.value.tags.length > 0 || mustRanges.value.length > 0)
 
-// 原始算式複製的就是畫面上那段；其他三種寫成 Markdown，貼到別處不看畫面也讀得懂
+// 原始算式複製的就是畫面上那段；分行寫成 Markdown，貼到別處不看畫面也讀得懂
 function copyCurrent() {
-  const mode = ruleDigestMode.value
-  if (mode === 'raw') clipboard.copy(expression.value)
-  else if (mode === 'sentence') clipboard.copy(sentenceMarkdown(t, props.rule, digest.value))
-  else if (mode === 'rows') clipboard.copy(rowsMarkdown(t, props.rule, digest.value))
-  else clipboard.copy(casesMarkdown(t, props.rule, digest.value, digestCases(digest.value)))
+  clipboard.copy(ruleDigestMode.value === 'raw' ? expression.value : rowsMarkdown(t, props.rule, digest.value))
 }
 </script>
 
@@ -57,38 +52,7 @@ function copyCurrent() {
     </div>
 
     <div v-else class="eqt-rule-page__digest" :class="{ 'eqt-rule-page__digest--never': digest.never }">
-      <p v-if="ruleDigestMode === 'sentence'" class="eqt-rule-page__digest-sentence">
-        <template v-if="digest.tags.length">
-          <RuleDigestPhrase text-key="rulePagePrototype.digest.has">
-            <RuleDigestTerm v-for="term in mustTerms" :key="term.kind === 'tag' ? term.tag : ''" :term="term" />
-          </RuleDigestPhrase>
-        </template>
-        <template v-for="(term, index) in mustRanges" :key="`range-${index}`">
-          <template v-if="digest.tags.length || index">{{ t('rulePagePrototype.digest.clauseSep') }}</template>
-          <RuleDigestTerm :term="term" phrase />
-        </template>
-        <template v-for="(group, index) in digest.groups" :key="`group-${index}`">
-          <template v-if="hasMust || index">{{ t('rulePagePrototype.digest.clauseSep') }}</template>
-          <RuleDigestPhrase text-key="rulePagePrototype.digest.anyOf">
-            <RuleDigestTerm v-for="(term, termIndex) in group" :key="termIndex" :term="term" />
-          </RuleDigestPhrase>
-        </template>
-        <template v-if="digest.unless.length">
-          <template v-if="hasMust || digest.groups.length">{{ t('rulePagePrototype.digest.clauseSep') }}</template>
-          <RuleDigestPhrase text-key="rulePagePrototype.digest.unless">
-            <template v-for="(term, index) in digest.unless" :key="index">
-              <template v-if="index"> {{ t('rulePagePrototype.digest.or') }} </template>
-              <RuleDigestTerm :term="term" phrase />
-            </template>
-          </RuleDigestPhrase>
-        </template>
-        <template v-if="hasMust || digest.groups.length || digest.unless.length">{{ t('rulePagePrototype.digest.end') }}</template>
-        <span class="eqt-rule-page__digest-outcome">
-          <span aria-hidden="true">→</span><RuleActionSummary v-bind="rule.actions" verbose />
-        </span>
-      </p>
-
-      <dl v-else-if="ruleDigestMode === 'rows'" class="eqt-rule-page__digest-rows">
+      <dl class="eqt-rule-page__digest-rows">
         <div v-if="hasMust" class="eqt-rule-page__digest-row eqt-rule-page__digest-row--all">
           <dt>{{ t('rulePagePrototype.digest.must') }}</dt>
           <dd>
@@ -109,33 +73,6 @@ function copyCurrent() {
           <dd><RuleActionSummary class="eqt-rule-page__digest-action" v-bind="rule.actions" verbose /></dd>
         </div>
       </dl>
-
-      <template v-else-if="cases">
-        <p class="eqt-rule-page__digest-caption">
-          {{ t('rulePagePrototype.digest.cases', { n: cases.total }) }}
-          <span class="eqt-rule-page__digest-outcome">
-            <span aria-hidden="true">→</span><RuleActionSummary v-bind="rule.actions" verbose />
-          </span>
-        </p>
-        <ol class="eqt-rule-page__digest-cases">
-          <li
-            v-for="(item, index) in cases.cases" :key="index"
-            :class="{ 'eqt-rule-page__digest-case--impossible': item.impossible }"
-          >
-            <RuleDigestTerm v-for="(term, termIndex) in item.terms" :key="termIndex" :term="term" />
-            <small v-if="item.impossible">{{ t('rulePagePrototype.digest.impossible') }}</small>
-          </li>
-        </ol>
-        <p v-if="cases.total > cases.cases.length" class="eqt-rule-page__digest-caption">
-          {{ t('rulePagePrototype.digest.more', { n: cases.total - cases.cases.length }) }}
-        </p>
-        <dl v-if="digest.unless.length" class="eqt-rule-page__digest-rows">
-          <div class="eqt-rule-page__digest-row eqt-rule-page__digest-row--none">
-            <dt>{{ t('rulePagePrototype.digest.none') }}</dt>
-            <dd><RuleDigestTerm v-for="(term, index) in digest.unless" :key="index" :term="term" /></dd>
-          </div>
-        </dl>
-      </template>
 
       <ul v-if="digest.notes.length" class="eqt-rule-page__digest-notes">
         <li

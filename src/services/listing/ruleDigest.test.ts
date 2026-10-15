@@ -4,7 +4,7 @@ import {
   createGroup, createRangeCondition, createTagCondition, evaluateRule,
   type GalleryProbe, type RangeField, type ValueRange,
 } from '@/services/listing/fixedRulePrototype'
-import { digestCases, digestRule, formatRange, ruleExpression, type DigestTerm, type RuleDigest } from './ruleDigest'
+import { digestRule, formatRange, ruleExpression, type DigestTerm, type RuleDigest } from './ruleDigest'
 import { probeArb, rule, ruleArb } from './test-helpers'
 
 const inRange = (range: ValueRange, value: number) => range.min <= value && value <= range.max
@@ -70,26 +70,6 @@ describe('digestRule', () => {
   })
 })
 
-describe('digestCases', () => {
-  it('每一組各挑一項展開，被排除的情況標成不可能', () => {
-    const digest = digestRule(rule('all', [
-      createTagCondition('female:a'),
-      createGroup('any', [createTagCondition('female:b'), createTagCondition('male:c')]),
-      createGroup('any', [createTagCondition('male:c')], true),
-    ]))
-    const { cases, total } = digestCases(digest)
-    expect(total).toBe(2)
-    expect(cases.map(item => item.impossible)).toEqual([false, true])
-  })
-
-  it('超過上限只列前面幾種，total 仍是全部的數量', () => {
-    const pair = () => createGroup('any', [createTagCondition('female:a'), createTagCondition('female:b')])
-    const { cases, total } = digestCases(digestRule(rule('all', [pair(), pair(), pair()])), 5)
-    expect(total).toBe(8)
-    expect(cases).toHaveLength(5)
-  })
-})
-
 describe('ruleExpression', () => {
   it('根群組一行一個條件，子群組照原本的結構寫，NOT 包在 NOT ( ) 裡', () => {
     const expression = ruleExpression(rule('all', [
@@ -140,27 +120,13 @@ describe('formatRange', () => {
   })
 })
 
-// 摘要是判定的另一種寫法，不能說謊：任何完整規則與完整圖庫，摘要、展開後的情況、原本的判定都要一致
+// 摘要是判定的另一種寫法，不能說謊：任何完整規則與完整圖庫，摘要與原本的判定都要一致
 describe('摘要與判定一致', () => {
   test.prop([ruleArb, probeArb])('摘要命中 ⇔ 規則命中', (fixedRule, probe) => {
     expect(digestHolds(digestRule(fixedRule), probe)).toBe(evaluateRule(fixedRule, probe) === true)
   })
 
-  test.prop([ruleArb, probeArb])('展開的情況有一列命中 ⇔ 規則命中', (fixedRule, probe) => {
-    const digest = digestRule(fixedRule)
-    const { cases, total } = digestCases(digest, Number.POSITIVE_INFINITY)
-    expect(cases).toHaveLength(total)
-    const matched = cases.some(item => item.terms.every(term => holds(term, probe)))
-      && !digest.unless.some(term => holds(term, probe))
-    expect(matched).toBe(evaluateRule(fixedRule, probe) === true)
-  })
-
-  test.prop([ruleArb, probeArb])('標成不可能的情況與「永遠不會命中」都不會命中', (fixedRule, probe) => {
-    const digest = digestRule(fixedRule)
-    if (digest.never) expect(evaluateRule(fixedRule, probe)).not.toBe(true)
-    const { cases } = digestCases(digest, Number.POSITIVE_INFINITY)
-    for (const item of cases) {
-      if (item.impossible) expect(item.terms.every(term => holds(term, probe)) && !digest.unless.some(term => holds(term, probe))).toBe(false)
-    }
+  test.prop([ruleArb, probeArb])('標成「永遠不會命中」的規則不會命中', (fixedRule, probe) => {
+    if (digestRule(fixedRule).never) expect(evaluateRule(fixedRule, probe)).not.toBe(true)
   })
 })

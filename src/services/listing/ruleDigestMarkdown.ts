@@ -1,8 +1,8 @@
-// 摘要的「複製」：畫面上的句子、分行與情境照同一套字串寫成 Markdown，貼到別處不看畫面也讀得懂。
+// 摘要的「複製」：畫面上的分行照同一套字串寫成 Markdown，貼到別處不看畫面也讀得懂。
 // 標籤一律寫原始的 namespace:tag 並包在反引號裡，翻譯後的顯示名稱不夠精確，貼給別人或 AI 時會對不上
 
 import type { FixedActions, FixedRule } from '@/services/listing/fixedRulePrototype'
-import { formatAverage, formatRange, rangeTerms, type DigestCase, type DigestNote, type DigestTerm, type RuleDigest } from './ruleDigest'
+import { formatAverage, formatRange, rangeTerms, type DigestNote, type DigestTerm, type RuleDigest } from './ruleDigest'
 
 export type Translate = (key: string, params?: Record<string, string | number>) => string
 
@@ -19,20 +19,12 @@ function rangeText(tr: Translate, term: Extract<DigestTerm, { kind: 'range' }>):
   return `${value}${average}`
 }
 
-/** sentence：放進句子時帶上動詞或欄位名，跟畫面上的 phrase 一致 */
-export function termMarkdown(tr: Translate, term: DigestTerm, sentence = false): string {
-  if (term.kind === 'tag') {
-    if (term.exclude) return phrase(tr, 'rulePagePrototype.digest.lacks', code(term.tag))
-    return sentence ? phrase(tr, 'rulePagePrototype.digest.has', code(term.tag)) : code(term.tag)
-  }
+export function termMarkdown(tr: Translate, term: DigestTerm): string {
+  if (term.kind === 'tag') return term.exclude ? phrase(tr, 'rulePagePrototype.digest.lacks', code(term.tag)) : code(term.tag)
   if (term.kind === 'range') {
-    const field = tr(`rulePagePrototype.${term.field}`)
-    if (sentence && !term.exclude) return phrase(tr, 'rulePagePrototype.digest.range', rangeText(tr, term), { field })
-    return `${field} ${term.exclude ? '∉ ' : ''}${rangeText(tr, term)}`
+    return `${tr(`rulePagePrototype.${term.field}`)} ${term.exclude ? '∉ ' : ''}${rangeText(tr, term)}`
   }
-  const children = term.terms.map(child => termMarkdown(tr, child))
-  if (term.kind === 'all' && sentence) return phrase(tr, 'rulePagePrototype.digest.hasAll', children.join(' '))
-  return `(${children.join(term.kind === 'all' ? ' AND ' : ' OR ')})`
+  return `(${term.terms.map(child => termMarkdown(tr, child)).join(term.kind === 'all' ? ' AND ' : ' OR ')})`
 }
 
 export function actionsMarkdown(tr: Translate, actions: FixedActions): string {
@@ -69,24 +61,6 @@ function document(rule: FixedRule, body: string[], tr: Translate, digest: RuleDi
   return [`### ${rule.name}`, '', ...body, ...(notes.length ? ['', ...notes] : [])].join('\n')
 }
 
-export function sentenceMarkdown(tr: Translate, rule: FixedRule, digest: RuleDigest): string {
-  const sep = tr('rulePagePrototype.digest.clauseSep')
-  const clauses: string[] = []
-  if (digest.tags.length) {
-    clauses.push(phrase(tr, 'rulePagePrototype.digest.has', digest.tags.map(code).join(' ')))
-  }
-  for (const term of rangeTerms(digest.ranges)) clauses.push(termMarkdown(tr, term, true))
-  for (const group of digest.groups) {
-    clauses.push(phrase(tr, 'rulePagePrototype.digest.anyOf', group.map(term => termMarkdown(tr, term)).join(' ')))
-  }
-  if (digest.unless.length) {
-    const or = ` ${tr('rulePagePrototype.digest.or')} `
-    clauses.push(phrase(tr, 'rulePagePrototype.digest.unless', digest.unless.map(term => termMarkdown(tr, term, true)).join(or)))
-  }
-  const sentence = clauses.length ? `${clauses.join(sep)}${tr('rulePagePrototype.digest.end')} ` : ''
-  return document(rule, [`${sentence}→ ${actionsMarkdown(tr, rule.actions)}`], tr, digest)
-}
-
 function row(label: string, items: string): string {
   return `- **${label}** — ${items}`
 }
@@ -98,22 +72,5 @@ export function rowsMarkdown(tr: Translate, rule: FixedRule, digest: RuleDigest)
   for (const group of digest.groups) lines.push(row(tr('rulePagePrototype.digest.any'), group.map(term => termMarkdown(tr, term)).join(' ')))
   if (digest.unless.length) lines.push(row(tr('rulePagePrototype.digest.none'), digest.unless.map(term => termMarkdown(tr, term)).join(' ')))
   lines.push(row(tr('rulePrototype.actions'), actionsMarkdown(tr, rule.actions)))
-  return document(rule, lines, tr, digest)
-}
-
-export function casesMarkdown(
-  tr: Translate, rule: FixedRule, digest: RuleDigest, cases: { cases: DigestCase[]; total: number },
-): string {
-  const lines = [`${tr('rulePagePrototype.digest.cases', { n: cases.total })} → ${actionsMarkdown(tr, rule.actions)}`, '']
-  cases.cases.forEach((item, index) => {
-    const terms = item.terms.map(term => termMarkdown(tr, term)).join(' ')
-    lines.push(item.impossible
-      ? `${index + 1}. ~~${terms}~~ ${tr('rulePagePrototype.digest.impossible')}`
-      : `${index + 1}. ${terms}`)
-  })
-  if (cases.total > cases.cases.length) lines.push('', tr('rulePagePrototype.digest.more', { n: cases.total - cases.cases.length }))
-  if (digest.unless.length) {
-    lines.push('', row(tr('rulePagePrototype.digest.none'), digest.unless.map(term => termMarkdown(tr, term)).join(' ')))
-  }
   return document(rule, lines, tr, digest)
 }

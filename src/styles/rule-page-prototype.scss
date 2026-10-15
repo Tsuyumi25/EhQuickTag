@@ -1018,8 +1018,7 @@
   padding: 0;
 }
 
-// 句子裡的 chip 跟著文字排；chip 自帶的底部 margin 是給換行對齊用的，放進句子會把基線往上推
-.eqt-rule-page__digest-sentence,
+// 提示句裡的 chip 跟著文字排；chip 自帶的底部 margin 是給換行對齊用的，放進句子會把基線往上推
 .eqt-rule-page__digest-notes {
   margin: 0;
   line-height: 2;
@@ -1062,48 +1061,9 @@
   &--action { --eqt-rule-page-tone: var(--eqt-border); }
 }
 
-.eqt-rule-page__digest-cases {
-  display: flex;
-  flex-direction: column;
-  margin: 0;
-  padding-inline-start: calc(var(--eqt-rule-page-gap) * 5);
-
-  > li {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-
-    &::marker { color: var(--eqt-text-hint); }
-
-    > small {
-      margin: var(--eqt-rule-page-item-margin);
-      color: var(--eqt-danger);
-    }
-  }
-}
-
-// 不可能的情況照樣列出來，不然看不出是哪一種組合被擋掉
-.eqt-rule-page__digest-case--impossible > :not(small) { opacity: 0.45; }
-
-.eqt-rule-page__digest-outcome {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--eqt-rule-page-gap);
-  margin: var(--eqt-rule-page-item-margin);
-  color: var(--eqt-text-hint);
-
-  > .eqt-rule-page__action-summary { color: var(--eqt-text); }
-}
-
 // 分行裡的動作沒有 chip 自帶的 margin，補上同一組，才跟上面幾列的第一顆 chip 對齊
 .eqt-rule-page__digest-action {
   margin: var(--eqt-rule-page-item-margin);
-}
-
-.eqt-rule-page__digest-caption {
-  margin: 0;
-  color: var(--eqt-text-hint);
-  font-size: var(--eqt-fs-sm);
 }
 
 .eqt-rule-page__digest-notes {
@@ -1129,7 +1089,6 @@
     font-size: var(--eqt-fs-sm);
   }
 
-  .eqt-rule-page__digest-sentence & { margin: 0; }
 }
 
 .eqt-rule-page__range-value {

@@ -6,7 +6,7 @@ import {
   type FixedActions, type FixedConditionItem, type FixedRule, type RangeCondition, type RangeField, type ValueRange,
 } from '@/services/listing/fixedRulePrototype'
 
-export type DigestMode = 'sentence' | 'rows' | 'cases' | 'raw'
+export type DigestMode = 'rows' | 'raw'
 
 export type DigestTerm =
   | { kind: 'tag'; tag: string; exclude: boolean }
@@ -39,12 +39,6 @@ export interface RuleDigest {
   never: boolean
 }
 
-export interface DigestCase {
-  terms: DigestTerm[]
-  impossible: boolean
-}
-
-export const CASE_LIMIT = 12
 const RANGE_FIELD_ORDER = Object.keys(RANGE_FIELDS) as RangeField[]
 /** 出現這幾種提示，代表任何圖庫都不會命中 */
 export const NEVER_NOTES: Partial<Record<DigestNote['kind'], true>> = { conflict: true, rangeEmpty: true, rangeExcluded: true, groupImpossible: true }
@@ -205,58 +199,6 @@ export function digestRule(rule: FixedRule): RuleDigest {
   if (ctx.incomplete) notes.push({ kind: 'incomplete' })
 
   return { tags, ranges, groups, unless, notes, never: notes.some(note => NEVER_NOTES[note.kind] === true) }
-}
-
-/** 把每一組「至少一個」各挑一項，展開成一列一列具體的命中情況（DNF），最多列 limit 列 */
-export function digestCases(digest: RuleDigest, limit = CASE_LIMIT): { cases: DigestCase[]; total: number } {
-  const total = digest.groups.reduce((product, group) => product * group.length, 1)
-  const blocked = unlessTags(digest.unless)
-  const cases: DigestCase[] = []
-  const picks = digest.groups.map(() => 0)
-
-  while (cases.length < Math.min(total, limit)) {
-    const chosen = digest.groups.flatMap((group, index) => {
-      const term = group[picks[index]]
-      return term.kind === 'all' ? term.terms : [term]
-    })
-    const tags = [...digest.tags]
-    const excluded: string[] = []
-    const ranges: DigestRanges = { ...digest.ranges }
-    const rest: DigestTerm[] = []
-    for (const term of chosen) {
-      if (term.kind === 'tag' && !term.exclude) {
-        if (!tags.includes(term.tag)) tags.push(term.tag)
-      } else if (term.kind === 'tag') {
-        if (!excluded.includes(term.tag)) excluded.push(term.tag)
-      } else if (term.kind === 'range' && !term.exclude) {
-        const current = ranges[term.field]
-        ranges[term.field] = current ? intersect(current, term.range) : term.range
-      } else {
-        rest.push(term)
-      }
-    }
-    const impossible = tags.some(tag => blocked.has(tag) || excluded.includes(tag))
-      || RANGE_FIELD_ORDER.some(field => {
-        const range = ranges[field]
-        return !!range && (isEmpty(range) || excludedRange(field, range, digest.unless))
-      })
-    cases.push({
-      terms: [
-        ...tags.map((tag): DigestTerm => ({ kind: 'tag', tag, exclude: false })),
-        ...rangeTerms(ranges),
-        ...excluded.map((tag): DigestTerm => ({ kind: 'tag', tag, exclude: true })),
-        ...rest,
-      ],
-      impossible,
-    })
-    // 像里程表一樣進位：最後一組先動
-    for (let index = picks.length - 1; index >= 0; index -= 1) {
-      picks[index] += 1
-      if (picks[index] < digest.groups[index].length) break
-      picks[index] = 0
-    }
-  }
-  return { cases, total }
 }
 
 export type RangeShape =

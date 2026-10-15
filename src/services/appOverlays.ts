@@ -10,7 +10,7 @@ export const showRules = ref(false)
 export const rulesCollapsed = ref(false)
 // 放在頁面層級而不是規則頁元件裡：規則頁關掉再打開，素材還在
 export const ruleMaterials = ref<TagCondition[]>([])
-export const ruleDigestMode = ref<DigestMode>('sentence')
+export const ruleDigestMode = ref<DigestMode>('rows')
 /** 打開規則頁時要選中的規則；規則頁接手之後清回 null */
 export const requestedRuleId = ref<number | null>(null)
 
