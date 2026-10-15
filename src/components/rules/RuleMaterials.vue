@@ -66,10 +66,15 @@ function dropDuplicate(event: { added?: { element: TagCondition; newIndex: numbe
     >
       <template #item="{ element: source }">
         <div
-          class="eqt-rule-page__item eqt-rule-page__source" :class="source.kind === 'group' && `eqt-rule-page__source--${source.id}`"
+          class="eqt-rule-page__item eqt-rule-page__source" :class="`eqt-rule-page__source--${source.kind}`"
           :data-height="source.kind === 'group' ? 1 : 0"
         >
-          <component :is="sourceView(source).icon" v-if="sourceView(source).icon" class="eqt-rule-page__icon" />{{ sourceView(source).label }}
+          <span
+            v-if="source.kind === 'group'" class="eqt-rule-page__segment" :class="`eqt-rule-page__segment--${source.id}`"
+          >{{ sourceView(source).label }}</span>
+          <template v-else>
+            <component :is="sourceView(source).icon" class="eqt-rule-page__icon" />{{ sourceView(source).label }}
+          </template>
         </div>
       </template>
     </Draggable>

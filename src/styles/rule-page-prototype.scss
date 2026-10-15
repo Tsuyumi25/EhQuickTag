@@ -573,34 +573,33 @@
   gap: var(--eqt-rule-page-gap);
 }
 
-// 虛線框表示「拉出來的是新的一份」，跟實線的 chip 分開
+// 產生器長得跟拖出去之後的東西一樣：數值條件是一顆跟標籤同高的 chip，群組就是群組標題列上那個 AND／OR 箭頭段。
+// 「拉出來的是新的一份」由它們單獨排在標籤上面那一列表達
 .eqt-rule-page__source {
   display: inline-flex;
   align-items: center;
-  gap: var(--eqt-rule-page-gap);
-  height: var(--eqt-row-h);
-  padding: 0 calc(var(--eqt-rule-page-gap) * 1.5);
-  border: var(--eqt-border-width) dashed var(--eqt-border);
-  border-radius: var(--eqt-radius-sm);
-  color: var(--eqt-text-hint);
-  font-size: var(--eqt-fs-sm);
   cursor: grab;
   user-select: none;
-  transition: var(--eqt-transition-base);
 
-  &:hover {
-    background: var(--eqt-bg-hover);
+  &--range {
+    gap: var(--eqt-rule-page-gap);
+    height: var(--eqt-rule-page-inline-h);
+    padding: 0 calc(var(--eqt-gallery-chip-padding-inline) * 1.5);
+    border: var(--eqt-border-width-thin) solid var(--eqt-border);
+    border-radius: var(--eqt-radius-md);
+    background: var(--eqt-gallery-chip-bg);
     color: var(--eqt-text);
+    transition: var(--eqt-transition-base);
+
+    > .eqt-rule-page__icon { color: var(--eqt-text-hint); }
+
+    &:hover { background: linear-gradient(var(--eqt-bg-hover), var(--eqt-bg-hover)), var(--eqt-gallery-chip-bg); }
   }
 
-  // 群組的產生器帶著它的色條，拖出去之前就看得出是哪一種
-  &--all { --eqt-rule-page-tone: var(--eqt-status-include); }
-  &--any { --eqt-rule-page-tone: var(--eqt-status-or); }
-
-  &--all,
-  &--any {
-    border-inline-start: var(--eqt-rule-page-tone-width) solid var(--eqt-rule-page-tone);
-  }
+  // 箭頭段本身是給按鈕用的，點擊判定在 ::before 上；這裡要拖，游標換成抓手
+  > .eqt-rule-page__segment::before { cursor: grab; }
+  > .eqt-rule-page__segment--all { --eqt-rule-page-seg: var(--eqt-status-include); }
+  > .eqt-rule-page__segment--any { --eqt-rule-page-seg: var(--eqt-status-or); }
 }
 
 .eqt-rule-page__material-tray {
