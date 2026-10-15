@@ -3,7 +3,7 @@ export default {
   'rulePrototype.carryToMaterials': 'Add to materials',
   'rulePrototype.selectedCount': '{n} selected',
   'rulePrototype.close': 'Close',
-  'rulePrototype.addRule': 'New rule',
+  'rulePrototype.addRule': 'New',
   'rulePrototype.disabled': 'Disabled',
   'rulePrototype.blur': 'Blur cover',
   'rulePrototype.namePlaceholder': 'Rule name',

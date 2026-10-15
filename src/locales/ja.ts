@@ -3,7 +3,7 @@ export default {
   'rulePrototype.carryToMaterials': '素材に追加',
   'rulePrototype.selectedCount': '{n} 個選択中',
   'rulePrototype.close': '閉じる',
-  'rulePrototype.addRule': 'ルールを追加',
+  'rulePrototype.addRule': '追加',
   'rulePrototype.disabled': '無効',
   'rulePrototype.blur': '表紙をぼかす',
   'rulePrototype.namePlaceholder': 'ルール名',

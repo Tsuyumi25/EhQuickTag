@@ -3,7 +3,7 @@ export default {
   'rulePrototype.carryToMaterials': '帶回素材',
   'rulePrototype.selectedCount': '已選 {n} 個',
   'rulePrototype.close': '關閉',
-  'rulePrototype.addRule': '新增規則',
+  'rulePrototype.addRule': '新增',
   'rulePrototype.disabled': '已停用',
   'rulePrototype.blur': '模糊封面',
   'rulePrototype.namePlaceholder': '規則名稱',

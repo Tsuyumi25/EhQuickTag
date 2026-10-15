@@ -16,8 +16,7 @@
   --eqt-rule-page-margin: calc(var(--eqt-rule-page-gap) * 6);
 }
 
-// 三欄沿用 /mytags 工作台：兩側是 stripe 卡片，左欄底部 dock 放主要動作；
-// 每一欄各自捲動，所以標題列與 dock 不需要 sticky。
+// 三欄沿用 /mytags 工作台：兩側是 stripe 卡片；每一欄各自捲動，所以標題列不需要 sticky。
 .eqt-rule-page {
   position: fixed;
   // 底下讓出列表的 dock：預覽、返回與關閉在 dock 上（--eqt-rule-prototype-dock-clearance 定義在 rule-prototype.scss）
@@ -114,15 +113,25 @@
   gap: calc(var(--eqt-rule-page-gap) * 2.5);
 }
 
-// 對齊 settings popup 側欄標題
+// 標題對齊 settings popup 側欄標題，新增規則靠在同一列的最右邊
+.eqt-rule-page__side-head {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: calc(var(--eqt-rule-page-gap) * 2);
+  margin-bottom: var(--eqt-rule-page-gap);
+  padding: var(--eqt-rule-page-gap) 0 0 calc(var(--eqt-rule-page-gap) * 1.5);
+}
+
 .eqt-rule-page__title {
-  margin: 0 0 var(--eqt-rule-page-gap);
-  padding: var(--eqt-rule-page-gap) calc(var(--eqt-rule-page-gap) * 1.5) 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
   font-size: var(--eqt-fs-lg);
   font-weight: bold;
 }
 
-// min-height: 0 讓清單在側欄的高度內捲動，而不是把 dock 擠出視窗
+// min-height: 0 讓清單在側欄的高度內捲動，而不是撐出視窗
 .eqt-rule-page__list-items {
   display: flex;
   flex: 1 1 auto;
@@ -205,20 +214,12 @@
   &:active { cursor: grabbing; }
 }
 
-// ⚠️ 實色。--eqt-bg-stripe 是半透明疊加色，拿來當底會透出捲到下面的清單
-.eqt-rule-page__dock {
-  flex-shrink: 0;
-  margin: 0 calc(var(--eqt-rule-page-gap) * -2) calc(var(--eqt-rule-page-gap) * -2);
-  padding: calc(var(--eqt-rule-page-gap) * 2);
-  border-top: var(--eqt-border-width) solid var(--eqt-divider);
-  border-radius: 0 0 var(--eqt-radius-md) var(--eqt-radius-md);
-  background: var(--eqt-bg);
-}
-
 .eqt-rule-page__add-rule {
   @include btn-toned;
-  width: 100%;
+  flex-shrink: 0;
   height: var(--eqt-rule-page-control-h);
+  padding: 0 calc(var(--eqt-rule-page-gap) * 2);
+  white-space: nowrap;
 }
 
 // ---- 編輯區 ----

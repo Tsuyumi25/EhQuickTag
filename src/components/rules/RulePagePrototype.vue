@@ -213,7 +213,12 @@ onBeforeUnmount(() => {
     </header>
 
     <aside class="eqt-rule-page__side">
-      <h1 class="eqt-rule-page__title">{{ t('rulePrototype.rules') }}</h1>
+      <div class="eqt-rule-page__side-head">
+        <h1 class="eqt-rule-page__title">{{ t('rulePrototype.rules') }}</h1>
+        <button type="button" class="eqt-rule-page__add-rule" :disabled="!ready" @click="addRule()">
+          <Plus class="eqt-rule-page__icon" />{{ t('rulePrototype.addRule') }}
+        </button>
+      </div>
       <Draggable
         v-model="rules" v-bind="baseDragOptions" item-key="id"
         class="eqt-rule-page__list-items" handle=".eqt-rule-page__drag-handle"
@@ -250,11 +255,6 @@ onBeforeUnmount(() => {
           </div>
         </template>
       </Draggable>
-      <div class="eqt-rule-page__dock">
-        <button type="button" class="eqt-rule-page__add-rule" :disabled="!ready" @click="addRule()">
-          <Plus class="eqt-rule-page__icon" />{{ t('rulePrototype.addRule') }}
-        </button>
-      </div>
       <ContextMenu
         v-if="!rulesCollapsed" v-model:open="ruleMenuOpen"
         :anchor-el="ruleMenuTrigger" :ignore="[ruleMenuTrigger]"

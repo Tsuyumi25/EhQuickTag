@@ -3,7 +3,7 @@ export default {
   'rulePrototype.carryToMaterials': '재료에 추가',
   'rulePrototype.selectedCount': '{n}개 선택됨',
   'rulePrototype.close': '닫기',
-  'rulePrototype.addRule': '규칙 추가',
+  'rulePrototype.addRule': '추가',
   'rulePrototype.disabled': '비활성화',
   'rulePrototype.blur': '표지 흐리게',
   'rulePrototype.namePlaceholder': '규칙 이름',
