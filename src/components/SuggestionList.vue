@@ -61,14 +61,18 @@ const EST_ITEM_HEIGHT = 32
 const OVERSCAN = 10
 
 const listEl = ref<HTMLElement | null>(null)
+const rowsEl = ref<HTMLElement | null>(null)
 const scrollTop = ref(0)
+// leading slot 的列排在虛擬列前面、不虛擬化；捲動距離扣掉它們佔的高度才是虛擬列自己捲了多少
+const rowsOffset = ref(0)
 
 const visibleRange = computed(() => {
   const total = props.suggestions.length
   if (!total) return { start: 0, end: 0 }
   const containerH = listEl.value?.clientHeight ?? 300
-  const start = Math.max(0, Math.floor(scrollTop.value / EST_ITEM_HEIGHT) - OVERSCAN)
-  const end = Math.min(total, Math.ceil((scrollTop.value + containerH) / EST_ITEM_HEIGHT) + OVERSCAN)
+  const scrolled = Math.max(0, scrollTop.value - rowsOffset.value)
+  const start = Math.max(0, Math.floor(scrolled / EST_ITEM_HEIGHT) - OVERSCAN)
+  const end = Math.min(total, Math.ceil((scrolled + containerH) / EST_ITEM_HEIGHT) + OVERSCAN)
   return { start, end }
 })
 
@@ -88,6 +92,9 @@ const wrapperStyle = computed(() => ({
 
 function onScroll(e: Event): void {
   const top = (e.target as HTMLElement).scrollTop
+  if (rowsEl.value && listEl.value) {
+    rowsOffset.value = rowsEl.value.getBoundingClientRect().top - listEl.value.getBoundingClientRect().top + top
+  }
   if (top !== scrollTop.value) scrollTop.value = top
 }
 
@@ -164,7 +171,8 @@ const { zhDisplay } = useDisplayConfig()
     @scroll="onScroll"
     @mouseleave="emit('update:selectedIdx', -1)"
   >
-    <div :style="wrapperStyle">
+    <div v-if="$slots.leading" class="eqt-suggestion-list__leading"><slot name="leading" /></div>
+    <div ref="rowsEl" class="eqt-suggestion-list__rows" :style="wrapperStyle">
       <div
         v-for="{ data: entry, index: si, style } in virtualSuggestions"
         :key="entry.fullTag"

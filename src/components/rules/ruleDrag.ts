@@ -1,7 +1,7 @@
 import { baseDragOptions } from '@/utils/drag'
 import { MAX_GROUP_DEPTH } from '@/services/listing/fixedRulePrototype'
 
-// 各層群組與素材庫共用一個 group，素材才能拖進任何一層，條件也能丟回素材庫
+// 各層群組與素材清單共用一個 group，素材才能拖進任何一層，條件也能丟回素材
 export const RULE_CONDITIONS_GROUP = 'eqt-rule-conditions'
 
 /** Sortable 傳給 group.put 的目標實例，這裡只用得到它的根元素 */
@@ -16,7 +16,7 @@ export function fitsGroupDepth(to: SortableTarget, _from: unknown, dragged: HTML
 export const ruleDragOptions = {
   ...baseDragOptions,
   draggable: '.eqt-rule-page__item',
-  handle: '.eqt-gallery-chip, .eqt-rule-page__range, .eqt-rule-page__group-head, .eqt-rule-page__source',
+  handle: '.eqt-gallery-chip, .eqt-rule-page__range, .eqt-rule-page__group-head',
   filter: 'input, select, .eqt-rule-page__chip-remove, .eqt-rule-page__polarity, .eqt-number-field',
   // Sortable 預設會對 filter 命中的元素 preventDefault，select 的原生選單就打不開
   preventOnFilter: false,

@@ -7,6 +7,8 @@ const props = defineProps<{
   /** 給了才會出現「選中」按鈕 */
   pickedCount?: number
   picked?: boolean
+  /** 給了就在「全部」後面多一個入口，跟「選中」共用 picked 的狀態；規則頁的素材用 */
+  pickedLabel?: string
 }>()
 const emit = defineEmits<{
   'update:modelValue': [value: string | null]
@@ -47,6 +49,14 @@ function togglePicked(): void {
       :class="{ 'eqt-namespace-filter__button--active': modelValue === null && !picked }"
       @click="showAll"
     >{{ t('nsFilter.all') }}</button>
+    <button
+      v-if="pickedLabel"
+      type="button"
+      class="eqt-namespace-filter__button"
+      :class="{ 'eqt-namespace-filter__button--active': picked }"
+      :title="pickedLabel"
+      @click="togglePicked"
+    >{{ pickedLabel }}</button>
     <button
       v-for="namespace in namespaces"
       :key="namespace"

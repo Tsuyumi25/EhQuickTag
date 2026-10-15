@@ -312,7 +312,6 @@
 
 .eqt-rule-page__section > h2,
 .eqt-rule-page__digest-head > h2,
-.eqt-rule-page__materials-head > h2,
 .eqt-rule-page__finder-head > h2 {
   display: flex;
   align-items: center;
@@ -336,8 +335,7 @@
   min-height: calc(var(--eqt-row-h) + var(--eqt-rule-page-gap) * 1.25);
 
   > .eqt-rule-page__range,
-  > .eqt-rule-page__group,
-  > .eqt-rule-page__source {
+  > .eqt-rule-page__group {
     margin: var(--eqt-rule-page-item-margin);
   }
 
@@ -540,24 +538,14 @@
   text-align-last: center;
 }
 
-// ---- 右欄：素材與標籤清單 ----
+// ---- 右欄：素材（產生器、帶回來的素材與標籤清單同一塊） ----
 
-// 素材只佔自己需要的高度、最多到上限，剩下的高度全給標籤清單
-.eqt-rule-page__materials {
-  display: flex;
-  flex-shrink: 0;
-  flex-direction: column;
-  gap: calc(var(--eqt-rule-page-gap) * 1.5);
-  min-width: 0;
-}
-
-.eqt-rule-page__materials-head,
 .eqt-rule-page__finder-head {
   display: flex;
   align-items: center;
   gap: calc(var(--eqt-rule-page-gap) * 2);
 
-  > :last-child:not(h2) { margin-inline-start: auto; }
+  > h2 { margin-inline-end: auto; }
 }
 
 .eqt-rule-page__tool {
@@ -565,47 +553,13 @@
   height: var(--eqt-row-h);
   padding: 0 calc(var(--eqt-rule-page-gap) * 1.5);
   font-size: var(--eqt-fs-sm);
-}
 
-.eqt-rule-page__sources {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--eqt-rule-page-gap);
-}
-
-// 產生器長得跟拖出去之後的東西一樣：數值條件是一顆跟標籤同高的 chip，群組就是群組標題列上那個 AND／OR 箭頭段。
-// 「拉出來的是新的一份」由它們單獨排在標籤上面那一列表達
-.eqt-rule-page__source {
-  display: inline-flex;
-  align-items: center;
-  cursor: grab;
-  user-select: none;
-
-  &--range {
-    gap: var(--eqt-rule-page-gap);
-    height: var(--eqt-rule-page-inline-h);
-    padding: 0 calc(var(--eqt-gallery-chip-padding-inline) * 1.5);
-    border: var(--eqt-border-width-thin) solid var(--eqt-border);
-    border-radius: var(--eqt-radius-md);
-    background: var(--eqt-gallery-chip-bg);
-    color: var(--eqt-text);
-    transition: var(--eqt-transition-base);
-
-    > .eqt-rule-page__icon { color: var(--eqt-text-hint); }
-
-    &:hover { background: linear-gradient(var(--eqt-bg-hover), var(--eqt-bg-hover)), var(--eqt-gallery-chip-bg); }
+  // 跟標題、勾選框排在同一列，寫字的話窄欄裡會擠到換行
+  &--icon {
+    flex-shrink: 0;
+    width: var(--eqt-row-h);
+    padding: 0;
   }
-
-  // 箭頭段本身是給按鈕用的，點擊判定在 ::before 上；這裡要拖，游標換成抓手
-  > .eqt-rule-page__segment::before { cursor: grab; }
-  > .eqt-rule-page__segment--all { --eqt-rule-page-seg: var(--eqt-status-include); }
-  > .eqt-rule-page__segment--any { --eqt-rule-page-seg: var(--eqt-status-or); }
-}
-
-.eqt-rule-page__material-tray {
-  max-height: calc(var(--eqt-row-h) * 6);
-  overflow: auto;
-  overscroll-behavior: contain;
 }
 
 // min-height: 0 讓候選清單在右欄剩下的高度內捲動，而不是把整欄撐出視窗
@@ -616,8 +570,6 @@
   gap: calc(var(--eqt-rule-page-gap) * 1.5);
   min-width: 0;
   min-height: 0;
-  padding-top: calc(var(--eqt-rule-page-gap) * 2.5);
-  border-top: var(--eqt-border-width) solid var(--eqt-border);
 
   > .eqt-rule-page__input {
     flex-shrink: 0;
@@ -635,8 +587,46 @@
 .eqt-rule-page__finder-list {
   flex: 1 1 auto;
   min-width: 0;
+  min-height: 0;
 
   .eqt-popup__suggestion { cursor: grab; }
+
+  // 產生器：名稱欄放拖出去之後長的樣子（群組的 AND／OR 箭頭段、數值條件的圖示）
+  .eqt-rule-page__generator .eqt-popup__suggestion-name {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--eqt-rule-page-gap);
+
+    > .eqt-rule-page__icon { color: var(--eqt-text-hint); }
+  }
+  // 箭頭段本身是給按鈕用的，點擊判定在 ::before 上；這裡要拖，游標換成抓手
+  .eqt-rule-page__generator .eqt-rule-page__segment {
+    justify-self: start;
+
+    &::before { cursor: grab; }
+    &--all { --eqt-rule-page-seg: var(--eqt-status-include); }
+    &--any { --eqt-rule-page-seg: var(--eqt-status-or); }
+  }
+
+  .eqt-rule-page__material .eqt-popup__suggestion-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--eqt-rule-page-gap);
+  }
+
+  .eqt-rule-page__material-remove {
+    @include btn-icon;
+    width: var(--eqt-fs-lg);
+    height: var(--eqt-fs-lg);
+    color: var(--eqt-text-hint);
+
+    &:hover:not(:disabled) { color: var(--eqt-danger); }
+
+    > svg {
+      width: var(--eqt-fs-md);
+      height: var(--eqt-fs-md);
+    }
+  }
 
   // 跟 /mytags 標籤目錄同一套：有個人配色的列畫出 chip 的框與粗體，底色與字色走 inline style
   .eqt-popup__suggestion--styled {

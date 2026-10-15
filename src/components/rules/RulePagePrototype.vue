@@ -7,8 +7,7 @@ import { baseDragOptions } from '@/utils/drag'
 import RuleActionsEditor from './RuleActionsEditor.vue'
 import RuleConditionGroup from './RuleConditionGroup.vue'
 import RuleDigest from './RuleDigest.vue'
-import RuleMaterials from './RuleMaterials.vue'
-import RuleTagLibrary from './RuleTagLibrary.vue'
+import RuleMaterialPanel from './RuleMaterialPanel.vue'
 import { useFixedRuleStore } from '@/composables/useFixedRuleStore'
 import { t } from '@/composables/useI18n'
 import { createRule } from '@/services/listing/fixedRulePrototype'
@@ -291,8 +290,7 @@ onBeforeUnmount(() => {
     </main>
 
     <aside class="eqt-rule-page__library">
-      <RuleMaterials />
-      <RuleTagLibrary />
+      <RuleMaterialPanel />
     </aside>
   </div>
 </template>
