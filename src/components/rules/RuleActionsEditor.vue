@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { EyeClosed, Paintbrush } from '@lucide/vue'
+import { ref } from 'vue'
+import { CircleQuestionMark, EyeClosed, Paintbrush } from '@lucide/vue'
+import AnchoredPopover from '@/components/AnchoredPopover.vue'
 import LineColorSwatch from '@/components/LineColorSwatch.vue'
 import { t } from '@/composables/useI18n'
 import { parseColorInput } from '@/services/color'
@@ -30,16 +32,13 @@ function setTitlePrefix(event: Event) {
 function toggle(key: 'blur' | 'strike' | 'showName', event: Event) {
   props.actions[key] = (event.target as HTMLInputElement).checked
 }
+
+const hideHelpAnchor = ref<HTMLElement | null>(null)
+const hideHelpOpen = ref(false)
 </script>
 
 <template>
-  <div class="eqt-rule-page__actions-head">
-    <h2><Paintbrush class="eqt-rule-page__icon" />{{ t('rulePrototype.actions') }}</h2>
-    <button
-      type="button" class="eqt-rule-page__hide" :aria-pressed="actions.hide" :title="t('rulePagePrototype.hideHint')"
-      @click="actions.hide = !actions.hide"
-    ><EyeClosed class="eqt-rule-page__icon" />{{ t('rulePagePrototype.hideShort') }}</button>
-  </div>
+  <h2><Paintbrush class="eqt-rule-page__icon" />{{ t('rulePrototype.actions') }}</h2>
   <!-- 左欄是動作作用在圖庫卡片的哪個位置，新的動作照位置放進對應的那一行。
        隱藏時圖庫整個不見，其他動作都不作用：整組停用，但值留著，關掉隱藏就回來 -->
   <fieldset class="eqt-rule-page__actions" :disabled="actions.hide">
@@ -103,4 +102,18 @@ function toggle(key: 'blur' | 'strike' | 'showName', event: Event) {
       </label>
     </div>
   </fieldset>
+
+  <div class="eqt-rule-page__hide-row">
+    <button type="button" class="eqt-rule-page__hide" :aria-pressed="actions.hide" @click="actions.hide = !actions.hide">
+      <EyeClosed class="eqt-rule-page__icon" />{{ t('rulePagePrototype.hideShort') }}
+    </button>
+    <button
+      ref="hideHelpAnchor" type="button" class="eqt-rule-page__help" :aria-label="t('rulePagePrototype.hideHelp')"
+      @mouseenter="hideHelpOpen = true" @mouseleave="hideHelpOpen = false"
+      @focus="hideHelpOpen = true" @blur="hideHelpOpen = false"
+    ><CircleQuestionMark class="eqt-rule-page__icon" /></button>
+    <AnchoredPopover v-model:open="hideHelpOpen" :anchor="hideHelpAnchor" placement="top-start">
+      <p class="eqt-rule-page__help-tip" role="tooltip">{{ t('rulePagePrototype.hideHelp') }}</p>
+    </AnchoredPopover>
+  </div>
 </template>

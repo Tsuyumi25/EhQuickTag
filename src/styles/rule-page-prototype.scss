@@ -311,7 +311,6 @@
 }
 
 .eqt-rule-page__section > h2,
-.eqt-rule-page__actions-head > h2,
 .eqt-rule-page__digest-head > h2,
 .eqt-rule-page__materials-head > h2,
 .eqt-rule-page__finder-head > h2 {
@@ -791,12 +790,10 @@
 
 // ---- 效果 ----
 
-.eqt-rule-page__actions-head {
+.eqt-rule-page__hide-row {
   display: flex;
   align-items: center;
-  gap: calc(var(--eqt-rule-page-gap) * 2);
-
-  > .eqt-rule-page__hide { margin-inline-start: auto; }
+  gap: var(--eqt-rule-page-gap);
 }
 
 .eqt-rule-page__hide {
@@ -811,6 +808,29 @@
     background: var(--eqt-danger-bg-hover);
     font-weight: bold;
   }
+}
+
+.eqt-rule-page__help {
+  @include btn-icon;
+  width: var(--eqt-rule-page-control-h);
+  height: var(--eqt-rule-page-control-h);
+  color: var(--eqt-text-hint);
+  cursor: help;
+}
+
+// 浮在規則頁上面的說明：只是文字，不接滑鼠
+.eqt-rule-page__help-tip {
+  max-width: calc(var(--eqt-row-h) * 14);
+  margin: 0;
+  padding: calc(var(--eqt-rule-page-gap) * 1.5) calc(var(--eqt-rule-page-gap) * 2.5);
+  border: var(--eqt-border-width-thin) solid var(--eqt-border);
+  border-radius: var(--eqt-radius-md);
+  background: var(--eqt-bg-elevated);
+  box-shadow: var(--eqt-shadow-popover);
+  color: var(--eqt-text);
+  font-size: var(--eqt-fs-sm);
+  line-height: 1.5;
+  pointer-events: none;
 }
 
 // fieldset 的預設框線、內距與 min-width: min-content 都拿掉，當成一般的格線容器
