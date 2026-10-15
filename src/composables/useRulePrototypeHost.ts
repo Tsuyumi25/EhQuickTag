@@ -1,4 +1,5 @@
 import { onBeforeUnmount, onMounted, shallowRef, type CSSProperties } from 'vue'
+import { categoryFromClassList, type GalleryCategory } from '@/services/listing/galleryCategory'
 
 export interface PrototypeListingTag {
   name: string
@@ -22,6 +23,7 @@ export interface PrototypeListingItem {
   selfRated: boolean
   /** 讀不到就是 null，判定維持未知 */
   pages: number | null
+  category: GalleryCategory | null
   title: string
   href: string
 }
@@ -123,7 +125,9 @@ export function useRulePrototypeHost() {
       }
       const stars = starRating(root)
       const pages = pageCount(root)
-      const signature = JSON.stringify([complete, stars, pages, tags])
+      // 分類標籤在精簡／極簡模式是 .cn、其他版面是 .cs；縮圖浮出的那張（.glthumb）裡也有一份，分類一樣
+      const category = categoryFromClassList(root.querySelector('.cs, .cn')?.classList ?? [])
+      const signature = JSON.stringify([complete, stars, pages, category, tags])
       let record = records.get(root)
       const detached = (anchor: HTMLElement | null) => !!anchor && !root.contains(anchor)
       if (record && (detached(record.item.anchor) || detached(record.item.labelAnchor)
@@ -166,7 +170,7 @@ export function useRulePrototypeHost() {
           signature,
           item: {
             id: nextId++, root, anchor, labelAnchor, titleAnchor,
-            tags, tagSet: names, complete, ...stars, pages, title, href: link.href,
+            tags, tagSet: names, complete, ...stars, pages, category, title, href: link.href,
           },
         }
         records.set(root, record)

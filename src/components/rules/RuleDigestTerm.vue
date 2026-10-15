@@ -2,9 +2,11 @@
 import TagChip from '@/components/TagChip.vue'
 import RuleDigestPhrase from './RuleDigestPhrase.vue'
 import RuleRangeValue from './RuleRangeValue.vue'
+import { categoryChipStyle } from './categoryChip'
 import { RANGE_FIELD_ICONS } from './rangeFieldIcons'
 import { useRuleTagView } from '@/composables/useRuleTagView'
 import { t } from '@/composables/useI18n'
+import { CATEGORY_LABELS } from '@/services/listing/galleryCategory'
 import { formatAverage, type DigestTerm } from '@/services/listing/ruleDigest'
 
 const props = defineProps<{ term: DigestTerm }>()
@@ -19,6 +21,12 @@ const view = useRuleTagView(() => (props.term.kind === 'tag' ? props.term.tag : 
     <TagChip
       class="eqt-rule-page__digest-chip" :full="term.tag" :display="view.text" :icon-url="view.iconUrl" :colors="view.colors"
       :show-score="false" :show-marks="false" :title="term.tag"
+    />
+  </RuleDigestPhrase>
+  <RuleDigestPhrase v-else-if="term.kind === 'category'" :text-key="term.exclude ? 'rulePagePrototype.digest.lacks' : undefined">
+    <TagChip
+      class="eqt-rule-page__digest-chip eqt-gallery-chip--mytags-colored" :style="categoryChipStyle(term.category)"
+      :full="`category:${term.category}`" :display="CATEGORY_LABELS[term.category]" :show-score="false" :show-marks="false"
     />
   </RuleDigestPhrase>
   <span v-else-if="term.kind === 'range'" class="eqt-rule-page__digest-range">

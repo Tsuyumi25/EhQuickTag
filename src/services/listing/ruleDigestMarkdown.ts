@@ -2,6 +2,7 @@
 // 標籤一律寫原始的 namespace:tag 並包在反引號裡，翻譯後的顯示名稱不夠精確，貼給別人或 AI 時會對不上
 
 import type { FixedActions, FixedRule } from '@/services/listing/fixedRulePrototype'
+import { CATEGORY_LABELS } from './galleryCategory'
 import { formatAverage, formatRange, rangeTerms, type DigestNote, type DigestTerm, type RuleDigest } from './ruleDigest'
 
 export type Translate = (key: string, params?: Record<string, string | number>) => string
@@ -21,6 +22,10 @@ function rangeText(tr: Translate, term: Extract<DigestTerm, { kind: 'range' }>):
 
 export function termMarkdown(tr: Translate, term: DigestTerm): string {
   if (term.kind === 'tag') return term.exclude ? phrase(tr, 'rulePagePrototype.digest.lacks', code(term.tag)) : code(term.tag)
+  if (term.kind === 'category') {
+    const label = code(CATEGORY_LABELS[term.category])
+    return term.exclude ? phrase(tr, 'rulePagePrototype.digest.lacks', label) : label
+  }
   if (term.kind === 'range') {
     return `${tr(`rulePagePrototype.${term.field}`)} ${term.exclude ? '∉ ' : ''}${rangeText(tr, term)}`
   }
@@ -41,6 +46,7 @@ export function actionsMarkdown(tr: Translate, actions: FixedActions): string {
 
 export function noteTerms(note: DigestNote): DigestTerm[] {
   if (note.kind === 'conflict') return note.tags.map(tag => ({ kind: 'tag', tag, exclude: false }))
+  if (note.kind === 'categoryConflict') return note.categories.map(category => ({ kind: 'category', category, exclude: false }))
   if (note.kind === 'rangeMerged') return [{ kind: 'range', field: note.field, range: note.range, exclude: false }]
   return note.kind === 'groupImpossible' || note.kind === 'groupRedundant' ? note.terms : []
 }
@@ -67,7 +73,11 @@ function row(label: string, items: string): string {
 
 export function rowsMarkdown(tr: Translate, rule: FixedRule, digest: RuleDigest): string {
   const lines: string[] = []
-  const must = [...digest.tags.map(code), ...rangeTerms(digest.ranges).map(term => termMarkdown(tr, term))]
+  const must = [
+    ...digest.categories.map(category => code(CATEGORY_LABELS[category])),
+    ...digest.tags.map(code),
+    ...rangeTerms(digest.ranges).map(term => termMarkdown(tr, term)),
+  ]
   if (must.length) lines.push(row(tr('rulePagePrototype.digest.must'), must.join(' ')))
   for (const group of digest.groups) lines.push(row(tr('rulePagePrototype.digest.any'), group.map(term => termMarkdown(tr, term)).join(' ')))
   if (digest.unless.length) lines.push(row(tr('rulePagePrototype.digest.none'), digest.unless.map(term => termMarkdown(tr, term)).join(' ')))

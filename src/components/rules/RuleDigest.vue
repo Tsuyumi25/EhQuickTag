@@ -19,9 +19,12 @@ const expression = computed(() => ruleExpression(props.rule))
 const clipboard = useClipboard({ legacy: true })
 
 const digest = computed(() => digestRule(props.rule))
-const mustTerms = computed((): DigestTerm[] => digest.value.tags.map(tag => ({ kind: 'tag', tag, exclude: false })))
+const mustTerms = computed((): DigestTerm[] => [
+  ...digest.value.categories.map(category => ({ kind: 'category', category, exclude: false }) satisfies DigestTerm),
+  ...digest.value.tags.map(tag => ({ kind: 'tag', tag, exclude: false }) satisfies DigestTerm),
+])
 const mustRanges = computed(() => rangeTerms(digest.value.ranges))
-const hasMust = computed(() => digest.value.tags.length > 0 || mustRanges.value.length > 0)
+const hasMust = computed(() => mustTerms.value.length > 0 || mustRanges.value.length > 0)
 
 // 原始算式複製的就是畫面上那段；分行寫成 Markdown，貼到別處不看畫面也讀得懂
 function copyCurrent() {
@@ -56,7 +59,7 @@ function copyCurrent() {
         <div v-if="hasMust" class="eqt-rule-page__digest-row eqt-rule-page__digest-row--all">
           <dt>{{ t('rulePagePrototype.digest.must') }}</dt>
           <dd>
-            <RuleDigestTerm v-for="term in mustTerms" :key="term.kind === 'tag' ? term.tag : ''" :term="term" />
+            <RuleDigestTerm v-for="(term, index) in mustTerms" :key="`must-${index}`" :term="term" />
             <RuleDigestTerm v-for="(term, index) in mustRanges" :key="`range-${index}`" :term="term" />
           </dd>
         </div>

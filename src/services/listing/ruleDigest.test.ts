@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { test, fc } from '@fast-check/vitest'
 import {
-  createGroup, createRangeCondition, createTagCondition, evaluateRule,
+  createCategoryCondition, createGroup, createRangeCondition, createTagCondition, evaluateRule,
   type GalleryProbe, type RangeField, type ValueRange,
 } from '@/services/listing/fixedRulePrototype'
 import { digestRule, formatRange, ruleExpression, type DigestTerm, type RuleDigest } from './ruleDigest'
@@ -11,12 +11,14 @@ const inRange = (range: ValueRange, value: number) => range.min <= value && valu
 
 function holds(term: DigestTerm, probe: GalleryProbe): boolean {
   if (term.kind === 'tag') return probe.tags.has(term.tag) !== term.exclude
+  if (term.kind === 'category') return (probe.category === term.category) !== term.exclude
   if (term.kind === 'range') return inRange(term.range, probe[term.field]!) !== term.exclude
   return term.kind === 'all' ? term.terms.every(child => holds(child, probe)) : term.terms.some(child => holds(child, probe))
 }
 
 function digestHolds(digest: RuleDigest, probe: GalleryProbe): boolean {
   return digest.tags.every(tag => probe.tags.has(tag))
+    && digest.categories.every(category => probe.category === category)
     && Object.entries(digest.ranges).every(([field, range]) => inRange(range, probe[field as RangeField]!))
     && digest.groups.every(group => group.some(term => holds(term, probe)))
     && !digest.unless.some(term => holds(term, probe))
@@ -62,6 +64,16 @@ describe('digestRule', () => {
       createTagCondition('female:a'), createGroup('any', [createTagCondition('female:a'), createTagCondition('female:b')]),
     ]))
     expect(digest.notes).toContainEqual({ kind: 'groupRedundant', terms: [{ kind: 'tag', tag: 'female:a', exclude: false }] })
+  })
+
+  it('一定要的分類不只一種，或一定要的分類又被排除，都標成永遠不會命中', () => {
+    const two = digestRule(rule('all', [createCategoryCondition('doujinshi'), createCategoryCondition('manga')]))
+    expect(two.notes).toContainEqual({ kind: 'categoryConflict', categories: ['doujinshi', 'manga'] })
+    expect(two.never).toBe(true)
+    const excluded = digestRule(rule('all', [createCategoryCondition('doujinshi'), createCategoryCondition('doujinshi', true)]))
+    expect(excluded.notes).toContainEqual({ kind: 'categoryConflict', categories: ['doujinshi'] })
+    const fine = digestRule(rule('all', [createCategoryCondition('doujinshi'), createCategoryCondition('manga', true)]))
+    expect(fine.never).toBe(false)
   })
 
   it('空的根群組與空的子群組都標成未完成', () => {

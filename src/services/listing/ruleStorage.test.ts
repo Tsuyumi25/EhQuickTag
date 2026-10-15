@@ -22,7 +22,7 @@ const storedBefore15 = { ...actions, blur: 'unchanged' }
 const noneBefore15 = { ...createActions(), blur: 'unchanged' }
 const noActions: FixedActions = createActions()
 const tag = (id: number, name: string, exclude = false) => ({ id, kind: 'tag', tag: name, exclude })
-const probe = (tags: string[], rating: number | null = null): GalleryProbe => ({ tags: new Set(tags), complete: true, rating, pages: null })
+const probe = (tags: string[], rating: number | null = null): GalleryProbe => ({ tags: new Set(tags), complete: true, rating, pages: null, category: null })
 
 function ids(item: FixedConditionItem): number[] {
   return item.kind === 'group' ? [item.id, ...item.conditions.flatMap(ids)] : [item.id]
@@ -72,7 +72,8 @@ describe('decodeRules', () => {
   })
 
   it('目前的格式原樣讀回來', () => {
-    const child: ConditionGroup = { id: 3, kind: 'group', mode: 'all', negate: false, conditions: [tag(4, 'female:a') as FixedConditionItem] }
+    const category: FixedConditionItem = { id: 5, kind: 'category', category: 'non-h', exclude: true }
+    const child: ConditionGroup = { id: 3, kind: 'group', mode: 'all', negate: false, conditions: [tag(4, 'female:a') as FixedConditionItem, category] }
     const root: ConditionGroup = { id: 2, kind: 'group', mode: 'any', negate: true, conditions: [child] }
     const stored = { id: 1, name: 'r', enabled: false, root, actions: fullActions }
     expect(decodeRules(JSON.stringify({ schema: RULE_SCHEMA, rules: [stored] }))).toEqual([stored])
@@ -212,6 +213,7 @@ describe('decodeRules', () => {
     expect(() => decodeRules(ruleWith(deep(1), { ...actions, titlePrefix: ' padded ' }))).toThrow()
     expect(() => decodeRules(ruleWith(deep(1), { ...actions, titlePrefix: true }))).toThrow()
     expect(() => decodeRules(ruleWith(deep(1), { ...actions, hide: 'yes' }))).toThrow()
+    expect(() => decodeRules(ruleWith({ id: 2, kind: 'group', mode: 'all', negate: false, conditions: [{ id: 3, kind: 'category', category: 'hentai', exclude: false }] }))).toThrow()
     const { strike: _, ...missingFlag } = actions
     expect(() => decodeRules(ruleWith(deep(1), missingFlag))).toThrow()
   })

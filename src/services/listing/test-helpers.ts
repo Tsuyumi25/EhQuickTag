@@ -1,13 +1,16 @@
 import { fc } from '@fast-check/vitest'
 import {
-  createActions, createGroup, createRangeCondition, createRule, createTagCondition, GROUP_MODES, RANGE_OPS,
+  createActions, createCategoryCondition, createGroup, createRangeCondition, createRule, createTagCondition, GROUP_MODES, RANGE_OPS,
   type FixedConditionItem, type FixedRule, type GalleryProbe, type GroupMode, type RangeField, type RangeOp,
 } from '@/services/listing/fixedRulePrototype'
+import type { GalleryCategory } from '@/services/listing/galleryCategory'
 
 // === 規則的 property test 共用 arbitraries ===
 // 標籤只取四個，隨機規則與隨機圖庫才會常常碰在一起；評分取半星、頁數取 1–12，區間的邊界也常碰到
 
 const TAGS = ['female:a', 'female:b', 'male:c', 'other:d']
+// 分類也只取三種：同一條規則裡常會碰到兩種不同的分類，互斥的情況才測得到
+const CATEGORIES: GalleryCategory[] = ['doujinshi', 'manga', 'misc']
 
 export function rule(mode: GroupMode, conditions: FixedConditionItem[], negate = false): FixedRule {
   return { ...createRule(1), root: createGroup(mode, conditions, negate), actions: createActions() }
@@ -17,6 +20,8 @@ const ratingArb = fc.integer({ min: 0, max: 10 }).map(n => n / 2)
 const tagArb = fc.record({ tag: fc.constantFrom(...TAGS), exclude: fc.boolean() })
   .map(({ tag, exclude }) => createTagCondition(tag, exclude))
 const pagesArb = fc.integer({ min: 1, max: 12 })
+const categoryArb = fc.record({ category: fc.constantFrom(...CATEGORIES), exclude: fc.boolean() })
+  .map(({ category, exclude }) => createCategoryCondition(category, exclude))
 const rangeConditionArb = (field: RangeField, valueArb: fc.Arbitrary<number>) =>
   fc.tuple(fc.constantFrom<RangeOp>(...RANGE_OPS), valueArb, valueArb, fc.boolean())
     .map(([op, a, b, open]) => ({
@@ -26,6 +31,7 @@ const rangeConditionArb = (field: RangeField, valueArb: fc.Arbitrary<number>) =>
     }))
 const leafArb = fc.oneof(
   { weight: 4, arbitrary: tagArb },
+  { weight: 2, arbitrary: categoryArb },
   { weight: 1, arbitrary: rangeConditionArb('rating', ratingArb) },
   { weight: 1, arbitrary: rangeConditionArb('pages', pagesArb) },
 )
@@ -39,5 +45,5 @@ export const itemArb: fc.Arbitrary<FixedConditionItem> = fc.oneof(
 )
 export const ruleArb = fc.tuple(modeArb, fc.array(itemArb, { minLength: 1, maxLength: 4 }), fc.boolean())
   .map(([mode, conditions, negate]) => rule(mode, conditions, negate))
-export const probeArb = fc.record({ tags: fc.subarray(TAGS), rating: ratingArb, pages: pagesArb })
-  .map(({ tags, rating, pages }): GalleryProbe => ({ tags: new Set(tags), complete: true, rating, pages }))
+export const probeArb = fc.record({ tags: fc.subarray(TAGS), rating: ratingArb, pages: pagesArb, category: fc.constantFrom(...CATEGORIES) })
+  .map(({ tags, rating, pages, category }): GalleryProbe => ({ tags: new Set(tags), complete: true, rating, pages, category }))

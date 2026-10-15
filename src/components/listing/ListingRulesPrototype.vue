@@ -19,6 +19,7 @@ import {
   conditionRange, resolveRuleEffects, type GalleryProbe, type RangeCondition, type RuleEffects,
 } from '@/services/listing/fixedRulePrototype'
 import { formatRange } from '@/services/listing/ruleDigest'
+import { CATEGORY_LABELS } from '@/services/listing/galleryCategory'
 import { parseTerm, serializeEntry } from '@/services/search/searchSyntax'
 import { tokenIdentity } from '@/services/search/tagState'
 import { markEntriesOffPure, syncFromSearchPure, type TermEntry } from '@/services/search/sessionState'
@@ -127,7 +128,7 @@ const effects = computed(() => {
   const resolved = new Map<number, RuleEffects>()
   for (const item of items.value) {
     const rating = item.selfRated ? selfRatedStars.value.get(parseGalleryRef(item.href)?.gid ?? -1) ?? null : item.rating
-    const probe: GalleryProbe = { tags: item.tagSet, complete: item.complete, rating, pages: item.pages }
+    const probe: GalleryProbe = { tags: item.tagSet, complete: item.complete, rating, pages: item.pages, category: item.category }
     resolved.set(item.id, resolveRuleEffects(rules.value, probe))
   }
   return resolved
@@ -355,6 +356,9 @@ onBeforeUnmount(() => {
       role="tooltip" translate="no"
     >
       <b>{{ whyLabel.text }}</b>
+      <span
+        v-for="category in whyLabel.evidence.categories" :key="category" class="eqt-rule-prototype__why-term"
+      >{{ CATEGORY_LABELS[category] }}</span>
       <span v-for="tag in whyLabel.evidence.tags" :key="tag" class="eqt-rule-prototype__why-term">{{ display(tag) }}</span>
       <span
         v-for="condition in whyLabel.evidence.ranges" :key="condition.id" class="eqt-rule-prototype__why-term"

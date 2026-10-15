@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
-  averageOfStars, conditionReady, conditionsFromTerms, createActions, createGroup, createRangeCondition, createRule, createTagCondition,
+  averageOfStars, conditionReady, conditionsFromTerms, createActions, createCategoryCondition, createGroup, createRangeCondition, createRule, createTagCondition,
   evaluateCondition, evaluateRule, itemHeight, resolveRuleEffects, ruleEvidence, starsFromAverage,
   type FixedRule, type GalleryProbe, type RangeOp,
 } from '@/services/listing/fixedRulePrototype'
 
-const probe = (rating: number | null, tags: string[] = [], pages: number | null = null): GalleryProbe =>
-  ({ tags: new Set(tags), complete: true, rating, pages })
+const probe = (rating: number | null, tags: string[] = [], pages: number | null = null, category: GalleryProbe['category'] = null): GalleryProbe =>
+  ({ tags: new Set(tags), complete: true, rating, pages, category })
 
 function ruleWith(tag: string, background: string | null, blur: boolean, enabled = true, name = ''): FixedRule {
   const rule = createRule(1)
@@ -49,8 +49,8 @@ describe('resolveRuleEffects', () => {
       ruleWith('female:a', null, false, true, 'last'),
     ]
     expect(resolveRuleEffects(rules, probe(null, ['female:a'])).labels).toEqual([
-      { ruleId: rules[0].id, text: 'first', tone: 'red', evidence: { tags: ['female:a'], ranges: [] } },
-      { ruleId: rules[5].id, text: 'last', tone: null, evidence: { tags: ['female:a'], ranges: [] } },
+      { ruleId: rules[0].id, text: 'first', tone: 'red', evidence: { tags: ['female:a'], categories: [], ranges: [] } },
+      { ruleId: rules[5].id, text: 'last', tone: null, evidence: { tags: ['female:a'], categories: [], ranges: [] } },
     ])
   })
 
@@ -69,18 +69,33 @@ describe('resolveRuleEffects', () => {
   })
 })
 
+describe('分類條件', () => {
+  it('讀不到分類時是未知；讀得到時照「是／不是這個分類」判定', () => {
+    const doujinshi = createCategoryCondition('doujinshi')
+    const notDoujinshi = createCategoryCondition('doujinshi', true)
+    expect([null, 'doujinshi', 'manga'].map(category => evaluateCondition(doujinshi, probe(null, [], null, category as GalleryProbe['category']))))
+      .toEqual([null, true, false])
+    expect([null, 'doujinshi', 'manga'].map(category => evaluateCondition(notDoujinshi, probe(null, [], null, category as GalleryProbe['category']))))
+      .toEqual([null, false, true])
+  })
+})
+
 describe('ruleEvidence', () => {
-  it('只列出成立的分支裡、讓規則成立的「含有」標籤與數值條件', () => {
+  it('只列出成立的分支裡、讓規則成立的「含有」標籤、分類與數值條件', () => {
     const stars = createRangeCondition('rating', 'gte', 4)
     const rule = createRule(1)
     rule.root.conditions.push(
       createTagCondition('Female:A'),
       createTagCondition('female:x', true),
+      createCategoryCondition('doujinshi'),
+      createCategoryCondition('manga', true),
       createGroup('any', [createGroup('all', [createTagCondition('male:b'), createTagCondition('male:c')]), stars]),
       createGroup('any', [createTagCondition('female:d')], true),
     )
-    expect(ruleEvidence(rule, probe(4.5, ['female:a', 'male:b']))).toEqual({ tags: ['female:a'], ranges: [stars] })
-    expect(ruleEvidence(rule, probe(4.5, ['female:a', 'male:b', 'male:c']))).toEqual({ tags: ['female:a', 'male:b', 'male:c'], ranges: [stars] })
+    expect(ruleEvidence(rule, probe(4.5, ['female:a', 'male:b'], null, 'doujinshi')))
+      .toEqual({ tags: ['female:a'], categories: ['doujinshi'], ranges: [stars] })
+    expect(ruleEvidence(rule, probe(4.5, ['female:a', 'male:b', 'male:c'], null, 'doujinshi')))
+      .toEqual({ tags: ['female:a', 'male:b', 'male:c'], categories: ['doujinshi'], ranges: [stars] })
   })
 })
 

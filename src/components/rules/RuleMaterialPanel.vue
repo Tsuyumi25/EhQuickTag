@@ -4,6 +4,7 @@ import Sortable from 'sortablejs'
 import { BrushCleaning, Shapes, X } from '@lucide/vue'
 import NamespaceFilter from '@/components/NamespaceFilter.vue'
 import SuggestionList from '@/components/SuggestionList.vue'
+import { categoryChipStyle } from './categoryChip'
 import { RANGE_FIELD_ICONS } from './rangeFieldIcons'
 import { RULE_CONDITIONS_GROUP, ruleDragOptions } from './ruleDrag'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
@@ -12,8 +13,9 @@ import { useMyTagsPalette } from '@/composables/useMyTagsPalette'
 import { useTagSuggestions } from '@/composables/useTagSuggestions'
 import { isZhLocale, t } from '@/composables/useI18n'
 import { ruleMaterials } from '@/services/appOverlays'
+import { CATEGORY_LABELS, GALLERY_CATEGORIES, type GalleryCategory } from '@/services/listing/galleryCategory'
 import {
-  createGroup, createRangeCondition, createTagCondition, GROUP_MODE_OPERATORS, tagConditionKey,
+  createCategoryCondition, createGroup, createRangeCondition, createTagCondition, GROUP_MODE_OPERATORS, tagConditionKey,
   type FixedConditionItem, type GroupMode, type RangeField, type TagCondition,
 } from '@/services/listing/fixedRulePrototype'
 import { galleryMyTagsColorsEnabled } from '@/services/store'
@@ -21,10 +23,14 @@ import { entryForTag, getFallbackEntries, tagDbVersion, type TagEntry } from '@/
 
 // 素材與找標籤是同一份清單：左欄「全部」依序列出產生器、帶回來的素材與標籤，「素材」只列前兩種，
 // 其他 namespace 只列標籤。產生器與標籤拖出去是新的一份，素材拖出去就用掉
-type Generator = { id: RangeField; kind: 'range' } | { id: GroupMode; kind: 'group' }
+type Generator =
+  | { id: RangeField; kind: 'range' }
+  | { id: GroupMode; kind: 'group' }
+  | { id: GalleryCategory; kind: 'category' }
 const GENERATORS: Generator[] = [
   { id: 'all', kind: 'group' }, { id: 'any', kind: 'group' },
   { id: 'rating', kind: 'range' }, { id: 'pages', kind: 'range' },
+  ...GALLERY_CATEGORIES.map(id => ({ id, kind: 'category' }) as const),
 ]
 const RANGE_ICONS: Record<RangeField, Component> = RANGE_FIELD_ICONS
 
@@ -75,7 +81,9 @@ const materialRows = computed(() => {
 })
 
 function generatorLabel(generator: Generator): string {
-  return generator.kind === 'group' ? GROUP_MODE_OPERATORS[generator.id] : t(`rulePagePrototype.${generator.id}`)
+  if (generator.kind === 'group') return GROUP_MODE_OPERATORS[generator.id]
+  if (generator.kind === 'category') return CATEGORY_LABELS[generator.id]
+  return t(`rulePagePrototype.${generator.id}`)
 }
 
 // 只列素材時打字，是要找標籤：換回「全部」，結果才看得到
@@ -99,6 +107,7 @@ function conditionOf(row: HTMLElement): FixedConditionItem | undefined {
   const { source, id } = row.dataset
   if (source === 'group') return createGroup(id as GroupMode)
   if (source === 'range') return createRangeCondition(id as RangeField)
+  if (source === 'category') return createCategoryCondition(id as GalleryCategory)
   if (source === 'material') return ruleMaterials.value.find(material => String(material.id) === id)
   const tag = row.querySelector('.eqt-popup__suggestion-tag')?.textContent
   return tag ? createTagCondition(tag) : undefined
@@ -117,7 +126,8 @@ function rowSortable(el: HTMLElement): Sortable {
     draggable: '.eqt-popup__suggestion',
     // 條件區與群組深度的檢查靠這兩個屬性判斷收不收；列是清單自己 render 的 DOM，放開就拿掉
     onChoose: ({ item }) => {
-      item.dataset.kind = item.dataset.source === 'group' ? 'group' : item.dataset.source === 'range' ? 'range' : 'tag'
+      const source = item.dataset.source
+      item.dataset.kind = source === 'group' || source === 'range' || source === 'category' ? source : 'tag'
       item.dataset.height = item.dataset.source === 'group' ? '1' : '0'
     },
     onUnchoose: ({ item }) => {
@@ -219,6 +229,9 @@ onBeforeUnmount(() => {
               <span class="eqt-popup__suggestion-name">
                 <span
                   v-if="generator.kind === 'group'" class="eqt-rule-page__segment" :class="`eqt-rule-page__segment--${generator.id}`"
+                >{{ generatorLabel(generator) }}</span>
+                <span
+                  v-else-if="generator.kind === 'category'" class="eqt-rule-page__category-pill" :style="categoryChipStyle(generator.id)"
                 >{{ generatorLabel(generator) }}</span>
                 <template v-else>
                   <component :is="RANGE_ICONS[generator.id]" class="eqt-rule-page__icon" />{{ generatorLabel(generator) }}

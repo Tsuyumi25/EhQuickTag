@@ -590,7 +590,11 @@
   min-width: 0;
   min-height: 0;
 
-  .eqt-popup__suggestion { cursor: grab; }
+  // 清單本身的列在 mousedown 時擋掉選字，產生器與素材是另外 render 的列，要自己擋，不然一拖就反白一整片
+  .eqt-popup__suggestion {
+    cursor: grab;
+    user-select: none;
+  }
 
   // 產生器：名稱欄放拖出去之後長的樣子（群組的 AND／OR 箭頭段、數值條件的圖示）
   .eqt-rule-page__generator .eqt-popup__suggestion-name {
@@ -607,6 +611,16 @@
     &::before { cursor: grab; }
     &--all { --eqt-rule-page-seg: var(--eqt-status-include); }
     &--any { --eqt-rule-page-seg: var(--eqt-status-or); }
+  }
+
+  // 跟 E 站列表上的分類標籤同一種樣子：分類色實底、白色粗體字
+  .eqt-rule-page__category-pill {
+    padding: 0 calc(var(--eqt-rule-page-gap) * 1.5);
+    border-radius: var(--eqt-radius-sm);
+    background: var(--eqt-mytags-background);
+    color: var(--eqt-mytags-text);
+    font-size: var(--eqt-fs-md);
+    font-weight: bold;
   }
 
   .eqt-rule-page__material .eqt-popup__suggestion-tag {

@@ -2,6 +2,7 @@
 
 import { t } from '@/composables/useI18n'
 import { parseTerm } from '@/services/search/searchSyntax'
+import type { GalleryCategory } from '@/services/listing/galleryCategory'
 
 /** 根群組底下最多再巢狀幾層群組 */
 export const MAX_GROUP_DEPTH = 3
@@ -62,7 +63,14 @@ export interface RangeCondition {
   max?: number
 }
 
-export type FixedCondition = TagCondition | RangeCondition
+export interface CategoryCondition {
+  id: number
+  kind: 'category'
+  category: GalleryCategory
+  exclude: boolean
+}
+
+export type FixedCondition = TagCondition | RangeCondition | CategoryCondition
 
 export type GroupMode = 'all' | 'any'
 
@@ -114,6 +122,8 @@ export interface GalleryProbe {
   complete: boolean
   rating: number | null
   pages: number | null
+  /** 讀不到就是 null，判定維持未知 */
+  category: GalleryCategory | null
 }
 
 // 規則 / 群組 / 條件共用同一條遞增序號——UI 的 v-for key 只要全域唯一即可，
@@ -146,6 +156,10 @@ export function normalizeTag(tag: string): string {
 
 export function createTagCondition(tag = '', exclude = false): TagCondition {
   return { id: nextEntityId(), kind: 'tag', tag, exclude }
+}
+
+export function createCategoryCondition(category: GalleryCategory, exclude = false): CategoryCondition {
+  return { id: nextEntityId(), kind: 'category', category, exclude }
 }
 
 export function createRangeCondition(kind: RangeField, op: RangeOp = 'gte', value = RANGE_FIELDS[kind].initial): RangeCondition {
@@ -207,6 +221,7 @@ export function createRule(index: number): FixedRule {
 
 export function conditionReady(condition: FixedCondition): boolean {
   if (condition.kind === 'tag') return !!normalizeTag(condition.tag)
+  if (condition.kind === 'category') return true
   const field = RANGE_FIELDS[condition.kind]
   const inField = (value: number | undefined) =>
     value === undefined || (Number.isFinite(value) && value >= field.min && value <= field.max)
@@ -233,6 +248,10 @@ export function isRuleComplete(rule: FixedRule): boolean {
 }
 
 export function evaluateCondition(condition: FixedCondition, probe: GalleryProbe): Tri {
+  if (condition.kind === 'category') {
+    if (probe.category === null) return null
+    return (probe.category === condition.category) !== condition.exclude
+  }
   if (condition.kind !== 'tag') {
     const value = probe[condition.kind]
     if (value === null) return null
@@ -276,9 +295,10 @@ export function evaluateRule(rule: FixedRule, probe: GalleryProbe): Tri {
   return isRuleComplete(rule) ? evaluateItem(rule.root, probe) : null
 }
 
-/** 命中原因：讓規則成立的「含有」標籤與數值條件 */
+/** 命中原因：讓規則成立的「含有」標籤、分類與數值條件 */
 export interface RuleEvidence {
   tags: string[]
+  categories: GalleryCategory[]
   ranges: RangeCondition[]
 }
 
@@ -288,6 +308,7 @@ export interface RuleEvidence {
  */
 export function ruleEvidence(rule: FixedRule, probe: GalleryProbe): RuleEvidence {
   const tags = new Set<string>()
+  const categories = new Set<GalleryCategory>()
   const ranges: RangeCondition[] = []
   const walk = (item: FixedConditionItem) => {
     if (evaluateItem(item, probe) !== true) return
@@ -295,12 +316,14 @@ export function ruleEvidence(rule: FixedRule, probe: GalleryProbe): RuleEvidence
       if (!item.negate) item.conditions.forEach(walk)
     } else if (item.kind === 'tag') {
       if (!item.exclude) tags.add(normalizeTag(item.tag))
+    } else if (item.kind === 'category') {
+      if (!item.exclude) categories.add(item.category)
     } else {
       ranges.push(item)
     }
   }
   walk(rule.root)
-  return { tags: [...tags], ranges }
+  return { tags: [...tags], categories: [...categories], ranges }
 }
 
 /** 規則掛在圖庫上的一段文字（名稱標示、標題前綴）；tone 是規則自己的背景色，沒選背景時是 null */

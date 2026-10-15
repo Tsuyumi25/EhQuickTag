@@ -5,17 +5,21 @@ import {
   averageOfStars, conditionRange, GROUP_MODE_OPERATORS, normalizeTag, RANGE_FIELDS,
   type FixedActions, type FixedConditionItem, type FixedRule, type RangeCondition, type RangeField, type ValueRange,
 } from '@/services/listing/fixedRulePrototype'
+import type { GalleryCategory } from '@/services/listing/galleryCategory'
 
 export type DigestMode = 'rows' | 'raw'
 
 export type DigestTerm =
   | { kind: 'tag'; tag: string; exclude: boolean }
+  | { kind: 'category'; category: GalleryCategory; exclude: boolean }
   | { kind: 'range'; field: RangeField; range: ValueRange; exclude: boolean }
   | { kind: 'all'; terms: DigestTerm[] }
   | { kind: 'any'; terms: DigestTerm[] }
 
 export type DigestNote =
   | { kind: 'conflict'; tags: string[] }
+  /** 一個圖庫只屬於一種分類：一定要的分類不只一種，或一定要的分類又被排除 */
+  | { kind: 'categoryConflict'; categories: GalleryCategory[] }
   | { kind: 'rangeEmpty'; field: RangeField }
   | { kind: 'rangeExcluded'; field: RangeField }
   | { kind: 'groupImpossible'; terms: DigestTerm[] }
@@ -28,6 +32,8 @@ export type DigestRanges = Partial<Record<RangeField, ValueRange>>
 export interface RuleDigest {
   /** 一定要含有 */
   tags: string[]
+  /** 一定要是這個分類；超過一個就永遠不會命中 */
+  categories: GalleryCategory[]
   /** 每個欄位一定要落在的範圍；沒有的欄位不限 */
   ranges: DigestRanges
   /** 每一組至少要成立一項 */
@@ -41,11 +47,14 @@ export interface RuleDigest {
 
 const RANGE_FIELD_ORDER = Object.keys(RANGE_FIELDS) as RangeField[]
 /** 出現這幾種提示，代表任何圖庫都不會命中 */
-export const NEVER_NOTES: Partial<Record<DigestNote['kind'], true>> = { conflict: true, rangeEmpty: true, rangeExcluded: true, groupImpossible: true }
+export const NEVER_NOTES: Partial<Record<DigestNote['kind'], true>> = {
+  conflict: true, categoryConflict: true, rangeEmpty: true, rangeExcluded: true, groupImpossible: true,
+}
 
 // 否定只掛在葉子上（NNF）：整理成三段時只要看葉子的正負號
 type Expr =
   | { k: 'tag'; tag: string; neg: boolean }
+  | { k: 'category'; category: GalleryCategory; neg: boolean }
   | { k: 'range'; field: RangeField; range: ValueRange; neg: boolean }
   | { k: 'and' | 'or'; xs: Expr[] }
 
@@ -83,6 +92,7 @@ function itemExpr(item: FixedConditionItem, neg: boolean, ctx: Context): Expr | 
     }
     return { k: 'tag', tag, neg: neg !== item.exclude }
   }
+  if (item.kind === 'category') return { k: 'category', category: item.category, neg: neg !== item.exclude }
   if (item.kind !== 'group') return { k: 'range', field: item.kind, range: conditionRange(item), neg }
   if (!item.conditions.length) {
     ctx.incomplete = true
@@ -94,26 +104,46 @@ function itemExpr(item: FixedConditionItem, neg: boolean, ctx: Context): Expr | 
   return junction(k, item.conditions.map(child => itemExpr(child, flip, ctx)))
 }
 
+type Leaf = Exclude<Expr, { k: 'and' | 'or' }>
+
+function isLeaf(expr: Expr): expr is Leaf {
+  return expr.k !== 'and' && expr.k !== 'or'
+}
+
 function negate(expr: Expr): Expr {
-  if (expr.k === 'tag' || expr.k === 'range') return { ...expr, neg: !expr.neg }
+  if (isLeaf(expr)) return { ...expr, neg: !expr.neg }
   return { k: expr.k === 'and' ? 'or' : 'and', xs: expr.xs.map(negate) }
 }
 
 function allNegative(expr: Expr): boolean {
-  if (expr.k === 'tag' || expr.k === 'range') return expr.neg
+  if (isLeaf(expr)) return expr.neg
   return expr.xs.every(allNegative)
 }
 
 function toTerm(expr: Expr): DigestTerm {
   if (expr.k === 'tag') return { kind: 'tag', tag: expr.tag, exclude: expr.neg }
+  if (expr.k === 'category') return { kind: 'category', category: expr.category, exclude: expr.neg }
   if (expr.k === 'range') return { kind: 'range', field: expr.field, range: expr.range, exclude: expr.neg }
   return { kind: expr.k === 'and' ? 'all' : 'any', terms: expr.xs.map(toTerm) }
+}
+
+// 排除清單去重：同一個標籤或分類只列一次；數值條件與組合各自不同，照收
+function sameLeaf(a: DigestTerm, b: DigestTerm): boolean {
+  if (a.kind === 'tag' && b.kind === 'tag') return a.tag === b.tag && a.exclude === b.exclude
+  if (a.kind === 'category' && b.kind === 'category') return a.category === b.category && a.exclude === b.exclude
+  return false
 }
 
 function unlessTags(unless: readonly DigestTerm[]): Set<string> {
   const tags = new Set<string>()
   for (const term of unless) if (term.kind === 'tag' && !term.exclude) tags.add(term.tag)
   return tags
+}
+
+function unlessCategories(unless: readonly DigestTerm[]): Set<GalleryCategory> {
+  const categories = new Set<GalleryCategory>()
+  for (const term of unless) if (term.kind === 'category' && !term.exclude) categories.add(term.category)
+  return categories
 }
 
 function excludedRange(field: RangeField, range: ValueRange, unless: readonly DigestTerm[]): boolean {
@@ -134,18 +164,22 @@ export function digestRule(rule: FixedRule): RuleDigest {
   const conjuncts = !root ? [] : root.k === 'and' ? root.xs : [root]
 
   const tags: string[] = []
+  const categories: GalleryCategory[] = []
   const pieces: Partial<Record<RangeField, ValueRange[]>> = {}
   const groups: DigestTerm[][] = []
   const unless: DigestTerm[] = []
   const pushUnless = (term: DigestTerm) => {
     if (term.kind === 'any') term.terms.forEach(pushUnless)
-    else if (term.kind !== 'tag' || !unless.some(seen => seen.kind === 'tag' && seen.tag === term.tag && !seen.exclude)) unless.push(term)
+    else if (!unless.some(seen => sameLeaf(seen, term))) unless.push(term)
   }
 
   for (const conjunct of conjuncts) {
     if (conjunct.k === 'tag') {
       if (conjunct.neg) pushUnless({ kind: 'tag', tag: conjunct.tag, exclude: false })
       else if (!tags.includes(conjunct.tag)) tags.push(conjunct.tag)
+    } else if (conjunct.k === 'category') {
+      if (conjunct.neg) pushUnless({ kind: 'category', category: conjunct.category, exclude: false })
+      else if (!categories.includes(conjunct.category)) categories.push(conjunct.category)
     } else if (conjunct.k === 'range') {
       if (conjunct.neg) pushUnless({ kind: 'range', field: conjunct.field, range: conjunct.range, exclude: false })
       else (pieces[conjunct.field] ??= []).push(conjunct.range)
@@ -162,6 +196,9 @@ export function digestRule(rule: FixedRule): RuleDigest {
   const blocked = unlessTags(unless)
   const conflicts = tags.filter(tag => blocked.has(tag))
   if (conflicts.length) notes.push({ kind: 'conflict', tags: conflicts })
+  const blockedCategories = unlessCategories(unless)
+  const categoryConflicts = categories.length > 1 ? categories : categories.filter(category => blockedCategories.has(category))
+  if (categoryConflicts.length) notes.push({ kind: 'categoryConflict', categories: categoryConflicts })
 
   for (const field of RANGE_FIELD_ORDER) {
     const list = pieces[field]
@@ -176,6 +213,10 @@ export function digestRule(rule: FixedRule): RuleDigest {
   const effectiveOf = (field: RangeField) => ranges[field] ?? RANGE_FIELDS[field]
   const impossible = (term: DigestTerm): boolean => {
     if (term.kind === 'tag') return term.exclude ? tags.includes(term.tag) : blocked.has(term.tag)
+    if (term.kind === 'category') {
+      if (term.exclude) return categories.includes(term.category)
+      return blockedCategories.has(term.category) || (categories.length > 0 && !categories.includes(term.category))
+    }
     if (term.kind === 'range') {
       if (term.exclude) return covers(term.range, effectiveOf(term.field))
       const range = intersect(effectiveOf(term.field), term.range)
@@ -185,6 +226,10 @@ export function digestRule(rule: FixedRule): RuleDigest {
   }
   const certain = (term: DigestTerm): boolean => {
     if (term.kind === 'tag') return term.exclude ? blocked.has(term.tag) : tags.includes(term.tag)
+    if (term.kind === 'category') {
+      if (!term.exclude) return categories.includes(term.category)
+      return blockedCategories.has(term.category) || (categories.length > 0 && !categories.includes(term.category))
+    }
     if (term.kind === 'range') {
       const effective = effectiveOf(term.field)
       return term.exclude ? isEmpty(intersect(effective, term.range)) : covers(term.range, effective)
@@ -198,7 +243,7 @@ export function digestRule(rule: FixedRule): RuleDigest {
 
   if (ctx.incomplete) notes.push({ kind: 'incomplete' })
 
-  return { tags, ranges, groups, unless, notes, never: notes.some(note => NEVER_NOTES[note.kind] === true) }
+  return { tags, categories, ranges, groups, unless, notes, never: notes.some(note => NEVER_NOTES[note.kind] === true) }
 }
 
 export type RangeShape =
@@ -267,6 +312,7 @@ function rawItem(item: FixedConditionItem): string {
     if (!tag) return '(EMPTY)'
     return item.exclude ? `NOT ${rawTag(tag)}` : rawTag(tag)
   }
+  if (item.kind === 'category') return `${item.exclude ? 'NOT ' : ''}category:${item.category}`
   if (item.kind !== 'group') {
     const field = RAW_FIELD[item.kind]
     if (item.op === 'between') return `${item.value} <= ${field} <= ${item.max ?? RANGE_FIELDS[item.kind].max}`

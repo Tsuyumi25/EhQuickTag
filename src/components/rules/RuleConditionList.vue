@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import Draggable from 'vuedraggable'
+import RuleCategoryChip from './RuleCategoryChip.vue'
 import RuleConditionGroup from './RuleConditionGroup.vue'
 import RuleRangeChip from './RuleRangeChip.vue'
 import RuleTagChip from './RuleTagChip.vue'
@@ -25,6 +26,10 @@ const group = { name: RULE_CONDITIONS_GROUP, put: fitsGroupDepth }
       />
       <RuleTagChip
         v-else-if="item.kind === 'tag'" class="eqt-rule-page__item"
+        :condition="item" @remove="conditions.splice(index, 1)"
+      />
+      <RuleCategoryChip
+        v-else-if="item.kind === 'category'" class="eqt-rule-page__item"
         :condition="item" @remove="conditions.splice(index, 1)"
       />
       <RuleRangeChip v-else class="eqt-rule-page__item" :condition="item" @remove="conditions.splice(index, 1)" />

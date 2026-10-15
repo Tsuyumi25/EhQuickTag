@@ -170,6 +170,18 @@
 
   // 實色 button 上的前景色（白字）。跟 --eqt-green / --eqt-danger 配對用
   --eqt-text-on-color: #fff;
+
+  // 圖庫分類色：照 E 站列表上分類標籤（.ct1～.cta）的外框色，規則頁的分類條件與產生器用
+  --eqt-category-doujinshi: #fc4e4e;
+  --eqt-category-manga: #e78c1a;
+  --eqt-category-artistcg: #c7bf07;
+  --eqt-category-gamecg: #1a9317;
+  --eqt-category-western: #5dc13b;
+  --eqt-category-non-h: #0f9ebd;
+  --eqt-category-imageset: #2756aa;
+  --eqt-category-cosplay: #8800c3;
+  --eqt-category-asianporn: #b452a5;
+  --eqt-category-misc: #707070;
 }
 
 // Dark theme (exhentai.org)
