@@ -54,17 +54,17 @@ describe('resolveRuleEffects', () => {
     ])
   })
 
-  it('標題前綴每條命中的規則各加一個；淡化、刪除線與隱藏有一條要就做', () => {
+  it('標題前綴每條命中的規則各加一個；刪除線有一條要就做，卡片的存在感取最弱的', () => {
     const top = ruleWith('female:a', null, false, true, 'top')
     Object.assign(top.actions, { titlePrefix: 'first' })
     const middle = ruleWith('female:a', 'red', false, true, 'middle')
-    Object.assign(middle.actions, { hide: true })
+    Object.assign(middle.actions, { visibility: 'hide' })
     const bottom = ruleWith('female:a', null, false, true, 'bottom')
-    Object.assign(bottom.actions, { titlePrefix: 'second', dim: true, strike: true })
+    Object.assign(bottom.actions, { titlePrefix: 'second', visibility: 'dim', strike: true })
     const missed = ruleWith('female:b', null, false, true, 'missed')
     Object.assign(missed.actions, { titlePrefix: 'missed' })
     const effects = resolveRuleEffects([top, missed, middle, bottom], probe(null, ['female:a']))
-    expect(effects).toMatchObject({ dim: true, strike: true, hide: true })
+    expect(effects).toMatchObject({ strike: true, visibility: 'hide' })
     expect(effects.prefixes.map(prefix => prefix.text)).toEqual(['first', 'second'])
   })
 })

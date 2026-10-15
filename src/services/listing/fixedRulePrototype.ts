@@ -66,6 +66,10 @@ export type FixedCondition = TagCondition | RangeCondition
 
 export type GroupMode = 'all' | 'any'
 
+/** 卡片的存在感，由弱到強；也是規則頁分段按鈕的順序。隱藏之後淡化就沒有意義，所以是同一個值 */
+export type CardVisibility = 'normal' | 'dim' | 'hide'
+export const CARD_VISIBILITIES: readonly CardVisibility[] = ['normal', 'dim', 'hide']
+
 /** 也是群組判定模式切換的順序 */
 export const GROUP_MODES: readonly GroupMode[] = ['all', 'any']
 
@@ -91,10 +95,8 @@ export interface FixedActions {
   showName: boolean
   /** 加在標題最前面的自填文字 */
   titlePrefix: string | null
-  dim: boolean
   strike: boolean
-  /** 從列表上拿掉，不留痕跡 */
-  hide: boolean
+  visibility: CardVisibility
 }
 
 // 一條規則只有一組動作：條件裡不分岔出不同的動作。想要不同的結果就另開一條規則，
@@ -166,12 +168,12 @@ export function conditionRange(condition: RangeCondition): ValueRange {
 
 /** 背景沒選代表「沒指定」，讓給下一條規則 */
 export function createActions(): FixedActions {
-  return { background: null, blur: false, showName: false, titlePrefix: null, dim: false, strike: false, hide: false }
+  return { background: null, blur: false, showName: false, titlePrefix: null, strike: false, visibility: 'normal' }
 }
 
 export function hasActions(actions: FixedActions): boolean {
   return actions.background !== null || actions.blur || actions.showName || actions.titlePrefix !== null
-    || actions.dim || actions.strike || actions.hide
+    || actions.strike || actions.visibility !== 'normal'
 }
 
 /** 前後的空白沒有意義，標題本身會跟前綴隔開；只剩空白就是不加 */
@@ -315,18 +317,17 @@ export interface RuleEffects {
   /** ruleId 讓點標示時能打開那一條；evidence 是滑鼠移上去看到的命中原因 */
   labels: (RuleMark & { evidence: RuleEvidence })[]
   prefixes: RuleMark[]
-  dim: boolean
   strike: boolean
-  hide: boolean
+  visibility: CardVisibility
 }
 
 /**
  * 背景由清單裡位置最高、命中且有選背景的規則決定；沒選背景讓給下面的規則。
  * 標示與標題前綴不互相搶：每條命中的規則各加一個，照清單順序排。
- * 模糊、淡化、刪除線與隱藏只要有一條命中的規則要就做
+ * 模糊與刪除線只要有一條命中的規則要就做；卡片的存在感取命中的規則裡最弱的那個（隱藏 > 淡化）
  */
 export function resolveRuleEffects(rules: readonly FixedRule[], probe: GalleryProbe): RuleEffects {
-  const effects: RuleEffects = { background: null, blur: false, labels: [], prefixes: [], dim: false, strike: false, hide: false }
+  const effects: RuleEffects = { background: null, blur: false, labels: [], prefixes: [], strike: false, visibility: 'normal' }
   for (const rule of rules) {
     if (!rule.enabled || evaluateRule(rule, probe) !== true) continue
     const { actions } = rule
@@ -336,9 +337,8 @@ export function resolveRuleEffects(rules: readonly FixedRule[], probe: GalleryPr
     if (actions.showName && name) effects.labels.push({ ruleId: rule.id, text: name, tone, evidence: ruleEvidence(rule, probe) })
     if (actions.titlePrefix) effects.prefixes.push({ ruleId: rule.id, text: actions.titlePrefix, tone })
     effects.blur ||= actions.blur
-    effects.dim ||= actions.dim
     effects.strike ||= actions.strike
-    effects.hide ||= actions.hide
+    if (CARD_VISIBILITIES.indexOf(actions.visibility) > CARD_VISIBILITIES.indexOf(effects.visibility)) effects.visibility = actions.visibility
   }
   return effects
 }

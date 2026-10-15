@@ -41,9 +41,8 @@ export function actionsMarkdown(tr: Translate, actions: FixedActions): string {
   if (actions.blur) parts.push(tr('rulePrototype.blur'))
   if (actions.showName) parts.push(tr('rulePagePrototype.showNameShort'))
   if (actions.titlePrefix) parts.push(tr('rulePagePrototype.titlePrefixIs', { prefix: code(actions.titlePrefix) }))
-  for (const key of ['dim', 'strike', 'hide'] as const) {
-    if (actions[key]) parts.push(tr(`rulePagePrototype.${key}Short`))
-  }
+  if (actions.strike) parts.push(tr('rulePagePrototype.strikeShort'))
+  if (actions.visibility !== 'normal') parts.push(tr(`rulePagePrototype.${actions.visibility}Short`))
   return parts.length ? parts.join(tr('rulePagePrototype.digest.clauseSep')) : tr('rulePagePrototype.noAction')
 }
 

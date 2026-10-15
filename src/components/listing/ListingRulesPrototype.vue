@@ -186,9 +186,9 @@ watchEffect(() => {
     const active: Record<Modifier, boolean> = {
       'background': !!effect.background,
       'blur': effect.blur,
-      'dim': effect.dim,
+      'dim': effect.visibility === 'dim',
       'strike': effect.strike,
-      'hidden': effect.hide,
+      'hidden': effect.visibility === 'hide',
     }
     for (const name of MODIFIERS) item.root.classList.toggle(`eqt-rule-prototype__gallery--${name}`, active[name])
     if (effect.background) item.root.style.setProperty('--eqt-rule-prototype-background', effect.background)

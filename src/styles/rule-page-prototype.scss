@@ -790,12 +790,16 @@
 
 // ---- 效果 ----
 
-// 目前動作還少，一個動作一行；之後動作多了再看要不要分組
 .eqt-rule-page__actions {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: calc(var(--eqt-rule-page-gap) * 2);
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  gap: calc(var(--eqt-rule-page-gap) * 2.5) calc(var(--eqt-rule-page-gap) * 4);
+}
+
+.eqt-rule-page__action-target {
+  color: var(--eqt-text-hint);
+  white-space: nowrap;
 }
 
 .eqt-rule-page__action-summary {
@@ -854,7 +858,20 @@
 .eqt-rule-page__action-row {
   display: flex;
   flex-wrap: wrap;
-  gap: calc(var(--eqt-rule-page-gap) * 2) calc(var(--eqt-rule-page-gap) * 4);
+  align-items: center;
+  gap: calc(var(--eqt-rule-page-gap) * 2) calc(var(--eqt-rule-page-gap) * 6);
+}
+
+// 同一組互斥的選項，跟摘要模式切換同一款
+.eqt-rule-page__choice { @include btn-split-group; }
+
+.eqt-rule-page__choice-item {
+  @include btn-split-item;
+
+  &[aria-pressed='true'] {
+    background: var(--eqt-bg-btn);
+    color: var(--eqt-text);
+  }
 }
 
 // 跟 My Tags 標籤顏色那一組同款：色盤鈕只顯示顏色，旁邊是可以直接貼上、複製的色碼

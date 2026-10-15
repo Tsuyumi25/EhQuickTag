@@ -313,9 +313,8 @@ function rawActions(actions: FixedActions): string {
   if (actions.blur) parts.push('blur')
   if (actions.showName) parts.push('show-name')
   if (actions.titlePrefix) parts.push(`title-prefix: ${JSON.stringify(actions.titlePrefix)}`)
-  if (actions.dim) parts.push('dim')
   if (actions.strike) parts.push('strike')
-  if (actions.hide) parts.push('hide')
+  if (actions.visibility !== 'normal') parts.push(actions.visibility)
   return parts.length ? `{${parts.join(', ')}}` : ''
 }
 

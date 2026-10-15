@@ -19,9 +19,9 @@ const items = computed(() => {
   if (props.titlePrefix) {
     list.push({ key: 'titlePrefix', text: t('rulePagePrototype.titlePrefixIs', { prefix: props.titlePrefix }), icon: Type })
   }
-  const flags = [['dim', SunDim], ['strike', Strikethrough], ['hide', EyeClosed]] as const
-  for (const [key, icon] of flags) {
-    if (props[key]) list.push({ key, text: t(`rulePagePrototype.${key}Short`), icon })
+  if (props.strike) list.push({ key: 'strike', text: t('rulePagePrototype.strikeShort'), icon: Strikethrough })
+  if (props.visibility !== 'normal') {
+    list.push({ key: 'visibility', text: t(`rulePagePrototype.${props.visibility}Short`), icon: props.visibility === 'dim' ? SunDim : EyeClosed })
   }
   return list
 })

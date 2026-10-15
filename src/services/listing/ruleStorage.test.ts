@@ -12,7 +12,7 @@ const GREEN = '#00cc0080'
 const actions: FixedActions = { ...createActions(), background: RED, showName: true }
 // 每一欄都填上非預設值，確認每一欄都存得回來
 const fullActions: FixedActions = {
-  background: RED, blur: true, showName: true, titlePrefix: 'some prefix', dim: true, strike: true, hide: true,
+  background: RED, blur: true, showName: true, titlePrefix: 'some prefix', strike: true, visibility: 'dim',
 }
 // 12 之前的背景色是主題 token
 const legacyActions = { background: 'var(--eqt-status-exclude)', blur: 'unchanged' }
@@ -130,6 +130,21 @@ describe('decodeRules', () => {
     ])
   })
 
+  it('schema 15 的淡化與隱藏是兩個勾選，併成卡片的存在感；兩個都勾的算隱藏', () => {
+    const { background, showName, titlePrefix } = fullActions
+    const root = { id: 2, kind: 'group', mode: 'all', negate: false, conditions: [tag(3, 'female:a')] }
+    const flags = [[false, false], [true, false], [false, true], [true, true]]
+    const rules = decodeRules(JSON.stringify({
+      schema: 15,
+      rules: flags.map(([dim, hide], index) => ({
+        id: index + 10, name: 'r', enabled: true, root: { ...root, id: index + 20 },
+        actions: { background, blur: true, showName, titlePrefix, strike: true, dim, hide },
+      })),
+    }))
+    expect(rules.map(item => item.actions.visibility)).toEqual(['normal', 'dim', 'hide', 'hide'])
+    expect(rules[0].actions).toEqual({ ...fullActions, visibility: 'normal' })
+  })
+
   it('schema 12 還沒有貼紙之後的動作，讀進來一律不做', () => {
     const { background, showName } = fullActions
     const [decoded] = decodeRules(JSON.stringify({
@@ -182,7 +197,8 @@ describe('decodeRules', () => {
     expect(() => decodeRules(ruleWith(deep(1), { ...actions, blur: 'blur' }))).toThrow()
     expect(() => decodeRules(ruleWith(deep(1), { ...actions, titlePrefix: ' padded ' }))).toThrow()
     expect(() => decodeRules(ruleWith(deep(1), { ...actions, titlePrefix: true }))).toThrow()
-    const { hide: _, ...missingFlag } = actions
+    expect(() => decodeRules(ruleWith(deep(1), { ...actions, visibility: 'hidden' }))).toThrow()
+    const { strike: _, ...missingFlag } = actions
     expect(() => decodeRules(ruleWith(deep(1), missingFlag))).toThrow()
   })
 })
