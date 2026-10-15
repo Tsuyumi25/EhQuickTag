@@ -370,6 +370,13 @@
 
 .eqt-rule-page__item--ghost { opacity: 0.4; }
 
+// forceFallback 拖曳時跟著游標的那份複本（Sortable 的 sortable-fallback）。Sortable 只在它本身設 pointer-events: none，
+// 但箭頭段的 ::before 自己設了 pointer-events: auto，會從複本裡穿出來被 elementFromPoint 撈到：
+// 拖群組時游標底下永遠是複本自己的箭頭段，放置位置就一直算成「複本旁邊」，別的位置與別的層都放不進去
+.eqt-rule-page .sortable-fallback {
+  &, *, *::before, *::after { pointer-events: none !important; }
+}
+
 // body 不再負責切換，抓著就是拖
 .eqt-rule-page__chip .eqt-gallery-chip__body {
   cursor: grab;
