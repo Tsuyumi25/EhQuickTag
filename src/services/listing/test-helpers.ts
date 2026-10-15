@@ -1,6 +1,6 @@
 import { fc } from '@fast-check/vitest'
 import {
-  createGroup, createRangeCondition, createRule, createTagCondition, GROUP_MODES, RANGE_OPS,
+  createActions, createGroup, createRangeCondition, createRule, createTagCondition, GROUP_MODES, RANGE_OPS,
   type FixedConditionItem, type FixedRule, type GalleryProbe, type GroupMode, type RangeField, type RangeOp,
 } from '@/services/listing/fixedRulePrototype'
 
@@ -10,7 +10,7 @@ import {
 const TAGS = ['female:a', 'female:b', 'male:c', 'other:d']
 
 export function rule(mode: GroupMode, conditions: FixedConditionItem[], negate = false): FixedRule {
-  return { ...createRule(1), root: createGroup(mode, conditions, negate) }
+  return { ...createRule(1), root: createGroup(mode, conditions, negate), actions: createActions() }
 }
 
 const ratingArb = fc.integer({ min: 0, max: 10 }).map(n => n / 2)

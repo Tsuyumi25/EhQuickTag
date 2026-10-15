@@ -200,7 +200,8 @@ export function createRule(index: number): FixedRule {
     name: t('rulePagePrototype.newRule', { n: index }),
     enabled: true,
     root: createGroup('all'),
-    actions: createActions(),
+    // 新規則先在縮圖上掛規則按鈕：剛建好時最想確認的就是它命中了哪些圖庫
+    actions: { ...createActions(), showName: true },
   }
 }
 
