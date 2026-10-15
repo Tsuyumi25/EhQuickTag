@@ -409,8 +409,8 @@ export default {
   // Gallery settings tab
   'settings.tabGallery': '갤러리',
   'settings.tabListing': '목록',
-  'settings.sectionListingTags': '태그',
-  'settings.listingTags': '태그 강화 사용',
+  'settings.sectionListingToggles': '기능',
+  'settings.listingTags': '갤러리 목록 강화 사용',
   'settings.sectionListingDock': 'Dock',
   'settings.listingTagSelect': '태그 선택과 Dock 사용',
   'settings.listingTagSelectHint': '왼쪽 클릭은 포함, 오른쪽 클릭은 제외, 드래그로 여러 개 선택.',

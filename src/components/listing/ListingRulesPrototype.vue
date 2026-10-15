@@ -35,7 +35,7 @@ import { pageWindow } from '@/utils/pageWindow'
 import '@/styles/rule-prototype.scss'
 
 const { items, chips } = useRulePrototypeHost({ tagsEnabled: () => listingTagsEnabled.value })
-// 圖庫規則是標籤強化的一部分：標籤強化關掉時規則也不套用，跟暫停一樣
+// 圖庫規則是圖庫列表強化的一部分：關掉時規則也不套用，跟暫停一樣
 const rulesActive = computed(() => listingTagsEnabled.value && !listingRulesPaused.value)
 // 選取做在 chip 上：標籤沒換成 chip 時沒有東西可選
 const tagSelectEnabled = computed(() => listingTagsEnabled.value && listingTagSelectEnabled.value)

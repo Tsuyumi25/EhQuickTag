@@ -409,8 +409,8 @@ export default {
   // Gallery settings tab
   'settings.tabGallery': '畫廊',
   'settings.tabListing': '列表',
-  'settings.sectionListingTags': '標籤',
-  'settings.listingTags': '啟用標籤強化',
+  'settings.sectionListingToggles': '功能開關',
+  'settings.listingTags': '啟用圖庫列表強化',
   'settings.sectionListingDock': 'Dock',
   'settings.listingTagSelect': '啟用標籤選取和 Dock',
   'settings.listingTagSelectHint': '左鍵含有、右鍵排除、拖曳多選。',

@@ -409,8 +409,8 @@ export default {
   // Gallery settings tab
   'settings.tabGallery': 'Gallery',
   'settings.tabListing': 'Listing',
-  'settings.sectionListingTags': 'Tags',
-  'settings.listingTags': 'Enable tag enhancement',
+  'settings.sectionListingToggles': 'Features',
+  'settings.listingTags': 'Enable gallery list enhancement',
   'settings.sectionListingDock': 'Dock',
   'settings.listingTagSelect': 'Enable tag selection and the Dock',
   'settings.listingTagSelectHint': 'Left-click includes, right-click excludes, drag selects several.',

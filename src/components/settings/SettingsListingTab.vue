@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Funnel, PanelBottom, Tags } from '@lucide/vue'
+import { Funnel, PanelBottom, ToggleLeft } from '@lucide/vue'
 import { t } from '@/composables/useI18n'
 import SettingsTagAppearanceSection from './SettingsTagAppearanceSection.vue'
 import {
@@ -14,7 +14,7 @@ const evrInstall = () => t('settings.listingEvrInstall').split(/(\{evr\})/)
 <template>
   <div class="eqt-settings__tab-content">
     <section class="eqt-settings__section">
-      <h4 class="eqt-settings__subtitle"><Tags :size="14" /> {{ t('settings.sectionListingTags') }}</h4>
+      <h4 class="eqt-settings__subtitle"><ToggleLeft :size="14" /> {{ t('settings.sectionListingToggles') }}</h4>
       <label class="eqt-settings__row">
         <input
           type="checkbox" :checked="listingTagsEnabled"
@@ -26,7 +26,7 @@ const evrInstall = () => t('settings.listingEvrInstall').split(/(\{evr\})/)
 
     <SettingsTagAppearanceSection scene="listing" />
 
-    <!-- 選取做在插件的標籤 chip 上，標籤沒換掉就選不了；圖庫規則也是標籤強化的一部分 -->
+    <!-- 選取做在插件的標籤 chip 上，標籤沒換掉就選不了；圖庫規則也是圖庫列表強化的一部分 -->
     <section class="eqt-settings__section">
       <h4 class="eqt-settings__subtitle"><PanelBottom :size="14" /> {{ t('settings.sectionListingDock') }}</h4>
       <label class="eqt-settings__row">

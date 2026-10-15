@@ -409,8 +409,8 @@ export default {
   // Gallery settings tab
   'settings.tabGallery': 'ギャラリー',
   'settings.tabListing': 'リスト',
-  'settings.sectionListingTags': 'タグ',
-  'settings.listingTags': 'タグ強化を有効にする',
+  'settings.sectionListingToggles': '機能',
+  'settings.listingTags': 'ギャラリーリスト強化を有効にする',
   'settings.sectionListingDock': 'Dock',
   'settings.listingTagSelect': 'タグの選択と Dock を有効にする',
   'settings.listingTagSelectHint': '左クリックで含む、右クリックで除外、ドラッグでまとめて選択。',

@@ -409,8 +409,8 @@ export default {
   // Gallery settings tab
   'settings.tabGallery': '图库',
   'settings.tabListing': '列表',
-  'settings.sectionListingTags': '标签',
-  'settings.listingTags': '启用标签强化',
+  'settings.sectionListingToggles': '功能开关',
+  'settings.listingTags': '启用图库列表强化',
   'settings.sectionListingDock': 'Dock',
   'settings.listingTagSelect': '启用标签选取和 Dock',
   'settings.listingTagSelectHint': '左键包含、右键排除、拖拽多选。',
