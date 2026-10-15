@@ -374,6 +374,10 @@ onBeforeUnmount(() => {
             <button type="button" class="eqt-rule-prototype__settings" :title="t('settings.title')" disabled><Settings aria-hidden="true" />{{ t('settings.title') }}</button>
             <span class="eqt-rule-prototype__separator" aria-hidden="true" />
           </template>
+          <!-- 兩種 dock 都把取消選取放在選取數的左邊，跟它操作的東西貼在一起 -->
+          <button type="button" class="eqt-rule-prototype__deselect" :disabled="selection.size === 0" @click="clearSelection">
+            <X aria-hidden="true" />{{ t('gallery.clearSelection') }}
+          </button>
           <div
             class="eqt-rule-prototype__search-menu"
             @mouseenter="searchHovered = true"
@@ -419,10 +423,6 @@ onBeforeUnmount(() => {
               <component :is="rulesCollapsed ? ArrowLeft : Eye" aria-hidden="true" />
               {{ t(rulesCollapsed ? 'rulePagePrototype.backFromPreview' : 'rulePagePrototype.preview') }}
               <kbd class="eqt-rule-prototype__kbd">{{ t('rulePagePrototype.spaceKey') }}</kbd>
-            </button>
-            <span class="eqt-rule-prototype__separator" aria-hidden="true" />
-            <button type="button" class="eqt-rule-prototype__deselect" :disabled="selection.size === 0" @click="clearSelection">
-              <X aria-hidden="true" />{{ t('gallery.clearSelection') }}
             </button>
           </template>
           <template v-else>
