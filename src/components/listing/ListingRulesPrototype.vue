@@ -27,13 +27,18 @@ import { loadMyTagsPalette, type MyTagsPalette } from '@/services/mytags/mytagsP
 import { pickUrl, savePick } from '@/services/mytags/mytagsPicks'
 import { openRule, openRules, openSettings, rulesCollapsed, showRules } from '@/services/appOverlays'
 import {
-  defaultExactMatch, galleryMyTagsColorsEnabled, listingDockAlwaysVisible, listingRulesPaused, listingTagSelectEnabled, nsFormat,
+  defaultExactMatch, listingDockAlwaysVisible, listingMyTagsColorsEnabled, listingMyTagsMarksEnabled, listingMyTagsScoresEnabled,
+  listingRulesPaused, listingTagSelectEnabled, listingTagsEnabled, nsFormat,
 } from '@/services/store'
 import { useEqtToast } from '@/composables/useEqtToast'
 import { pageWindow } from '@/utils/pageWindow'
 import '@/styles/rule-prototype.scss'
 
-const { items, chips } = useRulePrototypeHost()
+const { items, chips } = useRulePrototypeHost({ tagsEnabled: () => listingTagsEnabled.value })
+// 圖庫規則是標籤強化的一部分：標籤強化關掉時規則也不套用，跟暫停一樣
+const rulesActive = computed(() => listingTagsEnabled.value && !listingRulesPaused.value)
+// 選取做在 chip 上：標籤沒換成 chip 時沒有東西可選
+const tagSelectEnabled = computed(() => listingTagsEnabled.value && listingTagSelectEnabled.value)
 const { zhDisplay } = useDisplayConfig()
 const toast = useEqtToast()
 const myTagsPalette = shallowRef<MyTagsPalette | null>(null)
@@ -127,7 +132,7 @@ watch(() => selection.value.size, (size, before) => {
 })
 // 規則頁的 dock 是規則介面的一部分，不受列表的標籤選取設定影響
 const dockVisible = computed(() => showRules.value
-  || (items.value.length > 0 && listingTagSelectEnabled.value && (dockOpen.value || listingDockAlwaysVisible.value)))
+  || (items.value.length > 0 && tagSelectEnabled.value && (dockOpen.value || listingDockAlwaysVisible.value)))
 function closeDock() {
   clearSelection()
   dockOpen.value = false
@@ -146,7 +151,7 @@ const effects = computed(() => {
   for (const item of items.value) {
     const rating = item.selfRated ? selfRatedStars.value.get(parseGalleryRef(item.href)?.gid ?? -1) ?? null : item.rating
     const probe: GalleryProbe = { tags: item.tagSet, complete: item.complete, rating, pages: item.pages, category: item.category }
-    resolved.set(item.id, resolveRuleEffects(listingRulesPaused.value ? [] : rules.value, probe))
+    resolved.set(item.id, resolveRuleEffects(rulesActive.value ? rules.value : [], probe))
   }
   return resolved
 })
@@ -336,13 +341,13 @@ function listenTagEvents(enabled: boolean) {
     else document.removeEventListener(name, captureTagEvent, true)
   }
 }
-watch(listingTagSelectEnabled, enabled => {
+watch(tagSelectEnabled, enabled => {
   listenTagEvents(enabled)
   if (!enabled) closeDock()
 })
 onMounted(() => {
   document.addEventListener('keydown', keydown)
-  listenTagEvents(listingTagSelectEnabled.value)
+  listenTagEvents(tagSelectEnabled.value)
 })
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', keydown)
@@ -356,9 +361,10 @@ onBeforeUnmount(() => {
     <TagChip
       class="eqt-rule-prototype__chip"
       :full="chip.name" :display="display(chip.name)" :tier="chip.tier" :style="chip.geometry"
-      :colors="galleryMyTagsColorsEnabled ? myTagsPalette?.[chip.name] : undefined"
+      :colors="listingMyTagsColorsEnabled ? myTagsPalette?.[chip.name] : undefined"
+      :weight="myTagsPalette?.[chip.name]?.weight" :hidden="myTagsPalette?.[chip.name]?.hidden" :watch="myTagsPalette?.[chip.name]?.watch"
       :selection="selection.get(chip.name) === 1 ? 'positive' : selection.get(chip.name) === -1 ? 'negative' : undefined"
-      :show-score="false" :show-marks="false"
+      :show-score="listingMyTagsScoresEnabled" :show-marks="listingMyTagsMarksEnabled"
     />
   </Teleport>
 

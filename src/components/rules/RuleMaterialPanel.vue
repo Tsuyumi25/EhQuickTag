@@ -18,7 +18,7 @@ import {
   createCategoryCondition, createGroup, createRangeCondition, createTagCondition, GROUP_MODE_OPERATORS, tagConditionKey,
   type FixedConditionItem, type GroupMode, type RangeField, type TagCondition,
 } from '@/services/listing/fixedRulePrototype'
-import { galleryMyTagsColorsEnabled } from '@/services/store'
+import { listingMyTagsColorsEnabled } from '@/services/store'
 import { entryForTag, getFallbackEntries, tagDbVersion, type TagEntry } from '@/services/tags/tagDb'
 
 // 素材與找標籤是同一份清單：左欄「全部」依序列出產生器、帶回來的素材與標籤，「素材」只列前兩種，
@@ -68,7 +68,7 @@ const shown = computed(() => {
 })
 
 function styleOf(entry: TagEntry) {
-  const colors = galleryMyTagsColorsEnabled.value || onlyColored.value ? palette.value?.[entry.fullTag] : undefined
+  const colors = listingMyTagsColorsEnabled.value || onlyColored.value ? palette.value?.[entry.fullTag] : undefined
   return colors ? chipStyle(colors) : undefined
 }
 

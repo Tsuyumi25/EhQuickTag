@@ -1,4 +1,4 @@
-import { onBeforeUnmount, onMounted, shallowRef, type CSSProperties } from 'vue'
+import { onBeforeUnmount, onMounted, shallowRef, watch, type CSSProperties } from 'vue'
 import { categoryFromClassList, type GalleryCategory } from '@/services/listing/galleryCategory'
 
 export interface PrototypeListingTag {
@@ -56,7 +56,8 @@ function starRating(root: Element): { rating: number | null; selfRated: boolean 
   return { rating: rating >= 0 && rating <= 5 ? rating : null, selfRated: false }
 }
 
-export function useRulePrototypeHost() {
+/** tagsEnabled：要不要把原生標籤換成插件的 chip；關掉時標籤照樣讀進來給規則判定，只是不動原生的 DOM */
+export function useRulePrototypeHost(options: { tagsEnabled: () => boolean }) {
   const items = shallowRef<PrototypeListingItem[]>([])
   const chips = shallowRef<{
     id: number
@@ -175,7 +176,7 @@ export function useRulePrototypeHost() {
         }
         records.set(root, record)
       }
-      for (const element of nativeTags) {
+      for (const element of options.tagsEnabled() ? nativeTags : []) {
         const name = element.title.trim().toLowerCase()
         if (!name) continue
         seenTags.add(element)
@@ -246,6 +247,8 @@ export function useRulePrototypeHost() {
     scheduled = true
     queueMicrotask(scan)
   }
+
+  watch(options.tagsEnabled, () => scan())
 
   onMounted(() => {
     scan()

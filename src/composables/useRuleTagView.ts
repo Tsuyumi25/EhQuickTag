@@ -2,7 +2,7 @@ import { computed } from 'vue'
 import { useMyTagsPalette } from '@/composables/useMyTagsPalette'
 import { useTagLabel } from '@/composables/useTagLabel'
 import { t } from '@/composables/useI18n'
-import { galleryMyTagsColorsEnabled } from '@/services/store'
+import { listingMyTagsColorsEnabled } from '@/services/store'
 
 /** 規則頁上的標籤（條件、素材、摘要）用同一套名稱與 mytags 配色 */
 export function useRuleTagView(tag: () => string) {
@@ -16,7 +16,7 @@ export function useRuleTagView(tag: () => string) {
     return {
       text: nsLabel ? `${nsLabel}:${display}` : display,
       iconUrl,
-      colors: galleryMyTagsColorsEnabled.value ? palette.value?.[full] : undefined,
+      colors: listingMyTagsColorsEnabled.value ? palette.value?.[full] : undefined,
     }
   })
 }

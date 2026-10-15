@@ -165,6 +165,12 @@ const INITIAL_SETTINGS = {
   // per-panel 點「▸ Notes」展開，切下個 chip 又回預設
   wikiPreludeExpanded: false,
   followCurrentSite: true,
+  // 列表頁把原生標籤換成插件的 chip（My Tags 顏色、分數、關注／屏蔽標記）；關掉就留原生標籤，
+  // 標籤選取跟著不能用，因為選取是做在 chip 上的
+  listingTagsEnabled: true,
+  listingMyTagsColorsEnabled: true,
+  listingMyTagsScoresEnabled: false,
+  listingMyTagsMarksEnabled: true,
   // 列表頁接管標籤的點選（左鍵含有、右鍵排除、拖曳多選）並顯示 dock；關掉的話點標籤照原生行為
   listingTagSelectEnabled: true,
   // 沒選標籤時 dock 也一直在，不必先點一個標籤才叫得出來
@@ -229,6 +235,10 @@ export const galleryDblClickLeftNewTabActive  = refs.galleryDblClickLeftNewTabAc
 export const galleryDblClickRightNewTabActive = refs.galleryDblClickRightNewTabActive
 export const wikiPreludeExpanded = refs.wikiPreludeExpanded
 export const followCurrentSite  = refs.followCurrentSite
+export const listingTagsEnabled = refs.listingTagsEnabled
+export const listingMyTagsColorsEnabled = refs.listingMyTagsColorsEnabled
+export const listingMyTagsScoresEnabled = refs.listingMyTagsScoresEnabled
+export const listingMyTagsMarksEnabled = refs.listingMyTagsMarksEnabled
 export const listingTagSelectEnabled = refs.listingTagSelectEnabled
 export const listingDockAlwaysVisible = refs.listingDockAlwaysVisible
 export const listingRulesPaused = refs.listingRulesPaused
