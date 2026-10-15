@@ -403,7 +403,7 @@ onBeforeUnmount(() => {
             </div>
           </div>
           <span class="eqt-rule-prototype__separator" aria-hidden="true" />
-          <!-- 規則介面開著時 dock 只做規則的事；出口只有規則介面自己的關閉鈕，關掉之後才回到平常的 dock -->
+          <!-- 規則介面開著時 dock 只做規則的事；右端的關閉跟規則介面的關閉同一件事，關掉之後才回到平常的 dock -->
           <template v-if="showRules">
             <button
               type="button" class="eqt-rule-prototype__carry" :disabled="selection.size === 0" @click="openRulesEditor"
@@ -430,10 +430,11 @@ onBeforeUnmount(() => {
             <button v-else type="button" class="eqt-rule-prototype__search" disabled><Search aria-hidden="true" />{{ t('tagbar.search') }}</button>
           </template>
         </div>
-        <template v-if="!showRules">
-          <span class="eqt-rule-prototype__separator" aria-hidden="true" />
-          <button type="button" class="eqt-rule-prototype__clear" :aria-label="t('gallery.clearSelection')" :title="t('gallery.clearSelection')" @click="clearSelection"><X aria-hidden="true" /></button>
-        </template>
+        <span class="eqt-rule-prototype__separator" aria-hidden="true" />
+        <button v-if="showRules" type="button" class="eqt-rule-prototype__close-rules" @click="showRules = false">
+          <X aria-hidden="true" />{{ t('rulePrototype.close') }}
+        </button>
+        <button v-else type="button" class="eqt-rule-prototype__clear" :aria-label="t('gallery.clearSelection')" :title="t('gallery.clearSelection')" @click="clearSelection"><X aria-hidden="true" /></button>
       </div>
     </aside>
   </Teleport>
