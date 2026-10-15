@@ -28,7 +28,7 @@ export default {
   'rulePagePrototype.emptyGroup': '비어 있음: 조건을 끌어 놓기',
   'rulePagePrototype.contains': '태그 포함',
   'rulePagePrototype.excludes': '태그 미포함',
-  'rulePagePrototype.rating': '별 개수',
+  'rulePagePrototype.rating': '평점',
   'rulePagePrototype.pages': '페이지 수',
   'rulePagePrototype.summary': '현재 규칙 판정',
   'rulePagePrototype.digest.mode': '요약 표시 방식',
@@ -80,7 +80,7 @@ export default {
   'rulePagePrototype.orderHint': '효과별로 판정하며 목록에서 위에 있는 규칙일수록 우선합니다. “변경하지 않음”은 효과를 정하지 않고 아래 규칙에 맡깁니다.',
   'rulePagePrototype.loadFailed': '규칙을 불러오지 못했습니다. 저장된 규칙은 덮어쓰지 않았습니다. 페이지를 새로고침해 주세요.',
   'rulePagePrototype.saveFailed': '규칙을 저장하지 못했습니다. 편집 내용은 이 페이지에 남아 있으니 아직 닫지 마세요.',
-  'rulePagePrototype.selfRatedFailed': '직접 평가한 갤러리의 평균 평점을 불러오지 못했습니다. 해당 갤러리의 별 개수는 판정할 수 없는 상태로 유지됩니다.',
+  'rulePagePrototype.selfRatedFailed': '직접 평가한 갤러리의 평균 평점을 불러오지 못했습니다. 해당 갤러리의 평점은 판정할 수 없는 상태로 유지됩니다.',
 
   // Common
   'common.itemColor': '버튼 색상',

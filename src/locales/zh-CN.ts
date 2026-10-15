@@ -28,7 +28,7 @@ export default {
   'rulePagePrototype.emptyGroup': '空的，把条件拖进来',
   'rulePagePrototype.contains': '含有标签',
   'rulePagePrototype.excludes': '不含标签',
-  'rulePagePrototype.rating': '星级',
+  'rulePagePrototype.rating': '评分',
   'rulePagePrototype.pages': '页数',
   'rulePagePrototype.summary': '当前规则逻辑',
   'rulePagePrototype.digest.mode': '摘要呈现方式',
@@ -80,7 +80,7 @@ export default {
   'rulePagePrototype.orderHint': '每个效果分别判定；列表中位置越高的规则越优先。“保持不变”不会占用效果，由下方的规则决定。',
   'rulePagePrototype.loadFailed': '无法加载规则，已保存的规则未被覆盖。请刷新页面重试。',
   'rulePagePrototype.saveFailed': '无法保存规则，编辑内容仍留在此页，请先不要关闭。',
-  'rulePagePrototype.selfRatedFailed': '无法取得自己评过分的图库的平均分，这些图库的星级保持未知。',
+  'rulePagePrototype.selfRatedFailed': '无法取得自己评过分的图库的平均分，这些图库的评分保持未知。',
 
   // Common
   'common.itemColor': '按钮颜色',

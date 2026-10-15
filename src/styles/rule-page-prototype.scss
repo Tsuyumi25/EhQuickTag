@@ -1087,13 +1087,20 @@
   margin: var(--eqt-rule-page-item-margin);
   white-space: nowrap;
 
-  > .eqt-rule-page__icon { color: var(--eqt-text-hint); }
-
   > .eqt-rule-page__digest-average {
     color: var(--eqt-text-hint);
     font-size: var(--eqt-fs-sm);
   }
+}
 
+// 數值條件一律寫成「圖示 欄位名」，不只靠圖示讓人猜是星等還是頁數
+.eqt-rule-page__range-label {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--eqt-rule-page-gap) / 2);
+  color: var(--eqt-text-hint);
+
+  > .eqt-rule-page__icon { color: inherit; }
 }
 
 .eqt-rule-page__range-value {

@@ -28,7 +28,7 @@ export default {
   'rulePagePrototype.emptyGroup': '空的，把條件拖進來',
   'rulePagePrototype.contains': '含有標籤',
   'rulePagePrototype.excludes': '不含標籤',
-  'rulePagePrototype.rating': '星等',
+  'rulePagePrototype.rating': '評分',
   'rulePagePrototype.pages': '頁數',
   'rulePagePrototype.summary': '目前規則邏輯',
   'rulePagePrototype.digest.mode': '摘要呈現方式',
@@ -80,7 +80,7 @@ export default {
   'rulePagePrototype.orderHint': '每個效果分別判定；列表中位置越高的規則越優先。「維持不變」不會佔用效果，由下方的規則決定。',
   'rulePagePrototype.loadFailed': '無法載入規則，已保存的規則未被覆寫。請重新整理頁面再試。',
   'rulePagePrototype.saveFailed': '無法保存規則，編輯內容仍留在此頁，請先不要關閉。',
-  'rulePagePrototype.selfRatedFailed': '無法取得自己評過分的圖庫的平均分，這些圖庫的星等維持未知。',
+  'rulePagePrototype.selfRatedFailed': '無法取得自己評過分的圖庫的平均分，這些圖庫的評分維持未知。',
 
   // Common
   'common.itemColor': '按鈕顏色',

@@ -28,7 +28,7 @@ export default {
   'rulePagePrototype.emptyGroup': '空：条件をドロップ',
   'rulePagePrototype.contains': 'タグを含む',
   'rulePagePrototype.excludes': 'タグを含まない',
-  'rulePagePrototype.rating': '星の数',
+  'rulePagePrototype.rating': '評価',
   'rulePagePrototype.pages': 'ページ数',
   'rulePagePrototype.summary': '現在のルールの判定内容',
   'rulePagePrototype.digest.mode': '要約の表示方法',
@@ -80,7 +80,7 @@ export default {
   'rulePagePrototype.orderHint': '効果ごとに判定し、一覧で上にあるルールほど優先されます。「変更しない」は効果を確定させず、下のルールに任せます。',
   'rulePagePrototype.loadFailed': 'ルールを読み込めませんでした。保存済みのルールは上書きされていません。ページを再読み込みしてください。',
   'rulePagePrototype.saveFailed': 'ルールを保存できませんでした。編集内容はこのページに残っています。まだ閉じないでください。',
-  'rulePagePrototype.selfRatedFailed': '自分で評価したギャラリーの平均評価を取得できませんでした。それらの星の数は未判定のままです。',
+  'rulePagePrototype.selfRatedFailed': '自分で評価したギャラリーの平均評価を取得できませんでした。それらの評価は未判定のままです。',
 
   // Common
   'common.itemColor': 'ボタンの色',

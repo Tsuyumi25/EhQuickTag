@@ -28,7 +28,7 @@ export default {
   'rulePagePrototype.emptyGroup': 'Empty: drop conditions here',
   'rulePagePrototype.contains': 'Contains tag',
   'rulePagePrototype.excludes': 'Does not contain tag',
-  'rulePagePrototype.rating': 'Stars',
+  'rulePagePrototype.rating': 'Rating',
   'rulePagePrototype.pages': 'Pages',
   'rulePagePrototype.summary': 'Current rule logic',
   'rulePagePrototype.digest.mode': 'Summary style',
@@ -80,7 +80,7 @@ export default {
   'rulePagePrototype.orderHint': 'For each effect, the highest matching rule in this list wins. Leave unchanged does not claim the effect, so rules below can still set it.',
   'rulePagePrototype.loadFailed': 'Could not load rules. Stored rules have not been overwritten; reload the page to try again.',
   'rulePagePrototype.saveFailed': 'Could not save rules. Keep this page open; your edits are still here.',
-  'rulePagePrototype.selfRatedFailed': 'Could not load the average rating of galleries you rated; their stars stay undecided.',
+  'rulePagePrototype.selfRatedFailed': 'Could not load the average rating of galleries you rated; their rating stays undecided.',
 
   // Common
   'common.itemColor': 'Button color',

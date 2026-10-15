@@ -30,10 +30,9 @@ const view = useRuleTagView(() => (props.term.kind === 'tag' ? props.term.tag : 
     />
   </RuleDigestPhrase>
   <span v-else-if="term.kind === 'range'" class="eqt-rule-page__digest-range">
-    <component
-      :is="RANGE_FIELD_ICONS[term.field]" v-if="term.field !== 'rating'"
-      class="eqt-rule-page__icon" :aria-label="t(`rulePagePrototype.${term.field}`)"
-    />
+    <span class="eqt-rule-page__range-label">
+      <component :is="RANGE_FIELD_ICONS[term.field]" class="eqt-rule-page__icon" aria-hidden="true" />{{ t(`rulePagePrototype.${term.field}`) }}
+    </span>
     {{ term.exclude ? '∉' : '' }}<RuleRangeValue :field="term.field" :range="term.range" />
     <small v-if="term.field === 'rating'" class="eqt-rule-page__digest-average">
       {{ t('rulePagePrototype.digest.average', { range: formatAverage(term.range) }) }}

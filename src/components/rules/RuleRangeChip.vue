@@ -19,7 +19,9 @@ const ceiling = computed(() => (Number.isFinite(field.value.max) ? field.value.m
 
 <template>
   <div class="eqt-rule-page__range" data-height="0" :data-kind="condition.kind">
-    <component :is="RANGE_FIELD_ICONS[condition.kind]" class="eqt-rule-page__icon" :aria-label="label" />
+    <span class="eqt-rule-page__range-label">
+      <component :is="RANGE_FIELD_ICONS[condition.kind]" class="eqt-rule-page__icon" aria-hidden="true" />{{ label }}
+    </span>
     <select v-model="condition.op" class="eqt-rule-page__inline-select eqt-rule-page__op" :aria-label="label">
       <option v-for="op in RANGE_OPS" :key="op" :value="op">{{ OP_SYMBOLS[op] }}</option>
     </select>
