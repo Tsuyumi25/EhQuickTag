@@ -117,8 +117,21 @@ const sessionGroups = computed<GalleryTagListGroup[]>(() => {
   }
   return [...groups.values()]
 })
+// dock 開不開跟選取分開：選了第一個標籤時打開，取消選取不會收起來，只有關閉會——關閉一律連選取一起清掉。
 // 規則頁開著時 dock 一直在：預覽、返回與關閉都在這裡，沒選標籤也要按得到
-const dockVisible = computed(() => showRules.value || (items.value.length > 0 && dockSessionTerms.value.length > 0))
+const dockOpen = ref(false)
+watch(() => selection.value.size, (size, before) => {
+  if (size > 0 && before === 0) dockOpen.value = true
+})
+const dockVisible = computed(() => showRules.value || (items.value.length > 0 && dockOpen.value))
+function closeDock() {
+  clearSelection()
+  dockOpen.value = false
+}
+// 規則頁不論從哪裡關（dock 上的關閉、規則頁右上角、Esc），都跟 dock 的關閉同一件事
+watch(showRules, (open, wasOpen) => {
+  if (wasOpen && !open) closeDock()
+})
 watch(dockVisible, visible => {
   if (visible) return
   closeSearchMenu()
@@ -435,10 +448,10 @@ onBeforeUnmount(() => {
           </template>
         </div>
         <span class="eqt-rule-prototype__separator" aria-hidden="true" />
-        <button v-if="showRules" type="button" class="eqt-rule-prototype__close-rules" @click="showRules = false">
+        <!-- 規則頁開著時關的是規則頁，showRules 的 watch 會接著關 dock；兩種情況選取都會清掉 -->
+        <button type="button" class="eqt-rule-prototype__close" @click="showRules ? showRules = false : closeDock()">
           <X aria-hidden="true" />{{ t('rulePrototype.close') }}
         </button>
-        <button v-else type="button" class="eqt-rule-prototype__clear" :aria-label="t('gallery.clearSelection')" :title="t('gallery.clearSelection')" @click="clearSelection"><X aria-hidden="true" /></button>
       </div>
     </aside>
   </Teleport>

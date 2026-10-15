@@ -80,8 +80,7 @@
   border: var(--eqt-border-width) solid var(--eqt-border);
   border-radius: calc(var(--eqt-radius-md) * 2);
   box-shadow: var(--eqt-shadow-popover);
-  > .eqt-rule-prototype__clear,
-  > .eqt-rule-prototype__close-rules,
+  > .eqt-rule-prototype__close,
   .eqt-rule-prototype__dock-tools > button,
   .eqt-rule-prototype__dock-tools > a,
   .eqt-rule-prototype__selection-count {
@@ -98,10 +97,6 @@
       height: var(--eqt-fs-md);
       flex-shrink: 0;
     }
-  }
-  .eqt-rule-prototype__clear {
-    width: var(--eqt-row-h);
-    padding: 0;
   }
   .eqt-rule-prototype__rules-toggle, .eqt-rule-prototype__selection-count {
     &[aria-expanded='true'] {
