@@ -3,12 +3,9 @@
 
 import {
   averageOfStars, conditionRange, normalizeTag, RANGE_FIELDS,
-  type FixedActions, type FixedConditionItem, type FixedRule, type RangeField, type ValueRange,
+  type FixedConditionItem, type FixedRule, type RangeField, type ValueRange,
 } from '@/services/listing/fixedRulePrototype'
 import type { GalleryCategory } from '@/services/listing/galleryCategory'
-import { printConditions } from '@/services/listing/ruleExpression'
-
-export type DigestMode = 'rows' | 'raw'
 
 export type DigestTerm =
   | { kind: 'tag'; tag: string; exclude: boolean }
@@ -281,27 +278,4 @@ export function formatAverage(stars: ValueRange): string {
   if (average.max >= max) return average.min <= min ? '0 – 5' : `≥ ${value(average.min)}`
   if (average.min <= min) return `< ${value(average.max)}`
   return `${value(average.min)} – ${value(average.max)}`
-}
-
-// 原始算式照規則原本的結構寫，不做任何合併或換算（條件的寫法在 ruleExpression.ts）：
-// 要的是能整段貼給別人或 AI 判讀，不需要再看畫面。動作另起一行，以 => 開頭
-
-/** 沒指定任何動作時是空字串 */
-export function actionsExpression(actions: FixedActions): string {
-  if (actions.hide) return '{hide}'
-  const parts: string[] = []
-  if (actions.background) parts.push(`background: ${actions.background}`)
-  if (actions.blur) parts.push('blur')
-  if (actions.showName) parts.push('show-name')
-  if (actions.titlePrefix) parts.push(`title-prefix: ${JSON.stringify(actions.titlePrefix)}`)
-  if (actions.strike) parts.push('strike')
-  if (actions.dim) parts.push('dim')
-  return parts.length ? `{${parts.join(', ')}}` : ''
-}
-
-export function ruleExpression(rule: FixedRule): string {
-  const conditions = printConditions(rule.root)
-  const actions = actionsExpression(rule.actions)
-  if (!actions) return conditions
-  return conditions ? `${conditions}\n=> ${actions}` : `=> ${actions}`
 }

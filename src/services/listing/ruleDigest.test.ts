@@ -4,7 +4,7 @@ import {
   createCategoryCondition, createGroup, createRangeCondition, createTagCondition, evaluateRule,
   type GalleryProbe, type RangeField, type ValueRange,
 } from '@/services/listing/fixedRulePrototype'
-import { digestRule, formatRange, ruleExpression, type DigestTerm, type RuleDigest } from './ruleDigest'
+import { digestRule, formatRange, type DigestTerm, type RuleDigest } from './ruleDigest'
 import { probeArb, rule, ruleArb } from './test-helpers'
 
 const inRange = (range: ValueRange, value: number) => range.min <= value && value <= range.max
@@ -79,42 +79,6 @@ describe('digestRule', () => {
   it('空的根群組與空的子群組都標成未完成', () => {
     expect(digestRule(rule('all', [])).notes).toEqual([{ kind: 'incomplete' }])
     expect(digestRule(rule('all', [createGroup()])).notes).toEqual([{ kind: 'incomplete' }])
-  })
-})
-
-describe('ruleExpression', () => {
-  it('根群組一行一個條件，子群組照原本的結構寫，NOT 包在 NOT ( ) 裡', () => {
-    const expression = ruleExpression(rule('all', [
-      createTagCondition('female:a'),
-      createGroup('any', [createTagCondition('female:b'), createRangeCondition('rating', 'lt', 4)]),
-      createGroup('any', [createTagCondition('male:c'), { ...createRangeCondition('pages', 'between', 20), max: 80 }]),
-      createGroup('any', [createTagCondition('other:d', true)], true),
-    ]))
-    expect(expression).toBe([
-      'female:a',
-      'AND (female:b OR stars < 4)',
-      'AND (male:c OR 20 <= pages <= 80)',
-      'AND NOT (NOT other:d)',
-    ].join('\n'))
-  })
-
-  it('根群組的判定模式決定行首的運算子，NOT 時整段包起來', () => {
-    const tags = () => [createTagCondition('female:a'), createTagCondition('female:b')]
-    expect(ruleExpression(rule('any', tags()))).toBe('female:a\nOR female:b')
-    expect(ruleExpression(rule('any', tags(), true))).toBe('NOT (\n  female:a\n  OR female:b\n)')
-    expect(ruleExpression(rule('all', tags(), true))).toBe('NOT (\n  female:a\n  AND female:b\n)')
-  })
-
-  it('名稱有空白的標籤加引號，空群組寫成 ()，沒有條件的規則是空字串', () => {
-    expect(ruleExpression(rule('all', [createTagCondition('female:some tag'), createGroup()])))
-      .toBe('female:"some tag"\nAND ()')
-    expect(ruleExpression(rule('all', []))).toBe('')
-  })
-
-  it('規則的動作另起一行，以 => 開頭；沒指定動作時不寫', () => {
-    const fixedRule = rule('all', [createTagCondition('female:a')])
-    Object.assign(fixedRule.actions, { background: '#cc000080', blur: true, showName: true })
-    expect(ruleExpression(fixedRule)).toBe('female:a\n=> {background: #cc000080, blur, show-name}')
   })
 })
 

@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { conditionsFromTerms, type TagCondition } from '@/services/listing/fixedRulePrototype'
-import type { DigestMode } from '@/services/listing/ruleDigest'
+
+export type ConditionView = 'visual' | 'source'
 
 export const showSettings = ref(false)
 export const initialSettingsTab = ref<string | null>(null)
@@ -10,7 +11,7 @@ export const showRules = ref(false)
 export const rulesCollapsed = ref(false)
 // 放在頁面層級而不是規則頁元件裡：規則頁關掉再打開，素材還在
 export const ruleMaterials = ref<TagCondition[]>([])
-export const ruleDigestMode = ref<DigestMode>('rows')
+export const ruleConditionView = ref<ConditionView>('visual')
 /** 打開規則頁時要選中的規則；規則頁接手之後清回 null */
 export const requestedRuleId = ref<number | null>(null)
 

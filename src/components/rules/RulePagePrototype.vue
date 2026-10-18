@@ -6,15 +6,19 @@ import ContextMenu from '@/components/ContextMenu.vue'
 import { baseDragOptions } from '@/utils/drag'
 import RuleActionsEditor from './RuleActionsEditor.vue'
 import RuleConditionGroup from './RuleConditionGroup.vue'
+import RuleConditionSource from './RuleConditionSource.vue'
 import RuleDigest from './RuleDigest.vue'
 import RuleMaterialPanel from './RuleMaterialPanel.vue'
 import { useFixedRuleStore } from '@/composables/useFixedRuleStore'
 import { t } from '@/composables/useI18n'
 import { createRule } from '@/services/listing/fixedRulePrototype'
-import { openSettings, requestedRuleId, rulesCollapsed, showSettings } from '@/services/appOverlays'
+import {
+  openSettings, requestedRuleId, ruleConditionView, rulesCollapsed, showSettings, type ConditionView,
+} from '@/services/appOverlays'
 import '@/styles/rule-page-prototype.scss'
 
 const emit = defineEmits<{ close: [] }>()
+const CONDITION_VIEWS: readonly ConditionView[] = ['visual', 'source']
 const { rules, ready, error } = useFixedRuleStore()
 const selectedId = ref<number | null>(null)
 const ruleMenuOpen = ref(false)
@@ -277,7 +281,14 @@ onBeforeUnmount(() => {
 
         <template v-if="selected">
           <section class="eqt-rule-page__section">
-            <RuleConditionGroup :key="selected.root.id" :group="selected.root" :depth="0" root />
+            <div class="eqt-rule-page__views" role="group" :aria-label="t('rulePagePrototype.conditionView')">
+              <button
+                v-for="view in CONDITION_VIEWS" :key="view" type="button" class="eqt-rule-page__view"
+                :aria-pressed="ruleConditionView === view" @click="ruleConditionView = view"
+              >{{ t(`rulePagePrototype.conditionView.${view}`) }}</button>
+            </div>
+            <RuleConditionGroup v-if="ruleConditionView === 'visual'" :key="selected.root.id" :group="selected.root" :depth="0" root />
+            <RuleConditionSource v-else :key="selected.id" :rule="selected" />
           </section>
 
           <section class="eqt-rule-page__section">

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { test, fc } from '@fast-check/vitest'
 import {
-  createGroup, createTagCondition, evaluateRule, GROUP_MODES, MAX_GROUP_DEPTH, normalizeTag, RANGE_OPS,
+  createGroup, createRangeCondition, createTagCondition, evaluateRule, GROUP_MODES, MAX_GROUP_DEPTH, normalizeTag, RANGE_OPS,
   type ConditionGroup, type FixedConditionItem, type GroupMode, type RangeField,
 } from '@/services/listing/fixedRulePrototype'
 import { GALLERY_CATEGORIES } from '@/services/listing/galleryCategory'
@@ -52,6 +52,35 @@ function errorOf(text: string): { kind: ExpressionErrorKind; at: number } {
   if (result.ok) throw new Error(`expected an error for ${JSON.stringify(text)}`)
   return { kind: result.error.kind, at: result.error.at }
 }
+
+describe('printConditions', () => {
+  const tags = () => [createTagCondition('female:a'), createTagCondition('female:b')]
+
+  it('根群組一行一個條件，子群組照原本的結構寫在同一行', () => {
+    expect(printConditions(createGroup('all', [
+      createTagCondition('female:a'),
+      createGroup('any', [createTagCondition('female:b'), createRangeCondition('rating', 'lt', 4)]),
+      createGroup('any', [createTagCondition('male:c'), { ...createRangeCondition('pages', 'between', 20), max: 80 }]),
+      createGroup('any', [createTagCondition('other:d', true)], true),
+    ]))).toBe([
+      'female:a',
+      'AND (female:b OR stars < 4)',
+      'AND (male:c OR 20 <= pages <= 80)',
+      'AND NOT (NOT other:d)',
+    ].join('\n'))
+  })
+
+  it('根群組的判定模式接在行首，NOT 時整段包起來', () => {
+    expect(printConditions(createGroup('any', tags()))).toBe('female:a\nOR female:b')
+    expect(printConditions(createGroup('all', tags(), true))).toBe('NOT (\n  female:a\n  AND female:b\n)')
+  })
+
+  it('空群組寫成 ()，沒有條件的規則是空字串', () => {
+    expect(printConditions(createGroup('all', [createTagCondition('female:some tag'), createGroup()]))).toBe('female:"some tag"\nAND ()')
+    expect(printConditions(createGroup())).toBe('')
+    expect(printConditions(createGroup('all', [], true))).toBe('NOT ()')
+  })
+})
 
 describe('原始算式與條件樹', () => {
   // 根群組只有一個 NOT 群組時，印出來跟「根群組本身是 NOT」一樣；讀回來會變成後者，判定不變（下一個 property 驗證）
