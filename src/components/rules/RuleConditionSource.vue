@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, ref, useId, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, useId, watch } from 'vue'
+import { useResizeObserver } from '@vueuse/core'
 import { t } from '@/composables/useI18n'
 import { MAX_GROUP_DEPTH, type FixedRule } from '@/services/listing/fixedRulePrototype'
 import { applyConditions, parseConditions, printConditions, type ExpressionError } from '@/services/listing/ruleExpression'
@@ -12,7 +13,7 @@ const draft = ref(printed.value)
 const editing = ref(false)
 const parseError = ref<ExpressionError | null>(null)
 const errorId = useId()
-const rows = computed(() => Math.max(3, draft.value.split('\n').length))
+const input = ref<HTMLTextAreaElement | null>(null)
 const errorText = computed(() => parseError.value && t('rulePagePrototype.expression.errorAt', {
   at: parseError.value.at + 1,
   message: t(`rulePagePrototype.expression.error.${parseError.value.kind}`, { text: parseError.value.text, max: MAX_GROUP_DEPTH }),
@@ -23,6 +24,24 @@ watch(printed, (value) => {
   if (editing.value) return
   draft.value = value
   parseError.value = null
+})
+
+// 高度跟著內容走：換行與自動折行都算。offsetHeight − clientHeight 是上下框線，
+// border-box 下 scrollHeight 不含框線，少了這段會多出一條捲軸
+function fitHeight() {
+  const el = input.value
+  if (!el) return
+  el.style.height = 'auto'
+  el.style.height = `${el.scrollHeight + el.offsetHeight - el.clientHeight}px`
+}
+watch(draft, () => nextTick(fitHeight))
+onMounted(fitHeight)
+// 寬度變了折行就跟著變；只看寬度，自己改高度觸發的那次不必再量
+let measuredWidth = 0
+useResizeObserver(input, ([entry]) => {
+  if (entry.contentRect.width === measuredWidth) return
+  measuredWidth = entry.contentRect.width
+  fitHeight()
 })
 
 function onInput() {
@@ -47,7 +66,7 @@ function onBlur() {
 <template>
   <div class="eqt-rule-page__source">
     <textarea
-      v-model="draft" class="eqt-rule-page__source-input" :rows="rows"
+      ref="input" v-model="draft" class="eqt-rule-page__source-input" rows="2"
       spellcheck="false" autocomplete="off" :aria-label="t('rulePagePrototype.expression.label')"
       :placeholder="t('rulePagePrototype.expression.placeholder')"
       :aria-invalid="!!parseError" :aria-describedby="parseError ? errorId : undefined"

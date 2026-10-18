@@ -1005,7 +1005,8 @@
   line-height: inherit;
   font-variant-numeric: tabular-nums;
   white-space: pre-wrap;
-  resize: vertical;
+  overflow-y: hidden;
+  resize: none;
   transition: var(--eqt-transition-base);
 
   .eqt-dark & { background: var(--eqt-bg-elevated); }
