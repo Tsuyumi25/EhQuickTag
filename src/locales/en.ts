@@ -433,7 +433,7 @@ export default {
   'settings.listingTagSelect': 'Enable tag selection and the Dock',
   'settings.listingTagSelectHint': 'Left-click includes, right-click excludes, drag selects several.',
   'settings.listingDockAlways': 'Always show the Dock',
-  'settings.listingEvrNotice': 'Except Extended, native display modes list at most 12 My Tags tags, so rules misjudge.',
+  'settings.listingEvrRequired': 'Gallery list enhancement needs Eh View Refined for complete tags; without it the whole feature stays off.',
   'settings.listingEvrInstall': 'Install {evr} and move it to the top of the run order',
   'settings.sectionListingRules': 'Gallery rules',
   'settings.listingRulesPaused': 'Pause all gallery rules',

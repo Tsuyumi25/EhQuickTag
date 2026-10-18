@@ -433,7 +433,7 @@ export default {
   'settings.listingTagSelect': '啟用標籤選取和 Dock',
   'settings.listingTagSelectHint': '左鍵含有、右鍵排除、拖曳多選。',
   'settings.listingDockAlways': '始終顯示 Dock',
-  'settings.listingEvrNotice': '原生顯示模式除了 Extended，最多只列出 12 個 My Tags 標籤，規則會誤判。',
+  'settings.listingEvrRequired': '圖庫列表強化需要 Eh View Refined 提供完整標籤，沒有它時整個功能都不會啟用。',
   'settings.listingEvrInstall': '請安裝 {evr} 並將執行順序移至最前面',
   'settings.sectionListingRules': '圖庫規則',
   'settings.listingRulesPaused': '暫停所有圖庫規則',

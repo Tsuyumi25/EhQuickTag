@@ -433,7 +433,7 @@ export default {
   'settings.listingTagSelect': '태그 선택과 Dock 사용',
   'settings.listingTagSelectHint': '왼쪽 클릭은 포함, 오른쪽 클릭은 제외, 드래그로 여러 개 선택.',
   'settings.listingDockAlways': 'Dock 항상 표시',
-  'settings.listingEvrNotice': '기본 표시 모드는 Extended를 제외하면 My Tags 태그를 최대 12개만 보여 주어 규칙이 잘못 판정합니다.',
+  'settings.listingEvrRequired': '갤러리 목록 강화에는 전체 태그를 얻기 위해 Eh View Refined가 필요합니다. 없으면 기능 전체가 꺼진 상태로 유지됩니다.',
   'settings.listingEvrInstall': '{evr}을 설치하고 실행 순서를 맨 앞으로 옮기세요',
   'settings.sectionListingRules': '갤러리 규칙',
   'settings.listingRulesPaused': '모든 갤러리 규칙 일시 중지',

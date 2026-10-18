@@ -18,6 +18,7 @@ import { taggingEnhancerEnabled, myTagsEnhancerEnabled } from '@/services/store'
 import { refreshMyTagsPalette } from '@/services/mytags/mytagsPalette'
 import { useEqtToast } from '@/composables/useEqtToast'
 import { t } from '@/composables/useI18n'
+import { evrInstalled } from '@/utils/evr'
 
 useFixedRuleStore()
 const formHost = useEhFormHost()
@@ -33,7 +34,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <ListingRulesPrototype />
+  <ListingRulesPrototype v-if="evrInstalled" />
   <RulePagePrototype v-if="showRules" @close="showRules = false" />
 
   <Teleport v-if="formHost" :to="formHost.anchor">

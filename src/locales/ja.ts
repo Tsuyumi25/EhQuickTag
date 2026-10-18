@@ -433,7 +433,7 @@ export default {
   'settings.listingTagSelect': 'タグの選択と Dock を有効にする',
   'settings.listingTagSelectHint': '左クリックで含む、右クリックで除外、ドラッグでまとめて選択。',
   'settings.listingDockAlways': 'Dock を常に表示',
-  'settings.listingEvrNotice': '標準の表示モードは Extended 以外、My Tags のタグを最大 12 個しか表示しないため、ルールが誤判定します。',
+  'settings.listingEvrRequired': 'ギャラリー一覧の強化には完全なタグを得るため Eh View Refined が必要です。ない場合は機能全体が無効のままです。',
   'settings.listingEvrInstall': '{evr} をインストールし、実行順を一番前に移動してください',
   'settings.sectionListingRules': 'ギャラリールール',
   'settings.listingRulesPaused': 'すべてのギャラリールールを一時停止',
