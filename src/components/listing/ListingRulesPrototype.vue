@@ -28,13 +28,13 @@ import { pickUrl, savePick } from '@/services/mytags/mytagsPicks'
 import { openRule, openRules, openSettings, rulesCollapsed, showRules } from '@/services/appOverlays'
 import {
   defaultExactMatch, listingDockAlwaysVisible, listingMyTagsColorsEnabled, listingMyTagsMarksEnabled, listingMyTagsScoresEnabled,
-  listingRulesPaused, listingTagSelectEnabled, listingTagsEnabled, nsFormat,
+  listingRulesPaused, listingTagLayout, listingTagSelectEnabled, listingTagsEnabled, nsFormat,
 } from '@/services/store'
 import { useEqtToast } from '@/composables/useEqtToast'
 import { pageWindow } from '@/utils/pageWindow'
 import '@/styles/rule-prototype.scss'
 
-const { items, chips } = useRulePrototypeHost({ tagsEnabled: () => listingTagsEnabled.value })
+const { items, chips } = useRulePrototypeHost({ tagsEnabled: () => listingTagsEnabled.value, tagLayout: () => listingTagLayout.value })
 // 圖庫規則是圖庫列表強化的一部分：關掉時規則也不套用，跟暫停一樣
 const rulesActive = computed(() => listingTagsEnabled.value && !listingRulesPaused.value)
 // 選取做在 chip 上：標籤沒換成 chip 時沒有東西可選

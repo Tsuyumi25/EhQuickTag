@@ -60,6 +60,13 @@ export const INTRO_PANEL_PRIMARY_LANGS = [
 ] as const
 export type IntroPanelPrimaryLang = typeof INTRO_PANEL_PRIMARY_LANGS[number]['id']
 
+// 列表上每個圖庫的標籤怎麼擺：照網站原樣，或像圖庫頁那樣每個 namespace 一列、前面寫出 namespace
+export const LISTING_TAG_LAYOUTS = [
+  { id: 'native',    labelKey: 'settings.listingTagLayoutNative' },
+  { id: 'namespace', labelKey: 'settings.listingTagLayoutNamespace' },
+] as const
+export type ListingTagLayout = typeof LISTING_TAG_LAYOUTS[number]['id']
+
 
 // Gallery taglist 專屬 dblclick action。跟 tagbar 的 DblClickAction 分開——tagbar
 // 對 search 表單／編輯模式操作，gallery 對選取 chip 集合／vote／picker 操作，
@@ -177,6 +184,7 @@ const INITIAL_SETTINGS = {
   listingDockAlwaysVisible: false,
   // 暫停所有圖庫規則在列表上的效果，規則本身不動；想看沒有規則時的列表用
   listingRulesPaused: false,
+  listingTagLayout: 'native' as ListingTagLayout,
   // My Tags Enhancer：plugin 在 /mytags 是否接管原生標籤管理 UI。跟
   // taggingEnhancerEnabled 同語意、同時機——App.vue setup 階段讀一次，
   // 關掉就完全不遮蔽原生頁面，toggle 後需重新整理才生效
@@ -242,6 +250,7 @@ export const listingMyTagsMarksEnabled = refs.listingMyTagsMarksEnabled
 export const listingTagSelectEnabled = refs.listingTagSelectEnabled
 export const listingDockAlwaysVisible = refs.listingDockAlwaysVisible
 export const listingRulesPaused = refs.listingRulesPaused
+export const listingTagLayout = refs.listingTagLayout
 export const myTagsEnhancerEnabled = refs.myTagsEnhancerEnabled
 export const myTagsPreviewCoverScale = refs.myTagsPreviewCoverScale
 export const myTagsPanelZoom = refs.myTagsPanelZoom
@@ -264,6 +273,7 @@ const SETTING_VALIDATORS: Partial<{ [K in SettingKey]: (v: unknown) => boolean }
   searchPanelLangMode:    v => SEARCH_PANEL_LANG_MODES.some(m => m.id === v),
   convertToTraditional:   v => CONVERT_TO_TRADITIONAL_MODES.some(m => m.id === v),
   introPanelPrimaryLang:  v => INTRO_PANEL_PRIMARY_LANGS.some(m => m.id === v),
+  listingTagLayout:         v => LISTING_TAG_LAYOUTS.some(m => m.id === v),
   galleryDblClickLeft:    v => GALLERY_DBL_CLICK_ACTIONS.some(a => a.id === v),
   galleryDblClickRight:   v => GALLERY_DBL_CLICK_ACTIONS.some(a => a.id === v),
   galleryTaglistZoom:     v => typeof v === 'number' && Number.isFinite(v) && v >= 50 && v <= 200,

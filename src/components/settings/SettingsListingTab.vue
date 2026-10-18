@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { Funnel, PanelBottom, ToggleLeft } from '@lucide/vue'
+import { Funnel, PanelBottom, Rows3, ToggleLeft } from '@lucide/vue'
 import { t } from '@/composables/useI18n'
 import SettingsTagAppearanceSection from './SettingsTagAppearanceSection.vue'
 import {
-  listingDockAlwaysVisible, listingRulesPaused, listingTagSelectEnabled, listingTagsEnabled,
+  LISTING_TAG_LAYOUTS, listingDockAlwaysVisible, listingRulesPaused, listingTagLayout, listingTagSelectEnabled, listingTagsEnabled,
 } from '@/services/store'
 import { evrInstalled } from '@/utils/evr'
 
@@ -35,6 +35,21 @@ const evrInstall = () => t('settings.listingEvrInstall').split(/(\{evr\})/)
       </section>
 
       <SettingsTagAppearanceSection scene="listing" />
+
+      <section class="eqt-settings__section">
+        <h4 class="eqt-settings__subtitle"><Rows3 :size="14" /> {{ t('settings.sectionListingTagLayout') }}</h4>
+        <div class="eqt-settings__field-row">
+          <label class="eqt-settings__field-label">{{ t('settings.listingTagLayout') }}</label>
+          <div class="eqt-settings__locale-row">
+            <button
+              v-for="mode in LISTING_TAG_LAYOUTS" :key="mode.id" type="button" class="eqt-settings__locale-btn"
+              :class="{ 'eqt-settings__locale-btn--active': listingTagLayout === mode.id }" :disabled="!listingTagsEnabled"
+              @click="listingTagLayout = mode.id"
+            >{{ t(mode.labelKey) }}</button>
+          </div>
+        </div>
+        <p class="eqt-settings__hint">{{ t('settings.listingTagLayoutHint') }}</p>
+      </section>
 
       <!-- 選取做在插件的標籤 chip 上，標籤沒換掉就選不了；圖庫規則也是圖庫列表強化的一部分 -->
       <section class="eqt-settings__section">

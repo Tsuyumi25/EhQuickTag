@@ -1,5 +1,9 @@
 import { onBeforeUnmount, onMounted, shallowRef, watch, type CSSProperties } from 'vue'
 import { categoryFromClassList, type GalleryCategory } from '@/services/listing/galleryCategory'
+import { t } from '@/composables/useI18n'
+import { groupByNamespace, namespaceOf } from '@/services/listing/tagGroups'
+import type { ListingTagLayout } from '@/services/store'
+import { DEFAULT_NS_ORDER } from '@/services/tags/tagDb'
 
 export interface PrototypeListingTag {
   name: string
@@ -105,7 +109,9 @@ function mountUploader(root: Element, nativeTags: readonly HTMLElement[]): { mou
     return { mount: row, area: cell, content }
   }
 
-  const holder = nativeTags.at(-1)?.parentElement ?? root.querySelector<HTMLElement>('.gl6t')
+  // 已經分成 namespace 列時接在格子外面，下一次掃描重排時再收進上傳者那一列
+  const last = nativeTags.at(-1)
+  const holder = last?.closest<HTMLElement>(`.${NS_GRID}`)?.parentElement ?? last?.parentElement ?? root.querySelector<HTMLElement>('.gl6t')
   if (holder) {
     chip.classList.add(UPLOADER_MOUNT)
     holder.append(chip)
@@ -123,6 +129,55 @@ function mountUploader(root: Element, nativeTags: readonly HTMLElement[]): { mou
   return { mount: line, area: line, content }
 }
 
+const NS_GRID = 'eqt-rule-prototype__ns-grid'
+
+interface Grouping {
+  container: HTMLElement
+  grid: HTMLElement
+  /** 搬進格子裡的節點，照原本的順序；拆掉時照這個順序放回 container */
+  units: HTMLElement[]
+}
+
+function createNode(tag: string, className: string, text?: string): HTMLElement {
+  const node = document.createElement(tag)
+  node.className = className
+  if (text !== undefined) node.textContent = text
+  return node
+}
+
+/**
+ * 跟圖庫頁一樣每個 namespace 一列、前面寫出 namespace。Extended 原生就是這樣排的表格，不動；
+ * 其他版型把並排的標籤收進一張兩欄的格子，上傳者自己一列放最後。
+ * 沒有標籤、只有自己開的那排上傳者時，格子就開在那一排裡
+ */
+function groupTags(root: Element, nativeTags: readonly HTMLElement[], labelOf: (namespace: string) => string): Grouping | null {
+  if (root.querySelector('.gl4e table')) return null
+  const mount = root.querySelector<HTMLElement>(`.${UPLOADER_MOUNT}`)
+  const container = nativeTags[0]?.parentElement ?? mount
+  if (!container) return null
+  const tags = nativeTags.filter(tag => tag.parentElement === container)
+  const uploader = mount === container ? mount.firstElementChild as HTMLElement | null : mount?.parentElement === container ? mount : null
+
+  const grid = createNode('div', NS_GRID)
+  grid.setAttribute('translate', 'no')
+  const row = (label: string, members: readonly HTMLElement[]) => {
+    const cells = createNode('div', 'eqt-rule-prototype__ns-cells')
+    cells.append(...members)
+    const line = createNode('div', 'eqt-rule-prototype__ns-row')
+    line.append(createNode('div', 'eqt-rule-prototype__ns-label', label ? `${label}:` : ''), cells)
+    grid.append(line)
+  }
+  for (const group of groupByNamespace(tags, tag => namespaceOf(tag.title))) row(labelOf(group.namespace), group.items)
+  if (uploader) row(labelOf('uploader'), [uploader])
+  container.append(grid)
+  return { container, grid, units: uploader ? [...tags, uploader] : tags }
+}
+
+function ungroup(grouping: Grouping): void {
+  for (const unit of grouping.units) grouping.container.insertBefore(unit, grouping.grid)
+  grouping.grid.remove()
+}
+
 // 評分只有星星雪碧圖：.ir 的 background-position 水平每 -16px 少一顆星，垂直 -21px 那一列是
 // 半星，所以精度是 0.5。
 // 自己評過分的圖庫，.ir 會多帶 irr / irg / irb，星星畫的是自己打的分
@@ -137,8 +192,11 @@ function starRating(root: Element): { rating: number | null; selfRated: boolean 
   return { rating: rating >= 0 && rating <= 5 ? rating : null, selfRated: false }
 }
 
-/** tagsEnabled：要不要把原生標籤換成插件的 chip；關掉時標籤照樣讀進來給規則判定，只是不動原生的 DOM */
-export function useRulePrototypeHost(options: { tagsEnabled: () => boolean }) {
+/**
+ * tagsEnabled：要不要把原生標籤換成插件的 chip；關掉時標籤照樣讀進來給規則判定，只是不動原生的 DOM。
+ * tagLayout：標籤照網站原樣，還是像圖庫頁那樣每個 namespace 一列；只在 tagsEnabled 時改
+ */
+export function useRulePrototypeHost(options: { tagsEnabled: () => boolean; tagLayout: () => ListingTagLayout }) {
   const items = shallowRef<PrototypeListingItem[]>([])
   const chips = shallowRef<{
     id: number
@@ -160,6 +218,26 @@ export function useRulePrototypeHost(options: { tagsEnabled: () => boolean }) {
   let observer: MutationObserver | null = null
   let scheduled = false
   let disposed = false
+  const groupings = new Map<HTMLElement, Grouping>()
+
+  /** 格子裡的節點跟這次掃到的一樣就不動：搬動會觸發 MutationObserver 再掃一次，掃到一樣的才會停 */
+  function layout(root: HTMLElement, nativeTags: readonly HTMLElement[], mode: ListingTagLayout) {
+    const current = groupings.get(root)
+    if (mode === 'namespace' && current?.grid.isConnected) {
+      const mount = root.querySelector<HTMLElement>(`.${UPLOADER_MOUNT}`)
+      const expected = new Set<Element>(nativeTags)
+      if (mount) expected.add(mount === current.container ? mount.firstElementChild! : mount)
+      if (current.units.length === expected.size && current.units.every(unit => expected.has(unit) && current.grid.contains(unit))) return
+    }
+    if (current) {
+      ungroup(current)
+      groupings.delete(root)
+    }
+    if (mode !== 'namespace') return
+    const created = groupTags(root, nativeTags, namespace =>
+      namespace === 'uploader' ? t('rulePagePrototype.uploader') : (DEFAULT_NS_ORDER as readonly string[]).includes(namespace) ? t(`ns.${namespace}`) : namespace)
+    if (created) groupings.set(root, created)
+  }
 
   function restore(record: { item: PrototypeListingItem }) {
     for (const [element, binding] of bindings) {
@@ -171,6 +249,9 @@ export function useRulePrototypeHost(options: { tagsEnabled: () => boolean }) {
     record.item.labelAnchor?.remove()
     record.item.titleAnchor?.remove()
     const root = record.item.root
+    const grouping = groupings.get(root)
+    if (grouping) ungroup(grouping)
+    groupings.delete(root)
     for (const name of [...root.classList]) {
       if (name.startsWith('eqt-rule-prototype__gallery')) root.classList.remove(name)
     }
@@ -318,6 +399,7 @@ export function useRulePrototypeHost(options: { tagsEnabled: () => boolean }) {
       }
       const uploaderBinding = options.tagsEnabled() && uploader ? bindUploader(root, record.item, uploader, nativeTags, seenTags) : null
       if (uploaderBinding) nextChips.push(uploaderBinding.chip)
+      layout(root, nativeTags, options.tagsEnabled() ? options.tagLayout() : 'native')
       next.push(record.item)
     }
     for (const [root, record] of records) {
@@ -334,7 +416,7 @@ export function useRulePrototypeHost(options: { tagsEnabled: () => boolean }) {
     if (nextChips.length !== chips.value.length || nextChips.some((chip, i) => chip !== chips.value[i])) chips.value = nextChips
   }
 
-  const OWN_NODES = `.eqt-rule-prototype, .eqt-rule-prototype__mount, .eqt-rule-prototype__tag-content, .${UPLOADER_MOUNT}`
+  const OWN_NODES = `.eqt-rule-prototype, .eqt-rule-prototype__mount, .eqt-rule-prototype__tag-content, .${UPLOADER_MOUNT}, .${NS_GRID}`
   function schedule(mutations: MutationRecord[]) {
     const relevant = mutations.some(mutation => {
       const target = mutation.target instanceof Element ? mutation.target : mutation.target.parentElement
@@ -347,7 +429,7 @@ export function useRulePrototypeHost(options: { tagsEnabled: () => boolean }) {
     queueMicrotask(scan)
   }
 
-  watch(options.tagsEnabled, () => scan())
+  watch([options.tagsEnabled, options.tagLayout], () => scan())
 
   onMounted(() => {
     scan()

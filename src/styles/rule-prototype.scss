@@ -58,6 +58,30 @@
   flex-wrap: wrap;
   margin-top: var(--eqt-rule-prototype-gap);
 }
+// 分成 namespace 列：跟圖庫頁一樣兩欄，namespace 名稱那欄取最寬那個，所有列的標籤從同一個 x 開始
+.eqt-rule-prototype__ns-grid {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: var(--eqt-rule-prototype-gap);
+  align-items: start;
+  width: 100%;
+  text-align: start;
+}
+.eqt-rule-prototype__ns-row { display: contents; }
+.eqt-rule-prototype__ns-label {
+  padding-top: calc(var(--eqt-rule-prototype-gap) / 2);
+  color: var(--eqt-text);
+  text-align: end;
+  white-space: nowrap;
+  user-select: none;
+}
+.eqt-rule-prototype__ns-cells {
+  display: flex;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+// Minimal+ 原生的 .gltm 有 max-height: 36px（g.css 0381），分成多列後超出的部分會壓到下一列圖庫
+.gltm:has(> .eqt-rule-prototype__ns-grid) { max-height: none; }
 .eqt-rule-prototype__chip {
   &, *, *::before, *::after { box-sizing: border-box; }
   vertical-align: baseline;
