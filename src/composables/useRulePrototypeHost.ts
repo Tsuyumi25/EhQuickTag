@@ -79,32 +79,48 @@ const UPLOADER_MOUNT = 'eqt-rule-prototype__uploader'
 /**
  * 上傳者 chip 跟原生標籤排在一起：Extended 的標籤是每個 namespace 一列的表格，照同樣的樣子多加一列；
  * 其他版型的標籤是一串並排的 div，接在最後面。EhViewRefined 的縮圖一律有 .gl6t，沒有標籤時也放得進去。
- * Minimal 不顯示標籤、Minimal+ 只顯示 My Tags 裡的標籤，沒有標籤可以接時就不放
+ * 一個標籤都沒顯示的列（Minimal 從不顯示標籤、Minimal+ 只顯示 My Tags 裡的）就自己開一排，
+ * 位置照 Minimal+ 原生放標籤的地方：標題連結裡、.glink 的後面
  */
 function mountUploader(root: Element, nativeTags: readonly HTMLElement[]): { mount: HTMLElement; area: HTMLElement; content: HTMLElement } | null {
-  const table = root.querySelector<HTMLTableElement>('.gl4e table')
-  const holder = table ? document.createElement('td') : nativeTags.at(-1)?.parentElement ?? root.querySelector<HTMLElement>('.gl6t')
-  if (!holder) return null
   const chip = document.createElement('div')
   chip.className = 'eqt-rule-prototype__native-chip'
   chip.setAttribute('translate', 'no')
   const content = document.createElement('span')
   content.className = 'eqt-rule-prototype__tag-content'
   chip.append(content)
-  holder.append(chip)
-  if (!table) {
+
+  const table = root.querySelector<HTMLTableElement>('.gl4e table')
+  if (table) {
+    const cell = document.createElement('td')
+    cell.append(chip)
+    const row = document.createElement('tr')
+    row.className = UPLOADER_MOUNT
+    row.setAttribute('translate', 'no')
+    const label = document.createElement('td')
+    label.className = 'tc'
+    label.textContent = 'uploader:'
+    row.append(label, cell)
+    ;(table.tBodies[0] ?? table).append(row)
+    return { mount: row, area: cell, content }
+  }
+
+  const holder = nativeTags.at(-1)?.parentElement ?? root.querySelector<HTMLElement>('.gl6t')
+  if (holder) {
     chip.classList.add(UPLOADER_MOUNT)
+    holder.append(chip)
     return { mount: chip, area: holder, content }
   }
-  const row = document.createElement('tr')
-  row.className = UPLOADER_MOUNT
-  row.setAttribute('translate', 'no')
-  const label = document.createElement('td')
-  label.className = 'tc'
-  label.textContent = 'uploader:'
-  row.append(label, holder)
-  ;(table.tBodies[0] ?? table).append(row)
-  return { mount: row, area: holder, content }
+
+  const title = root.querySelector<HTMLElement>('.glname')
+  if (!title) return null
+  const line = document.createElement('div')
+  line.className = `${UPLOADER_MOUNT} eqt-rule-prototype__uploader-line`
+  line.setAttribute('translate', 'no')
+  line.append(chip)
+  const titleLink = title.querySelector<HTMLElement>(':scope > a') ?? title
+  titleLink.append(line)
+  return { mount: line, area: line, content }
 }
 
 // 評分只有星星雪碧圖：.ir 的 background-position 水平每 -16px 少一顆星，垂直 -21px 那一列是

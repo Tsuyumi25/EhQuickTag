@@ -52,6 +52,12 @@
 .eqt-rule-prototype__mount:empty { display: none; }
 .eqt-rule-prototype__tag-content,
 .eqt-rule-prototype__native-chip { display: contents; }
+// 沒有標籤可以接的列自己開的一排：標題底下一排並排的 chip，跟 Minimal+ 原生的標籤排同一個位置
+.eqt-rule-prototype__uploader-line {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: var(--eqt-rule-prototype-gap);
+}
 .eqt-rule-prototype__chip {
   &, *, *::before, *::after { box-sizing: border-box; }
   vertical-align: baseline;
