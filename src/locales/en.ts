@@ -33,6 +33,7 @@ export default {
   'rulePagePrototype.summary': 'Current rule logic',
   'rulePagePrototype.conditions': 'Conditions',
   'rulePagePrototype.sourceView': 'Source',
+  'rulePagePrototype.visualView': 'Visual',
   'rulePagePrototype.expression.label': 'Raw expression (editable)',
   'rulePagePrototype.expression.placeholder': 'e.g. female:a AND (male:b OR stars >= 4)',
   'rulePagePrototype.expression.errorAt': 'Character {at}: {message}',

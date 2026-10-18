@@ -33,6 +33,7 @@ export default {
   'rulePagePrototype.summary': '現在のルールの判定内容',
   'rulePagePrototype.conditions': '条件',
   'rulePagePrototype.sourceView': 'ソース',
+  'rulePagePrototype.visualView': 'ビジュアル',
   'rulePagePrototype.expression.label': '式（直接編集できます）',
   'rulePagePrototype.expression.placeholder': '例：female:a AND (male:b OR stars >= 4)',
   'rulePagePrototype.expression.errorAt': '{at} 文字目：{message}',

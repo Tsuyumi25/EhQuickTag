@@ -987,12 +987,6 @@
   height: var(--eqt-rule-page-control-h);
   margin-inline-start: auto;
   padding: 0 calc(var(--eqt-rule-page-gap) * 2);
-  color: var(--eqt-text-hint);
-
-  &[aria-pressed='true'] {
-    background: var(--eqt-bg-btn);
-    color: var(--eqt-text);
-  }
 }
 
 .eqt-rule-page__source {

@@ -33,6 +33,7 @@ export default {
   'rulePagePrototype.summary': '현재 규칙 판정',
   'rulePagePrototype.conditions': '조건',
   'rulePagePrototype.sourceView': '소스',
+  'rulePagePrototype.visualView': '시각',
   'rulePagePrototype.expression.label': '원식 (직접 편집 가능)',
   'rulePagePrototype.expression.placeholder': '예: female:a AND (male:b OR stars >= 4)',
   'rulePagePrototype.expression.errorAt': '{at}번째 글자: {message}',

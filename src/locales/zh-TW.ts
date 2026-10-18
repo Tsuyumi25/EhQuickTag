@@ -33,6 +33,7 @@ export default {
   'rulePagePrototype.summary': '目前規則邏輯',
   'rulePagePrototype.conditions': '條件',
   'rulePagePrototype.sourceView': '原始',
+  'rulePagePrototype.visualView': '圖形',
   'rulePagePrototype.expression.label': '原始算式（可以直接編輯）',
   'rulePagePrototype.expression.placeholder': '例如 female:a AND (male:b OR stars >= 4)',
   'rulePagePrototype.expression.errorAt': '第 {at} 個字：{message}',
