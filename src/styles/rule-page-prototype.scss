@@ -306,6 +306,9 @@
   min-width: 0;
   padding-block: calc(var(--eqt-rule-page-gap) * 3.5);
 
+  // 欄頂跟標題列之間的距離已經由 .eqt-rule-page 的 grid gap 給了
+  &:first-of-type { padding-top: 0; }
+
   & + & {
     border-top: var(--eqt-border-width) solid var(--eqt-border);
   }
