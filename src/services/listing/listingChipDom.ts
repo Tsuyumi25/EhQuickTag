@@ -9,7 +9,8 @@ const POSITIVE = `${CHIP_CLASS}--selected-positive`
 const NEGATIVE = `${CHIP_CLASS}--selected-negative`
 const SCORE = 'data-eqt-score'
 const MARK = 'data-eqt-mark'
-const VARS = ['--eqt-mytags-background', '--eqt-mytags-text', '--eqt-mytags-border'] as const
+const VARS = ['--eqt-mytags-background', '--eqt-mytags-layer', '--eqt-mytags-text', '--eqt-mytags-border'] as const
+const NATIVE_BACKGROUND = '--eqt-listing-chip-native'
 
 export interface ChipPaint {
   display: string
@@ -29,6 +30,7 @@ interface Original {
   translate: string | null
   tabindex: string | null
   role: string | null
+  style: string | null
 }
 
 const originals = new WeakMap<HTMLElement, Original>()
@@ -51,7 +53,16 @@ export function decorate(element: HTMLElement): void {
     translate: element.getAttribute('translate'),
     tabindex: element.getAttribute('tabindex'),
     role: element.getAttribute('role'),
+    style: element.getAttribute('style'),
   })
+  // 網站替 My Tags 有顏色的標籤寫的是 inline 的 background !important，樣式表怎樣都壓不過。
+  // 原本的底色收進變數，inline 改成讀 --eqt-listing-chip-paint：狀態規則只要設那個變數，
+  // 沒有狀態時就照網站原本的底色畫
+  const native = element.style.getPropertyValue('background')
+  if (native) {
+    element.style.setProperty(NATIVE_BACKGROUND, native)
+    element.style.setProperty('background', `var(--eqt-listing-chip-paint, var(--eqt-listing-chip-hover), var(${NATIVE_BACKGROUND}))`, 'important')
+  }
   element.classList.add(CHIP_CLASS)
   element.setAttribute('translate', 'no')
   element.setAttribute('tabindex', '0')
@@ -86,8 +97,7 @@ export function undecorate(element: HTMLElement): void {
   if (!original) return
   originals.delete(element)
   element.classList.remove(CHIP_CLASS, COLORED, POSITIVE, NEGATIVE)
-  for (const name of VARS) element.style.removeProperty(name)
-  if (!element.getAttribute('style')) element.removeAttribute('style')
+  setAttribute(element, 'style', original.style)
   element.removeAttribute(SCORE)
   element.removeAttribute(MARK)
   setAttribute(element, 'translate', original.translate)
@@ -100,6 +110,14 @@ export function undecorate(element: HTMLElement): void {
     const text = original.texts[index]
     if (node instanceof Text && text !== null && node.data !== text) node.data = text
   })
+}
+
+/**
+ * 選取時角落那塊三角形畫的是個人配色；它要當成 background 的其中一層，
+ * 純色得包成 gradient 才能放在最底層以外的位置
+ */
+export function myTagsLayer(background: string): string {
+  return /^[a-z-]*gradient\(/.test(background.trim()) ? background : `linear-gradient(${background}, ${background})`
 }
 
 /** 圖示從 lucide 的 Vue 元件畫一次轉成 mask，chip 用 CSS 變數取用，不必每顆都插一個 svg */

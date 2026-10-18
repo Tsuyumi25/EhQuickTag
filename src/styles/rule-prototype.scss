@@ -52,14 +52,27 @@
 .eqt-rule-prototype__mount:empty { display: none; }
 // 列表上的標籤原地當 chip：外框、尺寸、層級的虛線都照網站畫好的，這裡只疊狀態色。
 // 圖示與分數放在 ::before／::after，一顆 chip 不多任何節點；flex 的 order 把它們排到名稱後面，
-// 只有上傳者的圖示排在前面（上傳者不會有關注標記，兩者不會同時要用 ::before）
+// 只有上傳者的圖示排在前面（上傳者不會有關注標記，兩者不會同時要用 ::before）。
+// 底色一律算進 --eqt-listing-chip-paint：網站自己上了 My Tags 顏色的標籤是 inline 的
+// background !important，樣式表蓋不過，listingChipDom 會把那條 inline 改成讀這個變數；
+// 其他標籤由下面的 background 規則套用同一個變數
 .eqt-listing-chip {
+  --eqt-listing-chip-hover: linear-gradient(transparent, transparent);
+  // 個人配色角落的三角形：邊長等於 chip 內框的高度，跟 TagChip 的 aspect-ratio: 1 一樣
+  --eqt-listing-chip-corner: calc(1lh + var(--eqt-gallery-chip-padding-block) * 2);
   display: inline-flex;
   align-items: center;
   gap: var(--eqt-gallery-chip-content-gap);
   cursor: pointer;
   user-select: none;
-  &:hover, &:focus-visible { outline: none; background-image: linear-gradient(var(--eqt-bg-hover), var(--eqt-bg-hover)); }
+  &:hover, &:focus-visible {
+    --eqt-listing-chip-hover: linear-gradient(var(--eqt-bg-hover), var(--eqt-bg-hover));
+    outline: none;
+  }
+  // 沒有狀態的標籤底色留給網站樣式表，只疊 hover 那一層
+  &:not(.eqt-listing-chip--mytags-colored, .eqt-listing-chip--selected-positive, .eqt-listing-chip--selected-negative) {
+    background-image: var(--eqt-listing-chip-hover) !important;
+  }
   &[data-eqt-mark~='watch']::before,
   &[data-evr-ns='uploader']::before,
   &[data-eqt-mark~='hidden']::after {
@@ -76,20 +89,36 @@
   &[data-eqt-score]::after { content: attr(data-eqt-score); order: 2; }
 }
 .eqt-listing-chip.eqt-listing-chip--mytags-colored {
-  color: var(--eqt-mytags-text);
-  background: var(--eqt-mytags-background) padding-box;
-  border-color: var(--eqt-mytags-border);
-  &:hover { background: linear-gradient(var(--eqt-bg-hover), var(--eqt-bg-hover)) padding-box, var(--eqt-mytags-background) padding-box; }
+  --eqt-listing-chip-paint: var(--eqt-listing-chip-hover) padding-box, var(--eqt-mytags-background) padding-box;
+  color: var(--eqt-mytags-text) !important;
+  border-color: var(--eqt-mytags-border) !important;
 }
 .eqt-listing-chip--selected-positive { --eqt-gallery-selection-color: var(--eqt-status-include); }
 .eqt-listing-chip--selected-negative { --eqt-gallery-selection-color: var(--eqt-status-exclude); }
-// 選取蓋過個人配色，跟 TagChip 一樣
+// 選取蓋過個人配色，跟 TagChip 一樣：整顆換成選取色，有個人配色的在右上角留一塊三角形
 .eqt-listing-chip:is(.eqt-listing-chip--selected-positive, .eqt-listing-chip--selected-negative) {
   --eqt-listing-chip-selection: color-mix(in srgb, var(--eqt-gallery-selection-color) 55%, transparent);
-  color: var(--eqt-text);
-  background: linear-gradient(var(--eqt-listing-chip-selection), var(--eqt-listing-chip-selection)) padding-box,
+  --eqt-listing-chip-paint:
+    linear-gradient(var(--eqt-listing-chip-selection), var(--eqt-listing-chip-selection)) padding-box,
     var(--eqt-gallery-chip-bg) padding-box;
-  &:hover { --eqt-listing-chip-selection: color-mix(in srgb, var(--eqt-gallery-selection-color) 70%, transparent); }
+  color: var(--eqt-text) !important;
+  &:hover, &:focus-visible {
+    --eqt-listing-chip-selection: color-mix(in srgb, var(--eqt-gallery-selection-color) 70%, transparent);
+  }
+  &.eqt-listing-chip--mytags-colored {
+    --eqt-listing-chip-paint:
+      linear-gradient(to bottom left, transparent 50%, var(--eqt-listing-chip-selection) 50%)
+        right top / var(--eqt-listing-chip-corner) 100% no-repeat padding-box,
+      linear-gradient(to bottom left, transparent 50%, var(--eqt-gallery-chip-bg) 50%)
+        right top / var(--eqt-listing-chip-corner) 100% no-repeat padding-box,
+      var(--eqt-mytags-layer) right top / var(--eqt-listing-chip-corner) 100% no-repeat padding-box,
+      linear-gradient(var(--eqt-listing-chip-selection), var(--eqt-listing-chip-selection))
+        left top / calc(100% - var(--eqt-listing-chip-corner)) 100% no-repeat padding-box,
+      var(--eqt-gallery-chip-bg) padding-box;
+  }
+}
+.eqt-listing-chip:is(.eqt-listing-chip--mytags-colored, .eqt-listing-chip--selected-positive, .eqt-listing-chip--selected-negative) {
+  background: var(--eqt-listing-chip-paint) !important;
 }
 .eqt-rule-prototype__floating {
   position: fixed;

@@ -9,7 +9,7 @@ import GalleryTagListRows, { type GalleryTagListGroup } from '@/components/galle
 import { useDragSelect } from '@/composables/useDragSelect'
 import type { ChipRef } from '@/services/gallery/dragSelectMachine'
 import { useRulePrototypeHost, type ListingChip } from '@/composables/useRulePrototypeHost'
-import { CHIP_CLASS, installChipIcons, paint, type ChipPaint } from '@/services/listing/listingChipDom'
+import { CHIP_CLASS, installChipIcons, myTagsLayer, paint, type ChipPaint } from '@/services/listing/listingChipDom'
 import { chipBadges, myTagsVars } from '@/services/mytags/chipBadges'
 import { useMyTagsColors } from '@/composables/useMyTagsColors'
 import { useFixedRuleStore } from '@/composables/useFixedRuleStore'
@@ -95,13 +95,18 @@ function display(full: string): string {
 
 const tagChipStyle = useMyTagsColors()
 
+function colorVars(personal: NonNullable<MyTagsPalette[string]>): Record<string, string> {
+  const style = tagChipStyle(personal)
+  return { ...myTagsVars(style), '--eqt-mytags-layer': myTagsLayer(style.background) }
+}
+
 function chipPaint(chip: ListingChip): ChipPaint {
   const personal = myTagsPalette.value?.[chip.name]
   const state = selection.value.get(chip.name)
   return {
     display: display(chip.name),
     selection: state === 1 ? 'positive' : state === -1 ? 'negative' : undefined,
-    colors: listingMyTagsColorsEnabled.value && personal ? myTagsVars(tagChipStyle(personal)) : undefined,
+    colors: listingMyTagsColorsEnabled.value && personal ? colorVars(personal) : undefined,
     ...chipBadges({
       weight: personal?.weight, hidden: personal?.hidden ?? false, watch: personal?.watch ?? false,
       showScore: listingMyTagsScoresEnabled.value, showMarks: listingMyTagsMarksEnabled.value,
