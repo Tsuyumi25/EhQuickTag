@@ -74,7 +74,7 @@ function chipFromPoint(x: number, y: number): ChipRef | null {
 }
 
 const { onAreaMouseDown } = useDragSelect({
-  chipFromPoint,
+  chipFromEvent: event => chipFromPoint(event.clientX, event.clientY),
   applySelection: (nsRaw, mode) => emit('select', nsRaw, mode),
   setPanelTag: (nsRaw) => emit('inspect', nsRaw),
   enabled: () => galleryDragSelectEnabled.value,

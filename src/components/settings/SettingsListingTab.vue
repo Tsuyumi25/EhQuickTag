@@ -3,7 +3,7 @@ import { Funnel, PanelBottom, Rows3, ToggleLeft } from '@lucide/vue'
 import { t } from '@/composables/useI18n'
 import SettingsTagAppearanceSection from './SettingsTagAppearanceSection.vue'
 import {
-  LISTING_TAG_LAYOUTS, listingDockAlwaysVisible, listingRulesPaused, listingTagLayout, listingTagSelectEnabled, listingTagsEnabled,
+  listingDockAlwaysVisible, listingRulesPaused, listingTagSelectEnabled, listingTagsEnabled,
 } from '@/services/store'
 import { evrInstalled } from '@/utils/evr'
 
@@ -38,16 +38,6 @@ const evrInstall = () => t('settings.listingEvrInstall').split(/(\{evr\})/)
 
       <section class="eqt-settings__section">
         <h4 class="eqt-settings__subtitle"><Rows3 :size="14" /> {{ t('settings.sectionListingTagLayout') }}</h4>
-        <div class="eqt-settings__field-row">
-          <label class="eqt-settings__field-label">{{ t('settings.listingTagLayout') }}</label>
-          <div class="eqt-settings__locale-row">
-            <button
-              v-for="mode in LISTING_TAG_LAYOUTS" :key="mode.id" type="button" class="eqt-settings__locale-btn"
-              :class="{ 'eqt-settings__locale-btn--active': listingTagLayout === mode.id }" :disabled="!listingTagsEnabled"
-              @click="listingTagLayout = mode.id"
-            >{{ t(mode.labelKey) }}</button>
-          </div>
-        </div>
         <p class="eqt-settings__hint">{{ t('settings.listingTagLayoutHint') }}</p>
       </section>
 

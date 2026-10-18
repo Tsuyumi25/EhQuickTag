@@ -6,7 +6,7 @@
 //   - 把 store 回傳的 effects 派給 caller 注入的 callback
 //   - 透過 @vueuse/core useEventListener 處理 document-level 監聽的 auto cleanup
 //
-// caller 注入 chipFromPoint (DOM hit-test) + applySelection / setPanelTag (業務動作)
+// caller 注入 chipFromEvent (DOM hit-test) + applySelection / setPanelTag (業務動作)
 import { useEventListener } from '@vueuse/core'
 import {
   createDragSelectStore,
@@ -17,8 +17,11 @@ import {
 } from '@/services/gallery/dragSelectMachine'
 
 export interface UseDragSelectOptions {
-  /** DOM hit-test：給定 viewport 座標回傳 chip ref 或 null（不在 chip 上） */
-  chipFromPoint: (x: number, y: number) => ChipRef | null
+  /**
+   * DOM hit-test：滑鼠事件底下的 chip ref，不在 chip 上是 null。chip 上有浮層時 target 不是 chip，
+   * caller 才需要自己拿座標 elementFromPoint
+   */
+  chipFromEvent: (event: MouseEvent) => ChipRef | null
   /** 對 chip 套用 selection delta（toggle 邏輯由 caller 那邊的 setSelection 負責） */
   applySelection: (id: string, mode: Selection) => void
   /** chip 被選取時觸發 intro panel 顯示 */
@@ -60,7 +63,7 @@ export function useDragSelect(opts: UseDragSelectOptions): {
       button: e.button,
       x: e.clientX,
       y: e.clientY,
-      chip: opts.chipFromPoint(e.clientX, e.clientY),
+      chip: opts.chipFromEvent(e),
     })
   }
 
@@ -74,7 +77,7 @@ export function useDragSelect(opts: UseDragSelectOptions): {
       kind: 'mousemove',
       x: e.clientX,
       y: e.clientY,
-      chip: opts.chipFromPoint(e.clientX, e.clientY),
+      chip: opts.chipFromEvent(e),
     })
   }, { capture: opts.takeOver })
 

@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { Ban, Eye } from '@lucide/vue'
 import type { TagColors } from '@/services/mytags/mytagsColors'
 import { useMyTagsColors } from '@/composables/useMyTagsColors'
+import { chipBadges, myTagsVars } from '@/services/mytags/chipBadges'
 
 const props = withDefaults(defineProps<{
   full: string
@@ -28,15 +29,8 @@ const props = withDefaults(defineProps<{
 defineEmits<{ pick: [] }>()
 
 const tagChipStyle = useMyTagsColors()
-const personalStyle = computed(() => {
-  if (!props.colors) return undefined
-  const style = tagChipStyle(props.colors)
-  return {
-    '--eqt-mytags-background': style.background,
-    '--eqt-mytags-text': style.color,
-    '--eqt-mytags-border': style.borderColor,
-  }
-})
+const personalStyle = computed(() => props.colors ? myTagsVars(tagChipStyle(props.colors)) : undefined)
+const badges = computed(() => chipBadges(props))
 </script>
 
 <template>
@@ -59,10 +53,10 @@ const personalStyle = computed(() => {
       <span class="eqt-gallery-chip__name">
         <img v-if="iconUrl" :src="iconUrl" class="eqt-tag-icon" alt="" />{{ display }}
       </span>
-      <Eye v-if="showMarks && watch" class="eqt-gallery-chip__watch" />
-      <span v-if="(showMarks && hidden) || (showScore && !hidden && weight !== undefined)" class="eqt-gallery-chip__weight">
-        <Ban v-if="hidden" />
-        <template v-else>{{ weight !== undefined && weight > 0 ? `+${weight}` : weight }}</template>
+      <Eye v-if="badges.watch" class="eqt-gallery-chip__watch" />
+      <span v-if="badges.hidden || badges.score !== null" class="eqt-gallery-chip__weight">
+        <Ban v-if="badges.hidden" />
+        <template v-else>{{ badges.score }}</template>
       </span>
     </button>
     <slot name="trail" />

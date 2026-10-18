@@ -1,9 +1,6 @@
-import { onBeforeUnmount, onMounted, shallowRef, watch, type CSSProperties } from 'vue'
+import { onBeforeUnmount, onMounted, shallowRef, watch } from 'vue'
 import { categoryFromClassList, type GalleryCategory } from '@/services/listing/galleryCategory'
-import { t } from '@/composables/useI18n'
-import { groupByNamespace, namespaceOf } from '@/services/listing/tagGroups'
-import type { ListingTagLayout } from '@/services/store'
-import { DEFAULT_NS_ORDER } from '@/services/tags/tagDb'
+import { CHIP_CLASS, decorate, undecorate } from '@/services/listing/listingChipDom'
 
 export interface PrototypeListingTag {
   name: string
@@ -12,7 +9,6 @@ export interface PrototypeListingTag {
 export interface PrototypeListingItem {
   id: number
   root: HTMLElement
-  anchor: HTMLElement
   /** 只有縮圖模式（.gl1t）才有：規則的標示清單，插在原生標籤列 .gl6t 前面 */
   labelAnchor: HTMLElement | null
   /** 標題文字最前面：標題前綴 */
@@ -32,6 +28,22 @@ export interface PrototypeListingItem {
   title: string
   href: string
 }
+
+/** 列表上的一顆 chip：就是 EhViewRefined 畫出的那個標籤元素本身 */
+export interface ListingChip {
+  id: number
+  item: PrototypeListingItem
+  name: string
+  element: HTMLElement
+  /** 標籤排在一起的那塊；點在 chip 之間的空白也算在標籤區裡 */
+  area: HTMLElement
+  tier: 'gt' | 'gtl' | 'gtw'
+  uploader: boolean
+}
+
+// EhViewRefined 畫的上傳者標籤也長得像 .gt，但它不是網站的標籤，不能算進規則的標籤裡
+const SITE_TAGS = ':is(.gt, .gtl, .gtw):not(.evr-uploader-tag)'
+const UPLOADER_NAMESPACE = 'uploader'
 
 // 頁數沒有自己的 class：原生五種版型與 EhViewRefined 模擬的版型，都把它放在評分 .ir 後面的
 // 兄弟 div，只有 Extended 中間隔著上傳者那格（含 /uploader/ 連結），Thumbnail 後面接著 .gldown。
@@ -63,120 +75,6 @@ function uploaderOf(root: Element): string | null {
   }
 }
 
-// chip 照原生標籤的外框與字級畫，換上去之後版面不會跳
-function geometryOf(nativeStyle: CSSStyleDeclaration): CSSProperties {
-  return {
-    margin: nativeStyle.margin,
-    borderRadius: nativeStyle.borderRadius,
-    borderWidth: nativeStyle.borderWidth,
-    fontSize: nativeStyle.fontSize,
-    fontWeight: nativeStyle.fontWeight,
-    lineHeight: nativeStyle.lineHeight,
-    '--eqt-gallery-chip-padding-block': nativeStyle.paddingTop,
-    '--eqt-gallery-chip-padding-inline': nativeStyle.paddingLeft,
-  }
-}
-
-const UPLOADER_MOUNT = 'eqt-rule-prototype__uploader'
-
-/**
- * 上傳者 chip 跟原生標籤排在一起：Extended 的標籤是每個 namespace 一列的表格，照同樣的樣子多加一列；
- * 其他版型的標籤是一串並排的 div，接在最後面。EhViewRefined 的縮圖一律有 .gl6t，沒有標籤時也放得進去。
- * 一個標籤都沒顯示的列（Minimal 從不顯示標籤、Minimal+ 只顯示 My Tags 裡的）就自己開一排，
- * 位置照 Minimal+ 原生放標籤的地方：標題連結裡、.glink 的後面
- */
-function mountUploader(root: Element, nativeTags: readonly HTMLElement[]): { mount: HTMLElement; area: HTMLElement; content: HTMLElement } | null {
-  const chip = document.createElement('div')
-  chip.className = 'eqt-rule-prototype__native-chip'
-  chip.setAttribute('translate', 'no')
-  const content = document.createElement('span')
-  content.className = 'eqt-rule-prototype__tag-content'
-  chip.append(content)
-
-  const table = root.querySelector<HTMLTableElement>('.gl4e table')
-  if (table) {
-    const cell = document.createElement('td')
-    cell.append(chip)
-    const row = document.createElement('tr')
-    row.className = UPLOADER_MOUNT
-    row.setAttribute('translate', 'no')
-    const label = document.createElement('td')
-    label.className = 'tc'
-    label.textContent = 'uploader:'
-    row.append(label, cell)
-    ;(table.tBodies[0] ?? table).append(row)
-    return { mount: row, area: cell, content }
-  }
-
-  // 已經分成 namespace 列時接在格子外面，下一次掃描重排時再收進上傳者那一列
-  const last = nativeTags.at(-1)
-  const holder = last?.closest<HTMLElement>(`.${NS_GRID}`)?.parentElement ?? last?.parentElement ?? root.querySelector<HTMLElement>('.gl6t')
-  if (holder) {
-    chip.classList.add(UPLOADER_MOUNT)
-    holder.append(chip)
-    return { mount: chip, area: holder, content }
-  }
-
-  const title = root.querySelector<HTMLElement>('.glname')
-  if (!title) return null
-  const line = document.createElement('div')
-  line.className = `${UPLOADER_MOUNT} eqt-rule-prototype__uploader-line`
-  line.setAttribute('translate', 'no')
-  line.append(chip)
-  const titleLink = title.querySelector<HTMLElement>(':scope > a') ?? title
-  titleLink.append(line)
-  return { mount: line, area: line, content }
-}
-
-const NS_GRID = 'eqt-rule-prototype__ns-grid'
-
-interface Grouping {
-  container: HTMLElement
-  grid: HTMLElement
-  /** 搬進格子裡的節點，照原本的順序；拆掉時照這個順序放回 container */
-  units: HTMLElement[]
-}
-
-function createNode(tag: string, className: string, text?: string): HTMLElement {
-  const node = document.createElement(tag)
-  node.className = className
-  if (text !== undefined) node.textContent = text
-  return node
-}
-
-/**
- * 跟圖庫頁一樣每個 namespace 一列、前面寫出 namespace。Extended 原生就是這樣排的表格，不動；
- * 其他版型把並排的標籤收進一張兩欄的格子，上傳者自己一列放最後。
- * 沒有標籤、只有自己開的那排上傳者時，格子就開在那一排裡
- */
-function groupTags(root: Element, nativeTags: readonly HTMLElement[], labelOf: (namespace: string) => string): Grouping | null {
-  if (root.querySelector('.gl4e table')) return null
-  const mount = root.querySelector<HTMLElement>(`.${UPLOADER_MOUNT}`)
-  const container = nativeTags[0]?.parentElement ?? mount
-  if (!container) return null
-  const tags = nativeTags.filter(tag => tag.parentElement === container)
-  const uploader = mount === container ? mount.firstElementChild as HTMLElement | null : mount?.parentElement === container ? mount : null
-
-  const grid = createNode('div', NS_GRID)
-  grid.setAttribute('translate', 'no')
-  const row = (label: string, members: readonly HTMLElement[]) => {
-    const cells = createNode('div', 'eqt-rule-prototype__ns-cells')
-    cells.append(...members)
-    const line = createNode('div', 'eqt-rule-prototype__ns-row')
-    line.append(createNode('div', 'eqt-rule-prototype__ns-label', label ? `${label}:` : ''), cells)
-    grid.append(line)
-  }
-  for (const group of groupByNamespace(tags, tag => namespaceOf(tag.title))) row(labelOf(group.namespace), group.items)
-  if (uploader) row(labelOf('uploader'), [uploader])
-  container.append(grid)
-  return { container, grid, units: uploader ? [...tags, uploader] : tags }
-}
-
-function ungroup(grouping: Grouping): void {
-  for (const unit of grouping.units) grouping.container.insertBefore(unit, grouping.grid)
-  grouping.grid.remove()
-}
-
 // 評分由 EhViewRefined 從星星換算好：平均分在 data-evr-rating（半星一格）；自己評過分的圖庫，
 // 星星畫的是自己打的分，看不到平均分，只會有 data-evr-my-rating
 function starRating(root: Element): { rating: number | null; selfRated: boolean } {
@@ -188,100 +86,49 @@ function starRating(root: Element): { rating: number | null; selfRated: boolean 
 }
 
 /**
- * tagsEnabled：要不要把原生標籤換成插件的 chip；關掉時標籤照樣讀進來給規則判定，只是不動原生的 DOM。
- * tagLayout：標籤照網站原樣，還是像圖庫頁那樣每個 namespace 一列；只在 tagsEnabled 時改
+ * tagsEnabled：要不要把標籤改成插件的 chip；關掉時標籤照樣讀進來給規則判定，只是不動原生的 DOM。
+ * 標籤怎麼排（每個 namespace 一列、上傳者要不要顯示成標籤）是 EhViewRefined 的設定，這裡只認它畫出來的 [data-evr-tag]
  */
-export function useRulePrototypeHost(options: { tagsEnabled: () => boolean; tagLayout: () => ListingTagLayout }) {
+export function useRulePrototypeHost(options: { tagsEnabled: () => boolean }) {
   const items = shallowRef<PrototypeListingItem[]>([])
-  const chips = shallowRef<{
-    id: number
-    item: PrototypeListingItem
-    name: string
-    anchor: HTMLElement
-    area: HTMLElement
-    tier: 'gt' | 'gtl' | 'gtw'
-    /** 上傳者 chip 前面掛上傳者的圖示，跟標籤分得開 */
-    uploader: boolean
-    geometry: CSSProperties
-  }[]>([])
+  const chips = shallowRef<ListingChip[]>([])
   const records = new Map<HTMLElement, { item: PrototypeListingItem; signature: string }>()
-  const bindings = new Map<HTMLElement, {
-    chip: (typeof chips.value)[number]
-    restore: () => void
-  }>()
+  const bindings = new Map<HTMLElement, ListingChip>()
   let nextId = 1
   let observer: MutationObserver | null = null
   let scheduled = false
   let disposed = false
-  const groupings = new Map<HTMLElement, Grouping>()
 
-  /** 格子裡的節點跟這次掃到的一樣就不動：搬動會觸發 MutationObserver 再掃一次，掃到一樣的才會停 */
-  function layout(root: HTMLElement, nativeTags: readonly HTMLElement[], mode: ListingTagLayout) {
-    const current = groupings.get(root)
-    if (mode === 'namespace' && current?.grid.isConnected) {
-      const mount = root.querySelector<HTMLElement>(`.${UPLOADER_MOUNT}`)
-      const expected = new Set<Element>(nativeTags)
-      if (mount) expected.add(mount === current.container ? mount.firstElementChild! : mount)
-      if (current.units.length === expected.size && current.units.every(unit => expected.has(unit) && current.grid.contains(unit))) return
-    }
-    if (current) {
-      ungroup(current)
-      groupings.delete(root)
-    }
-    if (mode !== 'namespace') return
-    const created = groupTags(root, nativeTags, namespace =>
-      namespace === 'uploader' ? t('rulePagePrototype.uploader') : (DEFAULT_NS_ORDER as readonly string[]).includes(namespace) ? t(`ns.${namespace}`) : namespace)
-    if (created) groupings.set(root, created)
+  function release(element: HTMLElement) {
+    undecorate(element)
+    bindings.delete(element)
   }
 
   function restore(record: { item: PrototypeListingItem }) {
-    for (const [element, binding] of bindings) {
-      if (binding.chip.item !== record.item) continue
-      binding.restore()
-      bindings.delete(element)
+    for (const [element, chip] of bindings) {
+      if (chip.item === record.item) release(element)
     }
-    record.item.anchor.remove()
     record.item.labelAnchor?.remove()
     record.item.titleAnchor?.remove()
     const root = record.item.root
-    const grouping = groupings.get(root)
-    if (grouping) ungroup(grouping)
-    groupings.delete(root)
     for (const name of [...root.classList]) {
       if (name.startsWith('eqt-rule-prototype__gallery')) root.classList.remove(name)
     }
     root.style.removeProperty('--eqt-rule-prototype-background')
   }
 
-  function bindUploader(
-    root: HTMLElement, item: PrototypeListingItem, uploader: string, nativeTags: readonly HTMLElement[], seen: Set<HTMLElement>,
-  ) {
-    const existing = root.querySelector<HTMLElement>(`.${UPLOADER_MOUNT}`)
-    const current = existing ? bindings.get(existing) : undefined
-    if (existing && current) {
-      seen.add(existing)
-      return current
-    }
-    existing?.remove()
-    const created = mountUploader(root, nativeTags)
-    if (!created) return null
-    const binding = {
-      chip: {
-        id: nextId++, item, name: `uploader:${uploader}`, anchor: created.content, area: created.area,
-        geometry: nativeTags[0] ? geometryOf(getComputedStyle(nativeTags[0])) : {}, tier: 'gt' as const, uploader: true,
-      },
-      restore: () => created.mount.remove(),
-    }
-    bindings.set(created.mount, binding)
-    seen.add(created.mount)
-    return binding
+  function chipName(element: HTMLElement): string | null {
+    const full = element.getAttribute('data-evr-tag')?.trim()
+    if (!full) return null
+    // 選取與搜尋用的 key 跟規則一樣：標籤一律小寫，上傳者名稱照原樣
+    return element.getAttribute('data-evr-ns') === UPLOADER_NAMESPACE ? full : full.toLowerCase()
   }
 
   function scan() {
     scheduled = false
     if (disposed) return
     const next: PrototypeListingItem[] = []
-    const nextChips: typeof chips.value = []
+    const nextChips: ListingChip[] = []
     const seen = new Set<HTMLElement>()
     const seenTags = new Set<HTMLElement>()
     for (const link of document.querySelectorAll<HTMLAnchorElement>('.itg a[href*="/g/"]')) {
@@ -289,13 +136,14 @@ export function useRulePrototypeHost(options: { tagsEnabled: () => boolean; tagL
       const root = link.closest<HTMLElement>('tr, .gl1t')
       if (!root || seen.has(root)) continue
       seen.add(root)
-      const nativeTags = [...root.querySelectorAll<HTMLElement>('.gt, .gtl, .gtw')]
       const metadata = root.getAttribute('data-evr-tags')
       let parsed: unknown
       try { parsed = metadata === null ? null : JSON.parse(metadata) } catch { parsed = null }
       const hasMetadata = Array.isArray(parsed) && parsed.every(tag => tag && typeof tag.name === 'string')
       const complete = hasMetadata || !!root.closest('table.glte')
-      const source = hasMetadata ? parsed as PrototypeListingTag[] : nativeTags.map(tag => ({ name: tag.title }))
+      const source = hasMetadata
+        ? parsed as PrototypeListingTag[]
+        : [...root.querySelectorAll<HTMLElement>(SITE_TAGS)].map(tag => ({ name: tag.title }))
       const tags: PrototypeListingTag[] = []
       const names = new Set<string>()
       for (const tag of source) {
@@ -312,22 +160,14 @@ export function useRulePrototypeHost(options: { tagsEnabled: () => boolean; tagL
       const signature = JSON.stringify([complete, stars, pages, category, uploader, tags])
       let record = records.get(root)
       const detached = (anchor: HTMLElement | null) => !!anchor && !root.contains(anchor)
-      if (record && (detached(record.item.anchor) || detached(record.item.labelAnchor)
-        || detached(record.item.titleAnchor) || record.signature !== signature)) {
+      if (record && (detached(record.item.labelAnchor) || detached(record.item.titleAnchor) || record.signature !== signature)) {
         restore(record)
         records.delete(root)
         record = undefined
       }
       if (!record) {
-        const target = root.querySelector<HTMLElement>('.gl4e, .glname')
-        if (!target) continue
-        const anchor = document.createElement('div')
-        anchor.className = 'eqt-rule-prototype__mount'
-        anchor.setAttribute('translate', 'no')
+        if (!root.querySelector('.gl4e, .glname')) continue
         const title = root.querySelector('.glink')?.textContent?.trim() ?? link.textContent?.trim() ?? ''
-        const titleLink = target.closest('a')
-        if (titleLink) titleLink.after(anchor)
-        else target.append(anchor)
         root.classList.add('eqt-rule-prototype__gallery')
         // 縮圖卡片裡評分列上方是 margin: auto，評分列以下整塊貼著卡片底部，同一排卡片撐高時差距由那段 margin 吸收；
         // 標示插在這一塊裡，封面與標題就不會因為某幾張多一行而對不齊
@@ -351,47 +191,29 @@ export function useRulePrototypeHost(options: { tagsEnabled: () => boolean; tagL
         record = {
           signature,
           item: {
-            id: nextId++, root, anchor, labelAnchor, titleAnchor,
+            id: nextId++, root, labelAnchor, titleAnchor,
             tags, tagSet: names, complete, ...stars, pages, category, uploader, title, href: link.href,
           },
         }
         records.set(root, record)
       }
-      for (const element of options.tagsEnabled() ? nativeTags : []) {
-        const name = element.title.trim().toLowerCase()
+      for (const element of options.tagsEnabled() ? root.querySelectorAll<HTMLElement>('[data-evr-tag]') : []) {
+        const name = chipName(element)
         if (!name) continue
         seenTags.add(element)
-        let binding = bindings.get(element)
-        if (!binding || !element.contains(binding.chip.anchor)) {
-          binding?.restore()
-          const geometry = geometryOf(getComputedStyle(element))
-          const original = document.createDocumentFragment()
-          while (element.firstChild) original.append(element.firstChild)
-          const content = document.createElement('span')
-          content.className = 'eqt-rule-prototype__tag-content'
-          element.append(content)
-          const previousTranslate = element.getAttribute('translate')
-          element.classList.add('eqt-rule-prototype__native-chip')
-          element.setAttribute('translate', 'no')
-          binding = {
-            chip: {
-              id: nextId++, item: record.item, name, anchor: content, area: element.parentElement!, geometry, uploader: false,
-              tier: element.classList.contains('gtw') ? 'gtw' : element.classList.contains('gtl') ? 'gtl' : 'gt',
-            },
-            restore() {
-              element.classList.remove('eqt-rule-prototype__native-chip')
-              if (element.contains(content)) element.replaceChildren(original)
-              if (previousTranslate === null) element.removeAttribute('translate')
-              else element.setAttribute('translate', previousTranslate)
-            },
+        let chip = bindings.get(element)
+        if (!chip || chip.item !== record.item || chip.name !== name) {
+          if (chip) release(element)
+          decorate(element)
+          chip = {
+            id: nextId++, item: record.item, name, element, area: element.parentElement!,
+            tier: element.classList.contains('gtw') ? 'gtw' : element.classList.contains('gtl') ? 'gtl' : 'gt',
+            uploader: element.getAttribute('data-evr-ns') === UPLOADER_NAMESPACE,
           }
-          bindings.set(element, binding)
+          bindings.set(element, chip)
         }
-        nextChips.push(binding.chip)
+        nextChips.push(chip)
       }
-      const uploaderBinding = options.tagsEnabled() && uploader ? bindUploader(root, record.item, uploader, nativeTags, seenTags) : null
-      if (uploaderBinding) nextChips.push(uploaderBinding.chip)
-      layout(root, nativeTags, options.tagsEnabled() ? options.tagLayout() : 'native')
       next.push(record.item)
     }
     for (const [root, record] of records) {
@@ -399,16 +221,15 @@ export function useRulePrototypeHost(options: { tagsEnabled: () => boolean; tagL
       restore(record)
       records.delete(root)
     }
-    for (const [element, binding] of bindings) {
-      if (seenTags.has(element)) continue
-      binding.restore()
-      bindings.delete(element)
+    for (const element of [...bindings.keys()]) {
+      if (!seenTags.has(element)) release(element)
     }
     if (next.length !== items.value.length || next.some((item, i) => item !== items.value[i])) items.value = next
     if (nextChips.length !== chips.value.length || nextChips.some((chip, i) => chip !== chips.value[i])) chips.value = nextChips
   }
 
-  const OWN_NODES = `.eqt-rule-prototype, .eqt-rule-prototype__mount, .eqt-rule-prototype__tag-content, .${UPLOADER_MOUNT}, .${NS_GRID}`
+  // chip 裡面的變動是插件自己畫的（文字、class），不必為它再掃一次
+  const OWN_NODES = `.eqt-rule-prototype, .eqt-rule-prototype__mount, .${CHIP_CLASS}`
   function schedule(mutations: MutationRecord[]) {
     const relevant = mutations.some(mutation => {
       const target = mutation.target instanceof Element ? mutation.target : mutation.target.parentElement
@@ -421,12 +242,14 @@ export function useRulePrototypeHost(options: { tagsEnabled: () => boolean; tagL
     queueMicrotask(scan)
   }
 
-  watch([options.tagsEnabled, options.tagLayout], () => scan())
+  watch(options.tagsEnabled, () => scan())
 
   onMounted(() => {
     scan()
     observer = new MutationObserver(schedule)
-    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-evr-tags', 'data-evr-uploader'] })
+    observer.observe(document.body, {
+      childList: true, subtree: true, attributes: true, attributeFilter: ['data-evr-tags', 'data-evr-uploader', 'data-evr-tag'],
+    })
   })
   onBeforeUnmount(() => {
     disposed = true

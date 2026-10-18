@@ -1,14 +1,17 @@
 <script setup lang="ts">
 // 列表頁：選標籤送規則頁，並把規則頁存下來的固定規則套回真實畫廊外觀。
-import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch, watchEffect } from 'vue'
+import { computed, h, onBeforeUnmount, onMounted, ref, render, shallowRef, watch, watchEffect } from 'vue'
 import { GM } from '$'
 import { useFloating, autoUpdate, flip, offset, shift } from '@floating-ui/vue'
-import { ChevronDown, Eye, Funnel, ListChecks, Search, Settings, Shapes, Tags, UserRound, X } from '@lucide/vue'
+import { Ban, ChevronDown, Eye, Funnel, ListChecks, Search, Settings, Shapes, Tags, UserRound, X } from '@lucide/vue'
 import TagChip from '@/components/TagChip.vue'
 import GalleryTagListRows, { type GalleryTagListGroup } from '@/components/gallery/GalleryTagListRows.vue'
 import { useDragSelect } from '@/composables/useDragSelect'
-import type { ChipRef, Selection } from '@/services/gallery/dragSelectMachine'
-import { useRulePrototypeHost } from '@/composables/useRulePrototypeHost'
+import type { ChipRef } from '@/services/gallery/dragSelectMachine'
+import { useRulePrototypeHost, type ListingChip } from '@/composables/useRulePrototypeHost'
+import { CHIP_CLASS, installChipIcons, paint, type ChipPaint } from '@/services/listing/listingChipDom'
+import { chipBadges, myTagsVars } from '@/services/mytags/chipBadges'
+import { useMyTagsColors } from '@/composables/useMyTagsColors'
 import { useFixedRuleStore } from '@/composables/useFixedRuleStore'
 import { useSelfRatedStars } from '@/composables/useSelfRatedStars'
 import { parseGalleryRef } from '@/composables/useEhSearchListing'
@@ -28,13 +31,13 @@ import { pickUrl, savePick } from '@/services/mytags/mytagsPicks'
 import { openRule, openRules, openSettings, rulesCollapsed, showRules } from '@/services/appOverlays'
 import {
   defaultExactMatch, listingDockAlwaysVisible, listingMyTagsColorsEnabled, listingMyTagsMarksEnabled, listingMyTagsScoresEnabled,
-  listingRulesPaused, listingTagLayout, listingTagSelectEnabled, listingTagsEnabled, nsFormat,
+  listingRulesPaused, listingTagSelectEnabled, listingTagsEnabled, nsFormat,
 } from '@/services/store'
 import { useEqtToast } from '@/composables/useEqtToast'
 import { pageWindow } from '@/utils/pageWindow'
 import '@/styles/rule-prototype.scss'
 
-const { items, chips } = useRulePrototypeHost({ tagsEnabled: () => listingTagsEnabled.value, tagLayout: () => listingTagLayout.value })
+const { items, chips } = useRulePrototypeHost({ tagsEnabled: () => listingTagsEnabled.value })
 // 圖庫規則是圖庫列表強化的一部分：關掉時規則也不套用，跟暫停一樣
 const rulesActive = computed(() => listingTagsEnabled.value && !listingRulesPaused.value)
 // 選取做在 chip 上：標籤沒換成 chip 時沒有東西可選
@@ -90,30 +93,47 @@ function display(full: string): string {
   return isZhLocale() ? zhDisplay(entry.name) : entry.raw
 }
 
-type ListingChip = (typeof chips.value)[number]
+const tagChipStyle = useMyTagsColors()
 
-// 列表上一頁頁接下去會有上萬顆 chip，全部共用同一行 v-for。chip 自己的名稱、層級、外框都固定，
-// 會變的只有下面這幾樣；v-memo 照這份清單判斷，沒變的那顆連 VNode 都不重建。
-// 漏列一樣，那一樣改了 chip 就不會跟著更新，所以 chipProps 讀到的會變的東西都要在這裡
-function chipMemo(chip: ListingChip): unknown[] {
-  return [
-    selection.value.get(chip.name), myTagsPalette.value?.[chip.name], display(chip.name),
-    listingMyTagsColorsEnabled.value, listingMyTagsScoresEnabled.value, listingMyTagsMarksEnabled.value,
-    chip.uploader ? t('rulePagePrototype.uploader') : '',
-  ]
-}
-
-function chipProps(chip: ListingChip) {
+function chipPaint(chip: ListingChip): ChipPaint {
   const personal = myTagsPalette.value?.[chip.name]
   const state = selection.value.get(chip.name)
-  const picked: Selection | undefined = state === 1 ? 'positive' : state === -1 ? 'negative' : undefined
   return {
-    full: chip.name, display: display(chip.name), tier: chip.tier, style: chip.geometry,
-    colors: listingMyTagsColorsEnabled.value ? personal : undefined,
-    weight: personal?.weight, hidden: personal?.hidden, watch: personal?.watch,
-    selection: picked, showScore: listingMyTagsScoresEnabled.value, showMarks: listingMyTagsMarksEnabled.value,
+    display: display(chip.name),
+    selection: state === 1 ? 'positive' : state === -1 ? 'negative' : undefined,
+    colors: listingMyTagsColorsEnabled.value && personal ? myTagsVars(tagChipStyle(personal)) : undefined,
+    ...chipBadges({
+      weight: personal?.weight, hidden: personal?.hidden ?? false, watch: personal?.watch ?? false,
+      showScore: listingMyTagsScoresEnabled.value, showMarks: listingMyTagsMarksEnabled.value,
+    }),
   }
 }
+
+// 列表一頁頁接下去會有上萬顆 chip。調色盤、設定、名稱這些少見的變動才全部重畫一次；
+// 選取時只重畫狀態有變的那幾個名稱。paint 只寫有變的部分，重畫沒變的 chip 不會動到 DOM
+const chipsByName = computed(() => {
+  const grouped = new Map<string, ListingChip[]>()
+  for (const chip of chips.value) {
+    const list = grouped.get(chip.name)
+    if (list) list.push(chip)
+    else grouped.set(chip.name, [chip])
+  }
+  return grouped
+})
+watch(
+  [chips, myTagsPalette, labels, listingMyTagsColorsEnabled, listingMyTagsScoresEnabled, listingMyTagsMarksEnabled],
+  () => {
+    for (const chip of chips.value) paint(chip.element, chipPaint(chip))
+  },
+  { immediate: true },
+)
+watch(selection, (next, previous) => {
+  for (const name of new Set([...next.keys(), ...previous.keys()])) {
+    if (next.get(name) === previous.get(name)) continue
+    for (const chip of chipsByName.value.get(name) ?? []) paint(chip.element, chipPaint(chip))
+  }
+})
+
 const tagTiers = computed(() => new Map(chips.value.map(chip => [chip.name, chip.tier])))
 const sessionGroups = computed<GalleryTagListGroup[]>(() => {
   void tagDbVersion.value
@@ -265,24 +285,25 @@ function selectTag(tag: string, direction: 1 | -1) {
   selection.value = next
 }
 
-const chipByAnchor = computed(() => new Map(chips.value.map(chip => [chip.anchor, chip])))
+const chipByElement = computed(() => new Map(chips.value.map(chip => [chip.element, chip])))
 const tagAreas = computed(() => new Set(chips.value.map(chip => chip.area)))
 let suppressContextMenu = false
 
 function chipFor(target: EventTarget | null) {
   if (!(target instanceof Element)) return undefined
-  const content = target.closest<HTMLElement>('.eqt-rule-prototype__tag-content')
-  return content ? chipByAnchor.value.get(content) : undefined
+  const element = target.closest<HTMLElement>(`.${CHIP_CLASS}`)
+  return element ? chipByElement.value.get(element) : undefined
 }
 
-function chipFromPoint(x: number, y: number): ChipRef | null {
-  const chip = chipFor(document.elementFromPoint(x, y))
+// chip 就是標籤元素本身，上面沒有任何浮層，滑鼠事件的 target 已經是瀏覽器找好的那顆，不必再 elementFromPoint 一次
+function chipFromEvent(event: MouseEvent): ChipRef | null {
+  const chip = chipFor(event.target)
   if (!chip) return null
   return { id: chip.name, state: selection.value.get(chip.name) ?? 0 }
 }
 
 const { onAreaMouseDown } = useDragSelect({
-  chipFromPoint,
+  chipFromEvent,
   applySelection: (id, mode) => selectTag(id, mode === 'positive' ? 1 : -1),
   takeOver: true,
 })
@@ -373,7 +394,16 @@ watch(tagSelectEnabled, enabled => {
   listenTagEvents(enabled)
   if (!enabled) closeDock()
 })
+function svgOf(icon: typeof Eye): string {
+  const holder = document.createElement('div')
+  render(h(icon), holder)
+  const svg = holder.innerHTML
+  render(null, holder)
+  return svg
+}
+
 onMounted(() => {
+  installChipIcons({ eye: svgOf(Eye), ban: svgOf(Ban), user: svgOf(UserRound) })
   document.addEventListener('keydown', keydown)
   listenTagEvents(tagSelectEnabled.value)
 })
@@ -385,14 +415,6 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <Teleport v-for="chip in chips" :key="chip.id" :to="chip.anchor" v-memo="chipMemo(chip)">
-    <!-- 兩個分支各自的 slot 都固定：slot 上掛 v-if 會讓 Vue 把這一行做出來的每顆 chip 都當成 slot 會變，一律重畫（vuejs/core#6833） -->
-    <TagChip v-if="chip.uploader" class="eqt-rule-prototype__chip" v-bind="chipProps(chip)">
-      <template #lead><UserRound :aria-label="t('rulePagePrototype.uploader')" /></template>
-    </TagChip>
-    <TagChip v-else class="eqt-rule-prototype__chip" v-bind="chipProps(chip)" />
-  </Teleport>
-
   <Teleport v-for="target in labelTargets" :key="target.id" :to="target.anchor">
     <TagChip
       v-for="label in target.labels" :key="label.ruleId"

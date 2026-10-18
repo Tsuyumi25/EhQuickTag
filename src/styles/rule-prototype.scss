@@ -50,41 +50,46 @@
 }
 
 .eqt-rule-prototype__mount:empty { display: none; }
-.eqt-rule-prototype__tag-content,
-.eqt-rule-prototype__native-chip { display: contents; }
-// 沒有標籤可以接的列自己開的一排：標題底下一排並排的 chip，跟 Minimal+ 原生的標籤排同一個位置
-.eqt-rule-prototype__uploader-line {
-  display: flex;
-  flex-wrap: wrap;
-  margin-top: var(--eqt-rule-prototype-gap);
-}
-// 分成 namespace 列：跟圖庫頁一樣兩欄，namespace 名稱那欄取最寬那個，所有列的標籤從同一個 x 開始
-.eqt-rule-prototype__ns-grid {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  column-gap: var(--eqt-rule-prototype-gap);
-  align-items: start;
-  width: 100%;
-  text-align: start;
-}
-.eqt-rule-prototype__ns-row { display: contents; }
-.eqt-rule-prototype__ns-label {
-  padding-top: calc(var(--eqt-rule-prototype-gap) / 2);
-  color: var(--eqt-text);
-  text-align: end;
-  white-space: nowrap;
+// 列表上的標籤原地當 chip：外框、尺寸、層級的虛線都照網站畫好的，這裡只疊狀態色。
+// 圖示與分數放在 ::before／::after，一顆 chip 不多任何節點；flex 的 order 把它們排到名稱後面，
+// 只有上傳者的圖示排在前面（上傳者不會有關注標記，兩者不會同時要用 ::before）
+.eqt-listing-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--eqt-gallery-chip-content-gap);
+  cursor: pointer;
   user-select: none;
+  &:hover, &:focus-visible { outline: none; background-image: linear-gradient(var(--eqt-bg-hover), var(--eqt-bg-hover)); }
+  &[data-eqt-mark~='watch']::before,
+  &[data-evr-ns='uploader']::before,
+  &[data-eqt-mark~='hidden']::after {
+    content: '';
+    width: var(--eqt-fs-md);
+    height: var(--eqt-fs-md);
+    flex-shrink: 0;
+    background: currentColor;
+    mask: var(--eqt-listing-chip-icon) center / contain no-repeat;
+  }
+  &[data-eqt-mark~='watch']::before { --eqt-listing-chip-icon: var(--eqt-listing-chip-eye); order: 1; }
+  &[data-evr-ns='uploader']::before { --eqt-listing-chip-icon: var(--eqt-listing-chip-user); order: -1; }
+  &[data-eqt-mark~='hidden']::after { --eqt-listing-chip-icon: var(--eqt-listing-chip-ban); order: 2; }
+  &[data-eqt-score]::after { content: attr(data-eqt-score); order: 2; }
 }
-.eqt-rule-prototype__ns-cells {
-  display: flex;
-  flex-wrap: wrap;
-  min-width: 0;
+.eqt-listing-chip.eqt-listing-chip--mytags-colored {
+  color: var(--eqt-mytags-text);
+  background: var(--eqt-mytags-background) padding-box;
+  border-color: var(--eqt-mytags-border);
+  &:hover { background: linear-gradient(var(--eqt-bg-hover), var(--eqt-bg-hover)) padding-box, var(--eqt-mytags-background) padding-box; }
 }
-// Minimal+ 原生的 .gltm 有 max-height: 36px（g.css 0381），分成多列後超出的部分會壓到下一列圖庫
-.gltm:has(> .eqt-rule-prototype__ns-grid) { max-height: none; }
-.eqt-rule-prototype__chip {
-  &, *, *::before, *::after { box-sizing: border-box; }
-  vertical-align: baseline;
+.eqt-listing-chip--selected-positive { --eqt-gallery-selection-color: var(--eqt-status-include); }
+.eqt-listing-chip--selected-negative { --eqt-gallery-selection-color: var(--eqt-status-exclude); }
+// 選取蓋過個人配色，跟 TagChip 一樣
+.eqt-listing-chip:is(.eqt-listing-chip--selected-positive, .eqt-listing-chip--selected-negative) {
+  --eqt-listing-chip-selection: color-mix(in srgb, var(--eqt-gallery-selection-color) 55%, transparent);
+  color: var(--eqt-text);
+  background: linear-gradient(var(--eqt-listing-chip-selection), var(--eqt-listing-chip-selection)) padding-box,
+    var(--eqt-gallery-chip-bg) padding-box;
+  &:hover { --eqt-listing-chip-selection: color-mix(in srgb, var(--eqt-gallery-selection-color) 70%, transparent); }
 }
 .eqt-rule-prototype__floating {
   position: fixed;
