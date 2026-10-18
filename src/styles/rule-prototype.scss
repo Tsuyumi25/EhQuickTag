@@ -93,6 +93,14 @@
   color: var(--eqt-mytags-text) !important;
   border-color: var(--eqt-mytags-border) !important;
 }
+// 列表的顏色設定關掉時，網站自己寫的 My Tags 配色照樣留在 style 上，這裡蓋回網站樣式表的預設外觀
+// （g.css／x.css 的 div.gt）：資料不動，其他腳本讀到的仍是網站給的樣子
+.eqt-listing-chip.eqt-listing-chip--site-colors-off {
+  --eqt-listing-chip-paint: var(--eqt-listing-chip-hover) padding-box, var(--eqt-gallery-chip-bg) padding-box;
+  color: inherit !important;
+  border-color: var(--eqt-site-tag-border) !important;
+  &:is(.gtl, .gtw) { border-color: var(--eqt-site-tag-border-weak) !important; }
+}
 .eqt-listing-chip--selected-positive { --eqt-gallery-selection-color: var(--eqt-status-include); }
 .eqt-listing-chip--selected-negative { --eqt-gallery-selection-color: var(--eqt-status-exclude); }
 // 選取蓋過個人配色，跟 TagChip 一樣：整顆換成選取色，有個人配色的在右上角留一塊三角形

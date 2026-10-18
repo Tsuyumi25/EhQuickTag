@@ -140,6 +140,9 @@
 :root {
   --eqt-bg: #edebdf;
   --eqt-gallery-chip-bg: #F2EFDF;
+  // 網站 g.css 的 div.gt／div.gtl、div.gtw 框線色
+  --eqt-site-tag-border: #806769;
+  --eqt-site-tag-border-weak: #9a7c7e;
   --eqt-bg-elevated: #fff;
   --eqt-bg-hover: rgba(0, 0, 0, 0.06);
   --eqt-bg-stripe: rgba(0, 0, 0, 0.045);
@@ -188,6 +191,8 @@
 :root.eqt-dark {
   --eqt-bg: #4f535b;
   --eqt-gallery-chip-bg: #4f535b;
+  --eqt-site-tag-border: #989898;
+  --eqt-site-tag-border-weak: #8c8c8c;
   --eqt-bg-elevated: #34353b;
   --eqt-bg-hover: rgba(255, 255, 255, 0.06);
   --eqt-bg-stripe: rgba(255, 255, 255, 0.05);

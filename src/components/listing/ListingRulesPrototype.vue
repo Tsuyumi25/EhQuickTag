@@ -107,6 +107,7 @@ function chipPaint(chip: ListingChip): ChipPaint {
     display: display(chip.name),
     selection: state === 1 ? 'positive' : state === -1 ? 'negative' : undefined,
     colors: listingMyTagsColorsEnabled.value && personal ? colorVars(personal) : undefined,
+    siteColors: listingMyTagsColorsEnabled.value,
     ...chipBadges({
       weight: personal?.weight, hidden: personal?.hidden ?? false, watch: personal?.watch ?? false,
       showScore: listingMyTagsScoresEnabled.value, showMarks: listingMyTagsMarksEnabled.value,

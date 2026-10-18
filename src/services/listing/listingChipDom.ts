@@ -7,6 +7,7 @@ export const CHIP_CLASS = 'eqt-listing-chip'
 const COLORED = `${CHIP_CLASS}--mytags-colored`
 const POSITIVE = `${CHIP_CLASS}--selected-positive`
 const NEGATIVE = `${CHIP_CLASS}--selected-negative`
+const SITE_COLORS_OFF = `${CHIP_CLASS}--site-colors-off`
 const SCORE = 'data-eqt-score'
 const MARK = 'data-eqt-mark'
 const VARS = ['--eqt-mytags-background', '--eqt-mytags-layer', '--eqt-mytags-text', '--eqt-mytags-border'] as const
@@ -17,6 +18,8 @@ export interface ChipPaint {
   selection?: 'positive' | 'negative'
   /** My Tags 配色的 CSS 變數；undefined 是不上色 */
   colors?: Record<string, string>
+  /** 網站自己畫上的 My Tags 顏色要不要顯示；不顯示時由樣式表蓋成網站預設的外觀，網站寫的 style 不動 */
+  siteColors: boolean
   score: string | null
   /** 禁止圖示畫在分數的位置，兩者只會有一個 */
   hidden: boolean
@@ -71,6 +74,7 @@ export function decorate(element: HTMLElement): void {
 
 /** 只寫有變的部分，畫第二次一樣的結果不會產生任何 DOM 變動 */
 export function paint(element: HTMLElement, chip: ChipPaint): void {
+  element.classList.toggle(SITE_COLORS_OFF, !chip.siteColors)
   const only = element.firstChild
   if (only instanceof Text && only === element.lastChild) {
     if (only.data !== chip.display) only.data = chip.display
@@ -96,7 +100,7 @@ export function undecorate(element: HTMLElement): void {
   const original = originals.get(element)
   if (!original) return
   originals.delete(element)
-  element.classList.remove(CHIP_CLASS, COLORED, POSITIVE, NEGATIVE)
+  element.classList.remove(CHIP_CLASS, COLORED, POSITIVE, NEGATIVE, SITE_COLORS_OFF)
   setAttribute(element, 'style', original.style)
   element.removeAttribute(SCORE)
   element.removeAttribute(MARK)
