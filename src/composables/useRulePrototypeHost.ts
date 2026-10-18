@@ -178,18 +178,14 @@ function ungroup(grouping: Grouping): void {
   grouping.grid.remove()
 }
 
-// 評分只有星星雪碧圖：.ir 的 background-position 水平每 -16px 少一顆星，垂直 -21px 那一列是
-// 半星，所以精度是 0.5。
-// 自己評過分的圖庫，.ir 會多帶 irr / irg / irb，星星畫的是自己打的分
+// 評分由 EhViewRefined 從星星換算好：平均分在 data-evr-rating（半星一格）；自己評過分的圖庫，
+// 星星畫的是自己打的分，看不到平均分，只會有 data-evr-my-rating
 function starRating(root: Element): { rating: number | null; selfRated: boolean } {
-  const stars = root.querySelector('.ir')
-  if (!stars) return { rating: null, selfRated: false }
-  if (['irr', 'irg', 'irb'].some(name => stars.classList.contains(name))) return { rating: null, selfRated: true }
-  const style = stars.getAttribute('style') ?? ''
-  const [x, y] = Array.from(style.matchAll(/(-?\d+)px/g), match => Math.abs(Number(match[1])))
-  if (x === undefined || y === undefined) return { rating: null, selfRated: false }
-  const rating = 5 - x / 16 - (y === 21 ? 0.5 : 0)
-  return { rating: rating >= 0 && rating <= 5 ? rating : null, selfRated: false }
+  const value = Number(root.getAttribute('data-evr-rating') ?? Number.NaN)
+  return {
+    rating: Number.isFinite(value) && value >= 0 && value <= 5 ? value : null,
+    selfRated: root.hasAttribute('data-evr-my-rating'),
+  }
 }
 
 /**
