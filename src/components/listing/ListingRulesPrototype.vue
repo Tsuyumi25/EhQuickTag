@@ -7,7 +7,7 @@ import { ChevronDown, Eye, Funnel, ListChecks, Search, Settings, Shapes, Tags, U
 import TagChip from '@/components/TagChip.vue'
 import GalleryTagListRows, { type GalleryTagListGroup } from '@/components/gallery/GalleryTagListRows.vue'
 import { useDragSelect } from '@/composables/useDragSelect'
-import type { ChipRef } from '@/services/gallery/dragSelectMachine'
+import type { ChipRef, Selection } from '@/services/gallery/dragSelectMachine'
 import { useRulePrototypeHost } from '@/composables/useRulePrototypeHost'
 import { useFixedRuleStore } from '@/composables/useFixedRuleStore'
 import { useSelfRatedStars } from '@/composables/useSelfRatedStars'
@@ -88,6 +88,31 @@ function display(full: string): string {
   if (known) return known
   const entry = entryForTag(full)
   return isZhLocale() ? zhDisplay(entry.name) : entry.raw
+}
+
+type ListingChip = (typeof chips.value)[number]
+
+// 列表上一頁頁接下去會有上萬顆 chip，全部共用同一行 v-for。chip 自己的名稱、層級、外框都固定，
+// 會變的只有下面這幾樣；v-memo 照這份清單判斷，沒變的那顆連 VNode 都不重建。
+// 漏列一樣，那一樣改了 chip 就不會跟著更新，所以 chipProps 讀到的會變的東西都要在這裡
+function chipMemo(chip: ListingChip): unknown[] {
+  return [
+    selection.value.get(chip.name), myTagsPalette.value?.[chip.name], display(chip.name),
+    listingMyTagsColorsEnabled.value, listingMyTagsScoresEnabled.value, listingMyTagsMarksEnabled.value,
+    chip.uploader ? t('rulePagePrototype.uploader') : '',
+  ]
+}
+
+function chipProps(chip: ListingChip) {
+  const personal = myTagsPalette.value?.[chip.name]
+  const state = selection.value.get(chip.name)
+  const picked: Selection | undefined = state === 1 ? 'positive' : state === -1 ? 'negative' : undefined
+  return {
+    full: chip.name, display: display(chip.name), tier: chip.tier, style: chip.geometry,
+    colors: listingMyTagsColorsEnabled.value ? personal : undefined,
+    weight: personal?.weight, hidden: personal?.hidden, watch: personal?.watch,
+    selection: picked, showScore: listingMyTagsScoresEnabled.value, showMarks: listingMyTagsMarksEnabled.value,
+  }
 }
 const tagTiers = computed(() => new Map(chips.value.map(chip => [chip.name, chip.tier])))
 const sessionGroups = computed<GalleryTagListGroup[]>(() => {
@@ -360,15 +385,12 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <Teleport v-for="chip in chips" :key="chip.id" :to="chip.anchor">
-    <TagChip
-      class="eqt-rule-prototype__chip"
-      :full="chip.name" :display="display(chip.name)" :tier="chip.tier" :style="chip.geometry"
-      :colors="listingMyTagsColorsEnabled ? myTagsPalette?.[chip.name] : undefined"
-      :weight="myTagsPalette?.[chip.name]?.weight" :hidden="myTagsPalette?.[chip.name]?.hidden" :watch="myTagsPalette?.[chip.name]?.watch"
-      :selection="selection.get(chip.name) === 1 ? 'positive' : selection.get(chip.name) === -1 ? 'negative' : undefined"
-      :show-score="listingMyTagsScoresEnabled" :show-marks="listingMyTagsMarksEnabled"
-    ><template v-if="chip.uploader" #lead><UserRound :aria-label="t('rulePagePrototype.uploader')" /></template></TagChip>
+  <Teleport v-for="chip in chips" :key="chip.id" :to="chip.anchor" v-memo="chipMemo(chip)">
+    <!-- 兩個分支各自的 slot 都固定：slot 上掛 v-if 會讓 Vue 把這一行做出來的每顆 chip 都當成 slot 會變，一律重畫（vuejs/core#6833） -->
+    <TagChip v-if="chip.uploader" class="eqt-rule-prototype__chip" v-bind="chipProps(chip)">
+      <template #lead><UserRound :aria-label="t('rulePagePrototype.uploader')" /></template>
+    </TagChip>
+    <TagChip v-else class="eqt-rule-prototype__chip" v-bind="chipProps(chip)" />
   </Teleport>
 
   <Teleport v-for="target in labelTargets" :key="target.id" :to="target.anchor">
