@@ -85,6 +85,8 @@ export default {
   'rulePagePrototype.hideHelp': '请优先使用 E 站原生的隐藏功能（例如“我的主页”里的 My Tags，以及“我的主页”设置里的 Uploader 与 Language 排除）。此功能是为了无法简单隐藏的复合条件而存在的。',
   'rulePagePrototype.enabled': '启用',
   'rulePagePrototype.newRule': '规则 {n}',
+  'rulePagePrototype.duplicateRule': '复制规则',
+  'rulePagePrototype.duplicateName': '{name} 的副本',
   'rulePagePrototype.removeRule': '删除规则',
   'rulePagePrototype.ruleActions': '规则操作',
   'rulePagePrototype.dragRule': '拖动排序规则',

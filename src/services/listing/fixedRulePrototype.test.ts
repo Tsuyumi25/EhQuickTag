@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
+import { test } from '@fast-check/vitest'
 import {
-  averageOfStars, conditionReady, conditionsFromTerms, createActions, createCategoryCondition, createGroup, createRangeCondition, createRule, createTagCondition,
+  averageOfStars, conditionReady, conditionsFromTerms, createActions, createCategoryCondition, createGroup, createRangeCondition, createRule, createTagCondition, duplicateRule,
   evaluateCondition, evaluateRule, itemHeight, resolveRuleEffects, ruleEvidence, starsFromAverage,
-  type FixedRule, type GalleryProbe, type RangeOp,
+  type ConditionGroup, type FixedConditionItem, type FixedRule, type GalleryProbe, type RangeOp,
 } from '@/services/listing/fixedRulePrototype'
+import { probeArb, ruleArb } from './test-helpers'
 
 const probe = (rating: number | null, tags: string[] = [], pages: number | null = null, category: GalleryProbe['category'] = null): GalleryProbe =>
   ({ tags: new Set(tags), complete: true, rating, pages, category })
@@ -203,5 +205,37 @@ describe('conditionsFromTerms', () => {
 
   it('沒有命名空間或解析失敗的搜尋詞不收', () => {
     expect(conditionsFromTerms(['some tag', 'title:something'])).toEqual([])
+  })
+})
+
+describe('duplicateRule', () => {
+  const ids = (rule: FixedRule): number[] => {
+    const out = [rule.id]
+    const walk = (item: FixedConditionItem) => {
+      out.push(item.id)
+      if (item.kind === 'group') item.conditions.forEach(walk)
+    }
+    walk(rule.root)
+    return out
+  }
+
+  test.prop([ruleArb, probeArb])('每個 id 都是新的，判定與動作跟原本一樣', (rule, probe) => {
+    const copy = duplicateRule(rule)
+    const original = new Set(ids(rule))
+    expect(ids(copy).some(id => original.has(id))).toBe(false)
+    expect(new Set(ids(copy)).size).toBe(ids(copy).length)
+    expect(evaluateRule(copy, probe)).toBe(evaluateRule(rule, probe))
+    expect(copy.actions).toEqual(rule.actions)
+  })
+
+  it('改複本不會動到原本那條', () => {
+    const rule = createRule(1)
+    rule.root.conditions.push(createGroup('any', [createTagCondition('female:a')]))
+    const copy = duplicateRule(rule)
+    const group = copy.root.conditions[0]
+    if (group.kind === 'group') group.conditions.push(createTagCondition('female:b'))
+    copy.actions.blur = true
+    expect((rule.root.conditions[0] as ConditionGroup).conditions).toHaveLength(1)
+    expect(rule.actions.blur).toBe(false)
   })
 })

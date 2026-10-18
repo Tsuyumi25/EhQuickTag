@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import Draggable from 'vuedraggable'
-import { Blocks, CodeXml, Ellipsis, Funnel, GripVertical, Plus, Settings, Trash2, X } from '@lucide/vue'
+import { Blocks, CodeXml, Copy, Ellipsis, Funnel, GripVertical, Plus, Settings, Trash2, X } from '@lucide/vue'
 import ContextMenu from '@/components/ContextMenu.vue'
 import { baseDragOptions } from '@/utils/drag'
 import RuleActionsEditor from './RuleActionsEditor.vue'
@@ -11,7 +11,7 @@ import RuleDigest from './RuleDigest.vue'
 import RuleMaterialPanel from './RuleMaterialPanel.vue'
 import { useFixedRuleStore } from '@/composables/useFixedRuleStore'
 import { t } from '@/composables/useI18n'
-import { createRule } from '@/services/listing/fixedRulePrototype'
+import { createRule, duplicateRule } from '@/services/listing/fixedRulePrototype'
 import {
   openSettings, requestedRuleId, ruleConditionSource, rulesCollapsed, showSettings,
 } from '@/services/appOverlays'
@@ -63,6 +63,15 @@ function toggleRuleMenu(event: MouseEvent, id: number) {
   ruleMenuId.value = id
   ruleMenuTrigger.value = event.currentTarget as HTMLButtonElement
   ruleMenuOpen.value = true
+}
+
+function duplicateMenuRule() {
+  const index = rules.value.findIndex(rule => rule.id === ruleMenuId.value)
+  ruleMenuOpen.value = false
+  if (index < 0) return
+  const copy = duplicateRule(rules.value[index])
+  rules.value.splice(index + 1, 0, copy)
+  selectedId.value = copy.id
 }
 
 function removeMenuRule() {
@@ -264,6 +273,10 @@ onBeforeUnmount(() => {
         auto-focus aria-role="dialog" :aria-label="t('rulePagePrototype.ruleActions')"
         placement="right-start"
       >
+        <button type="button" class="eqt-context-menu__item" @click="duplicateMenuRule">
+          <Copy class="eqt-rule-page__icon eqt-context-menu__icon" />
+          <span class="eqt-context-menu__label">{{ t('rulePagePrototype.duplicateRule') }}</span>
+        </button>
         <button
           type="button" class="eqt-context-menu__item eqt-context-menu__item--danger"
           @click="removeMenuRule"

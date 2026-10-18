@@ -2,7 +2,7 @@
 
 import { parseColorInput } from '@/services/color'
 import {
-  createActions, createGroup, GROUP_MODES, hasActions, isRuleComplete, itemHeight, MAX_GROUP_DEPTH,
+  cloneItem, createActions, createGroup, GROUP_MODES, hasActions, isRuleComplete, itemHeight, MAX_GROUP_DEPTH,
   nextEntityId, normalizeTitlePrefix, RANGE_FIELDS, RANGE_OPS, reserveRuleIds,
   type ConditionGroup, type FixedActions, type FixedCondition, type FixedConditionItem,
   type FixedRule, type GroupMode, type RangeCondition, type RangeField, type RangeOp,
@@ -220,11 +220,6 @@ function decodeHeader(rule: unknown): Omit<FixedRule, 'root' | 'actions'> & Reco
     throw new Error('Invalid fixed rule storage')
   }
   return rule as Omit<FixedRule, 'root' | 'actions'> & Record<string, unknown>
-}
-
-function cloneItem(item: FixedConditionItem): FixedConditionItem {
-  if (item.kind !== 'group') return { ...item, id: nextEntityId() }
-  return createGroup(item.mode, item.conditions.map(cloneItem), item.negate)
 }
 
 const plainAnd = (group: ConditionGroup) => group.mode === 'all' && !group.negate

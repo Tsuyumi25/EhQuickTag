@@ -85,6 +85,8 @@ export default {
   'rulePagePrototype.hideHelp': '먼저 E-Hentai 기본 숨기기 기능을 사용하세요(My Home의 My Tags, My Home 설정의 Uploader·Language 제외 등). 이 기능은 간단히 숨길 수 없는 복합 조건을 위해 존재합니다.',
   'rulePagePrototype.enabled': '사용',
   'rulePagePrototype.newRule': '규칙 {n}',
+  'rulePagePrototype.duplicateRule': '규칙 복제',
+  'rulePagePrototype.duplicateName': '{name} 사본',
   'rulePagePrototype.removeRule': '규칙 삭제',
   'rulePagePrototype.ruleActions': '규칙 작업',
   'rulePagePrototype.dragRule': '드래그하여 규칙 순서 변경',

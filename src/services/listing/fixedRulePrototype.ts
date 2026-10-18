@@ -219,6 +219,25 @@ export function createRule(index: number): FixedRule {
   }
 }
 
+function cloneGroup(group: ConditionGroup): ConditionGroup {
+  return createGroup(group.mode, group.conditions.map(cloneItem), group.negate)
+}
+
+/** 每個群組與條件都換上新的 id：跟原本共用 id 的話，畫面上的列、拖曳與選取都會認錯對象 */
+export function cloneItem(item: FixedConditionItem): FixedConditionItem {
+  return item.kind === 'group' ? cloneGroup(item) : { ...item, id: nextEntityId() }
+}
+
+export function duplicateRule(rule: FixedRule): FixedRule {
+  return {
+    id: nextEntityId(),
+    name: t('rulePagePrototype.duplicateName', { name: rule.name }),
+    enabled: rule.enabled,
+    root: cloneGroup(rule.root),
+    actions: { ...rule.actions },
+  }
+}
+
 export function conditionReady(condition: FixedCondition): boolean {
   if (condition.kind === 'tag') return !!normalizeTag(condition.tag)
   if (condition.kind === 'category') return true
