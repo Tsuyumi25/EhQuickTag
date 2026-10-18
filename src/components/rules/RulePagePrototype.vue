@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import Draggable from 'vuedraggable'
-import { Blocks, CodeXml, Ellipsis, GripVertical, ListTree, Plus, Settings, Trash2, X } from '@lucide/vue'
+import { Blocks, CodeXml, Ellipsis, Funnel, GripVertical, Plus, Settings, Trash2, X } from '@lucide/vue'
 import ContextMenu from '@/components/ContextMenu.vue'
 import { baseDragOptions } from '@/utils/drag'
 import RuleActionsEditor from './RuleActionsEditor.vue'
@@ -281,7 +281,7 @@ onBeforeUnmount(() => {
         <template v-if="selected">
           <section class="eqt-rule-page__section">
             <div class="eqt-rule-page__section-head">
-              <h2><ListTree class="eqt-rule-page__icon" />{{ t('rulePagePrototype.conditions') }}</h2>
+              <h2><Funnel class="eqt-rule-page__icon" />{{ t('rulePagePrototype.conditions') }}</h2>
               <!-- 寫的是按下去會切到哪一種，跟 Markdown 編輯器的「預覽／編輯」一樣 -->
               <button
                 type="button" class="eqt-rule-page__source-toggle" @click="ruleConditionSource = !ruleConditionSource"
