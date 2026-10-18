@@ -16,6 +16,8 @@ export const useFixedRuleStore = createPageContext(() => {
   let disposed = false
   let accepted = ''
   let pending: string | null = null
+  // 存檔途中別的分頁也寫了：通知被擋下，存完要重讀一次，否則這一頁會一直停在自己那一版
+  let stale = false
   let received = 0
 
   function accept(raw: string | null) {
@@ -29,14 +31,29 @@ export const useFixedRuleStore = createPageContext(() => {
 
   function receive(raw: string | null) {
     received += 1
-    if (disposed || saving.value) return
+    if (disposed) return
+    if (saving.value) {
+      stale = true
+      return
+    }
     try { accept(raw) } catch { error.value = 'rulePagePrototype.loadFailed' }
   }
 
   async function flush() {
     if (saving.value) return
     saving.value = true
-    while (pending !== null) {
+    while (pending !== null || stale) {
+      if (pending === null) {
+        stale = false
+        try {
+          const raw = await cacheGet(STORAGE_KEY)
+          // 重讀途中又改了就讓本地這次留到下一輪寫出去：它比讀到的那份還新
+          if (!disposed && pending === null) accept(raw)
+        } catch {
+          error.value = 'rulePagePrototype.loadFailed'
+        }
+        continue
+      }
       const raw = pending
       pending = null
       try {
