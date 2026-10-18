@@ -7,7 +7,6 @@ import { DEFAULT_NS_ORDER } from '@/services/tags/tagDb'
 
 export interface PrototypeListingTag {
   name: string
-  borderStyle: 'solid' | 'dashed' | 'dotted'
 }
 
 export interface PrototypeListingItem {
@@ -296,17 +295,14 @@ export function useRulePrototypeHost(options: { tagsEnabled: () => boolean; tagL
       try { parsed = metadata === null ? null : JSON.parse(metadata) } catch { parsed = null }
       const hasMetadata = Array.isArray(parsed) && parsed.every(tag => tag && typeof tag.name === 'string')
       const complete = hasMetadata || !!root.closest('table.glte')
-      const source = hasMetadata ? parsed as PrototypeListingTag[] : nativeTags.map(tag => ({
-        name: tag.title,
-        borderStyle: tag.classList.contains('gtw') ? 'dotted' : tag.classList.contains('gtl') ? 'dashed' : 'solid',
-      }))
+      const source = hasMetadata ? parsed as PrototypeListingTag[] : nativeTags.map(tag => ({ name: tag.title }))
       const tags: PrototypeListingTag[] = []
       const names = new Set<string>()
       for (const tag of source) {
         const name = tag.name.trim().toLowerCase()
         if (!name || names.has(name)) continue
         names.add(name)
-        tags.push({ name, borderStyle: tag.borderStyle === 'dashed' || tag.borderStyle === 'dotted' ? tag.borderStyle : 'solid' })
+        tags.push({ name })
       }
       const stars = starRating(root)
       const pages = pageCount(root)
