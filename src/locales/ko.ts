@@ -31,6 +31,7 @@ export default {
   'rulePagePrototype.rating': '평점',
   'rulePagePrototype.pages': '페이지 수',
   'rulePagePrototype.summary': '현재 규칙 판정',
+  'rulePagePrototype.conditions': '조건',
   'rulePagePrototype.conditionView': '조건 표시 방식',
   'rulePagePrototype.conditionView.visual': '시각',
   'rulePagePrototype.conditionView.source': '소스',

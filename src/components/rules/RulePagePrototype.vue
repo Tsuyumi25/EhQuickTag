@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import Draggable from 'vuedraggable'
-import { Ellipsis, GripVertical, Plus, Settings, Trash2, X } from '@lucide/vue'
+import { Ellipsis, GripVertical, ListTree, Plus, Settings, Trash2, X } from '@lucide/vue'
 import ContextMenu from '@/components/ContextMenu.vue'
 import { baseDragOptions } from '@/utils/drag'
 import RuleActionsEditor from './RuleActionsEditor.vue'
@@ -281,11 +281,14 @@ onBeforeUnmount(() => {
 
         <template v-if="selected">
           <section class="eqt-rule-page__section">
-            <div class="eqt-rule-page__views" role="group" :aria-label="t('rulePagePrototype.conditionView')">
-              <button
-                v-for="view in CONDITION_VIEWS" :key="view" type="button" class="eqt-rule-page__view"
-                :aria-pressed="ruleConditionView === view" @click="ruleConditionView = view"
-              >{{ t(`rulePagePrototype.conditionView.${view}`) }}</button>
+            <div class="eqt-rule-page__section-head">
+              <h2><ListTree class="eqt-rule-page__icon" />{{ t('rulePagePrototype.conditions') }}</h2>
+              <div class="eqt-rule-page__views" role="group" :aria-label="t('rulePagePrototype.conditionView')">
+                <button
+                  v-for="view in CONDITION_VIEWS" :key="view" type="button" class="eqt-rule-page__view"
+                  :aria-pressed="ruleConditionView === view" @click="ruleConditionView = view"
+                >{{ t(`rulePagePrototype.conditionView.${view}`) }}</button>
+              </div>
             </div>
             <RuleConditionGroup v-if="ruleConditionView === 'visual'" :key="selected.root.id" :group="selected.root" :depth="0" root />
             <RuleConditionSource v-else :key="selected.id" :rule="selected" />

@@ -29,7 +29,7 @@ function copyDigest() {
 
 <template>
   <section class="eqt-rule-page__section">
-    <div class="eqt-rule-page__digest-head">
+    <div class="eqt-rule-page__section-head">
       <h2><ScrollText class="eqt-rule-page__icon" />{{ t('rulePagePrototype.summary') }}</h2>
       <button
         type="button" class="eqt-rule-page__digest-copy"

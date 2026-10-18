@@ -31,6 +31,7 @@ export default {
   'rulePagePrototype.rating': 'Rating',
   'rulePagePrototype.pages': 'Pages',
   'rulePagePrototype.summary': 'Current rule logic',
+  'rulePagePrototype.conditions': 'Conditions',
   'rulePagePrototype.conditionView': 'Condition view',
   'rulePagePrototype.conditionView.visual': 'Visual',
   'rulePagePrototype.conditionView.source': 'Source',

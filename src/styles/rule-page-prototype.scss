@@ -311,8 +311,15 @@
   }
 }
 
+.eqt-rule-page__section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--eqt-rule-page-gap) * 2);
+}
+
 .eqt-rule-page__section > h2,
-.eqt-rule-page__digest-head > h2,
+.eqt-rule-page__section-head > h2,
 .eqt-rule-page__finder-head > h2 {
   display: flex;
   align-items: center;
@@ -973,7 +980,7 @@
 
 .eqt-rule-page__views {
   @include btn-split-group;
-  align-self: flex-end;
+  margin-inline-start: auto;
 }
 
 .eqt-rule-page__view {
@@ -1026,13 +1033,6 @@
 }
 
 // ---- 摘要 ----
-
-.eqt-rule-page__digest-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: calc(var(--eqt-rule-page-gap) * 2);
-}
 
 .eqt-rule-page__digest {
   display: flex;

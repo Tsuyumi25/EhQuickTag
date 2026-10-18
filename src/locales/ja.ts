@@ -31,6 +31,7 @@ export default {
   'rulePagePrototype.rating': '評価',
   'rulePagePrototype.pages': 'ページ数',
   'rulePagePrototype.summary': '現在のルールの判定内容',
+  'rulePagePrototype.conditions': '条件',
   'rulePagePrototype.conditionView': '条件の表示方法',
   'rulePagePrototype.conditionView.visual': 'ビジュアル',
   'rulePagePrototype.conditionView.source': 'ソース',

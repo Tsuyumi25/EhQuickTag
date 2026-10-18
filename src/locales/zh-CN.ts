@@ -31,6 +31,7 @@ export default {
   'rulePagePrototype.rating': '评分',
   'rulePagePrototype.pages': '页数',
   'rulePagePrototype.summary': '当前规则逻辑',
+  'rulePagePrototype.conditions': '条件',
   'rulePagePrototype.conditionView': '条件呈现方式',
   'rulePagePrototype.conditionView.visual': '图形',
   'rulePagePrototype.conditionView.source': '原始',
