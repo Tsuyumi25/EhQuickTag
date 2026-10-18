@@ -33,6 +33,7 @@ export default {
   'rulePagePrototype.uploader': 'Uploader',
   'rulePagePrototype.summary': 'Current rule logic',
   'rulePagePrototype.conditions': 'Conditions',
+  'rulePagePrototype.conditionView': 'Condition view',
   'rulePagePrototype.sourceView': 'Source',
   'rulePagePrototype.visualView': 'Visual',
   'rulePagePrototype.expression.label': 'Raw expression (editable)',

@@ -33,6 +33,7 @@ export default {
   'rulePagePrototype.uploader': '上傳者',
   'rulePagePrototype.summary': '目前規則邏輯',
   'rulePagePrototype.conditions': '條件',
+  'rulePagePrototype.conditionView': '條件呈現方式',
   'rulePagePrototype.sourceView': '原始',
   'rulePagePrototype.visualView': '圖形',
   'rulePagePrototype.expression.label': '原始算式（可以直接編輯）',

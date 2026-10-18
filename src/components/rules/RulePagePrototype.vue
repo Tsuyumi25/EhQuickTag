@@ -295,13 +295,14 @@ onBeforeUnmount(() => {
           <section class="eqt-rule-page__section">
             <div class="eqt-rule-page__section-head">
               <h2><Funnel class="eqt-rule-page__icon" />{{ t('rulePagePrototype.conditions') }}</h2>
-              <!-- 寫的是按下去會切到哪一種，跟 Markdown 編輯器的「預覽／編輯」一樣 -->
-              <button
-                type="button" class="eqt-rule-page__source-toggle" @click="ruleConditionSource = !ruleConditionSource"
-              >
-                <component :is="ruleConditionSource ? Blocks : CodeXml" class="eqt-rule-page__icon" />
-                {{ t(ruleConditionSource ? 'rulePagePrototype.visualView' : 'rulePagePrototype.sourceView') }}
-              </button>
+              <div class="eqt-rule-page__views" role="group" :aria-label="t('rulePagePrototype.conditionView')">
+                <button type="button" class="eqt-rule-page__view" :aria-pressed="!ruleConditionSource" @click="ruleConditionSource = false">
+                  <Blocks class="eqt-rule-page__icon" />{{ t('rulePagePrototype.visualView') }}
+                </button>
+                <button type="button" class="eqt-rule-page__view" :aria-pressed="ruleConditionSource" @click="ruleConditionSource = true">
+                  <CodeXml class="eqt-rule-page__icon" />{{ t('rulePagePrototype.sourceView') }}
+                </button>
+              </div>
             </div>
             <RuleConditionSource v-if="ruleConditionSource" :key="selected.id" :rule="selected" />
             <RuleConditionGroup v-else :key="selected.root.id" :group="selected.root" :depth="0" root />

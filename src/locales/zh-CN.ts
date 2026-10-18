@@ -33,6 +33,7 @@ export default {
   'rulePagePrototype.uploader': '上传者',
   'rulePagePrototype.summary': '当前规则逻辑',
   'rulePagePrototype.conditions': '条件',
+  'rulePagePrototype.conditionView': '条件呈现方式',
   'rulePagePrototype.sourceView': '原始',
   'rulePagePrototype.visualView': '图形',
   'rulePagePrototype.expression.label': '原始表达式（可以直接编辑）',

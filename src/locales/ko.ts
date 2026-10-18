@@ -33,6 +33,7 @@ export default {
   'rulePagePrototype.uploader': '업로더',
   'rulePagePrototype.summary': '현재 규칙 판정',
   'rulePagePrototype.conditions': '조건',
+  'rulePagePrototype.conditionView': '조건 표시 방식',
   'rulePagePrototype.sourceView': '소스',
   'rulePagePrototype.visualView': '시각',
   'rulePagePrototype.expression.label': '원식 (직접 편집 가능)',

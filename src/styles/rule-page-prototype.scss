@@ -981,12 +981,19 @@
 
 // ---- 條件：圖形與原始兩種寫法 ----
 
-.eqt-rule-page__source-toggle {
-  @include btn-outlined;
-  gap: var(--eqt-rule-page-gap);
-  height: var(--eqt-rule-page-control-h);
+.eqt-rule-page__views {
+  @include btn-split-group;
   margin-inline-start: auto;
-  padding: 0 calc(var(--eqt-rule-page-gap) * 2);
+}
+
+.eqt-rule-page__view {
+  @include btn-split-item;
+  gap: var(--eqt-rule-page-gap);
+
+  &[aria-pressed='true'] {
+    background: var(--eqt-bg-btn);
+    color: var(--eqt-text);
+  }
 }
 
 .eqt-rule-page__source {

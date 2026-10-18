@@ -33,6 +33,7 @@ export default {
   'rulePagePrototype.uploader': '投稿者',
   'rulePagePrototype.summary': '現在のルールの判定内容',
   'rulePagePrototype.conditions': '条件',
+  'rulePagePrototype.conditionView': '条件の表示方法',
   'rulePagePrototype.sourceView': 'ソース',
   'rulePagePrototype.visualView': 'ビジュアル',
   'rulePagePrototype.expression.label': '式（直接編集できます）',
