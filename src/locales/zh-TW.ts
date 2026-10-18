@@ -85,7 +85,7 @@ export default {
   'rulePagePrototype.hideHelp': '請優先使用 E 站原生的隱藏功能（例如「我的主頁」裡的 My Tags，以及「我的主頁」設置裡的 Uploader 與 Language 排除）。此功能是為了無法簡單隱藏的複合條件而存在的。',
   'rulePagePrototype.enabled': '啟用',
   'rulePagePrototype.newRule': '規則 {n}',
-  'rulePagePrototype.duplicateRule': '複製規則',
+  'rulePagePrototype.duplicateRule': '建立副本',
   'rulePagePrototype.duplicateName': '{name} 的副本',
   'rulePagePrototype.removeRule': '刪除規則',
   'rulePagePrototype.ruleActions': '規則操作',

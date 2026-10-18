@@ -85,7 +85,7 @@ export default {
   'rulePagePrototype.hideHelp': 'Prefer E-Hentai\'s own hiding first (My Tags under My Home, and the excluded uploaders and languages in My Home → Settings). This feature is for compound conditions that cannot be hidden simply.',
   'rulePagePrototype.enabled': 'Enabled',
   'rulePagePrototype.newRule': 'Rule {n}',
-  'rulePagePrototype.duplicateRule': 'Duplicate rule',
+  'rulePagePrototype.duplicateRule': 'Make a copy',
   'rulePagePrototype.duplicateName': '{name} (copy)',
   'rulePagePrototype.removeRule': 'Delete rule',
   'rulePagePrototype.ruleActions': 'Rule actions',

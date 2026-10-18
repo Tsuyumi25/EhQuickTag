@@ -85,7 +85,7 @@ export default {
   'rulePagePrototype.hideHelp': 'E-Hentai 標準の非表示機能（My Home の My Tags、My Home の設定にある Uploader と Language の除外など）をまず使ってください。この機能は、簡単には隠せない複合条件のためにあります。',
   'rulePagePrototype.enabled': '有効',
   'rulePagePrototype.newRule': 'ルール {n}',
-  'rulePagePrototype.duplicateRule': 'ルールを複製',
+  'rulePagePrototype.duplicateRule': 'コピーを作成',
   'rulePagePrototype.duplicateName': '{name} のコピー',
   'rulePagePrototype.removeRule': 'ルールを削除',
   'rulePagePrototype.ruleActions': 'ルールの操作',
