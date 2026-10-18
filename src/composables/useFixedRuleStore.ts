@@ -5,7 +5,7 @@ import { reserveRuleIds, type FixedRule } from '@/services/listing/fixedRuleProt
 import { decodeRules, RULE_SCHEMA } from '@/services/listing/ruleStorage'
 import { createPageContext } from '@/composables/createPageContext'
 
-const STORAGE_KEY = 'eqt_fixed_rules'
+const STORAGE_KEY = 'eqt_gallery_rules'
 
 export const useFixedRuleStore = createPageContext(() => {
   const rules = ref<FixedRule[]>([])

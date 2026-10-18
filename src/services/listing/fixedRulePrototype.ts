@@ -204,11 +204,6 @@ export function createActions(): FixedActions {
   return { background: null, blur: false, showName: false, titlePrefix: null, strike: false, dim: false, hide: false }
 }
 
-export function hasActions(actions: FixedActions): boolean {
-  return actions.background !== null || actions.blur || actions.showName || actions.titlePrefix !== null
-    || actions.strike || actions.dim || actions.hide
-}
-
 /** 前後的空白沒有意義，標題本身會跟前綴隔開；只剩空白就是不加 */
 export function normalizeTitlePrefix(raw: string): string | null {
   return raw.trim() || null
@@ -245,7 +240,7 @@ function cloneGroup(group: ConditionGroup): ConditionGroup {
 }
 
 /** 每個群組與條件都換上新的 id：跟原本共用 id 的話，畫面上的列、拖曳與選取都會認錯對象 */
-export function cloneItem(item: FixedConditionItem): FixedConditionItem {
+function cloneItem(item: FixedConditionItem): FixedConditionItem {
   return item.kind === 'group' ? cloneGroup(item) : { ...item, id: nextEntityId() }
 }
 
@@ -284,7 +279,7 @@ export function ruleUsesField(rule: FixedRule, field: RangeField): boolean {
 }
 
 /** 根群組也一樣：一個條件都沒有的規則不知道要套到誰身上，算未完成 */
-export function isRuleComplete(rule: FixedRule): boolean {
+function isRuleComplete(rule: FixedRule): boolean {
   return itemReady(rule.root, 0)
 }
 
