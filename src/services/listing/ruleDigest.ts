@@ -2,10 +2,11 @@
 // 攤平巢狀群組、合併數值區間，逐層看時看不到的衝突與多餘條件才算得出來。
 
 import {
-  averageOfStars, conditionRange, GROUP_MODE_OPERATORS, normalizeTag, RANGE_FIELDS,
-  type FixedActions, type FixedConditionItem, type FixedRule, type RangeCondition, type RangeField, type ValueRange,
+  averageOfStars, conditionRange, normalizeTag, RANGE_FIELDS,
+  type FixedActions, type FixedConditionItem, type FixedRule, type RangeField, type ValueRange,
 } from '@/services/listing/fixedRulePrototype'
 import type { GalleryCategory } from '@/services/listing/galleryCategory'
+import { printConditions } from '@/services/listing/ruleExpression'
 
 export type DigestMode = 'rows' | 'raw'
 
@@ -282,19 +283,11 @@ export function formatAverage(stars: ValueRange): string {
   return `${value(average.min)} – ${value(average.max)}`
 }
 
-// 原始算式照規則原本的結構寫，不做任何合併或換算，用的是純 ASCII 的 AND / OR / NOT 與 < <=：
+// 原始算式照規則原本的結構寫，不做任何合併或換算（條件的寫法在 ruleExpression.ts）：
 // 要的是能整段貼給別人或 AI 判讀，不需要再看畫面。動作另起一行，以 => 開頭
-const RAW_FIELD: Record<RangeField, string> = { rating: 'stars', pages: 'pages' }
-const RAW_OP: Record<Exclude<RangeCondition['op'], 'between'>, string> = { eq: '=', lt: '<', lte: '<=', gt: '>', gte: '>=' }
-
-function rawTag(tag: string): string {
-  const colon = tag.indexOf(':')
-  const [namespace, name] = colon < 0 ? ['', tag] : [tag.slice(0, colon + 1), tag.slice(colon + 1)]
-  return /\s/.test(name) ? `${namespace}"${name}"` : tag
-}
 
 /** 沒指定任何動作時是空字串 */
-function rawActions(actions: FixedActions): string {
+export function actionsExpression(actions: FixedActions): string {
   if (actions.hide) return '{hide}'
   const parts: string[] = []
   if (actions.background) parts.push(`background: ${actions.background}`)
@@ -306,31 +299,9 @@ function rawActions(actions: FixedActions): string {
   return parts.length ? `{${parts.join(', ')}}` : ''
 }
 
-function rawItem(item: FixedConditionItem): string {
-  if (item.kind === 'tag') {
-    const tag = normalizeTag(item.tag)
-    if (!tag) return '(EMPTY)'
-    return item.exclude ? `NOT ${rawTag(tag)}` : rawTag(tag)
-  }
-  if (item.kind === 'category') return `${item.exclude ? 'NOT ' : ''}category:${item.category}`
-  if (item.kind !== 'group') {
-    const field = RAW_FIELD[item.kind]
-    if (item.op === 'between') return `${item.value} <= ${field} <= ${item.max ?? RANGE_FIELDS[item.kind].max}`
-    return `${field} ${RAW_OP[item.op]} ${item.value}`
-  }
-  if (!item.conditions.length) return '(EMPTY)'
-  const body = item.conditions.map(rawItem).join(` ${GROUP_MODE_OPERATORS[item.mode]} `)
-  return item.negate ? `NOT (${body})` : `(${body})`
-}
-
-// 根群組照判定模式一行一個條件，AND / OR 接在行首；
-// 有 NOT 時整段包在 NOT ( ) 裡，NOT 的範圍不能靠讀的人去猜
 export function ruleExpression(rule: FixedRule): string {
-  const lines = rule.root.conditions.map(rawItem)
-  const actions = rawActions(rule.actions)
-  const tail = actions ? `\n=> ${actions}` : ''
-  if (!lines.length) return `(EMPTY)${tail}`
-  const joiner = GROUP_MODE_OPERATORS[rule.root.mode]
-  if (rule.root.negate) return `NOT (\n  ${lines.join(`\n  ${joiner} `)}\n)${tail}`
-  return lines.map((line, index) => (index ? `${joiner} ${line}` : line)).join('\n') + tail
+  const conditions = printConditions(rule.root)
+  const actions = actionsExpression(rule.actions)
+  if (!actions) return conditions
+  return conditions ? `${conditions}\n=> ${actions}` : `=> ${actions}`
 }

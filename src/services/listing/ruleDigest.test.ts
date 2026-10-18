@@ -105,10 +105,10 @@ describe('ruleExpression', () => {
     expect(ruleExpression(rule('all', tags(), true))).toBe('NOT (\n  female:a\n  AND female:b\n)')
   })
 
-  it('名稱有空白的標籤加引號，空群組與空規則都標成 EMPTY', () => {
+  it('名稱有空白的標籤加引號，空群組寫成 ()，沒有條件的規則是空字串', () => {
     expect(ruleExpression(rule('all', [createTagCondition('female:some tag'), createGroup()])))
-      .toBe('female:"some tag"\nAND (EMPTY)')
-    expect(ruleExpression(rule('all', []))).toBe('(EMPTY)')
+      .toBe('female:"some tag"\nAND ()')
+    expect(ruleExpression(rule('all', []))).toBe('')
   })
 
   it('規則的動作另起一行，以 => 開頭；沒指定動作時不寫', () => {
