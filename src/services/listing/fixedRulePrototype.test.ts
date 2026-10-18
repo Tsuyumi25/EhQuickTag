@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { test } from '@fast-check/vitest'
 import {
-  averageOfStars, conditionReady, conditionsFromTerms, createActions, createCategoryCondition, createGroup, createRangeCondition, createRule, createTagCondition, duplicateRule,
+  averageOfStars, conditionReady, conditionsFromTerms, createActions, createCategoryCondition, createGroup, createRangeCondition, createRule, createTagCondition, createUploaderCondition, duplicateRule,
   evaluateCondition, evaluateRule, itemHeight, resolveRuleEffects, ruleEvidence, starsFromAverage,
   type ConditionGroup, type FixedConditionItem, type FixedRule, type GalleryProbe, type RangeOp,
 } from '@/services/listing/fixedRulePrototype'
 import { probeArb, ruleArb } from './test-helpers'
 
-const probe = (rating: number | null, tags: string[] = [], pages: number | null = null, category: GalleryProbe['category'] = null): GalleryProbe =>
-  ({ tags: new Set(tags), complete: true, rating, pages, category })
+const probe = (rating: number | null, tags: string[] = [], pages: number | null = null, category: GalleryProbe['category'] = null, uploader: string | null = null): GalleryProbe =>
+  ({ tags: new Set(tags), complete: true, rating, pages, category, uploader })
 
 function ruleWith(tag: string, background: string | null, blur: boolean, enabled = true, name = ''): FixedRule {
   const rule = createRule(1)
@@ -51,8 +51,8 @@ describe('resolveRuleEffects', () => {
       ruleWith('female:a', null, false, true, 'last'),
     ]
     expect(resolveRuleEffects(rules, probe(null, ['female:a'])).labels).toEqual([
-      { ruleId: rules[0].id, text: 'first', tone: 'red', evidence: { tags: ['female:a'], categories: [], ranges: [] } },
-      { ruleId: rules[5].id, text: 'last', tone: null, evidence: { tags: ['female:a'], categories: [], ranges: [] } },
+      { ruleId: rules[0].id, text: 'first', tone: 'red', evidence: { tags: ['female:a'], categories: [], uploaders: [], ranges: [] } },
+      { ruleId: rules[5].id, text: 'last', tone: null, evidence: { tags: ['female:a'], categories: [], uploaders: [], ranges: [] } },
     ])
   })
 
@@ -95,9 +95,9 @@ describe('ruleEvidence', () => {
       createGroup('any', [createTagCondition('female:d')], true),
     )
     expect(ruleEvidence(rule, probe(4.5, ['female:a', 'male:b'], null, 'doujinshi')))
-      .toEqual({ tags: ['female:a'], categories: ['doujinshi'], ranges: [stars] })
+      .toEqual({ tags: ['female:a'], categories: ['doujinshi'], uploaders: [], ranges: [stars] })
     expect(ruleEvidence(rule, probe(4.5, ['female:a', 'male:b', 'male:c'], null, 'doujinshi')))
-      .toEqual({ tags: ['female:a', 'male:b', 'male:c'], categories: ['doujinshi'], ranges: [stars] })
+      .toEqual({ tags: ['female:a', 'male:b', 'male:c'], categories: ['doujinshi'], uploaders: [], ranges: [stars] })
   })
 })
 
@@ -197,7 +197,7 @@ describe('conditionsFromTerms', () => {
   it('已有的素材不再重複產生，但同一個標籤的含有與不含各算一件', () => {
     const existing = [createTagCondition('female:some tag')]
     const added = conditionsFromTerms(['female:"some tag$"', '-female:"some tag$"', 'male:other$', 'male:other$'], existing)
-    expect(added.map(({ tag, exclude }) => ({ tag, exclude }))).toEqual([
+    expect(added.map(condition => ({ tag: condition.kind === 'tag' ? condition.tag : null, exclude: condition.exclude }))).toEqual([
       { tag: 'female:some tag', exclude: true },
       { tag: 'male:other', exclude: false },
     ])
@@ -205,6 +205,24 @@ describe('conditionsFromTerms', () => {
 
   it('沒有命名空間或解析失敗的搜尋詞不收', () => {
     expect(conditionsFromTerms(['some tag', 'title:something'])).toEqual([])
+  })
+
+  it('uploader: 限定詞變成上傳者條件，同一個人不分大小寫只收一次', () => {
+    const added = conditionsFromTerms(['uploader:"Some Uploader$"', 'uploader:"some uploader"', '-uploader:"some uploader"'])
+    expect(added).toMatchObject([
+      { kind: 'uploader', uploader: 'Some Uploader', exclude: false },
+      { kind: 'uploader', uploader: 'some uploader', exclude: true },
+    ])
+  })
+})
+
+describe('上傳者條件', () => {
+  it('不分大小寫比對；讀不到上傳者時是未知', () => {
+    const rule = createRule(1)
+    rule.root.conditions.push(createUploaderCondition('Some Uploader'))
+    expect(evaluateRule(rule, probe(null, [], null, null, 'some uploader'))).toBe(true)
+    expect(evaluateRule(rule, probe(null, [], null, null, 'other'))).toBe(false)
+    expect(evaluateRule(rule, probe(null))).toBeNull()
   })
 })
 

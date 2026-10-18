@@ -26,6 +26,10 @@ export function termMarkdown(tr: Translate, term: DigestTerm): string {
     const label = code(CATEGORY_LABELS[term.category])
     return term.exclude ? phrase(tr, 'rulePagePrototype.digest.lacks', label) : label
   }
+  if (term.kind === 'uploader') {
+    const label = code(`uploader:${term.uploader}`)
+    return term.exclude ? phrase(tr, 'rulePagePrototype.digest.lacks', label) : label
+  }
   if (term.kind === 'range') {
     return `${tr(`rulePagePrototype.${term.field}`)} ${term.exclude ? '∉ ' : ''}${rangeText(tr, term)}`
   }
@@ -47,6 +51,7 @@ export function actionsMarkdown(tr: Translate, actions: FixedActions): string {
 export function noteTerms(note: DigestNote): DigestTerm[] {
   if (note.kind === 'conflict') return note.tags.map(tag => ({ kind: 'tag', tag, exclude: false }))
   if (note.kind === 'categoryConflict') return note.categories.map(category => ({ kind: 'category', category, exclude: false }))
+  if (note.kind === 'uploaderConflict') return note.uploaders.map(uploader => ({ kind: 'uploader', uploader, exclude: false }))
   if (note.kind === 'rangeMerged') return [{ kind: 'range', field: note.field, range: note.range, exclude: false }]
   return note.kind === 'groupImpossible' || note.kind === 'groupRedundant' ? note.terms : []
 }
@@ -75,6 +80,7 @@ export function rowsMarkdown(tr: Translate, rule: FixedRule, digest: RuleDigest)
   const lines: string[] = []
   const must = [
     ...digest.categories.map(category => code(CATEGORY_LABELS[category])),
+    ...digest.uploaders.map(uploader => code(`uploader:${uploader}`)),
     ...digest.tags.map(code),
     ...rangeTerms(digest.ranges).map(term => termMarkdown(tr, term)),
   ]

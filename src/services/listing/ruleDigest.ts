@@ -2,7 +2,7 @@
 // 攤平巢狀群組、合併數值區間，逐層看時看不到的衝突與多餘條件才算得出來。
 
 import {
-  averageOfStars, conditionRange, normalizeTag, RANGE_FIELDS,
+  averageOfStars, conditionRange, normalizeTag, normalizeUploader, RANGE_FIELDS,
   type FixedConditionItem, type FixedRule, type RangeField, type ValueRange,
 } from '@/services/listing/fixedRulePrototype'
 import type { GalleryCategory } from '@/services/listing/galleryCategory'
@@ -10,6 +10,7 @@ import type { GalleryCategory } from '@/services/listing/galleryCategory'
 export type DigestTerm =
   | { kind: 'tag'; tag: string; exclude: boolean }
   | { kind: 'category'; category: GalleryCategory; exclude: boolean }
+  | { kind: 'uploader'; uploader: string; exclude: boolean }
   | { kind: 'range'; field: RangeField; range: ValueRange; exclude: boolean }
   | { kind: 'all'; terms: DigestTerm[] }
   | { kind: 'any'; terms: DigestTerm[] }
@@ -18,6 +19,8 @@ export type DigestNote =
   | { kind: 'conflict'; tags: string[] }
   /** 一個圖庫只屬於一種分類：一定要的分類不只一種，或一定要的分類又被排除 */
   | { kind: 'categoryConflict'; categories: GalleryCategory[] }
+  /** 一個圖庫只有一個上傳者：一定要的上傳者不只一個，或一定要的上傳者又被排除 */
+  | { kind: 'uploaderConflict'; uploaders: string[] }
   | { kind: 'rangeEmpty'; field: RangeField }
   | { kind: 'rangeExcluded'; field: RangeField }
   | { kind: 'groupImpossible'; terms: DigestTerm[] }
@@ -32,6 +35,8 @@ export interface RuleDigest {
   tags: string[]
   /** 一定要是這個分類；超過一個就永遠不會命中 */
   categories: GalleryCategory[]
+  /** 一定要是這個上傳者；超過一個就永遠不會命中 */
+  uploaders: string[]
   /** 每個欄位一定要落在的範圍；沒有的欄位不限 */
   ranges: DigestRanges
   /** 每一組至少要成立一項 */
@@ -46,13 +51,14 @@ export interface RuleDigest {
 const RANGE_FIELD_ORDER = Object.keys(RANGE_FIELDS) as RangeField[]
 /** 出現這幾種提示，代表任何圖庫都不會命中 */
 export const NEVER_NOTES: Partial<Record<DigestNote['kind'], true>> = {
-  conflict: true, categoryConflict: true, rangeEmpty: true, rangeExcluded: true, groupImpossible: true,
+  conflict: true, categoryConflict: true, uploaderConflict: true, rangeEmpty: true, rangeExcluded: true, groupImpossible: true,
 }
 
 // 否定只掛在葉子上（NNF）：整理成三段時只要看葉子的正負號
 type Expr =
   | { k: 'tag'; tag: string; neg: boolean }
   | { k: 'category'; category: GalleryCategory; neg: boolean }
+  | { k: 'uploader'; uploader: string; neg: boolean }
   | { k: 'range'; field: RangeField; range: ValueRange; neg: boolean }
   | { k: 'and' | 'or'; xs: Expr[] }
 
@@ -91,6 +97,14 @@ function itemExpr(item: FixedConditionItem, neg: boolean, ctx: Context): Expr | 
     return { k: 'tag', tag, neg: neg !== item.exclude }
   }
   if (item.kind === 'category') return { k: 'category', category: item.category, neg: neg !== item.exclude }
+  if (item.kind === 'uploader') {
+    const uploader = item.uploader.trim()
+    if (!uploader) {
+      ctx.incomplete = true
+      return null
+    }
+    return { k: 'uploader', uploader, neg: neg !== item.exclude }
+  }
   if (item.kind !== 'group') return { k: 'range', field: item.kind, range: conditionRange(item), neg }
   if (!item.conditions.length) {
     ctx.incomplete = true
@@ -121,6 +135,7 @@ function allNegative(expr: Expr): boolean {
 function toTerm(expr: Expr): DigestTerm {
   if (expr.k === 'tag') return { kind: 'tag', tag: expr.tag, exclude: expr.neg }
   if (expr.k === 'category') return { kind: 'category', category: expr.category, exclude: expr.neg }
+  if (expr.k === 'uploader') return { kind: 'uploader', uploader: expr.uploader, exclude: expr.neg }
   if (expr.k === 'range') return { kind: 'range', field: expr.field, range: expr.range, exclude: expr.neg }
   return { kind: expr.k === 'and' ? 'all' : 'any', terms: expr.xs.map(toTerm) }
 }
@@ -129,6 +144,7 @@ function toTerm(expr: Expr): DigestTerm {
 function sameLeaf(a: DigestTerm, b: DigestTerm): boolean {
   if (a.kind === 'tag' && b.kind === 'tag') return a.tag === b.tag && a.exclude === b.exclude
   if (a.kind === 'category' && b.kind === 'category') return a.category === b.category && a.exclude === b.exclude
+  if (a.kind === 'uploader' && b.kind === 'uploader') return normalizeUploader(a.uploader) === normalizeUploader(b.uploader) && a.exclude === b.exclude
   return false
 }
 
@@ -142,6 +158,12 @@ function unlessCategories(unless: readonly DigestTerm[]): Set<GalleryCategory> {
   const categories = new Set<GalleryCategory>()
   for (const term of unless) if (term.kind === 'category' && !term.exclude) categories.add(term.category)
   return categories
+}
+
+function unlessUploaders(unless: readonly DigestTerm[]): Set<string> {
+  const uploaders = new Set<string>()
+  for (const term of unless) if (term.kind === 'uploader' && !term.exclude) uploaders.add(normalizeUploader(term.uploader))
+  return uploaders
 }
 
 function excludedRange(field: RangeField, range: ValueRange, unless: readonly DigestTerm[]): boolean {
@@ -163,6 +185,8 @@ export function digestRule(rule: FixedRule): RuleDigest {
 
   const tags: string[] = []
   const categories: GalleryCategory[] = []
+  const uploaders: string[] = []
+  const required = new Set<string>()
   const pieces: Partial<Record<RangeField, ValueRange[]>> = {}
   const groups: DigestTerm[][] = []
   const unless: DigestTerm[] = []
@@ -178,6 +202,12 @@ export function digestRule(rule: FixedRule): RuleDigest {
     } else if (conjunct.k === 'category') {
       if (conjunct.neg) pushUnless({ kind: 'category', category: conjunct.category, exclude: false })
       else if (!categories.includes(conjunct.category)) categories.push(conjunct.category)
+    } else if (conjunct.k === 'uploader') {
+      if (conjunct.neg) pushUnless({ kind: 'uploader', uploader: conjunct.uploader, exclude: false })
+      else if (!required.has(normalizeUploader(conjunct.uploader))) {
+        required.add(normalizeUploader(conjunct.uploader))
+        uploaders.push(conjunct.uploader)
+      }
     } else if (conjunct.k === 'range') {
       if (conjunct.neg) pushUnless({ kind: 'range', field: conjunct.field, range: conjunct.range, exclude: false })
       else (pieces[conjunct.field] ??= []).push(conjunct.range)
@@ -197,6 +227,14 @@ export function digestRule(rule: FixedRule): RuleDigest {
   const blockedCategories = unlessCategories(unless)
   const categoryConflicts = categories.length > 1 ? categories : categories.filter(category => blockedCategories.has(category))
   if (categoryConflicts.length) notes.push({ kind: 'categoryConflict', categories: categoryConflicts })
+  const blockedUploaders = unlessUploaders(unless)
+  const uploaderConflicts = uploaders.length > 1 ? uploaders : uploaders.filter(uploader => blockedUploaders.has(normalizeUploader(uploader)))
+  if (uploaderConflicts.length) notes.push({ kind: 'uploaderConflict', uploaders: uploaderConflicts })
+  // 跟分類同一套：一定要的那個以外都不可能，被排除的也不可能
+  const otherUploader = (uploader: string) => {
+    const key = normalizeUploader(uploader)
+    return blockedUploaders.has(key) || (required.size > 0 && !required.has(key))
+  }
 
   for (const field of RANGE_FIELD_ORDER) {
     const list = pieces[field]
@@ -215,6 +253,7 @@ export function digestRule(rule: FixedRule): RuleDigest {
       if (term.exclude) return categories.includes(term.category)
       return blockedCategories.has(term.category) || (categories.length > 0 && !categories.includes(term.category))
     }
+    if (term.kind === 'uploader') return term.exclude ? required.has(normalizeUploader(term.uploader)) : otherUploader(term.uploader)
     if (term.kind === 'range') {
       if (term.exclude) return covers(term.range, effectiveOf(term.field))
       const range = intersect(effectiveOf(term.field), term.range)
@@ -228,6 +267,7 @@ export function digestRule(rule: FixedRule): RuleDigest {
       if (!term.exclude) return categories.includes(term.category)
       return blockedCategories.has(term.category) || (categories.length > 0 && !categories.includes(term.category))
     }
+    if (term.kind === 'uploader') return term.exclude ? otherUploader(term.uploader) : required.has(normalizeUploader(term.uploader))
     if (term.kind === 'range') {
       const effective = effectiveOf(term.field)
       return term.exclude ? isEmpty(intersect(effective, term.range)) : covers(term.range, effective)
@@ -241,7 +281,10 @@ export function digestRule(rule: FixedRule): RuleDigest {
 
   if (ctx.incomplete) notes.push({ kind: 'incomplete' })
 
-  return { tags, categories, ranges, groups, unless, notes, never: notes.some(note => NEVER_NOTES[note.kind] === true) }
+  return {
+    tags, categories, uploaders, ranges, groups, unless, notes,
+    never: notes.some(note => NEVER_NOTES[note.kind] === true),
+  }
 }
 
 export type RangeShape =

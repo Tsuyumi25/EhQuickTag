@@ -3,7 +3,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch, watchEffect } from 'vue'
 import { GM } from '$'
 import { useFloating, autoUpdate, flip, offset, shift } from '@floating-ui/vue'
-import { ChevronDown, Eye, Funnel, ListChecks, Search, Settings, Shapes, Tags, X } from '@lucide/vue'
+import { ChevronDown, Eye, Funnel, ListChecks, Search, Settings, Shapes, Tags, UserRound, X } from '@lucide/vue'
 import TagChip from '@/components/TagChip.vue'
 import GalleryTagListRows, { type GalleryTagListGroup } from '@/components/gallery/GalleryTagListRows.vue'
 import { useDragSelect } from '@/composables/useDragSelect'
@@ -95,14 +95,15 @@ const sessionGroups = computed<GalleryTagListGroup[]>(() => {
   const groups = new Map<string, GalleryTagListGroup>()
   for (const term of dockSessionTerms.value) {
     const parsed = parseTerm(term.positive)
-    const full = `${parsed.namespace}:${parsed.tag}`
+    // 上傳者在搜尋語法裡是 uploader: 限定詞，沒有 namespace；選取的 key 跟列表上的 chip 一樣寫成 uploader:名稱
+    const full = parsed.qualifier === 'uploader' ? `uploader:${parsed.tag}` : `${parsed.namespace}:${parsed.tag}`
     const state = selection.value.get(full)
     const entry = entryForTag(full)
     let group = groups.get(entry.ns)
     if (!group) {
       group = {
         key: entry.ns,
-        label: DEFAULT_NS_ORDER.includes(entry.ns) ? t(`ns.${entry.ns}`) : entry.ns,
+        label: DEFAULT_NS_ORDER.includes(entry.ns) ? t(`ns.${entry.ns}`) : entry.ns === 'uploader' ? t('rulePagePrototype.uploader') : entry.ns,
         candidate: false,
         chips: [],
       }
@@ -150,7 +151,9 @@ const effects = computed(() => {
   const resolved = new Map<number, RuleEffects>()
   for (const item of items.value) {
     const rating = item.selfRated ? selfRatedStars.value.get(parseGalleryRef(item.href)?.gid ?? -1) ?? null : item.rating
-    const probe: GalleryProbe = { tags: item.tagSet, complete: item.complete, rating, pages: item.pages, category: item.category }
+    const probe: GalleryProbe = {
+      tags: item.tagSet, complete: item.complete, rating, pages: item.pages, category: item.category, uploader: item.uploader,
+    }
     resolved.set(item.id, resolveRuleEffects(rulesActive.value ? rules.value : [], probe))
   }
   return resolved
@@ -365,7 +368,7 @@ onBeforeUnmount(() => {
       :weight="myTagsPalette?.[chip.name]?.weight" :hidden="myTagsPalette?.[chip.name]?.hidden" :watch="myTagsPalette?.[chip.name]?.watch"
       :selection="selection.get(chip.name) === 1 ? 'positive' : selection.get(chip.name) === -1 ? 'negative' : undefined"
       :show-score="listingMyTagsScoresEnabled" :show-marks="listingMyTagsMarksEnabled"
-    />
+    ><template v-if="chip.uploader" #lead><UserRound :aria-label="t('rulePagePrototype.uploader')" /></template></TagChip>
   </Teleport>
 
   <Teleport v-for="target in labelTargets" :key="target.id" :to="target.anchor">
@@ -393,6 +396,9 @@ onBeforeUnmount(() => {
       <span
         v-for="category in whyLabel.evidence.categories" :key="category" class="eqt-rule-prototype__why-term"
       >{{ CATEGORY_LABELS[category] }}</span>
+      <span v-for="uploader in whyLabel.evidence.uploaders" :key="`uploader:${uploader}`" class="eqt-rule-prototype__why-term">
+        <UserRound class="eqt-rule-prototype__why-icon" aria-hidden="true" />{{ uploader }}
+      </span>
       <span v-for="tag in whyLabel.evidence.tags" :key="tag" class="eqt-rule-prototype__why-term">{{ display(tag) }}</span>
       <span
         v-for="condition in whyLabel.evidence.ranges" :key="condition.id" class="eqt-rule-prototype__why-term"

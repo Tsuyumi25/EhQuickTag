@@ -22,7 +22,7 @@ const storedBefore15 = { ...actions, blur: 'unchanged' }
 const noneBefore15 = { ...createActions(), blur: 'unchanged' }
 const noActions: FixedActions = createActions()
 const tag = (id: number, name: string, exclude = false) => ({ id, kind: 'tag', tag: name, exclude })
-const probe = (tags: string[], rating: number | null = null): GalleryProbe => ({ tags: new Set(tags), complete: true, rating, pages: null, category: null })
+const probe = (tags: string[], rating: number | null = null): GalleryProbe => ({ tags: new Set(tags), complete: true, rating, pages: null, category: null, uploader: null })
 
 function ids(item: FixedConditionItem): number[] {
   return item.kind === 'group' ? [item.id, ...item.conditions.flatMap(ids)] : [item.id]
@@ -73,7 +73,10 @@ describe('decodeRules', () => {
 
   it('目前的格式原樣讀回來', () => {
     const category: FixedConditionItem = { id: 5, kind: 'category', category: 'non-h', exclude: true }
-    const child: ConditionGroup = { id: 3, kind: 'group', mode: 'all', negate: false, conditions: [tag(4, 'female:a') as FixedConditionItem, category] }
+    const uploader: FixedConditionItem = { id: 6, kind: 'uploader', uploader: 'Some Uploader', exclude: false }
+    const child: ConditionGroup = {
+      id: 3, kind: 'group', mode: 'all', negate: false, conditions: [tag(4, 'female:a') as FixedConditionItem, category, uploader],
+    }
     const root: ConditionGroup = { id: 2, kind: 'group', mode: 'any', negate: true, conditions: [child] }
     const stored = { id: 1, name: 'r', enabled: false, root, actions: fullActions }
     expect(decodeRules(JSON.stringify({ schema: RULE_SCHEMA, rules: [stored] }))).toEqual([stored])

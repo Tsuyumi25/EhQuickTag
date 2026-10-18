@@ -12,6 +12,7 @@ import { isGalleryCategory, type GalleryCategory } from '@/services/listing/gall
 export type ExpressionNode =
   | { kind: 'tag'; tag: string; exclude: boolean }
   | { kind: 'category'; category: GalleryCategory; exclude: boolean }
+  | { kind: 'uploader'; uploader: string; exclude: boolean }
   | { kind: RangeField; op: RangeOp; value: number; max?: number }
   | ExpressionGroup
 
@@ -47,6 +48,7 @@ const NUMBER = /^\d+(?:\.\d+)?$/
 /** 不加引號的字裡不能出現的字元：會被當成括號、引號或比較符號 */
 const SPECIAL = /[\s()"<>=]/
 const CATEGORY_PREFIX = 'category:'
+const UPLOADER_PREFIX = 'uploader:'
 
 /** 查表的 key 是使用者打的字，constructor 之類的名字不能撈到 Object.prototype 上的東西 */
 function lookup<T>(table: Record<string, T>, key: string): T | undefined {
@@ -67,7 +69,9 @@ function printTag(raw: string): string {
   const namespace = tag.slice(0, colon)
   const name = tag.slice(colon + 1)
   if (!bareSafe(namespace)) return `"${tag}"`
-  // 不加引號的 category:xxx 是分類條件；剛好叫這個 namespace 的標籤一律加引號，讀回來才不會變成分類
+  // 不加引號的 category:xxx 是分類條件、uploader:xxx 是上傳者條件；剛好叫這兩個 namespace 的標籤要另外寫，
+  // 讀回來才不會變成分類或上傳者。uploader:"名稱" 也是上傳者，所以那種標籤整段包進引號
+  if (namespace === 'uploader') return `"${tag}"`
   if (namespace === 'category' || name === '' || SPECIAL.test(name)) return `${namespace}:"${name}"`
   return tag
 }
@@ -77,6 +81,10 @@ const negation = (exclude: boolean) => (exclude ? 'NOT ' : '')
 function printItem(item: FixedConditionItem): string {
   if (item.kind === 'tag') return negation(item.exclude) + printTag(item.tag)
   if (item.kind === 'category') return `${negation(item.exclude)}${CATEGORY_PREFIX}${item.category}`
+  if (item.kind === 'uploader') {
+    const name = item.uploader === '' || SPECIAL.test(item.uploader) ? `"${item.uploader}"` : item.uploader
+    return `${negation(item.exclude)}${UPLOADER_PREFIX}${name}`
+  }
   if (item.kind === 'group') {
     const body = item.conditions.map(printItem).join(` ${GROUP_MODE_OPERATORS[item.mode]} `)
     return `${negation(item.negate)}(${body})`
@@ -199,7 +207,7 @@ class Parser {
     const start = this.peek()
     const node = this.atom()
     if (node.kind === 'group') return { ...node, negate: true }
-    if (node.kind === 'tag' || node.kind === 'category') return { ...node, exclude: true }
+    if (node.kind === 'tag' || node.kind === 'category' || node.kind === 'uploader') return { ...node, exclude: true }
     return fail('notRange', start)
   }
 
@@ -224,7 +232,11 @@ class Parser {
       return { kind: 'group', mode, negate: false, conditions, at: token.at }
     }
     if (token.type === 'string') return { kind: 'tag', tag: token.text, exclude: false }
-    if (token.type === 'tag') return { kind: 'tag', tag: token.tag, exclude: false }
+    if (token.type === 'tag') {
+      return token.tag.startsWith(UPLOADER_PREFIX)
+        ? { kind: 'uploader', uploader: token.tag.slice(UPLOADER_PREFIX.length), exclude: false }
+        : { kind: 'tag', tag: token.tag, exclude: false }
+    }
     if (token.type !== 'word') return fail(token.type === 'end' ? 'end' : 'unexpected', token)
 
     const following = this.peek()
@@ -248,6 +260,7 @@ class Parser {
       if (!isGalleryCategory(category)) fail('category', token)
       return { kind: 'category', category, exclude: false }
     }
+    if (token.text.startsWith(UPLOADER_PREFIX)) return { kind: 'uploader', uploader: token.text.slice(UPLOADER_PREFIX.length), exclude: false }
     return { kind: 'tag', tag: token.text, exclude: false }
   }
 

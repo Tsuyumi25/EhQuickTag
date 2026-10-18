@@ -15,8 +15,8 @@ import { isZhLocale, t } from '@/composables/useI18n'
 import { ruleMaterials } from '@/services/appOverlays'
 import { CATEGORY_LABELS, GALLERY_CATEGORIES, type GalleryCategory } from '@/services/listing/galleryCategory'
 import {
-  createCategoryCondition, createGroup, createRangeCondition, createTagCondition, GROUP_MODE_OPERATORS, tagConditionKey,
-  type FixedConditionItem, type GroupMode, type RangeField, type TagCondition,
+  createCategoryCondition, createGroup, createRangeCondition, createTagCondition, GROUP_MODE_OPERATORS, materialKey,
+  type FixedConditionItem, type GroupMode, type MaterialCondition, type RangeField,
 } from '@/services/listing/fixedRulePrototype'
 import { listingMyTagsColorsEnabled } from '@/services/store'
 import { entryForTag, getFallbackEntries, tagDbVersion, type TagEntry } from '@/services/tags/tagDb'
@@ -74,9 +74,15 @@ function styleOf(entry: TagEntry) {
 
 const materialRows = computed(() => {
   void tagDbVersion.value
-  return ruleMaterials.value.map(material => {
+  return ruleMaterials.value.map((material) => {
+    if (material.kind === 'uploader') {
+      const full = `uploader:${material.uploader}`
+      return { material, namespace: t('rulePagePrototype.uploader'), name: material.uploader, full, style: undefined }
+    }
     const entry = entryForTag(material.tag)
-    return { material, entry, name: isZhLocale() ? zhDisplay(entry.name) : entry.raw, style: styleOf(entry) }
+    return {
+      material, namespace: t('ns.' + entry.ns), name: isZhLocale() ? zhDisplay(entry.name) : entry.raw, full: material.tag, style: styleOf(entry),
+    }
   })
 })
 
@@ -126,9 +132,10 @@ function rowSortable(el: HTMLElement): Sortable {
     draggable: '.eqt-popup__suggestion',
     // 條件區與群組深度的檢查靠這兩個屬性判斷收不收；列是清單自己 render 的 DOM，放開就拿掉
     onChoose: ({ item }) => {
-      const source = item.dataset.source
-      item.dataset.kind = source === 'group' || source === 'range' || source === 'category' ? source : 'tag'
-      item.dataset.height = item.dataset.source === 'group' ? '1' : '0'
+      const { source, id } = item.dataset
+      const material = source === 'material' ? ruleMaterials.value.find(entry => String(entry.id) === id) : undefined
+      item.dataset.kind = source === 'group' || source === 'range' || source === 'category' ? source : material?.kind ?? 'tag'
+      item.dataset.height = source === 'group' ? '1' : '0'
     },
     onUnchoose: ({ item }) => {
       delete item.dataset.kind
@@ -141,7 +148,7 @@ function rowSortable(el: HTMLElement): Sortable {
       clone.replaceWith(item)
       const condition = (item as DraggedItem)._underlying_vm_
       if (item.dataset.source !== 'material' || !condition) return
-      const index = ruleMaterials.value.indexOf(condition as TagCondition)
+      const index = ruleMaterials.value.indexOf(condition as MaterialCondition)
       if (index >= 0) ruleMaterials.value.splice(index, 1)
     },
     onEnd: ({ item }) => { delete (item as DraggedItem)._underlying_vm_ },
@@ -171,14 +178,14 @@ onMounted(() => {
     group: {
       name: RULE_CONDITIONS_GROUP,
       pull: false,
-      put: (_to, from, dragged) => dragged.dataset.kind === 'tag' && !panel.value?.contains(from.el),
+      put: (_to, from, dragged) => (dragged.dataset.kind === 'tag' || dragged.dataset.kind === 'uploader') && !panel.value?.contains(from.el),
     },
     onAdd: ({ item }) => {
       const condition = (item as DraggedItem)._underlying_vm_
       item.remove()
-      if (condition?.kind !== 'tag') return
-      const key = tagConditionKey(condition)
-      if (!ruleMaterials.value.some(material => tagConditionKey(material) === key)) ruleMaterials.value.push(condition)
+      if (condition?.kind !== 'tag' && condition?.kind !== 'uploader') return
+      const key = materialKey(condition)
+      if (!ruleMaterials.value.some(material => materialKey(material) === key)) ruleMaterials.value.push(condition)
     },
   })
 })
@@ -249,10 +256,10 @@ onBeforeUnmount(() => {
               ]"
               :style="row.style" data-source="material" :data-id="row.material.id"
             >
-              <span class="eqt-popup__suggestion-ns">{{ t('ns.' + row.entry.ns) }}：</span>
+              <span class="eqt-popup__suggestion-ns">{{ row.namespace }}：</span>
               <span class="eqt-popup__suggestion-name">{{ row.material.exclude ? '−' : '' }}{{ row.name }}</span>
               <span class="eqt-popup__suggestion-tag">
-                {{ row.material.tag }}
+                {{ row.full }}
                 <button
                   type="button" class="eqt-rule-page__material-remove"
                   :title="t('rulePrototype.removeCondition')" :aria-label="t('rulePrototype.removeCondition')"

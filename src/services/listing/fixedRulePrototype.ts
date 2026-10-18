@@ -70,7 +70,18 @@ export interface CategoryCondition {
   exclude: boolean
 }
 
-export type FixedCondition = TagCondition | RangeCondition | CategoryCondition
+/** 上傳者跟分類一樣，每個圖庫只有一個；E 站的 uploader: 搜尋不分大小寫，比對時也不分 */
+export interface UploaderCondition {
+  id: number
+  kind: 'uploader'
+  uploader: string
+  exclude: boolean
+}
+
+export type FixedCondition = TagCondition | RangeCondition | CategoryCondition | UploaderCondition
+
+/** 素材清單收的條件：從列表選回來的標籤與上傳者 */
+export type MaterialCondition = TagCondition | UploaderCondition
 
 export type GroupMode = 'all' | 'any'
 
@@ -124,6 +135,8 @@ export interface GalleryProbe {
   pages: number | null
   /** 讀不到就是 null，判定維持未知 */
   category: GalleryCategory | null
+  /** 讀不到就是 null，判定維持未知 */
+  uploader: string | null
 }
 
 // 規則 / 群組 / 條件共用同一條遞增序號——UI 的 v-for key 只要全域唯一即可，
@@ -160,6 +173,14 @@ export function createTagCondition(tag = '', exclude = false): TagCondition {
 
 export function createCategoryCondition(category: GalleryCategory, exclude = false): CategoryCondition {
   return { id: nextEntityId(), kind: 'category', category, exclude }
+}
+
+export function createUploaderCondition(uploader: string, exclude = false): UploaderCondition {
+  return { id: nextEntityId(), kind: 'uploader', uploader, exclude }
+}
+
+export function normalizeUploader(uploader: string): string {
+  return uploader.trim().toLowerCase()
 }
 
 export function createRangeCondition(kind: RangeField, op: RangeOp = 'gte', value = RANGE_FIELDS[kind].initial): RangeCondition {
@@ -241,6 +262,7 @@ export function duplicateRule(rule: FixedRule): FixedRule {
 export function conditionReady(condition: FixedCondition): boolean {
   if (condition.kind === 'tag') return !!normalizeTag(condition.tag)
   if (condition.kind === 'category') return true
+  if (condition.kind === 'uploader') return !!normalizeUploader(condition.uploader)
   const field = RANGE_FIELDS[condition.kind]
   const inField = (value: number | undefined) =>
     value === undefined || (Number.isFinite(value) && value >= field.min && value <= field.max)
@@ -270,6 +292,11 @@ export function evaluateCondition(condition: FixedCondition, probe: GalleryProbe
   if (condition.kind === 'category') {
     if (probe.category === null) return null
     return (probe.category === condition.category) !== condition.exclude
+  }
+  if (condition.kind === 'uploader') {
+    const uploader = normalizeUploader(condition.uploader)
+    if (!uploader || probe.uploader === null) return null
+    return (normalizeUploader(probe.uploader) === uploader) !== condition.exclude
   }
   if (condition.kind !== 'tag') {
     const value = probe[condition.kind]
@@ -314,10 +341,11 @@ export function evaluateRule(rule: FixedRule, probe: GalleryProbe): Tri {
   return isRuleComplete(rule) ? evaluateItem(rule.root, probe) : null
 }
 
-/** 命中原因：讓規則成立的「含有」標籤、分類與數值條件 */
+/** 命中原因：讓規則成立的「含有」標籤、分類、上傳者與數值條件 */
 export interface RuleEvidence {
   tags: string[]
   categories: GalleryCategory[]
+  uploaders: string[]
   ranges: RangeCondition[]
 }
 
@@ -328,6 +356,7 @@ export interface RuleEvidence {
 export function ruleEvidence(rule: FixedRule, probe: GalleryProbe): RuleEvidence {
   const tags = new Set<string>()
   const categories = new Set<GalleryCategory>()
+  const uploaders = new Set<string>()
   const ranges: RangeCondition[] = []
   const walk = (item: FixedConditionItem) => {
     if (evaluateItem(item, probe) !== true) return
@@ -337,12 +366,14 @@ export function ruleEvidence(rule: FixedRule, probe: GalleryProbe): RuleEvidence
       if (!item.exclude) tags.add(normalizeTag(item.tag))
     } else if (item.kind === 'category') {
       if (!item.exclude) categories.add(item.category)
+    } else if (item.kind === 'uploader') {
+      if (!item.exclude) uploaders.add(item.uploader.trim())
     } else {
       ranges.push(item)
     }
   }
   walk(rule.root)
-  return { tags: [...tags], categories: [...categories], ranges }
+  return { tags: [...tags], categories: [...categories], uploaders: [...uploaders], ranges }
 }
 
 /** 規則掛在圖庫上的一段文字（名稱標示、標題前綴）；tone 是規則自己的背景色，沒選背景時是 null */
@@ -386,19 +417,29 @@ export function resolveRuleEffects(rules: readonly FixedRule[], probe: GalleryPr
   return effects
 }
 
-/** 已經在 existing 裡的標籤（連同極性）不再重複產生 */
-export function conditionsFromTerms(terms: readonly string[], existing: readonly TagCondition[] = []): TagCondition[] {
-  const seen = new Set(existing.map(tagConditionKey))
-  const conditions: TagCondition[] = []
+/** 同一個標籤或上傳者的含有與不含是兩件不同的素材，去重要連同極性一起比 */
+export function materialKey(condition: MaterialCondition): string {
+  return condition.kind === 'tag'
+    ? tagConditionKey(condition)
+    : `${condition.exclude ? '-' : '+'}uploader\u0000${normalizeUploader(condition.uploader)}`
+}
+
+/** 已經在 existing 裡的標籤與上傳者（連同極性）不再重複產生；上傳者在搜尋語法裡是 uploader: 限定詞 */
+export function conditionsFromTerms(terms: readonly string[], existing: readonly MaterialCondition[] = []): MaterialCondition[] {
+  const seen = new Set(existing.map(materialKey))
+  const conditions: MaterialCondition[] = []
   for (const raw of terms) {
     const term = parseTerm(raw)
-    if (!term.namespace || !term.tag || term.parseError) continue
-    const tag = `${term.namespace}:${term.tag}`
+    if (!term.tag || term.parseError) continue
     const exclude = term.prefix === '-'
-    const key = tagConditionKey({ tag, exclude })
+    let condition: MaterialCondition
+    if (term.qualifier === 'uploader') condition = createUploaderCondition(term.tag, exclude)
+    else if (term.namespace) condition = createTagCondition(`${term.namespace}:${term.tag}`, exclude)
+    else continue
+    const key = materialKey(condition)
     if (seen.has(key)) continue
     seen.add(key)
-    conditions.push(createTagCondition(tag, exclude))
+    conditions.push(condition)
   }
   return conditions
 }

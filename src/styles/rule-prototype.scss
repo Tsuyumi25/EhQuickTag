@@ -246,9 +246,17 @@ tr.eqt-rule-prototype__gallery--background > td {
   pointer-events: none;
 }
 .eqt-rule-prototype__why-term {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--eqt-rule-prototype-gap) / 2);
   padding: 0 var(--eqt-rule-prototype-gap);
   border-radius: var(--eqt-radius-sm);
   background: color-mix(in srgb, var(--eqt-rule-prototype-solid) 20%, transparent);
+}
+.eqt-rule-prototype__why-icon {
+  width: var(--eqt-fs-sm);
+  height: var(--eqt-fs-sm);
+  flex-shrink: 0;
 }
 
 // 排法照原生 .gl6t：置中、可換行，間距與單一個最寬 250px 都照它；字級跟著卡片走，跟原生標籤一樣大。

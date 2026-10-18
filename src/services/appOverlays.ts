@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { conditionsFromTerms, type TagCondition } from '@/services/listing/fixedRulePrototype'
+import { conditionsFromTerms, type MaterialCondition } from '@/services/listing/fixedRulePrototype'
 
 export const showSettings = ref(false)
 export const initialSettingsTab = ref<string | null>(null)
@@ -8,7 +8,7 @@ export const showRules = ref(false)
 /** 規則頁收起來、讓出搜尋頁給使用者看即時效果 */
 export const rulesCollapsed = ref(false)
 // 放在頁面層級而不是規則頁元件裡：規則頁關掉再打開，素材還在
-export const ruleMaterials = ref<TagCondition[]>([])
+export const ruleMaterials = ref<MaterialCondition[]>([])
 /** 條件用原始寫法編輯；關掉是圖形介面 */
 export const ruleConditionSource = ref(false)
 /** 打開規則頁時要選中的規則；規則頁接手之後清回 null */

@@ -9,6 +9,7 @@ import {
 } from '@/services/listing/fixedRulePrototype'
 import { isGalleryCategory } from '@/services/listing/galleryCategory'
 
+// 19：多了上傳者條件（kind: 'uploader'）。之前的規則沒有這種條件，讀法不變。
 // 18：多了分類條件（kind: 'category'）。之前的規則沒有這種條件，讀法不變。
 // 17：淡化與隱藏又分回兩個獨立的值：隱藏是讓整條規則其他動作都不作用的開關，不是淡化的更強一級。
 // 16：淡化與隱藏併成一個三選一的 visibility，讀進來時 dim → 淡化、hide → 隱藏。
@@ -23,7 +24,7 @@ import { isGalleryCategory } from '@/services/listing/galleryCategory'
 // 有填字就當成要顯示，文字本身不保留；7 之前的版本一律不顯示。
 // 6：NOT 是群組的獨立旗標。5 的判定模式多一種「全部不成立」，讀進來換成 NOT 任一成立；
 // 1–4 是固定三區（必要條件／任一成立／例外），讀進來時換成樹
-export const RULE_SCHEMA = 18
+export const RULE_SCHEMA = 19
 // 三區時代每一區底下最多兩層 Folder
 const LEGACY_FOLDER_DEPTH = 2
 
@@ -80,6 +81,10 @@ function decodeCondition(value: unknown): FixedCondition {
   if (value.kind === 'category') {
     if (!isGalleryCategory(value.category) || typeof value.exclude !== 'boolean') throw new Error('Invalid fixed rule storage')
     return { id, kind: 'category', category: value.category, exclude: value.exclude }
+  }
+  if (value.kind === 'uploader') {
+    if (typeof value.uploader !== 'string' || typeof value.exclude !== 'boolean') throw new Error('Invalid fixed rule storage')
+    return { id, kind: 'uploader', uploader: value.uploader, exclude: value.exclude }
   }
   if (typeof value.kind !== 'string' || !Object.hasOwn(RANGE_FIELDS, value.kind)) throw new Error('Invalid fixed rule storage')
   const kind = value.kind as RangeField
@@ -272,7 +277,7 @@ export function splitBranchActions(rule: FixedRule, branches: BranchActions): Fi
 export function decodeRules(raw: string | null): FixedRule[] {
   if (raw === null) return []
   const data: unknown = JSON.parse(raw)
-  if (!isObject(data) || ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, RULE_SCHEMA].includes(data.schema as number) || !Array.isArray(data.rules)) {
+  if (!isObject(data) || ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, RULE_SCHEMA].includes(data.schema as number) || !Array.isArray(data.rules)) {
     throw new Error('Invalid fixed rule storage')
   }
   const schema = data.schema as number

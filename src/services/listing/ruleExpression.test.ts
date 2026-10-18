@@ -8,11 +8,16 @@ import { GALLERY_CATEGORIES } from '@/services/listing/galleryCategory'
 import { applyConditions, parseConditions, printConditions, type ExpressionErrorKind } from './ruleExpression'
 import { probeArb, ruleArb } from './test-helpers'
 
-// 標籤刻意帶語法裡有意義的字：空白、括號、比較符號、開頭的 -、冒號、跟分類撞名的 namespace、空字串
+// 標籤刻意帶語法裡有意義的字：空白、括號、比較符號、開頭的 -、冒號、跟分類或上傳者撞名的 namespace、空字串
 const TRICKY_TAGS = [
   'female:a', 'female:some tag', 'parody:x (y)', 'other:a<b', 'male:-x', '-x', 'x', 'and', 'not', 'stars', '12',
-  'category:doujinshi', 'female:', ':x', 'a b:c', 'a:b:c', '',
+  'category:doujinshi', 'uploader:x', 'uploader:', 'female:', ':x', 'a b:c', 'a:b:c', '',
 ]
+// 上傳者名稱不轉小寫，大小寫要原樣讀回來
+const uploaderTextArb = fc.oneof(
+  fc.constantFrom('Some Uploader', 'x', '-x', 'a(b)', 'a:b', 'AND', ''),
+  fc.string({ unit: fc.constantFrom('a', 'B', ' ', ':', '(', ')', '-', '<', '=', '1'), maxLength: 8 }),
+)
 const tagTextArb = fc.oneof(
   fc.constantFrom(...TRICKY_TAGS),
   fc.string({ unit: fc.constantFrom('a', 'b', ' ', ':', '(', ')', '-', '<', '=', '1', '.'), maxLength: 8 }).map(normalizeTag),
@@ -26,6 +31,8 @@ const leafArb: fc.Arbitrary<FixedConditionItem> = fc.oneof(
   fc.record({ tag: tagTextArb, exclude: fc.boolean() }).map(({ tag, exclude }) => ({ id: nextId(), kind: 'tag' as const, tag, exclude })),
   fc.record({ category: fc.constantFrom(...GALLERY_CATEGORIES), exclude: fc.boolean() })
     .map(({ category, exclude }) => ({ id: nextId(), kind: 'category' as const, category, exclude })),
+  fc.record({ uploader: uploaderTextArb, exclude: fc.boolean() })
+    .map(({ uploader, exclude }) => ({ id: nextId(), kind: 'uploader' as const, uploader, exclude })),
   fc.constantFrom<RangeField>('rating', 'pages').chain(field => fc.tuple(
     fc.constantFrom(...RANGE_OPS), valueArb(field), valueArb(field), fc.boolean(),
   ).map(([op, a, b, open]): FixedConditionItem => ({

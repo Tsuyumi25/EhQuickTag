@@ -1,17 +1,19 @@
 import { describe, expect, it } from 'vitest'
 import { test, fc } from '@fast-check/vitest'
 import {
-  createCategoryCondition, createGroup, createRangeCondition, createTagCondition, evaluateRule,
+  createCategoryCondition, createGroup, createRangeCondition, createTagCondition, createUploaderCondition, evaluateRule,
   type GalleryProbe, type RangeField, type ValueRange,
 } from '@/services/listing/fixedRulePrototype'
 import { digestRule, formatRange, type DigestTerm, type RuleDigest } from './ruleDigest'
 import { probeArb, rule, ruleArb } from './test-helpers'
 
 const inRange = (range: ValueRange, value: number) => range.min <= value && value <= range.max
+const isUploader = (probe: GalleryProbe, uploader: string) => probe.uploader?.toLowerCase() === uploader.toLowerCase()
 
 function holds(term: DigestTerm, probe: GalleryProbe): boolean {
   if (term.kind === 'tag') return probe.tags.has(term.tag) !== term.exclude
   if (term.kind === 'category') return (probe.category === term.category) !== term.exclude
+  if (term.kind === 'uploader') return isUploader(probe, term.uploader) !== term.exclude
   if (term.kind === 'range') return inRange(term.range, probe[term.field]!) !== term.exclude
   return term.kind === 'all' ? term.terms.every(child => holds(child, probe)) : term.terms.some(child => holds(child, probe))
 }
@@ -19,6 +21,7 @@ function holds(term: DigestTerm, probe: GalleryProbe): boolean {
 function digestHolds(digest: RuleDigest, probe: GalleryProbe): boolean {
   return digest.tags.every(tag => probe.tags.has(tag))
     && digest.categories.every(category => probe.category === category)
+    && digest.uploaders.every(uploader => isUploader(probe, uploader))
     && Object.entries(digest.ranges).every(([field, range]) => inRange(range, probe[field as RangeField]!))
     && digest.groups.every(group => group.some(term => holds(term, probe)))
     && !digest.unless.some(term => holds(term, probe))
@@ -74,6 +77,17 @@ describe('digestRule', () => {
     expect(excluded.notes).toContainEqual({ kind: 'categoryConflict', categories: ['doujinshi'] })
     const fine = digestRule(rule('all', [createCategoryCondition('doujinshi'), createCategoryCondition('manga', true)]))
     expect(fine.never).toBe(false)
+  })
+
+  it('上傳者跟分類一樣只有一個：不分大小寫算同一個人，兩個不同的人或排除了一定要的那個都永遠不會命中', () => {
+    const same = digestRule(rule('all', [createUploaderCondition('uploader a'), createUploaderCondition('Uploader A')]))
+    expect(same.uploaders).toEqual(['uploader a'])
+    expect(same.never).toBe(false)
+    const two = digestRule(rule('all', [createUploaderCondition('uploader a'), createUploaderCondition('uploader b')]))
+    expect(two.notes).toContainEqual({ kind: 'uploaderConflict', uploaders: ['uploader a', 'uploader b'] })
+    expect(two.never).toBe(true)
+    const excluded = digestRule(rule('all', [createUploaderCondition('uploader a'), createUploaderCondition('Uploader A', true)]))
+    expect(excluded.notes).toContainEqual({ kind: 'uploaderConflict', uploaders: ['uploader a'] })
   })
 
   it('空的根群組與空的子群組都標成未完成', () => {

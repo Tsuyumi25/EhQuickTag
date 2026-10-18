@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { UserRound } from '@lucide/vue'
 import TagChip from '@/components/TagChip.vue'
 import RuleDigestPhrase from './RuleDigestPhrase.vue'
 import RuleRangeValue from './RuleRangeValue.vue'
@@ -28,6 +29,12 @@ const view = useRuleTagView(() => (props.term.kind === 'tag' ? props.term.tag : 
       class="eqt-rule-page__digest-chip eqt-gallery-chip--mytags-colored" :style="categoryChipStyle(term.category)"
       :full="`category:${term.category}`" :display="CATEGORY_LABELS[term.category]" :show-score="false" :show-marks="false"
     />
+  </RuleDigestPhrase>
+  <RuleDigestPhrase v-else-if="term.kind === 'uploader'" :text-key="term.exclude ? 'rulePagePrototype.digest.lacks' : undefined">
+    <TagChip
+      class="eqt-rule-page__digest-chip" :full="`uploader:${term.uploader}`" :display="term.uploader"
+      :show-score="false" :show-marks="false" :title="`uploader:${term.uploader}`"
+    ><template #lead><UserRound :aria-label="t('rulePagePrototype.uploader')" /></template></TagChip>
   </RuleDigestPhrase>
   <span v-else-if="term.kind === 'range'" class="eqt-rule-page__digest-range">
     <span class="eqt-rule-page__range-label">

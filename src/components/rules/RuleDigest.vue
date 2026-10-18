@@ -16,6 +16,7 @@ const clipboard = useClipboard({ legacy: true })
 const digest = computed(() => digestRule(props.rule))
 const mustTerms = computed((): DigestTerm[] => [
   ...digest.value.categories.map(category => ({ kind: 'category', category, exclude: false }) satisfies DigestTerm),
+  ...digest.value.uploaders.map(uploader => ({ kind: 'uploader', uploader, exclude: false }) satisfies DigestTerm),
   ...digest.value.tags.map(tag => ({ kind: 'tag', tag, exclude: false }) satisfies DigestTerm),
 ])
 const mustRanges = computed(() => rangeTerms(digest.value.ranges))
