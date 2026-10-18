@@ -18,8 +18,9 @@ import {
   createCategoryCondition, createGroup, createRangeCondition, createTagCondition, GROUP_MODE_OPERATORS, materialKey,
   type FixedConditionItem, type GroupMode, type MaterialCondition, type RangeField,
 } from '@/services/listing/fixedRulePrototype'
+import { sortByNamespace } from '@/services/listing/tagGroups'
 import { listingMyTagsColorsEnabled } from '@/services/store'
-import { entryForTag, getFallbackEntries, tagDbVersion, type TagEntry } from '@/services/tags/tagDb'
+import { DEFAULT_NS_ORDER, entryForTag, getFallbackEntries, tagDbVersion, type TagEntry } from '@/services/tags/tagDb'
 
 // 素材與找標籤是同一份清單：左欄「全部」依序列出產生器、帶回來的素材與標籤，「素材」只列前兩種，
 // 其他 namespace 只列標籤。產生器與標籤拖出去是新的一份，素材拖出去就用掉
@@ -72,18 +73,23 @@ function styleOf(entry: TagEntry) {
   return colors ? chipStyle(colors) : undefined
 }
 
+// 素材從不同圖庫、不同時候帶回來，照帶回來的順序會東一個西一個；照 namespace 排，上傳者在標籤後面
+const MATERIAL_NS_ORDER: readonly string[] = [...DEFAULT_NS_ORDER, 'uploader']
+
 const materialRows = computed(() => {
   void tagDbVersion.value
-  return ruleMaterials.value.map((material) => {
+  const rows = ruleMaterials.value.map((material) => {
     if (material.kind === 'uploader') {
       const full = `uploader:${material.uploader}`
-      return { material, namespace: t('rulePagePrototype.uploader'), name: material.uploader, full, style: undefined }
+      return { material, ns: 'uploader', namespace: t('rulePagePrototype.uploader'), name: material.uploader, full, style: undefined }
     }
     const entry = entryForTag(material.tag)
     return {
-      material, namespace: t('ns.' + entry.ns), name: isZhLocale() ? zhDisplay(entry.name) : entry.raw, full: material.tag, style: styleOf(entry),
+      material, ns: entry.ns, namespace: t('ns.' + entry.ns), name: isZhLocale() ? zhDisplay(entry.name) : entry.raw,
+      full: material.tag, style: styleOf(entry),
     }
   })
+  return sortByNamespace(rows, row => row.ns, MATERIAL_NS_ORDER)
 })
 
 function generatorLabel(generator: Generator): string {
