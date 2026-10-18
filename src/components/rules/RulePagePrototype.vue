@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import Draggable from 'vuedraggable'
-import { Ellipsis, GripVertical, ListTree, Plus, Settings, Trash2, X } from '@lucide/vue'
+import { CodeXml, Ellipsis, GripVertical, ListTree, Plus, Settings, Trash2, X } from '@lucide/vue'
 import ContextMenu from '@/components/ContextMenu.vue'
 import { baseDragOptions } from '@/utils/drag'
 import RuleActionsEditor from './RuleActionsEditor.vue'
@@ -13,12 +13,11 @@ import { useFixedRuleStore } from '@/composables/useFixedRuleStore'
 import { t } from '@/composables/useI18n'
 import { createRule } from '@/services/listing/fixedRulePrototype'
 import {
-  openSettings, requestedRuleId, ruleConditionView, rulesCollapsed, showSettings, type ConditionView,
+  openSettings, requestedRuleId, ruleConditionSource, rulesCollapsed, showSettings,
 } from '@/services/appOverlays'
 import '@/styles/rule-page-prototype.scss'
 
 const emit = defineEmits<{ close: [] }>()
-const CONDITION_VIEWS: readonly ConditionView[] = ['visual', 'source']
 const { rules, ready, error } = useFixedRuleStore()
 const selectedId = ref<number | null>(null)
 const ruleMenuOpen = ref(false)
@@ -283,15 +282,13 @@ onBeforeUnmount(() => {
           <section class="eqt-rule-page__section">
             <div class="eqt-rule-page__section-head">
               <h2><ListTree class="eqt-rule-page__icon" />{{ t('rulePagePrototype.conditions') }}</h2>
-              <div class="eqt-rule-page__views" role="group" :aria-label="t('rulePagePrototype.conditionView')">
-                <button
-                  v-for="view in CONDITION_VIEWS" :key="view" type="button" class="eqt-rule-page__view"
-                  :aria-pressed="ruleConditionView === view" @click="ruleConditionView = view"
-                >{{ t(`rulePagePrototype.conditionView.${view}`) }}</button>
-              </div>
+              <button
+                type="button" class="eqt-rule-page__source-toggle"
+                :aria-pressed="ruleConditionSource" @click="ruleConditionSource = !ruleConditionSource"
+              ><CodeXml class="eqt-rule-page__icon" />{{ t('rulePagePrototype.sourceView') }}</button>
             </div>
-            <RuleConditionGroup v-if="ruleConditionView === 'visual'" :key="selected.root.id" :group="selected.root" :depth="0" root />
-            <RuleConditionSource v-else :key="selected.id" :rule="selected" />
+            <RuleConditionSource v-if="ruleConditionSource" :key="selected.id" :rule="selected" />
+            <RuleConditionGroup v-else :key="selected.root.id" :group="selected.root" :depth="0" root />
           </section>
 
           <section class="eqt-rule-page__section">

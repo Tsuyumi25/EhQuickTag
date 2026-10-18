@@ -937,7 +937,7 @@
   gap: calc(var(--eqt-rule-page-gap) * 2) calc(var(--eqt-rule-page-gap) * 6);
 }
 
-// 同一組互斥的選項，跟摘要模式切換同一款
+// 同一組互斥的選項
 .eqt-rule-page__choice { @include btn-split-group; }
 
 .eqt-rule-page__choice-item {
@@ -981,13 +981,13 @@
 
 // ---- 條件：圖形與原始兩種寫法 ----
 
-.eqt-rule-page__views {
-  @include btn-split-group;
+.eqt-rule-page__source-toggle {
+  @include btn-outlined;
+  gap: var(--eqt-rule-page-gap);
+  height: var(--eqt-rule-page-control-h);
   margin-inline-start: auto;
-}
-
-.eqt-rule-page__view {
-  @include btn-split-item;
+  padding: 0 calc(var(--eqt-rule-page-gap) * 2);
+  color: var(--eqt-text-hint);
 
   &[aria-pressed='true'] {
     background: var(--eqt-bg-btn);
