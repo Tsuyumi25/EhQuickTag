@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import Draggable from 'vuedraggable'
-import { Blocks, CodeXml, Copy, Ellipsis, Funnel, GripVertical, Plus, Settings, Trash2, X } from '@lucide/vue'
+import { Blocks, CodeXml, CopyPlus, Ellipsis, Funnel, GripVertical, Plus, Settings, Trash2, X } from '@lucide/vue'
 import ContextMenu from '@/components/ContextMenu.vue'
 import { baseDragOptions } from '@/utils/drag'
 import RuleActionsEditor from './RuleActionsEditor.vue'
@@ -274,7 +274,7 @@ onBeforeUnmount(() => {
         placement="right-start"
       >
         <button type="button" class="eqt-context-menu__item" @click="duplicateMenuRule">
-          <Copy class="eqt-rule-page__icon eqt-context-menu__icon" />
+          <CopyPlus class="eqt-rule-page__icon eqt-context-menu__icon" />
           <span class="eqt-context-menu__label">{{ t('rulePagePrototype.duplicateRule') }}</span>
         </button>
         <button
