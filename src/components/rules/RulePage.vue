@@ -349,8 +349,9 @@ onBeforeUnmount(() => {
                 </button>
               </div>
             </div>
-            <RuleConditionSource v-if="ruleConditionSource" :key="selected.id" :rule="selected" />
-            <RuleConditionGroup v-else :key="selected.root.id" :group="selected.root" :depth="0" root />
+            <!-- 代碼用 v-show 常駐：寫到一半有錯的草稿只存在元件裡，切去圖形再回來還要在 -->
+            <RuleConditionSource v-show="ruleConditionSource" :key="selected.id" :rule="selected" />
+            <RuleConditionGroup v-if="!ruleConditionSource" :key="selected.root.id" :group="selected.root" :depth="0" root />
           </section>
 
           <section class="eqt-rule-page__section">
