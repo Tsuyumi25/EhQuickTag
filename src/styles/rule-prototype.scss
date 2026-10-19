@@ -286,7 +286,8 @@ tr.eqt-rule-prototype__gallery--background > td {
   text-decoration-line: var(--eqt-rule-prototype-title-decoration, none);
   font-weight: var(--eqt-rule-prototype-title-weight, inherit);
   font-style: var(--eqt-rule-prototype-title-style, inherit);
-  padding-inline: var(--eqt-rule-prototype-title-pad, 0);
+  // 行內元素的上下內距不改行高，只把背景往上下撐開，色塊才不會緊貼著字
+  padding: var(--eqt-rule-prototype-title-pad, 0);
   // 標題換行時每一行都畫到背景與圓角
   box-decoration-break: clone;
 }
@@ -311,7 +312,7 @@ tr.eqt-rule-prototype__gallery--background > td {
 }
 .eqt-rule-prototype__prefix {
   margin-inline-end: 0.3em;
-  padding-inline: var(--eqt-rule-prototype-prefix-pad, 0);
+  padding: var(--eqt-rule-prototype-prefix-pad, 0);
   // 沒指定文字色時沿用規則的背景色，沒背景色就是框線色
   color: var(--eqt-rule-prototype-prefix-color, color-mix(in srgb, var(--eqt-rule-prototype-solid) 65%, currentColor)) !important;
   background: var(--eqt-rule-prototype-prefix-background, none);

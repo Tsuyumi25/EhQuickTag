@@ -8,6 +8,8 @@ export const MAX_MOSAIC = 16
 export const MIN_OPACITY = 0.35
 /** 格子小於 2px 就跟原圖看不出差別，有開就從這裡起跳 */
 const MIN_MOSAIC = 2
+/** 有背景色時色塊比字多出來的那一圈 */
+const TEXT_BACKGROUND_PAD = '0.15em 0.45em'
 
 export const CARD_MODIFIERS = ['background', 'blur', 'dim', 'hidden'] as const
 export type CardModifier = (typeof CARD_MODIFIERS)[number]
@@ -90,7 +92,7 @@ export function cardStyle(effects: RuleEffects): CardStyle {
       '--eqt-rule-prototype-title-color': title.color,
       '--eqt-rule-prototype-title-background': title.background,
       '--eqt-rule-prototype-title-radius': title.background ? `${title.radius}px` : null,
-      '--eqt-rule-prototype-title-pad': title.background ? '0.25em' : null,
+      '--eqt-rule-prototype-title-pad': title.background ? TEXT_BACKGROUND_PAD : null,
       '--eqt-rule-prototype-title-decoration': decoration || null,
       '--eqt-rule-prototype-title-weight': title.bold ? 'bold' : null,
       '--eqt-rule-prototype-title-style': title.italic ? 'italic' : null,
@@ -105,8 +107,7 @@ export function prefixStyle(prefix: PrefixMark): Record<string, string> {
   if (prefix.background) {
     style['--eqt-rule-prototype-prefix-background'] = prefix.background
     style['--eqt-rule-prototype-prefix-radius'] = `${prefix.radius}px`
-    // 有底色時左右留一點，字才不會貼著色塊的邊
-    style['--eqt-rule-prototype-prefix-pad'] = '0.25em'
+    style['--eqt-rule-prototype-prefix-pad'] = TEXT_BACKGROUND_PAD
   }
   return style
 }
