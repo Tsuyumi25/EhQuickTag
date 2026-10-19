@@ -12,7 +12,7 @@ import RuleDigest from './RuleDigest.vue'
 import RuleMaterialPanel from './RuleMaterialPanel.vue'
 import { useGalleryRuleStore } from '@/composables/useGalleryRuleStore'
 import { t } from '@/composables/useI18n'
-import { createRule, duplicateRule } from '@/services/listing/galleryRules'
+import { createRule, duplicateRule, MAX_GROUP_DEPTH } from '@/services/listing/galleryRules'
 import {
   openSettings, requestedRuleId, ruleConditionSource, rulesCollapsed, showSettings,
 } from '@/services/appOverlays'
@@ -92,6 +92,16 @@ const DOCK = '.eqt-listing-rules__floating'
 const root = ref<HTMLElement | null>(null)
 const helpOpen = ref(false)
 const helpAnchor = ref<HTMLElement | null>(null)
+const HELP_USAGE = ['helpDrag', 'helpToggle', 'helpNest', 'helpSource'] as const
+const HELP_SYNTAX = [
+  { code: 'female:tag', key: 'helpSyntaxTag' },
+  { code: 'female:"two words"', key: 'helpSyntaxQuote' },
+  { code: '-female:tag', key: 'helpSyntaxNot' },
+  { code: '(a OR b) AND c', key: 'helpSyntaxGroup' },
+  { code: 'category:non-h', key: 'helpSyntaxCategory' },
+  { code: 'uploader:name', key: 'helpSyntaxUploader' },
+  { code: '20 <= pages <= 80', key: 'helpSyntaxRange' },
+] as const
 let engaged = true
 // 關掉時把焦點還給打開規則頁的那顆按鈕
 const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
@@ -216,7 +226,7 @@ onBeforeUnmount(() => {
         </button>
         <AnchoredPopover v-model:open="helpOpen" :anchor="helpAnchor">
           <section
-            id="eqt-rule-page-help" class="eqt-panel__help" aria-labelledby="eqt-rule-page-help-title"
+            id="eqt-rule-page-help" class="eqt-panel__help eqt-rule-page__help-panel" aria-labelledby="eqt-rule-page-help-title"
             @keydown.esc.prevent="helpOpen = false"
           >
             <header class="eqt-panel__help-head">
@@ -224,6 +234,18 @@ onBeforeUnmount(() => {
               <button type="button" class="eqt-panel__btn" @click="helpOpen = false">{{ t('settings.close') }}</button>
             </header>
             <p>{{ t('rulePage.helpOrder') }}</p>
+            <h3>{{ t('rulePage.helpUsageTitle') }}</h3>
+            <ul>
+              <li v-for="key in HELP_USAGE" :key="key">{{ t(`rulePage.${key}`, { depth: MAX_GROUP_DEPTH }) }}</li>
+            </ul>
+            <h3>{{ t('rulePage.helpSyntaxTitle') }}</h3>
+            <!-- 語法本身不翻譯，只有右邊的解說跟著語系 -->
+            <dl class="eqt-rule-page__help-syntax">
+              <template v-for="row in HELP_SYNTAX" :key="row.key">
+                <dt><code class="eqt-panel__help-term">{{ row.code }}</code></dt>
+                <dd>{{ t(`rulePage.${row.key}`) }}</dd>
+              </template>
+            </dl>
           </section>
         </AnchoredPopover>
       </div>

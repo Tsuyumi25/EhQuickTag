@@ -809,6 +809,22 @@
   visibility: hidden;
 }
 
+// 說明浮層的外框跟 My Tags 的說明共用 .eqt-panel__help；這裡只補小標題與語法對照表
+.eqt-rule-page__help-panel h3 {
+  margin: calc(var(--eqt-rule-page-gap) * 3) 0 0;
+  font-size: inherit;
+}
+
+.eqt-rule-page__help-syntax {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--eqt-rule-page-gap) calc(var(--eqt-rule-page-gap) * 3);
+  margin: calc(var(--eqt-rule-page-gap) * 2) 0 0;
+
+  dt { white-space: nowrap; }
+  dd { margin: 0; }
+}
+
 // ---- 效果 ----
 
 .eqt-rule-page__hide-row {
