@@ -26,6 +26,7 @@ export default {
   'rulePage.helpSyntaxCategory': '分类',
   'rulePage.helpSyntaxUploader': '上传者',
   'rulePage.helpSyntaxRange': '星级与页数用 =、<、<=、>、>= 比较，两边都写就是区间',
+  'rulePage.resetActionsConfirm': '确定要把这条规则的动作全部重置为默认吗？此操作无法撤销。',
   'rulePage.togglePolarity': '点一下切换含有／不含',
   'rulePage.materials': '素材',
   'rulePage.generator.group': '群组',

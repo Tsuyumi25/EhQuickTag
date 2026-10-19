@@ -26,6 +26,7 @@ export default {
   'rulePage.helpSyntaxCategory': 'Category',
   'rulePage.helpSyntaxUploader': 'Uploader',
   'rulePage.helpSyntaxRange': 'Stars and pages compare with =, <, <=, > and >=; two sides make a range',
+  'rulePage.resetActionsConfirm': 'Reset all actions of this rule to default? This cannot be undone.',
   'rulePage.togglePolarity': 'Click to switch between contains and does not contain',
   'rulePage.materials': 'Materials',
   'rulePage.generator.group': 'Group',

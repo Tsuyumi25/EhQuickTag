@@ -6,6 +6,7 @@ import EqtNumberField from '@/components/EqtNumberField.vue'
 import RuleActionPreview from '@/components/rules/RuleActionPreview.vue'
 import RuleColorField from '@/components/rules/RuleColorField.vue'
 import { t } from '@/composables/useI18n'
+import { askConfirm } from '@/services/confirmDialog'
 import { COVER_BLUR_MODES, createActions, MAX_RADIUS, normalizePrefix, type GalleryRule, type RuleActions } from '@/services/listing/galleryRules'
 import { ACTION_TARGETS, targetInUse, type ActionTarget } from '@/services/listing/ruleActionItems'
 
@@ -52,6 +53,12 @@ const hideHelpOpen = ref(false)
 const DEFAULT_ACTIONS = createActions()
 const isDefault = computed(() =>
   (Object.keys(DEFAULT_ACTIONS) as (keyof RuleActions)[]).every(key => actions.value[key] === DEFAULT_ACTIONS[key]))
+
+async function resetActions() {
+  const rule = props.rule
+  if (!await askConfirm(t('rulePage.resetActionsConfirm'), t('settings.reset'))) return
+  rule.actions = createActions()
+}
 </script>
 
 <template>
@@ -59,7 +66,7 @@ const isDefault = computed(() =>
     <h2><Paintbrush class="eqt-rule-page__icon" />{{ t('listingRules.actions') }}</h2>
     <button
       type="button" class="eqt-rule-page__reset" :disabled="isDefault" :title="t('settings.resetTitle')"
-      @click="rule.actions = createActions()"
+      @click="resetActions"
     >
       <RotateCcw class="eqt-rule-page__icon" />{{ t('settings.reset') }}
     </button>

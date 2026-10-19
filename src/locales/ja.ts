@@ -26,6 +26,7 @@ export default {
   'rulePage.helpSyntaxCategory': 'カテゴリ',
   'rulePage.helpSyntaxUploader': 'アップローダー',
   'rulePage.helpSyntaxRange': '星とページ数は =、<、<=、>、>= で比べ、両側に書くと範囲になります',
+  'rulePage.resetActionsConfirm': 'このルールのアクションをすべてデフォルトにリセットしますか？この操作は元に戻せません。',
   'rulePage.togglePolarity': 'クリックで「含む／含まない」を切り替え',
   'rulePage.materials': '素材',
   'rulePage.generator.group': 'グループ',

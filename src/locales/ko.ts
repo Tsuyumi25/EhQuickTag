@@ -26,6 +26,7 @@ export default {
   'rulePage.helpSyntaxCategory': '분류',
   'rulePage.helpSyntaxUploader': '업로더',
   'rulePage.helpSyntaxRange': '별점과 페이지 수는 =, <, <=, >, >=로 비교하고, 양쪽에 쓰면 범위가 됩니다',
+  'rulePage.resetActionsConfirm': '이 규칙의 동작을 모두 기본값으로 초기화할까요? 이 작업은 되돌릴 수 없습니다.',
   'rulePage.togglePolarity': '클릭하면 포함/제외가 전환됩니다',
   'rulePage.materials': '소재',
   'rulePage.generator.group': '그룹',

@@ -26,6 +26,7 @@ export default {
   'rulePage.helpSyntaxCategory': '分類',
   'rulePage.helpSyntaxUploader': '上傳者',
   'rulePage.helpSyntaxRange': '星級與頁數用 =、<、<=、>、>= 比較，兩邊都寫就是區間',
+  'rulePage.resetActionsConfirm': '確定要把這條規則的動作全部重置為預設嗎？此操作無法復原。',
   'rulePage.togglePolarity': '點一下切換含有／不含',
   'rulePage.materials': '素材',
   'rulePage.generator.group': '群組',
