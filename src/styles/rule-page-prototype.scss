@@ -854,10 +854,10 @@
   pointer-events: none;
 }
 
-// 左邊是動作作用的位置，一個位置一頁；右邊只放這一頁的欄位，一欄一行
+// 左邊是動作作用的位置，一個位置一頁；中間只放這一頁的欄位，一欄一行；右邊是命中時卡片的樣子
 .eqt-rule-page__actions {
   display: grid;
-  grid-template-columns: max-content minmax(0, 1fr);
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
   gap: calc(var(--eqt-rule-page-gap) * 4);
   min-width: 0;
 }
@@ -981,6 +981,77 @@
     color: var(--eqt-text-hint);
     white-space: nowrap;
   }
+}
+
+// 預覽照網站縮圖卡片的比例縮小：封面 250×340 的一半多一點，標題兩行、底下一排標籤
+.eqt-rule-page__preview {
+  --eqt-rule-page-preview-width: calc(var(--eqt-row-h) * 6);
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--eqt-rule-page-gap);
+  width: var(--eqt-rule-page-preview-width);
+  margin: 0;
+}
+
+.eqt-rule-page__preview-caption {
+  color: var(--eqt-text-hint);
+  font-size: var(--eqt-fs-sm);
+}
+
+.eqt-rule-page__preview-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--eqt-rule-page-gap);
+  padding: var(--eqt-rule-page-gap);
+  border: var(--eqt-border-width-thin) solid var(--eqt-border);
+  border-radius: var(--eqt-radius-md);
+  background-color: var(--eqt-bg);
+  font-size: var(--eqt-fs-sm);
+
+  // 列表上會整筆拿掉；這裡留著，淡到看得出是被拿掉的那一筆
+  &--hidden {
+    border-style: dashed;
+    opacity: 0.25;
+  }
+}
+
+.eqt-rule-page__preview-title {
+  font-weight: bold;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.eqt-rule-page__preview-cover {
+  overflow: hidden;
+  border-radius: var(--eqt-radius-sm);
+
+  img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 250 / 340;
+  }
+}
+
+.eqt-rule-page__preview-tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: calc(var(--eqt-rule-page-gap) / 2);
+}
+
+.eqt-rule-page__preview-tag {
+  padding: 0 var(--eqt-gallery-chip-padding-inline);
+  border: 1px solid var(--eqt-site-tag-border);
+  border-radius: 5px;
+  background: var(--eqt-gallery-chip-bg);
+  font-weight: bold;
+}
+
+.eqt-rule-page__preview-note {
+  margin: 0;
+  color: var(--eqt-danger);
+  font-size: var(--eqt-fs-sm);
 }
 
 // 強度滑桿：0 是不做，100 是最強；旁邊的數字固定寬度，拖的時候整排不會跟著晃

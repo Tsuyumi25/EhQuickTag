@@ -59,6 +59,19 @@ export function mosaicFiltersSvg(): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" aria-hidden="true">${filters.join('')}</svg>`
 }
 
+const MOSAIC_FILTERS_ID = 'eqt-rule-mosaic-filters'
+
+/** CSS 的 filter: url(#…) 只認得文件裡的元素，列表與規則頁的預覽共用同一份，裝過就不再裝 */
+export function installMosaicFilters(doc: Document): void {
+  if (doc.getElementById(MOSAIC_FILTERS_ID)) return
+  const holder = doc.createElement('div')
+  holder.id = MOSAIC_FILTERS_ID
+  holder.style.cssText = 'position: absolute; width: 0; height: 0; overflow: hidden'
+  holder.setAttribute('aria-hidden', 'true')
+  holder.innerHTML = mosaicFiltersSvg()
+  doc.body.append(holder)
+}
+
 function coverFilter(effects: RuleEffects): string | null {
   if (!effects.blur) return null
   if (effects.blurMode === 'mosaic') return `url(#${mosaicFilterId(mosaicCell(effects.blur))})`

@@ -10,7 +10,7 @@ import { useDragSelect } from '@/composables/useDragSelect'
 import type { ChipRef } from '@/services/gallery/dragSelectMachine'
 import { useRulePrototypeHost, type ListingChip } from '@/composables/useRulePrototypeHost'
 import { CHIP_CLASS, installChipIcons, myTagsLayer, paint, type ChipPaint } from '@/services/listing/listingChipDom'
-import { CARD_MODIFIERS, CARD_VARS, cardStyle, mosaicFiltersSvg, prefixStyle } from '@/services/listing/ruleCardStyle'
+import { CARD_MODIFIERS, CARD_VARS, cardStyle, installMosaicFilters, prefixStyle } from '@/services/listing/ruleCardStyle'
 import { chipBadges, myTagsVars } from '@/services/mytags/chipBadges'
 import { useMyTagsColors } from '@/composables/useMyTagsColors'
 import { useFixedRuleStore } from '@/composables/useFixedRuleStore'
@@ -402,15 +402,8 @@ function svgOf(icon: typeof Eye): string {
   return svg
 }
 
-// 馬賽克的 SVG 濾鏡要在文件裡才能被 CSS 的 filter: url(#…) 引用
-let mosaicFilters: HTMLElement | null = null
-
 onMounted(() => {
-  mosaicFilters = document.createElement('div')
-  mosaicFilters.style.cssText = 'position: absolute; width: 0; height: 0; overflow: hidden'
-  mosaicFilters.setAttribute('aria-hidden', 'true')
-  mosaicFilters.innerHTML = mosaicFiltersSvg()
-  document.body.append(mosaicFilters)
+  installMosaicFilters(document)
   installChipIcons({ eye: svgOf(Eye), ban: svgOf(Ban), user: svgOf(UserRound) })
   document.addEventListener('keydown', keydown)
   listenTagEvents(tagSelectEnabled.value)
@@ -419,7 +412,6 @@ onBeforeUnmount(() => {
   document.removeEventListener('keydown', keydown)
   listenTagEvents(false)
   for (const item of items.value) clearEffects(item)
-  mosaicFilters?.remove()
 })
 </script>
 

@@ -434,41 +434,55 @@ export interface RuleEffects {
  * 強度取命中規則裡最強的那條，模糊的方式跟著它；刪除線這類樣式與隱藏只要有一條要就做
  */
 export function resolveRuleEffects(rules: readonly FixedRule[], probe: GalleryProbe): RuleEffects {
-  const effects: RuleEffects = {
+  const effects = emptyEffects()
+  for (const rule of rules) {
+    if (rule.enabled && evaluateRule(rule, probe) === true) addRuleEffects(effects, rule, () => ruleEvidence(rule, probe))
+  }
+  return effects
+}
+
+/** 規則頁的預覽：這一條命中時圖庫會變成什麼樣子；沒有真的圖庫，命中原因是空的 */
+export function previewRuleEffects(rule: FixedRule): RuleEffects {
+  const effects = emptyEffects()
+  addRuleEffects(effects, rule, () => ({ tags: [], categories: [], uploaders: [], ranges: [] }))
+  return effects
+}
+
+function emptyEffects(): RuleEffects {
+  return {
     background: null, dim: 0, blur: 0, blurMode: 'blur', labels: [], prefixes: [], hide: false,
     title: { color: null, background: null, radius: 0, strike: false, underline: false, bold: false, italic: false },
   }
-  for (const rule of rules) {
-    if (!rule.enabled || evaluateRule(rule, probe) !== true) continue
-    const { actions } = rule
-    const name = rule.name.trim()
-    const tone = actions.background
-    effects.background ??= tone
-    if (actions.showName && name) effects.labels.push({ ruleId: rule.id, text: name, tone, evidence: ruleEvidence(rule, probe) })
-    if (actions.prefix) {
-      effects.prefixes.push({
-        ruleId: rule.id, text: actions.prefix, tone,
-        color: actions.prefixColor, background: actions.prefixBackground, radius: actions.prefixRadius,
-      })
-    }
-    effects.dim = Math.max(effects.dim, actions.dim)
-    if (actions.blur > effects.blur) {
-      effects.blur = actions.blur
-      effects.blurMode = actions.blurMode
-    }
-    const { title } = effects
-    title.color ??= actions.titleColor
-    if (title.background === null && actions.titleBackground !== null) {
-      title.background = actions.titleBackground
-      title.radius = actions.titleRadius
-    }
-    title.strike ||= actions.strike
-    title.underline ||= actions.underline
-    title.bold ||= actions.bold
-    title.italic ||= actions.italic
-    effects.hide ||= actions.hide
+}
+
+function addRuleEffects(effects: RuleEffects, rule: FixedRule, evidence: () => RuleEvidence): void {
+  const { actions } = rule
+  const name = rule.name.trim()
+  const tone = actions.background
+  effects.background ??= tone
+  if (actions.showName && name) effects.labels.push({ ruleId: rule.id, text: name, tone, evidence: evidence() })
+  if (actions.prefix) {
+    effects.prefixes.push({
+      ruleId: rule.id, text: actions.prefix, tone,
+      color: actions.prefixColor, background: actions.prefixBackground, radius: actions.prefixRadius,
+    })
   }
-  return effects
+  effects.dim = Math.max(effects.dim, actions.dim)
+  if (actions.blur > effects.blur) {
+    effects.blur = actions.blur
+    effects.blurMode = actions.blurMode
+  }
+  const { title } = effects
+  title.color ??= actions.titleColor
+  if (title.background === null && actions.titleBackground !== null) {
+    title.background = actions.titleBackground
+    title.radius = actions.titleRadius
+  }
+  title.strike ||= actions.strike
+  title.underline ||= actions.underline
+  title.bold ||= actions.bold
+  title.italic ||= actions.italic
+  effects.hide ||= actions.hide
 }
 
 /** 同一個標籤或上傳者的含有與不含是兩件不同的素材，去重要連同極性一起比 */

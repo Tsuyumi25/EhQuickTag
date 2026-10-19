@@ -309,7 +309,7 @@ onBeforeUnmount(() => {
           </section>
 
           <section class="eqt-rule-page__section">
-            <RuleActionsEditor :actions="selected.actions" />
+            <RuleActionsEditor :rule="selected" />
           </section>
 
           <RuleDigest :rule="selected" />

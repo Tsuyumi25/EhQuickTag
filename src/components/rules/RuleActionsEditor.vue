@@ -1,14 +1,17 @@
 <script setup lang="ts">
-import { nextTick, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { Bold, CircleQuestionMark, EyeClosed, Italic, Paintbrush, Strikethrough, Underline } from '@lucide/vue'
 import AnchoredPopover from '@/components/AnchoredPopover.vue'
 import EqtNumberField from '@/components/EqtNumberField.vue'
+import RuleActionPreview from '@/components/rules/RuleActionPreview.vue'
 import RuleColorField from '@/components/rules/RuleColorField.vue'
 import { t } from '@/composables/useI18n'
-import { COVER_BLUR_MODES, MAX_RADIUS, normalizePrefix, type FixedActions } from '@/services/listing/fixedRulePrototype'
+import { COVER_BLUR_MODES, MAX_RADIUS, normalizePrefix, type FixedRule } from '@/services/listing/fixedRulePrototype'
 import { ACTION_TARGETS, targetInUse, type ActionTarget } from '@/services/listing/ruleActionItems'
 
-const props = defineProps<{ actions: FixedActions }>()
+// 拿整條規則：預覽的規則按鈕要用到規則名稱
+const props = defineProps<{ rule: FixedRule }>()
+const actions = computed(() => props.rule.actions)
 
 const target = ref<ActionTarget>('card')
 // v-for 底下的陣列 ref 不保證照清單順序，照索引自己收
@@ -28,12 +31,12 @@ async function moveTab(event: KeyboardEvent) {
 // 輸入法組字中間的半成品也會觸發 input，等離開欄位再收
 function setPrefix(event: Event) {
   const input = event.target as HTMLInputElement
-  props.actions.prefix = normalizePrefix(input.value)
-  input.value = props.actions.prefix ?? ''
+  actions.value.prefix = normalizePrefix(input.value)
+  input.value = actions.value.prefix ?? ''
 }
 
 function setAmount(key: 'dim' | 'blur', event: Event) {
-  props.actions[key] = Number((event.target as HTMLInputElement).value)
+  actions.value[key] = Number((event.target as HTMLInputElement).value)
 }
 
 const TITLE_STYLES = [
@@ -149,5 +152,7 @@ const hideHelpOpen = ref(false)
         </AnchoredPopover>
       </div>
     </div>
+
+    <RuleActionPreview :rule="rule" />
   </div>
 </template>
