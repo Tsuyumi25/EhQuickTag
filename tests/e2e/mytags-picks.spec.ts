@@ -42,7 +42,10 @@ test('帶 eqt_hash 開 My Tags 時「選中」篩選預設打開，既有與新�
   await page.addInitScript((value) => {
     localStorage.setItem('eqt-test:eqt_pick:7kQ2mN9xR4vB', JSON.stringify(value))
   }, pick)
+  // 已經在 /mytags 上，goto 只改 fragment 會是同一份文件內的跳轉：init script 不重跑、頁面也不重載，
+  // 所以要再 reload 一次，才是使用者從圖庫開新分頁進來的情況
   await page.goto('https://e-hentai.org/mytags#eqt_hash=7kQ2mN9xR4vB')
+  await page.reload()
   await reinjectUserscript(page)
 
   const picked = page.locator('.eqt-tag-catalog .eqt-namespace-filter__button').first()

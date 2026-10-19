@@ -606,6 +606,15 @@ async function menuOffsetFromTrigger(page: import('@playwright/test').Page, trig
   return { dx: menu.x - trigger.x, dy: menu.y - trigger.y }
 }
 
+// 捲動量照 trigger 的位置算，讓它停在視窗頂端附近而不是捲出去：trigger 一出視窗，
+// floating-ui 的 shift 就會把選單夾回視窗內，量到的是夾住的位置，不是錨點有沒有跟上
+async function scrollTriggerNearTop(page: import('@playwright/test').Page, triggerSelector: string) {
+  const trigger = (await page.locator(triggerSelector).first().boundingBox())!
+  const top = Math.floor(trigger.y) - 40
+  expect(top).toBeGreaterThan(0)
+  await scrollToStable(page, top)
+}
+
 test('捲動時行操作選單跟著 trigger 走，不黏在畫面上', async ({ page }) => {
   await injectUserscript(page)
   await page.evaluate(() => {
@@ -618,7 +627,7 @@ test('捲動時行操作選單跟著 trigger 走，不黏在畫面上', async ({
   await expect(page.locator('.eqt-context-menu')).toBeVisible()
 
   const before = await menuOffsetFromTrigger(page, '.eqt-tag-bar__line-actions')
-  await scrollToStable(page, 300)
+  await scrollTriggerNearTop(page, '.eqt-tag-bar__line-actions')
   const after = await menuOffsetFromTrigger(page, '.eqt-tag-bar__line-actions')
 
   expect(Math.abs(after.dy - before.dy)).toBeLessThanOrEqual(1)
@@ -639,7 +648,7 @@ test('捲動時 tag 右鍵選單跟著 trigger 走，不黏在畫面上', async 
   await expect(page.locator('.eqt-context-menu')).toBeVisible()
 
   const before = await menuOffsetFromTrigger(page, '.eqt-tag-bar__btn')
-  await scrollToStable(page, 300)
+  await scrollTriggerNearTop(page, '.eqt-tag-bar__btn')
   const after = await menuOffsetFromTrigger(page, '.eqt-tag-bar__btn')
 
   expect(Math.abs(after.dy - before.dy)).toBeLessThanOrEqual(1)
