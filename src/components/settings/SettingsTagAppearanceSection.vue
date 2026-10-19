@@ -8,10 +8,17 @@ import {
   taggingEnhancerEnabled, myTagsEnhancerEnabled,
   galleryMyTagsColorsEnabled, galleryMyTagsScoresEnabled, galleryMyTagsMarksEnabled,
   myTagsGalleryColorsEnabled, myTagsGalleryScoresEnabled, myTagsGalleryMarksEnabled,
+  listingTagsEnabled, listingMyTagsColorsEnabled, listingMyTagsScoresEnabled, listingMyTagsMarksEnabled,
 } from '@/services/store'
 
-const props = defineProps<{ scene: 'gallery' | 'mytags' }>()
+const props = defineProps<{ scene: 'listing' | 'gallery' | 'mytags' }>()
 const scopes = {
+  listing: {
+    enabled: listingTagsEnabled,
+    colors: listingMyTagsColorsEnabled,
+    scores: listingMyTagsScoresEnabled,
+    marks: listingMyTagsMarksEnabled,
+  },
   gallery: {
     enabled: taggingEnhancerEnabled,
     colors: galleryMyTagsColorsEnabled,

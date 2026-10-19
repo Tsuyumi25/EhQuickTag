@@ -1,0 +1,398 @@
+@use 'buttons' as *;
+
+:root {
+  --eqt-listing-rules-gap: var(--eqt-gallery-chip-content-gap);
+  --eqt-listing-rules-panel-width: calc(var(--eqt-row-h) * 18);
+  --eqt-listing-rules-dock-height: calc(var(--eqt-row-h) * 3);
+  // 視窗底部到 dock 頂端再留一段間距：dock 離底的距離 + 框線 + 內距 + 按鈕高。
+  // 規則頁的底邊停在這裡，dock 才不會蓋住它；改 dock 的間距或按鈕高時要一起對
+  --eqt-listing-rules-dock-clearance: calc(
+    var(--eqt-listing-rules-gap) * 4 + var(--eqt-border-width) * 2 + var(--eqt-listing-rules-gap) * 2 + var(--eqt-row-h)
+  );
+}
+
+.eqt-listing-rules,
+.eqt-listing-rules__mount,
+.eqt-listing-rules__floating {
+  color: var(--eqt-text);
+  font-family: var(--eqt-font-family, inherit);
+  font-weight: var(--eqt-font-weight, normal);
+  font-size: var(--eqt-fs-md);
+  line-height: 1.4;
+  text-align: start;
+  white-space: normal;
+
+  &, *, *::before, *::after { box-sizing: border-box; }
+}
+
+.eqt-listing-rules,
+.eqt-listing-rules__mount {
+  button, input, select { font: inherit; }
+  input, select {
+    color: var(--eqt-text);
+    background: var(--eqt-bg-elevated);
+    border: var(--eqt-border-width-thin) solid var(--eqt-border);
+    border-radius: var(--eqt-radius-sm);
+    max-width: 100%;
+  }
+  input[type='checkbox'] {
+    position: static;
+    margin: 0;
+    accent-color: var(--eqt-green);
+  }
+  // 標籤樣式的 chip（TagChip）自己有一套按鈕樣式
+  button:not(.eqt-gallery-chip__body) { @include btn-filled; }
+  label { display: inline-flex; align-items: center; gap: var(--eqt-listing-rules-gap); }
+  p { margin: var(--eqt-listing-rules-gap) 0; }
+  small { color: var(--eqt-text-hint); }
+}
+
+.eqt-listing-rules__mount:empty { display: none; }
+// 列表上的標籤原地當 chip：外框、尺寸、層級的虛線都照網站畫好的，這裡只疊狀態色。
+// 圖示與分數放在 ::before／::after，一顆 chip 不多任何節點；flex 的 order 把它們排到名稱後面，
+// 只有上傳者的圖示排在前面（上傳者不會有關注標記，兩者不會同時要用 ::before）。
+// 底色一律算進 --eqt-listing-chip-paint：網站自己上了 My Tags 顏色的標籤是 inline 的
+// background !important，樣式表蓋不過，listingChipDom 會把那條 inline 改成讀這個變數；
+// 其他標籤由下面的 background 規則套用同一個變數
+.eqt-listing-chip {
+  --eqt-listing-chip-hover: linear-gradient(transparent, transparent);
+  // 個人配色角落的三角形：邊長等於 chip 內框的高度，跟 TagChip 的 aspect-ratio: 1 一樣
+  --eqt-listing-chip-corner: calc(1lh + var(--eqt-gallery-chip-padding-block) * 2);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--eqt-gallery-chip-content-gap);
+  cursor: pointer;
+  user-select: none;
+  &:hover, &:focus-visible {
+    --eqt-listing-chip-hover: linear-gradient(var(--eqt-bg-hover), var(--eqt-bg-hover));
+    outline: none;
+  }
+  // 沒有狀態的標籤底色留給網站樣式表，只疊 hover 那一層
+  &:not(.eqt-listing-chip--mytags-colored, .eqt-listing-chip--selected-positive, .eqt-listing-chip--selected-negative) {
+    background-image: var(--eqt-listing-chip-hover) !important;
+  }
+  &[data-eqt-mark~='watch']::before,
+  &[data-evr-ns='uploader']::before,
+  &[data-eqt-mark~='hidden']::after {
+    content: '';
+    width: var(--eqt-fs-md);
+    height: var(--eqt-fs-md);
+    flex-shrink: 0;
+    background: currentColor;
+    mask: var(--eqt-listing-chip-icon) center / contain no-repeat;
+  }
+  &[data-eqt-mark~='watch']::before { --eqt-listing-chip-icon: var(--eqt-listing-chip-eye); order: 1; }
+  &[data-evr-ns='uploader']::before { --eqt-listing-chip-icon: var(--eqt-listing-chip-user); order: -1; }
+  &[data-eqt-mark~='hidden']::after { --eqt-listing-chip-icon: var(--eqt-listing-chip-ban); order: 2; }
+  &[data-eqt-score]::after { content: attr(data-eqt-score); order: 2; }
+}
+.eqt-listing-chip.eqt-listing-chip--mytags-colored {
+  --eqt-listing-chip-paint: var(--eqt-listing-chip-hover) padding-box, var(--eqt-mytags-background) padding-box;
+  color: var(--eqt-mytags-text) !important;
+  border-color: var(--eqt-mytags-border) !important;
+}
+// 列表的顏色設定關掉時，網站自己寫的 My Tags 配色照樣留在 style 上，這裡蓋回網站樣式表的預設外觀
+// （g.css／x.css 的 div.gt）：資料不動，其他腳本讀到的仍是網站給的樣子
+.eqt-listing-chip.eqt-listing-chip--site-colors-off {
+  --eqt-listing-chip-paint: var(--eqt-listing-chip-hover) padding-box, var(--eqt-gallery-chip-bg) padding-box;
+  color: inherit !important;
+  border-color: var(--eqt-site-tag-border) !important;
+  &:is(.gtl, .gtw) { border-color: var(--eqt-site-tag-border-weak) !important; }
+}
+.eqt-listing-chip--selected-positive { --eqt-gallery-selection-color: var(--eqt-status-include); }
+.eqt-listing-chip--selected-negative { --eqt-gallery-selection-color: var(--eqt-status-exclude); }
+// 選取蓋過個人配色，跟 TagChip 一樣：整顆換成選取色，有個人配色的在右上角留一塊三角形
+.eqt-listing-chip:is(.eqt-listing-chip--selected-positive, .eqt-listing-chip--selected-negative) {
+  --eqt-listing-chip-selection: color-mix(in srgb, var(--eqt-gallery-selection-color) 55%, transparent);
+  --eqt-listing-chip-paint:
+    linear-gradient(var(--eqt-listing-chip-selection), var(--eqt-listing-chip-selection)) padding-box,
+    var(--eqt-gallery-chip-bg) padding-box;
+  color: var(--eqt-text) !important;
+  &:hover, &:focus-visible {
+    --eqt-listing-chip-selection: color-mix(in srgb, var(--eqt-gallery-selection-color) 70%, transparent);
+  }
+  &.eqt-listing-chip--mytags-colored {
+    --eqt-listing-chip-paint:
+      linear-gradient(to bottom left, transparent 50%, var(--eqt-listing-chip-selection) 50%)
+        right top / var(--eqt-listing-chip-corner) 100% no-repeat padding-box,
+      linear-gradient(to bottom left, transparent 50%, var(--eqt-gallery-chip-bg) 50%)
+        right top / var(--eqt-listing-chip-corner) 100% no-repeat padding-box,
+      var(--eqt-mytags-layer) right top / var(--eqt-listing-chip-corner) 100% no-repeat padding-box,
+      linear-gradient(var(--eqt-listing-chip-selection), var(--eqt-listing-chip-selection))
+        left top / calc(100% - var(--eqt-listing-chip-corner)) 100% no-repeat padding-box,
+      var(--eqt-gallery-chip-bg) padding-box;
+  }
+}
+.eqt-listing-chip:is(.eqt-listing-chip--mytags-colored, .eqt-listing-chip--selected-positive, .eqt-listing-chip--selected-negative) {
+  background: var(--eqt-listing-chip-paint) !important;
+}
+.eqt-listing-rules__floating {
+  position: fixed;
+  bottom: calc(var(--eqt-listing-rules-gap) * 2);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--eqt-z-overlay);
+  width: max-content;
+  max-width: calc(100vw - var(--eqt-listing-rules-gap) * 4);
+}
+.eqt-listing-rules__dock {
+  display: grid;
+  // 規則介面開著時沒有右端的清除鈕，只剩工具列一欄
+  grid-template-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  grid-auto-columns: auto;
+  gap: var(--eqt-listing-rules-gap);
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  padding: var(--eqt-listing-rules-gap);
+  background: var(--eqt-bg);
+  border: var(--eqt-border-width) solid var(--eqt-border);
+  border-radius: calc(var(--eqt-radius-md) * 2);
+  box-shadow: var(--eqt-shadow-popover);
+  > .eqt-listing-rules__close,
+  .eqt-listing-rules__dock-tools > button,
+  .eqt-listing-rules__dock-tools > a,
+  .eqt-listing-rules__selection-count {
+    @include btn-toned;
+    border: none;
+    flex-shrink: 0;
+    height: var(--eqt-row-h);
+    gap: var(--eqt-listing-rules-gap);
+    padding: 0 calc(var(--eqt-listing-rules-gap) * 1.5);
+    white-space: nowrap;
+    text-decoration: none;
+    svg {
+      width: var(--eqt-fs-md);
+      height: var(--eqt-fs-md);
+      flex-shrink: 0;
+    }
+  }
+  .eqt-listing-rules__rules-toggle, .eqt-listing-rules__selection-count {
+    &[aria-expanded='true'] {
+      background: var(--eqt-bg-active);
+    }
+  }
+  // 規則頁開著時，把選好的標籤帶回規則頁是 dock 上的主要動作；
+  // 要壓過上面 dock-tools > button 的 btn-toned
+  .eqt-listing-rules__dock-tools > .eqt-listing-rules__carry {
+    @include btn-green;
+    border: none;
+  }
+  .eqt-listing-rules__preview[aria-pressed='true'] { background: var(--eqt-bg-active); }
+}
+// 預覽與規則兩種字疊在同一格，按鈕寬度取寬的那個：切換時 dock 上其他按鈕不會跟著挪
+.eqt-listing-rules__preview-labels {
+  display: inline-grid;
+  justify-items: center;
+
+  > span {
+    grid-area: 1 / 1;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--eqt-listing-rules-gap);
+  }
+}
+// 佔位用：撐開寬度但看不見，也不進無障礙名稱
+.eqt-listing-rules__preview-spare { visibility: hidden; }
+.eqt-listing-rules__kbd {
+  padding: 0 var(--eqt-listing-rules-gap);
+  border: var(--eqt-border-width-thin) solid var(--eqt-border);
+  border-radius: var(--eqt-radius-sm);
+  color: var(--eqt-text-hint);
+  font: inherit;
+  font-size: var(--eqt-fs-xs);
+}
+.eqt-listing-rules__dock-tools {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--eqt-listing-rules-gap);
+  width: 100%;
+  min-width: 0;
+}
+.eqt-listing-rules__separator {
+  flex: 0 0 var(--eqt-border-width-thin);
+  width: var(--eqt-border-width-thin);
+  height: var(--eqt-row-h);
+  background: var(--eqt-divider);
+}
+.eqt-listing-rules__search-menu {
+  min-width: 0;
+}
+.eqt-listing-rules__selection-count {
+  display: flex;
+  gap: var(--eqt-listing-rules-gap);
+  align-items: center;
+  white-space: nowrap;
+  min-width: 0;
+  flex-shrink: 1;
+  max-width: 100%;
+  font-variant-numeric: tabular-nums;
+  span { overflow: hidden; text-overflow: ellipsis; }
+  &[aria-expanded='true'] .eqt-listing-rules__menu-chevron { transform: rotate(180deg); }
+  &[aria-pressed='true'] { box-shadow: inset 0 calc(var(--eqt-border-width) * -1) 0 var(--eqt-text); }
+}
+.eqt-listing-rules__panel {
+  z-index: var(--eqt-z-popover);
+  width: var(--eqt-listing-rules-panel-width);
+  max-width: calc(100vw - var(--eqt-listing-rules-gap) * 4);
+  max-height: calc(100dvh - var(--eqt-listing-rules-dock-height));
+  overflow: auto;
+  padding: calc(var(--eqt-listing-rules-gap) * 3);
+  border: var(--eqt-border-width) solid var(--eqt-border);
+  border-radius: var(--eqt-radius-md);
+  background: var(--eqt-bg);
+  box-shadow: var(--eqt-shadow-popover);
+}
+.eqt-listing-rules__search-popover {
+  z-index: var(--eqt-z-popover);
+  padding-block: var(--eqt-listing-rules-gap);
+  &::before {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    inset-block: calc((var(--eqt-listing-rules-gap) + var(--eqt-border-width)) * -1);
+    z-index: -1;
+  }
+}
+.eqt-listing-rules__search-panel {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--eqt-listing-rules-gap) * 2);
+  .eqt-listing-rules__header {
+    justify-content: space-between;
+    > button { @include btn-ghost; }
+  }
+}
+.eqt-listing-rules__header {
+  display: flex;
+  align-items: start;
+  gap: calc(var(--eqt-listing-rules-gap) * 2);
+  padding-bottom: calc(var(--eqt-listing-rules-gap) * 2);
+  border-bottom: var(--eqt-border-width-thin) solid var(--eqt-divider);
+  > div { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  small { display: block; }
+  a { color: var(--eqt-text); white-space: nowrap; }
+}
+
+// 背景色帶透明度，疊在 EH 原本的底色上（縮圖卡片每格的底色本來就深淺交錯）。
+// 列表模式的 tr 底下每格 td 也有自己的底色，只疊在 td 上，不然同一格會疊兩層
+.eqt-listing-rules__gallery--background:not(tr),
+tr.eqt-listing-rules__gallery--background > td {
+  background-image: linear-gradient(var(--eqt-listing-rules-background), var(--eqt-listing-rules-background)) !important;
+}
+.eqt-listing-rules__gallery--blur {
+  .glthumb:not(:hover) img, .gl3t:not(:hover) img, .gl1e:not(:hover) img { filter: var(--eqt-listing-rules-cover-filter) !important; }
+}
+
+.eqt-listing-rules__gallery--dim { opacity: var(--eqt-listing-rules-opacity); }
+.eqt-listing-rules__gallery--hidden { display: none !important; }
+
+// 標題的樣式只套在包住標題文字的那層：前綴是它的兄弟，刪除線、背景都不會延伸過去。
+// 沒有規則指定時每一項都回到標題原本的樣子。
+// 網站 g.css 有一條 .glname a :not(.glink) { color: #5C0D11 }，標題裡任何不是 .glink 的元素都會被它染色，
+// 前綴與這一層都在 .glink 裡面，顏色只能靠 !important 拿回來；沒指定時 inherit 就是 .glink 自己的顏色
+.eqt-listing-rules__title-text {
+  color: var(--eqt-listing-rules-title-color, inherit) !important;
+  background: var(--eqt-listing-rules-title-background, none);
+  border-radius: var(--eqt-listing-rules-title-radius, 0);
+  text-decoration-line: var(--eqt-listing-rules-title-decoration, none);
+  font-weight: var(--eqt-listing-rules-title-weight, inherit);
+  font-style: var(--eqt-listing-rules-title-style, inherit);
+  padding-inline: var(--eqt-listing-rules-title-pad, 0);
+  // 標題換行時每一行都畫到背景與圓角
+  box-decoration-break: clone;
+}
+
+// 規則的顏色：背景色帶透明度，色條與文字要用不透明的版本才看得出來
+.eqt-listing-rules__label,
+.eqt-listing-rules__prefix,
+.eqt-listing-rules__why {
+  --eqt-listing-rules-tone: var(--eqt-border);
+  // 相對色語法省略 alpha 時會沿用原色的透明度，要明寫 / 1 才真的變成不透明
+  --eqt-listing-rules-solid: rgb(from var(--eqt-listing-rules-tone) r g b / 1);
+}
+
+// 標題前綴插在原生標題文字裡，字型跟著標題走，蓋掉 mount 的重設
+.eqt-listing-rules__mount.eqt-listing-rules__prefixes {
+  display: inline;
+  // 一樣會被 g.css 的 .glname a :not(.glink) 染色，前綴的預設色是從這裡 currentColor 來的
+  color: inherit !important;
+  font: inherit;
+  line-height: inherit;
+  white-space: inherit;
+}
+.eqt-listing-rules__prefix {
+  margin-inline-end: 0.3em;
+  padding-inline: var(--eqt-listing-rules-prefix-pad, 0);
+  // 沒指定文字色時沿用規則的背景色，沒背景色就是框線色
+  color: var(--eqt-listing-rules-prefix-color, color-mix(in srgb, var(--eqt-listing-rules-solid) 65%, currentColor)) !important;
+  background: var(--eqt-listing-rules-prefix-background, none);
+  border-radius: var(--eqt-listing-rules-prefix-radius, 0);
+  font-weight: bold;
+  font-style: normal;
+  box-decoration-break: clone;
+}
+
+// 貼在規則名稱下方的浮層；不接滑鼠，移開名稱就收起來
+.eqt-listing-rules__why {
+  z-index: var(--eqt-z-popover);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--eqt-listing-rules-gap);
+  max-width: calc(var(--eqt-listing-rules-panel-width) / 1.5);
+  padding: var(--eqt-listing-rules-gap) calc(var(--eqt-listing-rules-gap) * 2);
+  border-inline-start: var(--eqt-border-width) solid var(--eqt-listing-rules-solid);
+  border-radius: var(--eqt-radius-md);
+  background: var(--eqt-bg-elevated);
+  box-shadow: var(--eqt-shadow-popover);
+  font-size: var(--eqt-fs-sm);
+  pointer-events: none;
+}
+.eqt-listing-rules__why-term {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--eqt-listing-rules-gap) / 2);
+  padding: 0 var(--eqt-listing-rules-gap);
+  border-radius: var(--eqt-radius-sm);
+  background: color-mix(in srgb, var(--eqt-listing-rules-solid) 20%, transparent);
+}
+.eqt-listing-rules__why-icon {
+  width: var(--eqt-fs-sm);
+  height: var(--eqt-fs-sm);
+  flex-shrink: 0;
+}
+
+// 排法照原生 .gl6t：置中、可換行，間距與單一個最寬 250px 都照它；字級跟著卡片走，跟原生標籤一樣大。
+// 規則按鈕本身是 TagChip，外框、圓角、底色跟原生標籤同一款；不透明的標籤底色疊在規則的背景色上才分得出來。
+// 前面的漏斗跟 dock 上的「圖庫規則」同一個圖示，標出這是規則、不是圖庫本身的 tag
+.eqt-listing-rules__mount.eqt-listing-rules__labels {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 5px 2px 0;
+  font-family: inherit;
+  font-size: inherit;
+}
+// 原生標籤沒設行高，取代它的 chip 也是照抄 normal；這裡跟著用，高度才跟下面的標籤一樣
+.eqt-gallery-chip.eqt-listing-rules__label {
+  max-width: 250px;
+  margin: 0 2px 2px;
+  line-height: normal;
+
+  .eqt-gallery-chip__body { min-width: 0; }
+  // 漏斗填滿：細線圖示在 12px 的標籤裡太淡。裡面用淺一階的同色，外框線維持原色，輪廓才留得住
+  .eqt-gallery-chip__lead svg { fill: color-mix(in srgb, currentColor 45%, var(--eqt-gallery-chip-bg)); }
+  .eqt-gallery-chip__name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+// 有背景色的規則：外框與漏斗換成拿掉透明度的規則色；沒有背景色就跟原生標籤一模一樣，只多一個漏斗
+.eqt-gallery-chip.eqt-listing-rules__label.eqt-listing-rules__label--toned {
+  border-color: var(--eqt-listing-rules-solid);
+
+  .eqt-gallery-chip__lead { color: var(--eqt-listing-rules-solid); }
+}

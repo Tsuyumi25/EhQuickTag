@@ -13,7 +13,7 @@ import type { SampleGallery } from '@/services/mytags/mytagsSamples'
 
 const API = 'https://api.e-hentai.org/api.php'
 /** gdata 一次最多吃 25 筆 */
-const BATCH = 25
+export const GDATA_BATCH = 25
 const HREF = /\/g\/(\d+)\/([0-9a-f]{10})/g
 // 「下一頁」那顆按鈕。EH 把游標算好寫在它的 href 裡。
 // ⚠️ `(?:amp;)?` 不能省：原始碼裡的分隔符是 HTML 實體 `&amp;`，我們讀的是未解析的
@@ -35,6 +35,12 @@ export function parseRefs(html: string): GalleryRef[] {
   return out
 }
 
+/** 單一畫廊連結的 gid + token；與 {@link parseRefs} 共用同一條 pattern */
+export function parseGalleryRef(href: string): GalleryRef | null {
+  for (const match of href.matchAll(HREF)) return { gid: Number(match[1]), token: match[2] }
+  return null
+}
+
 interface GdataEntry {
   gid?: number
   token?: string
@@ -42,12 +48,14 @@ interface GdataEntry {
   category?: string
   thumb?: string
   tags?: string[]
+  /** 平均分，十進位字串 */
+  rating?: string
   expunged?: boolean
   error?: string
 }
 
 /** `namespace: 1` 才會回帶命名空間的標籤（`male:example` 而不是 `example`） */
-async function gdata(refs: GalleryRef[], signal?: AbortSignal): Promise<SampleGallery[]> {
+async function gdata(refs: GalleryRef[], signal?: AbortSignal): Promise<(GdataEntry & { gid: number })[]> {
   const res = await fetch(API, {
     method: 'POST',
     signal,
@@ -60,17 +68,29 @@ async function gdata(refs: GalleryRef[], signal?: AbortSignal): Promise<SampleGa
   })
   if (!res.ok) throw new Error(`Gallery metadata HTTP ${res.status}`)
   const body = await res.json() as { gmetadata?: GdataEntry[] }
-  return (body.gmetadata ?? [])
-    .filter((g): g is GdataEntry & { gid: number } => typeof g.gid === 'number' && !g.error)
-    .map((g) => ({
-      gid: g.gid,
-      token: g.token ?? '',
-      title: g.title ?? '',
-      category: g.category ?? '',
-      thumb: g.thumb ?? '',
-      tags: g.tags ?? [],
-      expunged: g.expunged,
-    }))
+  return (body.gmetadata ?? []).filter((g): g is GdataEntry & { gid: number } => typeof g.gid === 'number' && !g.error)
+}
+
+async function sampleGalleries(refs: GalleryRef[], signal?: AbortSignal): Promise<SampleGallery[]> {
+  return (await gdata(refs, signal)).map((g) => ({
+    gid: g.gid,
+    token: g.token ?? '',
+    title: g.title ?? '',
+    category: g.category ?? '',
+    thumb: g.thumb ?? '',
+    tags: g.tags ?? [],
+    expunged: g.expunged,
+  }))
+}
+
+/** 每本的平均分（gid → 分數）。缺值或壞值的畫廊不放進結果，呼叫端當成未知 */
+export async function fetchAverageRatings(refs: GalleryRef[], signal?: AbortSignal): Promise<Map<number, number>> {
+  const ratings = new Map<number, number>()
+  for (const g of await gdata(refs, signal)) {
+    const value = Number(g.rating)
+    if (typeof g.rating === 'string' && g.rating.trim() && value >= 0 && value <= 5) ratings.set(g.gid, value)
+  }
+  return ratings
 }
 
 /**
@@ -101,9 +121,9 @@ export async function fetchListing(url: string, signal?: AbortSignal): Promise<L
   if (!refs.length) return { galleries: [], next }
 
   const galleries: SampleGallery[] = []
-  for (let i = 0; i < refs.length; i += BATCH) {
+  for (let i = 0; i < refs.length; i += GDATA_BATCH) {
     signal?.throwIfAborted()
-    galleries.push(...await gdata(refs.slice(i, i + BATCH), signal))
+    galleries.push(...await sampleGalleries(refs.slice(i, i + GDATA_BATCH), signal))
   }
   signal?.throwIfAborted()
   return { galleries, next }

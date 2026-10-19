@@ -110,7 +110,7 @@ $eqt-gallery-height: 330px;
   display: inline-flex;
   align-items: stretch;
   margin: 0 2px 5px 2px;
-  border: 1px solid #806769;
+  border: 1px solid var(--eqt-site-tag-border);
   border-radius: 5px;
   overflow: hidden;
   background: var(--eqt-gallery-chip-bg) padding-box;
@@ -121,16 +121,8 @@ $eqt-gallery-height: 330px;
 }
 
 .eqt-gallery-chip--gt  { border-style: solid; }
-.eqt-gallery-chip--gtl { border-style: dashed; border-color: #9a7c7e; }
-.eqt-gallery-chip--gtw { border-style: dotted; border-color: #9a7c7e; }
-
-.eqt-dark .eqt-gallery-chip {
-  border-color: #989898;
-}
-.eqt-dark .eqt-gallery-chip--gtl,
-.eqt-dark .eqt-gallery-chip--gtw {
-  border-color: #8c8c8c;
-}
+.eqt-gallery-chip--gtl { border-style: dashed; border-color: var(--eqt-site-tag-border-weak); }
+.eqt-gallery-chip--gtw { border-style: dotted; border-color: var(--eqt-site-tag-border-weak); }
 
 .eqt-gallery-chip.eqt-gallery-chip--mytags-colored {
   background: var(--eqt-mytags-background) padding-box;

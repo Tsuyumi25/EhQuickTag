@@ -1,0 +1,81 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useClipboard } from '@vueuse/core'
+import { Check, Copy, ScrollText } from '@lucide/vue'
+import RuleActionSummary from './RuleActionSummary.vue'
+import RuleDigestPhrase from './RuleDigestPhrase.vue'
+import RuleDigestTerm from './RuleDigestTerm.vue'
+import { t } from '@/composables/useI18n'
+import type { GalleryRule } from '@/services/listing/galleryRules'
+import { digestRule, NEVER_NOTES, rangeTerms, type DigestTerm } from '@/services/listing/ruleDigest'
+import { noteParams, noteTerms, rowsMarkdown } from '@/services/listing/ruleDigestMarkdown'
+
+const props = defineProps<{ rule: GalleryRule }>()
+const clipboard = useClipboard({ legacy: true })
+
+const digest = computed(() => digestRule(props.rule))
+const mustTerms = computed((): DigestTerm[] => [
+  ...digest.value.categories.map(category => ({ kind: 'category', category, exclude: false }) satisfies DigestTerm),
+  ...digest.value.uploaders.map(uploader => ({ kind: 'uploader', uploader, exclude: false }) satisfies DigestTerm),
+  ...digest.value.tags.map(tag => ({ kind: 'tag', tag, exclude: false }) satisfies DigestTerm),
+])
+const mustRanges = computed(() => rangeTerms(digest.value.ranges))
+const hasMust = computed(() => mustTerms.value.length > 0 || mustRanges.value.length > 0)
+
+// 寫成 Markdown，貼到別處不看畫面也讀得懂
+function copyDigest() {
+  clipboard.copy(rowsMarkdown(t, props.rule, digest.value))
+}
+</script>
+
+<template>
+  <section class="eqt-rule-page__section">
+    <div class="eqt-rule-page__section-head">
+      <h2><ScrollText class="eqt-rule-page__icon" />{{ t('rulePage.summary') }}</h2>
+      <button
+        type="button" class="eqt-rule-page__digest-copy"
+        :title="t(clipboard.copied.value ? 'settings.editorCopied' : 'settings.editorCopy')"
+        :aria-label="t(clipboard.copied.value ? 'settings.editorCopied' : 'settings.editorCopy')"
+        @click="copyDigest"
+      ><component :is="clipboard.copied.value ? Check : Copy" class="eqt-rule-page__icon" /></button>
+    </div>
+
+    <div class="eqt-rule-page__digest" :class="{ 'eqt-rule-page__digest--never': digest.never }">
+      <dl class="eqt-rule-page__digest-rows">
+        <div v-if="hasMust" class="eqt-rule-page__digest-row eqt-rule-page__digest-row--all">
+          <dt>{{ t('rulePage.digest.must') }}</dt>
+          <dd>
+            <RuleDigestTerm v-for="(term, index) in mustTerms" :key="`must-${index}`" :term="term" />
+            <RuleDigestTerm v-for="(term, index) in mustRanges" :key="`range-${index}`" :term="term" />
+          </dd>
+        </div>
+        <div v-for="(group, index) in digest.groups" :key="index" class="eqt-rule-page__digest-row eqt-rule-page__digest-row--any">
+          <dt>{{ t('rulePage.digest.any') }}</dt>
+          <dd><RuleDigestTerm v-for="(term, termIndex) in group" :key="termIndex" :term="term" /></dd>
+        </div>
+        <div v-if="digest.unless.length" class="eqt-rule-page__digest-row eqt-rule-page__digest-row--none">
+          <dt>{{ t('rulePage.digest.none') }}</dt>
+          <dd><RuleDigestTerm v-for="(term, index) in digest.unless" :key="index" :term="term" /></dd>
+        </div>
+        <div class="eqt-rule-page__digest-row eqt-rule-page__digest-row--action">
+          <dt>{{ t('listingRules.actions') }}</dt>
+          <dd><RuleActionSummary class="eqt-rule-page__digest-action" :actions="rule.actions" verbose /></dd>
+        </div>
+      </dl>
+
+      <ul v-if="digest.notes.length" class="eqt-rule-page__digest-notes">
+        <li
+          v-for="(note, index) in digest.notes" :key="index"
+          :class="{ 'eqt-rule-page__digest-note--never': NEVER_NOTES[note.kind] }"
+        >
+          <RuleDigestPhrase
+            :text-key="`rulePage.digest.note.${note.kind}`"
+            :params="noteParams(t, note)"
+          >
+            <RuleDigestTerm v-for="(term, termIndex) in noteTerms(note)" :key="termIndex" :term="term" />
+          </RuleDigestPhrase>
+        </li>
+      </ul>
+    </div>
+  </section>
+</template>

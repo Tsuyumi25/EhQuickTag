@@ -13,7 +13,7 @@ import { ref, shallowRef, computed, watch, nextTick, onMounted, onBeforeUnmount 
 import { GM } from '$'
 import { serializeEntry } from '@/services/search/searchSyntax'
 import { findEntryByNsTag, DEFAULT_NS_ORDER, tagDbVersion } from '@/services/tags/tagDb'
-import { nsFormat, defaultExactMatch, galleryDragSelectEnabled, galleryMyTagsColorsEnabled, galleryMyTagsScoresEnabled, galleryMyTagsMarksEnabled, galleryDblClickLeft, galleryDblClickRight, galleryDblClickLeftNewTabActive, galleryDblClickRightNewTabActive, galleryTaglistZoom, type GalleryDblClickAction } from '@/services/store'
+import { nsFormat, defaultExactMatch, galleryDblClickLeft, galleryDblClickRight, galleryDblClickLeftNewTabActive, galleryDblClickRightNewTabActive, type GalleryDblClickAction } from '@/services/store'
 import { loadMyTagsPalette, type MyTagsPalette } from '@/services/mytags/mytagsPalette'
 import { pickUrl, savePick } from '@/services/mytags/mytagsPicks'
 import { bestTier, evidenceOf, parseGalleryUrl, withImport, type Imports } from '@/services/gallery/galleryImport'
@@ -25,13 +25,11 @@ import { batchVote, type VoteState } from '@/services/gallery/galleryVote'
 import { useEqtToast } from '@/composables/useEqtToast'
 import { useEhGalleryHost, parseTaglistRoot, type GalleryTag } from '@/composables/useEhGalleryHost'
 import { useIntroPanel } from '@/composables/useIntroPanel'
-import { Settings, Search, BookOpen, Tags, TagPlus, SquareArrowRightEnter, CornerLeftUp, CircleCheck, CircleDashedCheck, X } from '@lucide/vue'
-import { useDragSelect } from '@/composables/useDragSelect'
-import type { ChipRef, TriState, Selection } from '@/services/gallery/dragSelectMachine'
+import { Settings, Search, BookOpen, Tags, TagPlus, SquareArrowRightEnter, X } from '@lucide/vue'
+import type { Selection } from '@/services/gallery/dragSelectMachine'
 import GalleryAddInline from './GalleryAddInline.vue'
-import { CircleDottedCheck } from './circleDottedCheck'
 import GalleryIntroPanel from './GalleryIntroPanel.vue'
-import TagChip from '@/components/TagChip.vue'
+import GalleryTagListRows, { type GalleryTagListChip, type GalleryTagListGroup } from './GalleryTagListRows.vue'
 import type { TagEntry } from '@/services/tags/tagDb'
 import { pageWindow } from '@/utils/pageWindow'
 
@@ -148,30 +146,7 @@ const candidates = computed<GalleryTag[]>(() => {
 /** 原 taglist + 候選，每個 nsRaw 一份。送出、查詢都走這份 */
 const allTags = computed(() => [...currentTags.value, ...candidates.value])
 
-interface ChipView {
-  tag: GalleryTag
-  token: string
-  display: string
-  selected: Selection | undefined
-  tier: TagTier
-  iconUrl?: string
-  personalTag?: MyTagsPalette[string]
-  candidate: 'added' | 'imported' | null
-  /** 別本提供的佐證；本頁已有的實線標籤省略 */
-  evidence: 'solid' | 'dashed' | 'dotted' | null
-  /** 開頭記號的 hover 說明：從哪幾本帶進來 */
-  sources: string
-}
-
-interface ChipGroup {
-  key: string
-  /** 空字串代表緊接在同 ns 的真標籤列底下：ns 欄改畫 corner-left-up 指回上一列 */
-  label: string
-  candidate: boolean
-  chips: ChipView[]
-}
-
-function buildChipView(tag: GalleryTag, isCandidate: boolean): ChipView {
+function buildChipView(tag: GalleryTag, isCandidate: boolean): GalleryTagListChip {
   const token = serializeEntry(
     { ns: tag.ns, raw: tag.raw },
     { nsFormat: nsFormat.value, exactMatch: defaultExactMatch.value },
@@ -195,15 +170,15 @@ function buildChipView(tag: GalleryTag, isCandidate: boolean): ChipView {
 
 // 每個 ns 先一列真標籤，候選緊接一列在它底下；這本沒有的 ns 只有候選列，照預設順序
 // 接在後面，未知的殿後
-const groups = computed<ChipGroup[]>(() => {
+const groups = computed<GalleryTagListGroup[]>(() => {
   void tagDbVersion.value
 
-  const real = new Map<string, ChipView[]>()
+  const real = new Map<string, GalleryTagListChip[]>()
   for (const tag of currentTags.value) {
     if (!real.has(tag.ns)) real.set(tag.ns, [])
     real.get(tag.ns)!.push(buildChipView(tag, false))
   }
-  const pending = new Map<string, ChipView[]>()
+  const pending = new Map<string, GalleryTagListChip[]>()
   for (const tag of candidates.value) {
     if (!pending.has(tag.ns)) pending.set(tag.ns, [])
     pending.get(tag.ns)!.push(buildChipView(tag, true))
@@ -214,7 +189,7 @@ const groups = computed<ChipGroup[]>(() => {
   ]
 
   const knownNs = new Set(DEFAULT_NS_ORDER)
-  const result: ChipGroup[] = []
+  const result: GalleryTagListGroup[] = []
   for (const ns of order) {
     const label = knownNs.has(ns) ? t(`ns.${ns}`) : ns
     const chips = real.get(ns)
@@ -331,35 +306,10 @@ async function importFrom(input: string): Promise<void> {
   importUrl.value = ''
 }
 
-// drag-select 狀態機跟 click 路徑封裝在 useDragSelect，邏輯放在
-// services/gallery/dragSelectMachine.ts（pure reducer + property test）。
-// 這裡只負責把 DOM hit-test 跟業務動作注入
-function chipFromPoint(x: number, y: number): ChipRef | null {
-  const el = document.elementFromPoint(x, y) as HTMLElement | null
-  const chipEl = el?.closest<HTMLElement>('.eqt-gallery-chip')
-  if (!chipEl) return null
-  const nsRaw = chipEl.dataset.nsRaw
-  if (!nsRaw) return null
-  const s = selection.value.get(nsRaw)
-  const state: TriState = s === 'positive' ? 1 : s === 'negative' ? -1 : 0
-  return { id: nsRaw, state }
-}
-
-function applySelectionById(nsRaw: string, mode: Selection): void {
-  setSelection(nsRaw, mode)
-}
-
 function setPanelTagById(nsRaw: string): void {
   const tag = allTags.value.find(t => t.nsRaw === nsRaw)
   if (tag) setPanelTag(tag)
 }
-
-const { onAreaMouseDown } = useDragSelect({
-  chipFromPoint,
-  applySelection: applySelectionById,
-  setPanelTag: setPanelTagById,
-  enabled: () => galleryDragSelectEnabled.value,
-})
 
 // Gallery Tagging guide：中文 locale 走 /Chinese 分頁、韓文走 /Korean、其他走英文 root
 // （ehwiki 沒有 /Japanese，所以日文也落英文 root）
@@ -554,49 +504,15 @@ watch(selection, () => {
 </script>
 
 <template>
-  <div
-    class="eqt-gallery-taglist"
-    :style="{ zoom: galleryTaglistZoom / 100 }"
-    @mousedown="onAreaMouseDown"
+  <GalleryTagListRows
+    :groups="groups"
+    scene="gallery"
+    :user-votes="userVotes"
+    @select="setSelection"
+    @inspect="setPanelTagById"
     @dblclick="onTaglistDblClick"
     @contextmenu="onTaglistContextMenu"
-  >
-    <div
-      v-for="group in groups"
-      :key="group.key"
-      class="eqt-gallery-taglist__row"
-    >
-      <div class="eqt-gallery-taglist__label">
-        <template v-if="group.label">{{ group.label }}:</template>
-        <CornerLeftUp v-else-if="group.candidate" class="eqt-gallery-taglist__label-icon" />
-      </div>
-      <div class="eqt-gallery-taglist__cells" :class="{ 'eqt-gallery-taglist__cells--candidate': group.candidate }">
-        <TagChip
-          v-for="chip in group.chips"
-          :key="chip.tag.nsRaw"
-          :full="chip.tag.nsRaw"
-          :display="chip.display"
-          :icon-url="chip.iconUrl"
-          :tier="chip.tier"
-          :colors="galleryMyTagsColorsEnabled ? chip.personalTag : undefined"
-          :weight="chip.personalTag?.weight"
-          :hidden="chip.personalTag?.hidden"
-          :watch="chip.personalTag?.watch"
-          :show-score="galleryMyTagsScoresEnabled"
-          :show-marks="galleryMyTagsMarksEnabled"
-          :selection="chip.selected"
-          :vote="userVotes[chip.tag.nsRaw]"
-        >
-          <template v-if="chip.candidate || chip.evidence" #lead>
-            <TagPlus v-if="chip.candidate === 'added'" />
-            <CircleCheck v-else-if="chip.evidence === 'solid'" :title="chip.sources" />
-            <CircleDashedCheck v-else-if="chip.evidence === 'dashed'" :title="chip.sources" />
-            <CircleDottedCheck v-else :title="chip.sources" />
-          </template>
-        </TagChip>
-      </div>
-    </div>
-  </div>
+  />
 
   <!-- Action 區：search 左跨 2 列、vote 右跨 2 列（兩個大方塊，物理距離把誤觸代價較高的
        vote 跟 search 隔開），中間夾 add / 導入 / wiki 與 clear / My Tags / settings。

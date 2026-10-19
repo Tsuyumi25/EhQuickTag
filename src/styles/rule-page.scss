@@ -1,0 +1,1326 @@
+@use 'buttons' as *;
+
+:root {
+  --eqt-rule-page-gap: var(--eqt-gallery-chip-content-gap);
+  --eqt-rule-page-sidebar: calc(var(--eqt-row-h) * 10);
+  // 右欄要放得下 namespace 篩選 + 候選清單的 ns / 名稱 / 原文三欄
+  --eqt-rule-page-library: calc(var(--eqt-row-h) * 16);
+  --eqt-rule-page-control-h: var(--eqt-checkbox-size);
+  // 同 .eqt-popup__suggestion 的搜尋狀態色條粗細
+  --eqt-rule-page-tone-width: calc(var(--eqt-border-width) * 1.5);
+  // 句子裡的控制項跟標籤 chip 的內容同高；em 在使用處才解析，跟著各自的字級走
+  --eqt-rule-page-inline-h: calc(1.4em + var(--eqt-gallery-chip-padding-block) * 2);
+  // 跟 .eqt-gallery-chip 自帶的 margin 同一組，數值條件、群組、摘要裡的項目才能排在 chip 旁邊對齊
+  --eqt-rule-page-item-margin: 0 calc(var(--eqt-rule-page-gap) / 2) calc(var(--eqt-rule-page-gap) * 1.25);
+  // 四周留出一圈搜尋頁：規則頁是浮在搜尋頁上的一張卡，不是換到另一個頁面
+  --eqt-rule-page-margin: calc(var(--eqt-rule-page-gap) * 6);
+}
+
+// 三欄沿用 /mytags 工作台：兩側是 stripe 卡片；每一欄各自捲動，所以標題列不需要 sticky。
+.eqt-rule-page {
+  position: fixed;
+  // 底下讓出列表的 dock：預覽、返回與關閉在 dock 上（--eqt-listing-rules-dock-clearance 定義在 listing-rules.scss）
+  inset: var(--eqt-rule-page-margin) var(--eqt-rule-page-margin) var(--eqt-listing-rules-dock-clearance);
+  z-index: var(--eqt-z-overlay);
+  display: grid;
+  grid-template-columns:
+    minmax(0, var(--eqt-rule-page-sidebar)) minmax(0, 1fr) minmax(0, var(--eqt-rule-page-library));
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: calc(var(--eqt-rule-page-gap) * 3);
+  overflow: hidden;
+  // 背景搜尋頁可以捲動，但滾輪落在規則頁上時不能捲到後面去；
+  // 欄內的清單與編輯區各自 contain，這裡擋的是標題列這些本身不能捲的地方
+  overscroll-behavior: contain;
+  padding: calc(var(--eqt-rule-page-gap) * 2.5) calc(var(--eqt-rule-page-gap) * 3);
+  border: var(--eqt-border-width) solid var(--eqt-border);
+  border-radius: var(--eqt-radius-lg);
+  background: var(--eqt-bg);
+  box-shadow: var(--eqt-shadow);
+  color: var(--eqt-text);
+  font-size: var(--eqt-fs-md);
+  line-height: 1.4;
+  text-align: start;
+  white-space: normal;
+
+  // 打開時焦點先落在整個規則頁上（讀屏念出標題），不是可操作的控制項，不畫焦點框
+  &:focus { outline: none; }
+
+  &--collapsed {
+    visibility: hidden;
+    pointer-events: none;
+  }
+}
+
+.eqt-rule-page__icon {
+  flex-shrink: 0;
+  width: var(--eqt-fs-lg);
+  height: var(--eqt-fs-lg);
+}
+
+.eqt-rule-page__input,
+.eqt-rule-page__select {
+  min-width: 0;
+  // EH g.css 對 bare select 塞 min-height / margin，歸零才能跟其他控制項等高對齊
+  min-height: 0;
+  max-width: 100%;
+  height: var(--eqt-rule-page-control-h);
+  margin: 0;
+  padding: 0 calc(var(--eqt-rule-page-gap) * 1.5);
+  border: var(--eqt-border-width) solid var(--eqt-border);
+  border-radius: var(--eqt-radius-sm);
+  background: var(--eqt-bg);
+  color: var(--eqt-text);
+  font: inherit;
+  transition: var(--eqt-transition-base);
+
+  .eqt-dark & { background: var(--eqt-bg-elevated); }
+
+  &:focus {
+    border-color: var(--eqt-text);
+    outline: none;
+  }
+}
+
+.eqt-rule-page__input::placeholder {
+  color: var(--eqt-text-hint);
+}
+
+.eqt-rule-page__alert {
+  margin: calc(var(--eqt-rule-page-gap) * 3) 0 0;
+  padding: calc(var(--eqt-rule-page-gap) * 2) calc(var(--eqt-rule-page-gap) * 3);
+  border-inline-start: var(--eqt-rule-page-tone-width) solid var(--eqt-danger);
+  border-radius: var(--eqt-radius-sm);
+  background: var(--eqt-danger-bg-hover);
+  color: var(--eqt-danger);
+}
+
+// ---- 兩側卡片：左欄規則清單、右欄素材與標籤 ----
+
+.eqt-rule-page__side,
+.eqt-rule-page__library {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--eqt-rule-page-gap) * 1.5);
+  min-width: 0;
+  min-height: 0;
+  padding: calc(var(--eqt-rule-page-gap) * 2);
+  border: var(--eqt-border-width) solid var(--eqt-divider);
+  border-radius: var(--eqt-radius-md);
+  background: var(--eqt-bg-stripe);
+}
+
+.eqt-rule-page__library {
+  gap: calc(var(--eqt-rule-page-gap) * 2.5);
+}
+
+// 標題對齊 settings popup 側欄標題，新增規則靠在同一列的最右邊
+.eqt-rule-page__side-head {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: calc(var(--eqt-rule-page-gap) * 2);
+  margin-bottom: var(--eqt-rule-page-gap);
+  padding: var(--eqt-rule-page-gap) 0 0 calc(var(--eqt-rule-page-gap) * 1.5);
+}
+
+.eqt-rule-page__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--eqt-fs-lg);
+  font-weight: bold;
+}
+
+// min-height: 0 讓清單在側欄的高度內捲動，而不是撐出視窗
+.eqt-rule-page__list-items {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: calc(var(--eqt-rule-page-gap) / 2);
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+// 列的高度與選中態沿用 settings 的 profile 清單
+.eqt-rule-page__list-item {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  width: 100%;
+  min-height: calc(var(--eqt-row-h) + var(--eqt-rule-page-gap) * 1.5);
+  border-radius: var(--eqt-radius-sm);
+
+  &:hover { background: var(--eqt-bg-hover); }
+
+  &--active,
+  &--active:hover {
+    background: var(--eqt-bg-active);
+
+    .eqt-rule-page__list-name { font-weight: bold; }
+  }
+
+  &--disabled .eqt-rule-page__list-name { color: var(--eqt-text-hint); }
+
+  &--ghost { opacity: 0.4; }
+}
+
+.eqt-rule-page__list-select {
+  @include btn-ghost;
+  flex: 1;
+  justify-content: flex-start;
+  gap: calc(var(--eqt-rule-page-gap) * 1.5);
+  min-width: 0;
+  align-self: stretch;
+  padding: 0 var(--eqt-rule-page-gap);
+  color: var(--eqt-text);
+  font-size: var(--eqt-fs-lg);
+  text-align: start;
+
+  // 整列已經有 hover 底色，按鈕自己再疊一層會變成兩階
+  &:hover:not(:disabled) { background: transparent; }
+}
+
+.eqt-rule-page__list-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// 樣子照設定頁 profile 清單的 active badge：只有底色、沒有框
+.eqt-rule-page__badge {
+  flex-shrink: 0;
+  padding: 0 var(--eqt-rule-page-gap);
+  border-radius: var(--eqt-radius-sm);
+  background: var(--eqt-bg-active);
+  color: var(--eqt-text-hint);
+  font-size: var(--eqt-fs-xs);
+  font-weight: normal;
+}
+
+.eqt-rule-page__drag-handle,
+.eqt-rule-page__list-menu {
+  @include btn-icon;
+  flex-shrink: 0;
+}
+
+.eqt-rule-page__drag-handle {
+  color: var(--eqt-grip);
+  cursor: grab;
+  touch-action: none;
+
+  &:active { cursor: grabbing; }
+}
+
+.eqt-rule-page__add-rule {
+  @include btn-toned;
+  flex-shrink: 0;
+  height: var(--eqt-rule-page-control-h);
+  padding: 0 calc(var(--eqt-rule-page-gap) * 2);
+  white-space: nowrap;
+}
+
+// ---- 編輯區 ----
+
+.eqt-rule-page__editor {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+// 三格對齊底下的三欄。dark 的 --eqt-divider 與 --eqt-bg 同色，分隔線一律用 --eqt-border 才看得見
+.eqt-rule-page__header {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: center;
+  padding-bottom: calc(var(--eqt-rule-page-gap) * 2.5);
+  border-bottom: var(--eqt-border-width) solid var(--eqt-border);
+}
+
+.eqt-rule-page__header-start,
+.eqt-rule-page__header-end {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--eqt-rule-page-gap) * 2);
+  min-width: 0;
+}
+
+.eqt-rule-page__header-end { justify-content: flex-end; }
+
+.eqt-rule-page__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--eqt-rule-page-gap) * 2);
+  min-width: 0;
+}
+
+.eqt-rule-page__settings {
+  @include btn-toned;
+  gap: calc(var(--eqt-rule-page-gap) * 1.5);
+  height: var(--eqt-rule-page-control-h);
+  padding: 0 calc(var(--eqt-rule-page-gap) * 2.5);
+}
+
+.eqt-rule-page__name {
+  flex: 1 1 calc(var(--eqt-row-h) * 8);
+  font-size: var(--eqt-fs-lg);
+  font-weight: bold;
+}
+
+.eqt-rule-page__enabled {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--eqt-rule-page-gap) * 1.5);
+  min-height: var(--eqt-rule-page-control-h);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.eqt-rule-page__close {
+  @include btn-ghost;
+  gap: calc(var(--eqt-rule-page-gap) * 1.5);
+  height: var(--eqt-rule-page-control-h);
+  padding: 0 calc(var(--eqt-rule-page-gap) * 2.5);
+}
+
+.eqt-rule-page__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding-inline-end: calc(var(--eqt-rule-page-gap) * 2);
+}
+
+// 層級同 settings：粗體標題 + hint 色 icon、section 之間 --eqt-border 分隔、
+// section 間距遠大於行距
+.eqt-rule-page__section {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--eqt-rule-page-gap) * 1.5);
+  min-width: 0;
+  padding-block: calc(var(--eqt-rule-page-gap) * 3.5);
+
+  // 欄頂跟標題列之間的距離已經由 .eqt-rule-page 的 grid gap 給了
+  &:first-of-type { padding-top: 0; }
+
+  & + & {
+    border-top: var(--eqt-border-width) solid var(--eqt-border);
+  }
+}
+
+.eqt-rule-page__section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--eqt-rule-page-gap) * 2);
+}
+
+.eqt-rule-page__section > h2,
+.eqt-rule-page__section-head > h2,
+.eqt-rule-page__finder-head > h2 {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--eqt-rule-page-gap) * 1.5);
+  margin: 0;
+  font-size: var(--eqt-fs-lg);
+  font-weight: bold;
+
+  > .eqt-rule-page__icon { color: var(--eqt-text-hint); }
+}
+
+// ---- 條件：chip 托盤 ----
+
+// 項目間距沿用 .eqt-gallery-chip 自帶的 margin（對齊原生 taglist），托盤本身不設 gap
+.eqt-rule-page__tray {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  min-width: 0;
+  // 空的托盤也要留一列高，素材才有地方放
+  min-height: calc(var(--eqt-row-h) + var(--eqt-rule-page-gap) * 1.25);
+
+  > .eqt-rule-page__range,
+  > .eqt-rule-page__group {
+    margin: var(--eqt-rule-page-item-margin);
+  }
+
+  // 拖曳中的 ghost 也算項目，滑進來提示字就讓位
+  &:not(:has(> .eqt-rule-page__item, > .eqt-popup__suggestion))::before {
+    content: attr(data-empty);
+    margin: var(--eqt-rule-page-item-margin);
+    color: var(--eqt-text-hint);
+    font-size: var(--eqt-fs-sm);
+  }
+
+  .eqt-rule-page__group:not(.eqt-rule-page__group--root) > &:not(:has(> .eqt-rule-page__item, > .eqt-popup__suggestion))::before {
+    color: var(--eqt-danger);
+  }
+
+  // 從候選清單拖進來的是一整列，在托盤裡縮成 chip 大小、只留名稱
+  > .eqt-popup__suggestion {
+    display: inline-flex;
+    align-items: center;
+    height: var(--eqt-row-h);
+    margin: var(--eqt-rule-page-item-margin);
+    padding: 0 calc(var(--eqt-rule-page-gap) * 1.5);
+    border: var(--eqt-border-width) dashed var(--eqt-border);
+    border-radius: var(--eqt-radius-sm);
+
+    > .eqt-popup__suggestion-ns,
+    > .eqt-popup__suggestion-tag { display: none; }
+  }
+}
+
+.eqt-rule-page__item--ghost { opacity: 0.4; }
+
+// forceFallback 拖曳時跟著游標的那份複本（Sortable 的 sortable-fallback）。Sortable 只在它本身設 pointer-events: none，
+// 但箭頭段的 ::before 自己設了 pointer-events: auto，會從複本裡穿出來被 elementFromPoint 撈到：
+// 拖群組時游標底下永遠是複本自己的箭頭段，放置位置就一直算成「複本旁邊」，別的位置與別的層都放不進去
+.eqt-rule-page .sortable-fallback {
+  &, *, *::before, *::after { pointer-events: none !important; }
+}
+
+// body 不再負責切換，抓著就是拖
+.eqt-rule-page__chip .eqt-gallery-chip__body {
+  cursor: grab;
+}
+
+// 含有／不含與移除鈕用跟名稱同一個字色的普通 icon、不另外上底色，mytags 的底色才能鋪滿整顆 chip。
+// 含有／不含靠 + 與 − 的形狀區分，不靠顏色
+.eqt-rule-page__polarity,
+.eqt-rule-page__chip > .eqt-rule-page__chip-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--eqt-mytags-text, var(--eqt-text));
+  cursor: pointer;
+  transition: var(--eqt-transition-base);
+
+  > svg {
+    width: var(--eqt-fs-md);
+    height: var(--eqt-fs-md);
+  }
+
+  &:hover { background: var(--eqt-bg-hover); }
+}
+
+.eqt-rule-page__polarity {
+  padding: 0 calc(var(--eqt-gallery-chip-padding-inline) / 2) 0 var(--eqt-gallery-chip-padding-inline);
+}
+
+.eqt-rule-page__chip > .eqt-rule-page__chip-remove {
+  padding: 0 var(--eqt-gallery-chip-padding-inline) 0 calc(var(--eqt-gallery-chip-padding-inline) / 2);
+}
+
+.eqt-rule-page__chip-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--eqt-gallery-chip-padding-inline);
+  border: none;
+  // 承接 chip 外框的顏色與線型，分隔線看起來跟外框是同一條
+  border-inline-start: var(--eqt-border-width-thin) solid;
+  border-inline-start-color: inherit;
+  background: transparent;
+  color: var(--eqt-text-hint);
+  cursor: pointer;
+  transition: var(--eqt-transition-base);
+
+  > svg {
+    width: var(--eqt-fs-md);
+    height: var(--eqt-fs-md);
+  }
+
+  &:hover { color: var(--eqt-danger); }
+}
+
+// 數值條件讀起來是一句話（★ 不低於 4.5）：框只留 chip 外面這一層，裡面的下拉與數字欄都不畫框
+.eqt-rule-page__range {
+  // 四個字寬放得下四位數的頁數；ch 跟著字級縮放
+  --eqt-number-field-width: calc(4ch + var(--eqt-rule-page-gap));
+
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--eqt-rule-page-gap) / 2);
+  padding-inline-start: calc(var(--eqt-rule-page-gap) * 1.5);
+  overflow: hidden;
+  border: var(--eqt-border-width) solid var(--eqt-border);
+  border-radius: var(--eqt-radius-sm);
+  background: var(--eqt-bg-btn);
+  color: var(--eqt-text-hint);
+  line-height: 1.4;
+  cursor: grab;
+
+  .eqt-number-field { height: auto; }
+  .eqt-number-field__step { display: none; }
+
+  // 要壓過 EqtNumberField 的 input:enabled:hover / :focus
+  input.eqt-number-field__input {
+    height: var(--eqt-rule-page-inline-h);
+    padding: 0 calc(var(--eqt-rule-page-gap) / 2);
+    border: none;
+    border-radius: var(--eqt-radius-sm);
+    background: transparent;
+    font-size: inherit;
+
+    &:enabled:hover,
+    &:enabled:focus { background: var(--eqt-bg-hover); }
+  }
+
+  > .eqt-rule-page__chip-remove {
+    align-self: stretch;
+    border-inline-start: var(--eqt-border-width) solid var(--eqt-border);
+  }
+}
+
+.eqt-rule-page__stars {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+}
+
+// 兩層同一顆星疊起來：底下是空心外框，上面是實心星、用 clip 露出整顆或左半顆
+.eqt-rule-page__star {
+  display: inline-grid;
+  width: var(--eqt-fs-lg);
+  height: var(--eqt-fs-lg);
+
+  > svg {
+    grid-area: 1 / 1;
+    width: 100%;
+    height: 100%;
+  }
+
+  > .eqt-rule-page__star-back { color: var(--eqt-text-hint); }
+
+  > .eqt-rule-page__star-front {
+    color: var(--eqt-status-or);
+    fill: currentColor;
+  }
+
+  &--empty > .eqt-rule-page__star-front { clip-path: inset(0 100% 0 0); }
+  &--half > .eqt-rule-page__star-front { clip-path: inset(0 50% 0 0); }
+}
+
+// 嵌在句子裡的下拉（數值條件的運算子）：平常是一段字，hover 才浮出底色
+.eqt-rule-page__inline-select {
+  appearance: none;
+  min-width: 0;
+  // EH g.css 對 bare select 塞 min-height / margin
+  min-height: 0;
+  height: var(--eqt-rule-page-inline-h);
+  margin: 0;
+  padding: 0 calc(var(--eqt-rule-page-gap) / 2);
+  border: none;
+  border-radius: var(--eqt-radius-sm);
+  background: transparent;
+  color: var(--eqt-text);
+  font: inherit;
+  cursor: pointer;
+  transition: var(--eqt-transition-base);
+
+  &:hover,
+  &:focus-visible {
+    outline: none;
+    background: var(--eqt-bg-hover);
+  }
+
+  // 下拉本體透明時，Chromium 的選單會拿預設白底配上 dark 的淺色字
+  > option {
+    background: var(--eqt-bg-elevated);
+    color: var(--eqt-text);
+  }
+}
+
+// 運算子只有一個符號，字級放大到跟星星同高、固定寬度置中，換成別的符號時後面的值不會跳動
+.eqt-rule-page__op {
+  min-width: calc(var(--eqt-fs-lg) * 1.5);
+  font-size: var(--eqt-fs-lg);
+  font-weight: bold;
+  text-align: center;
+  text-align-last: center;
+}
+
+// ---- 右欄：素材（產生器、帶回來的素材與標籤清單同一塊） ----
+
+.eqt-rule-page__finder-head {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--eqt-rule-page-gap) * 2);
+
+  > h2 { margin-inline-end: auto; }
+}
+
+.eqt-rule-page__tool {
+  @include btn-toned;
+  height: var(--eqt-row-h);
+  padding: 0 calc(var(--eqt-rule-page-gap) * 1.5);
+  font-size: var(--eqt-fs-sm);
+
+  // 跟標題、勾選框排在同一列，寫字的話窄欄裡會擠到換行
+  &--icon {
+    flex-shrink: 0;
+    width: var(--eqt-row-h);
+    padding: 0;
+  }
+}
+
+// min-height: 0 讓候選清單在右欄剩下的高度內捲動，而不是把整欄撐出視窗
+.eqt-rule-page__finder {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: calc(var(--eqt-rule-page-gap) * 1.5);
+  min-width: 0;
+  min-height: 0;
+
+  > .eqt-rule-page__input {
+    flex-shrink: 0;
+    width: 100%;
+  }
+}
+
+.eqt-rule-page__finder-body {
+  display: flex;
+  flex: 1 1 auto;
+  gap: calc(var(--eqt-rule-page-gap) * 1.5);
+  min-height: 0;
+}
+
+.eqt-rule-page__finder-list {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+
+  // 清單本身的列在 mousedown 時擋掉選字，產生器與素材是另外 render 的列，要自己擋，不然一拖就反白一整片
+  .eqt-popup__suggestion {
+    cursor: grab;
+    user-select: none;
+  }
+
+  // 產生器：名稱欄放拖出去之後長的樣子（群組的 AND／OR 箭頭段、數值條件的圖示）
+  .eqt-rule-page__generator .eqt-popup__suggestion-name {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--eqt-rule-page-gap);
+
+    > .eqt-rule-page__icon { color: var(--eqt-text-hint); }
+  }
+  // 箭頭段本身是給按鈕用的，點擊判定在 ::before 上；這裡要拖，游標換成抓手
+  .eqt-rule-page__generator .eqt-rule-page__segment {
+    justify-self: start;
+
+    &::before { cursor: grab; }
+    &--all { --eqt-rule-page-seg: var(--eqt-status-include); }
+    &--any { --eqt-rule-page-seg: var(--eqt-status-or); }
+  }
+
+  // 跟 E 站列表上的分類標籤同一種樣子：分類色實底、白色粗體字
+  .eqt-rule-page__category-pill {
+    padding: 0 calc(var(--eqt-rule-page-gap) * 1.5);
+    border-radius: var(--eqt-radius-sm);
+    background: var(--eqt-mytags-background);
+    color: var(--eqt-mytags-text);
+    font-size: var(--eqt-fs-md);
+    font-weight: bold;
+  }
+
+  .eqt-rule-page__material .eqt-popup__suggestion-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--eqt-rule-page-gap);
+  }
+
+  .eqt-rule-page__material-remove {
+    @include btn-icon;
+    width: var(--eqt-fs-lg);
+    height: var(--eqt-fs-lg);
+    color: var(--eqt-text-hint);
+
+    &:hover:not(:disabled) { color: var(--eqt-danger); }
+
+    > svg {
+      width: var(--eqt-fs-md);
+      height: var(--eqt-fs-md);
+    }
+  }
+
+  // 跟 /mytags 標籤目錄同一套：有個人配色的列畫出 chip 的框與粗體，底色與字色走 inline style
+  .eqt-popup__suggestion--styled {
+    box-sizing: border-box;
+    height: var(--eqt-suggestion-row-height);
+    padding-block: 0;
+    border: var(--eqt-border-width) solid var(--eqt-border);
+    font-weight: 700;
+
+    .eqt-popup__suggestion-ns,
+    .eqt-popup__suggestion-tag { color: inherit; }
+
+    &.eqt-popup__suggestion--active {
+      outline: var(--eqt-border-width) solid currentColor;
+      outline-offset: calc(-1 * var(--eqt-border-width));
+    }
+  }
+}
+
+// 群組沿用原本三區的樣子：標題列（IS／IS NOT 與判定模式的切換）加上左側色條的托盤。
+// 色條借用搜尋狀態的顏色：全部成立 = include、任一成立 = OR；NOT 把整個群組框上 exclude 紅框。
+// 群組一律獨佔一整行，像程式碼的縮排：每往下一層，就多疊一條色條、往右縮一格，
+// 看左邊有幾條色條就知道是第幾層；跟 chip 排在同一行時層級看不出來
+.eqt-rule-page__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--eqt-rule-page-gap);
+  min-width: 0;
+
+  &--all { --eqt-rule-page-tone: var(--eqt-status-include); }
+  &--any { --eqt-rule-page-tone: var(--eqt-status-or); }
+
+  > .eqt-rule-page__tray {
+    padding-inline-start: calc(var(--eqt-rule-page-gap) * 3);
+    border-inline-start: var(--eqt-rule-page-tone-width) solid var(--eqt-rule-page-tone);
+  }
+
+  // 框住標題列與托盤：NOT 套在整個群組外面，色條本身不變，數色條算層數時不受影響
+  &--negate {
+    padding: var(--eqt-rule-page-gap);
+    border: var(--eqt-border-width) solid var(--eqt-status-exclude);
+    border-radius: var(--eqt-radius-md);
+  }
+
+  // 根群組就是整個條件區，標題用 section 標題的字級
+  &--root {
+    gap: calc(var(--eqt-rule-page-gap) * 1.5);
+
+    > .eqt-rule-page__group-head {
+      font-size: var(--eqt-fs-lg);
+      font-weight: bold;
+    }
+  }
+
+  // 巢狀的群組標題列就是拖曳把手
+  &:not(.eqt-rule-page__group--root) > .eqt-rule-page__group-head {
+    font-size: var(--eqt-fs-sm);
+    cursor: grab;
+  }
+}
+
+// 托盤是會換行的一列 chip；群組佔滿整行，前後的 chip 各自換到上一行、下一行。
+// 可以縮：100% 再加上項目本身的左右 margin 會比一行寬一點點
+.eqt-rule-page__tray > .eqt-rule-page__group {
+  flex: 1 1 100%;
+}
+
+// IS／IS NOT、AND／OR 與動作排成終端機提示列（powerline）那種箭頭段：前一段的箭頭剛好嵌進下一段的缺口。
+// 底色跟搜尋列的 chip 同一種混法；NOT 取 exclude、判定模式取群組自己的色條色，段落跟紅框、色條講同一件事
+.eqt-rule-page__group-head {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--eqt-rule-page-gap) / 2);
+
+  > .eqt-rule-page__segment--on { --eqt-rule-page-seg: var(--eqt-status-exclude); }
+  > .eqt-rule-page__segment--mode { --eqt-rule-page-seg: var(--eqt-rule-page-tone); }
+
+  // chip 裡的移除鈕會承接外框色畫分隔線；標題列沒有外框，不能承接
+  > .eqt-rule-page__chip-remove {
+    height: var(--eqt-rule-page-inline-h);
+    border: none;
+    border-radius: var(--eqt-radius-sm);
+  }
+}
+
+// 形狀畫在 ::before，按鈕本身不裁切：clip-path 會連 outline 一起裁掉，filter 又排在 clip-path 之前套用，
+// 掛在同一個元素上的 drop-shadow 一樣會被裁。焦點框改由 ::after 畫在箭頭與缺口之間的長方形本體上。
+// 按鈕的長方形會蓋到前一段的箭頭，所以點擊交給照形狀裁過的 ::before 判定，按鈕本身不接
+.eqt-rule-page__segment {
+  --eqt-rule-page-arrow: calc(var(--eqt-rule-page-inline-h) / 3);
+  --eqt-rule-page-seg: var(--eqt-border);
+  --eqt-rule-page-notch: 0px;
+
+  position: relative;
+  isolation: isolate;
+  display: inline-grid;
+  align-items: center;
+  justify-items: center;
+  height: var(--eqt-rule-page-inline-h);
+  padding: 0 calc(var(--eqt-rule-page-arrow) + var(--eqt-rule-page-gap) / 2) 0 var(--eqt-rule-page-gap);
+  border: none;
+  background: none;
+  color: var(--eqt-text);
+  font: inherit;
+  font-weight: bold;
+  white-space: nowrap;
+  pointer-events: none;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: color-mix(in srgb, var(--eqt-rule-page-seg) 55%, transparent);
+    clip-path: polygon(
+      0 0, calc(100% - var(--eqt-rule-page-arrow)) 0, 100% 50%,
+      calc(100% - var(--eqt-rule-page-arrow)) 100%, 0 100%, var(--eqt-rule-page-notch) 50%
+    );
+    cursor: pointer;
+    pointer-events: auto;
+    transition: var(--eqt-transition-base);
+  }
+
+  // 每個狀態的字都放進同一格，按鈕寬度取最寬的那個
+  > span { grid-area: 1 / 1; }
+
+  &:hover::before,
+  &:focus-visible::before {
+    background: color-mix(in srgb, var(--eqt-rule-page-seg) 70%, transparent);
+  }
+
+  &:focus-visible { outline: none; }
+
+  // 段落底色可能就是綠色，沿用 repo 慣例的綠色焦點框會看不見；跟字同色才在三種底色上都看得到
+  &:focus-visible::after {
+    content: '';
+    position: absolute;
+    inset: var(--eqt-border-width-thin) var(--eqt-rule-page-arrow) var(--eqt-border-width-thin)
+      calc(var(--eqt-rule-page-notch) + var(--eqt-border-width-thin));
+    border: var(--eqt-border-width) solid currentColor;
+    border-radius: var(--eqt-radius-sm);
+  }
+
+  // 往回疊進前一段的箭頭，只留一條細縫分開兩段
+  & + & {
+    --eqt-rule-page-notch: var(--eqt-rule-page-arrow);
+
+    margin-inline-start: calc(var(--eqt-border-width-thin) - var(--eqt-rule-page-arrow) - var(--eqt-rule-page-gap) / 2);
+    padding-inline-start: calc(var(--eqt-rule-page-arrow) + var(--eqt-rule-page-gap) / 2);
+  }
+}
+
+// 佔位用：撐開寬度但看不見，也不進無障礙名稱
+.eqt-rule-page__segment-spare {
+  visibility: hidden;
+}
+
+// 說明浮層的外框跟 My Tags 的說明共用 .eqt-panel__help；這裡只補小標題與語法對照表
+.eqt-rule-page__help-panel h3 {
+  margin: calc(var(--eqt-rule-page-gap) * 3) 0 0;
+  font-size: inherit;
+}
+
+.eqt-rule-page__help-syntax {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--eqt-rule-page-gap) calc(var(--eqt-rule-page-gap) * 3);
+  margin: calc(var(--eqt-rule-page-gap) * 2) 0 0;
+
+  dt { white-space: nowrap; }
+  dd { margin: 0; }
+}
+
+// ---- 效果 ----
+
+.eqt-rule-page__hide-row {
+  display: flex;
+  align-items: center;
+  gap: var(--eqt-rule-page-gap);
+}
+
+.eqt-rule-page__hide {
+  @include btn-toned;
+  gap: calc(var(--eqt-rule-page-gap) * 1.5);
+  height: var(--eqt-rule-page-control-h);
+  padding: 0 calc(var(--eqt-rule-page-gap) * 2.5);
+  color: var(--eqt-danger);
+
+  &[aria-pressed='true'] {
+    border-color: var(--eqt-danger);
+    background: var(--eqt-danger-bg-hover);
+    font-weight: bold;
+  }
+}
+
+.eqt-rule-page__help {
+  @include btn-icon;
+  width: var(--eqt-rule-page-control-h);
+  height: var(--eqt-rule-page-control-h);
+  color: var(--eqt-text-hint);
+  cursor: help;
+}
+
+// 浮在規則頁上面的說明：只是文字，不接滑鼠
+.eqt-rule-page__help-tip {
+  max-width: calc(var(--eqt-row-h) * 14);
+  margin: 0;
+  padding: calc(var(--eqt-rule-page-gap) * 1.5) calc(var(--eqt-rule-page-gap) * 2.5);
+  border: var(--eqt-border-width-thin) solid var(--eqt-border);
+  border-radius: var(--eqt-radius-md);
+  background: var(--eqt-bg-elevated);
+  box-shadow: var(--eqt-shadow-popover);
+  color: var(--eqt-text);
+  font-size: var(--eqt-fs-sm);
+  line-height: 1.5;
+  pointer-events: none;
+}
+
+// 左邊是動作作用的位置，一個位置一頁；中間只放這一頁的欄位，一欄一行；右邊是命中時卡片的樣子
+.eqt-rule-page__actions {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
+  gap: calc(var(--eqt-rule-page-gap) * 4);
+  min-width: 0;
+}
+
+.eqt-rule-page__action-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--eqt-rule-page-gap) / 2);
+  padding-inline-end: calc(var(--eqt-rule-page-gap) * 2);
+  border-inline-end: var(--eqt-border-width-thin) solid var(--eqt-border);
+}
+
+.eqt-rule-page__action-tab {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--eqt-rule-page-gap) * 2);
+  padding: var(--eqt-rule-page-gap) calc(var(--eqt-rule-page-gap) * 2);
+  border: none;
+  background: transparent;
+  color: var(--eqt-text);
+  font: inherit;
+  white-space: nowrap;
+  text-align: start;
+  cursor: pointer;
+  // 有設定的那一頁畫綠色條，跟條件裡 AND 群組的色條同一款；沒有時留同寬的透明條，字才對齊
+  border-inline-start: var(--eqt-rule-page-tone-width) solid transparent;
+
+  &--in-use { border-inline-start-color: var(--eqt-status-include); }
+
+  &:hover, &:focus-visible {
+    outline: none;
+    background: var(--eqt-bg-hover);
+  }
+
+  &[aria-selected='true'] {
+    background: var(--eqt-bg-active);
+    font-weight: bold;
+  }
+}
+
+// 欄位與卡片頁的隱藏各排一段；隱藏另外放，打開時才只停用上面那段
+.eqt-rule-page__action-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: calc(var(--eqt-rule-page-gap) * 4);
+  min-width: 0;
+}
+
+// fieldset 的預設框線、內距與 min-width: min-content 都拿掉，當成一般的直排容器
+.eqt-rule-page__action-fields {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: calc(var(--eqt-rule-page-gap) * 2.5);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+
+  &:disabled {
+    opacity: 0.45;
+
+    label { cursor: default; }
+  }
+}
+
+.eqt-rule-page__action-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--eqt-rule-page-gap) / 2);
+  white-space: nowrap;
+
+  // 情境裡每一項是一段字，項與項之間拉開，換行時以項為單位
+  &--verbose {
+    flex-wrap: wrap;
+    gap: calc(var(--eqt-rule-page-gap) / 2) calc(var(--eqt-rule-page-gap) * 2);
+  }
+}
+
+.eqt-rule-page__action-item {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--eqt-rule-page-gap) / 2);
+}
+
+// 底下墊棋盤格，半透明的顏色看得出有多透
+.eqt-rule-page__action-swatch,
+.eqt-rule-page__color-swatch.eqt-line-color__trigger {
+  --eqt-rule-page-checker: calc(var(--eqt-rule-page-control-h) / 3);
+
+  border: var(--eqt-border-width-thin) solid var(--eqt-border);
+  border-radius: var(--eqt-radius-sm);
+  background:
+    linear-gradient(var(--eqt-rule-page-color-preview, transparent), var(--eqt-rule-page-color-preview, transparent)),
+    repeating-conic-gradient(var(--eqt-bg-active) 0 25%, var(--eqt-bg-elevated) 0 50%) 0 0 / var(--eqt-rule-page-checker) var(--eqt-rule-page-checker);
+}
+
+.eqt-rule-page__action-swatch {
+  width: 0.9em;
+  height: 0.9em;
+}
+
+.eqt-rule-page__action-icon {
+  width: 1em;
+  height: 1em;
+}
+
+.eqt-rule-page__field {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--eqt-rule-page-gap) * 2);
+  min-width: 0;
+
+  > span:first-child {
+    color: var(--eqt-text-hint);
+    white-space: nowrap;
+  }
+}
+
+// 預覽照網站縮圖卡片的比例縮小：封面 250×340 的一半多一點，標題兩行、底下一排標籤
+.eqt-rule-page__preview {
+  --eqt-rule-page-preview-width: calc(var(--eqt-row-h) * 6);
+
+  display: flex;
+  flex-direction: column;
+  gap: var(--eqt-rule-page-gap);
+  width: var(--eqt-rule-page-preview-width);
+  margin: 0;
+}
+
+.eqt-rule-page__preview-caption {
+  color: var(--eqt-text-hint);
+  font-size: var(--eqt-fs-sm);
+}
+
+.eqt-rule-page__preview-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--eqt-rule-page-gap);
+  padding: var(--eqt-rule-page-gap);
+  border: var(--eqt-border-width-thin) solid var(--eqt-border);
+  border-radius: var(--eqt-radius-md);
+  background-color: var(--eqt-bg);
+  font-size: var(--eqt-fs-sm);
+
+  // 列表上會整筆拿掉；這裡留著，淡到看得出是被拿掉的那一筆
+  &--hidden {
+    border-style: dashed;
+    opacity: 0.25;
+  }
+}
+
+.eqt-rule-page__preview-title {
+  font-weight: bold;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.eqt-rule-page__preview-cover {
+  overflow: hidden;
+  border-radius: var(--eqt-radius-sm);
+
+  img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 250 / 340;
+  }
+}
+
+.eqt-rule-page__preview-tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: calc(var(--eqt-rule-page-gap) / 2);
+}
+
+.eqt-rule-page__preview-tag {
+  padding: 0 var(--eqt-gallery-chip-padding-inline);
+  border: 1px solid var(--eqt-site-tag-border);
+  border-radius: 5px;
+  background: var(--eqt-gallery-chip-bg);
+  font-weight: bold;
+}
+
+.eqt-rule-page__preview-note {
+  margin: 0;
+  color: var(--eqt-danger);
+  font-size: var(--eqt-fs-sm);
+}
+
+// 同一行排好幾欄（背景與它的圓角）；窄的時候照樣換行
+.eqt-rule-page__field-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--eqt-rule-page-gap) * 2) calc(var(--eqt-rule-page-gap) * 4);
+}
+
+// 強度滑桿：0 是不做，100 是最強；旁邊的數字固定寬度，拖的時候整排不會跟著晃
+.eqt-rule-page__amount { gap: var(--eqt-rule-page-gap); }
+.eqt-rule-page__slider {
+  width: calc(var(--eqt-row-h) * 5);
+  margin: 0;
+  accent-color: var(--eqt-green);
+}
+.eqt-rule-page__amount-value {
+  min-width: 3ch;
+  color: var(--eqt-text-hint);
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+}
+
+// 同一組互斥的選項
+.eqt-rule-page__choice { @include btn-split-group; }
+
+.eqt-rule-page__choice-item {
+  @include btn-split-item;
+
+  &[aria-pressed='true'] {
+    background: var(--eqt-bg-btn);
+    color: var(--eqt-text);
+  }
+}
+
+// 跟 My Tags 標籤顏色那一組同款：色盤鈕只顯示顏色，旁邊是可以直接貼上、複製的色碼
+.eqt-rule-page__color-control {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--eqt-rule-page-gap);
+}
+
+.eqt-rule-page__color-swatch.eqt-line-color__trigger {
+  flex: 0 0 var(--eqt-rule-page-control-h);
+  width: var(--eqt-rule-page-control-h);
+  height: var(--eqt-rule-page-control-h);
+  padding: 0;
+
+  &:hover:not(:disabled) {
+    border-color: var(--eqt-text-hint);
+  }
+
+  &:focus-visible {
+    outline: var(--eqt-border-width) solid var(--eqt-green);
+  }
+
+  > svg { visibility: hidden; }
+}
+
+.eqt-rule-page__color {
+  width: calc(var(--eqt-fs-md) * 7);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  text-transform: uppercase;
+}
+
+// ---- 條件：圖形與原始兩種寫法 ----
+
+.eqt-rule-page__views {
+  @include btn-split-group;
+  margin-inline-start: auto;
+}
+
+.eqt-rule-page__view {
+  @include btn-split-item;
+  gap: var(--eqt-rule-page-gap);
+
+  &[aria-pressed='true'] {
+    background: var(--eqt-bg-btn);
+    color: var(--eqt-text);
+  }
+}
+
+.eqt-rule-page__reset {
+  @include btn-outlined;
+  gap: var(--eqt-rule-page-gap);
+  margin-inline-start: auto;
+  // 跟條件標題那排的「圖形／代碼」同一個高度
+  padding: 2px 8px;
+  color: var(--eqt-text-hint);
+
+  &:hover:not(:disabled) { color: var(--eqt-text); }
+}
+
+.eqt-rule-page__source {
+  display: flex;
+  flex-direction: column;
+  gap: var(--eqt-rule-page-gap);
+}
+
+.eqt-rule-page__source-input {
+  width: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: var(--eqt-rule-page-gap) calc(var(--eqt-rule-page-gap) * 1.5);
+  border: var(--eqt-border-width) solid var(--eqt-border);
+  border-radius: var(--eqt-radius-sm);
+  background: var(--eqt-bg);
+  color: var(--eqt-text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: inherit;
+  line-height: inherit;
+  font-variant-numeric: tabular-nums;
+  white-space: pre-wrap;
+  overflow-y: hidden;
+  resize: none;
+  transition: var(--eqt-transition-base);
+
+  .eqt-dark & { background: var(--eqt-bg-elevated); }
+
+  &:focus {
+    border-color: var(--eqt-text);
+    outline: none;
+  }
+
+  &[aria-invalid='true'] { border-color: var(--eqt-danger); }
+  &::placeholder { color: var(--eqt-text-hint); }
+}
+
+.eqt-rule-page__source-error {
+  margin: 0;
+  color: var(--eqt-danger);
+}
+
+// ---- 摘要 ----
+
+.eqt-rule-page__digest {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--eqt-rule-page-gap) * 2);
+  padding: calc(var(--eqt-rule-page-gap) * 2.5) calc(var(--eqt-rule-page-gap) * 3) calc(var(--eqt-rule-page-gap) * 1.5);
+  border-inline-start: var(--eqt-rule-page-tone-width) solid var(--eqt-border);
+  border-radius: var(--eqt-radius-sm);
+  background: var(--eqt-bg-stripe);
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+
+  &--never { border-inline-start-color: var(--eqt-danger); }
+}
+
+.eqt-rule-page__digest-copy {
+  @include btn-ghost;
+  flex-shrink: 0;
+  width: var(--eqt-rule-page-control-h);
+  height: var(--eqt-rule-page-control-h);
+  margin-inline-start: auto;
+  padding: 0;
+}
+
+// 提示句裡的 chip 跟著文字排；chip 自帶的底部 margin 是給換行對齊用的，放進句子會把基線往上推
+.eqt-rule-page__digest-notes {
+  margin: 0;
+  line-height: 2;
+
+  .eqt-gallery-chip {
+    margin-block: 0;
+    vertical-align: middle;
+  }
+}
+
+.eqt-rule-page__digest-rows {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--eqt-rule-page-gap) calc(var(--eqt-rule-page-gap) * 3);
+  margin: 0;
+
+  dt {
+    // 對齊 dd 第一行 chip 裡的文字：往下補 chip 的框線與 padding
+    padding: calc(var(--eqt-border-width-thin) + var(--eqt-gallery-chip-padding-block)) 0 0 calc(var(--eqt-rule-page-gap) * 1.5);
+    border-inline-start: var(--eqt-rule-page-tone-width) solid var(--eqt-rule-page-tone);
+    color: var(--eqt-text-hint);
+    white-space: nowrap;
+  }
+
+  dd {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    min-width: 0;
+    margin: 0;
+  }
+}
+
+.eqt-rule-page__digest-row {
+  display: contents;
+
+  &--all { --eqt-rule-page-tone: var(--eqt-status-include); }
+  &--any { --eqt-rule-page-tone: var(--eqt-status-or); }
+  &--none { --eqt-rule-page-tone: var(--eqt-status-exclude); }
+  &--action { --eqt-rule-page-tone: var(--eqt-border); }
+}
+
+// 分行裡的動作沒有 chip 自帶的 margin，補上同一組，才跟上面幾列的第一顆 chip 對齊
+.eqt-rule-page__digest-action {
+  margin: var(--eqt-rule-page-item-margin);
+}
+
+.eqt-rule-page__digest-notes {
+  padding: 0;
+  list-style: none;
+  color: var(--eqt-text-hint);
+  font-size: var(--eqt-fs-sm);
+}
+
+.eqt-rule-page__digest-note--never { color: var(--eqt-danger); }
+
+.eqt-rule-page__digest-range {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--eqt-rule-page-gap) / 2);
+  margin: var(--eqt-rule-page-item-margin);
+  white-space: nowrap;
+
+  > .eqt-rule-page__digest-average {
+    color: var(--eqt-text-hint);
+    font-size: var(--eqt-fs-sm);
+  }
+}
+
+// 數值條件一律寫成「圖示 欄位名」，不只靠圖示讓人猜是星等還是頁數
+.eqt-rule-page__range-label {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--eqt-rule-page-gap) / 2);
+  color: var(--eqt-text-hint);
+
+  > .eqt-rule-page__icon { color: inherit; }
+}
+
+.eqt-rule-page__range-value {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--eqt-rule-page-gap) / 2);
+}
+
+// 摘要裡的「同時」「其中一個」沿用群組的色條，跟編輯區用同一套顏色語言
+.eqt-rule-page__digest-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  max-width: 100%;
+  margin: var(--eqt-rule-page-item-margin);
+  padding: calc(var(--eqt-rule-page-gap) * 1.25) 0 0 calc(var(--eqt-rule-page-gap) / 2);
+  border-inline-start: var(--eqt-rule-page-tone-width) solid var(--eqt-rule-page-tone);
+  border-radius: var(--eqt-radius-sm);
+  background: var(--eqt-bg-stripe);
+  vertical-align: middle;
+
+  &--all { --eqt-rule-page-tone: var(--eqt-status-include); }
+  &--any { --eqt-rule-page-tone: var(--eqt-status-or); }
+}

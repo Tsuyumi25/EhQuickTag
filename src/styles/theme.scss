@@ -110,6 +110,7 @@
   // radius scale
   --eqt-radius-sm: 3px;
   --eqt-radius-md: 4px;
+  --eqt-radius-lg: 8px;
 
   // shadow
   --eqt-shadow-popover: 0 2px 8px rgba(0, 0, 0, 0.15);
@@ -139,6 +140,9 @@
 :root {
   --eqt-bg: #edebdf;
   --eqt-gallery-chip-bg: #F2EFDF;
+  // 網站 g.css 的 div.gt／div.gtl、div.gtw 框線色
+  --eqt-site-tag-border: #806769;
+  --eqt-site-tag-border-weak: #9a7c7e;
   --eqt-bg-elevated: #fff;
   --eqt-bg-hover: rgba(0, 0, 0, 0.06);
   --eqt-bg-stripe: rgba(0, 0, 0, 0.045);
@@ -169,12 +173,26 @@
 
   // 實色 button 上的前景色（白字）。跟 --eqt-green / --eqt-danger 配對用
   --eqt-text-on-color: #fff;
+
+  // 圖庫分類色：照 E 站列表上分類標籤（.ct1～.cta）的外框色，規則頁的分類條件與產生器用
+  --eqt-category-doujinshi: #fc4e4e;
+  --eqt-category-manga: #e78c1a;
+  --eqt-category-artistcg: #c7bf07;
+  --eqt-category-gamecg: #1a9317;
+  --eqt-category-western: #5dc13b;
+  --eqt-category-non-h: #0f9ebd;
+  --eqt-category-imageset: #2756aa;
+  --eqt-category-cosplay: #8800c3;
+  --eqt-category-asianporn: #b452a5;
+  --eqt-category-misc: #707070;
 }
 
 // Dark theme (exhentai.org)
 :root.eqt-dark {
   --eqt-bg: #4f535b;
   --eqt-gallery-chip-bg: #4f535b;
+  --eqt-site-tag-border: #989898;
+  --eqt-site-tag-border-weak: #8c8c8c;
   --eqt-bg-elevated: #34353b;
   --eqt-bg-hover: rgba(255, 255, 255, 0.06);
   --eqt-bg-stripe: rgba(255, 255, 255, 0.05);
