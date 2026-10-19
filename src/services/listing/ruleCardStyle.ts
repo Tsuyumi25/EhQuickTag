@@ -8,8 +8,12 @@ export const MAX_MOSAIC = 16
 export const MIN_OPACITY = 0.35
 /** 格子小於 2px 就跟原圖看不出差別，有開就從這裡起跳 */
 const MIN_MOSAIC = 2
-/** 有背景色時色塊比字多出來的那一圈 */
-const TEXT_BACKGROUND_PAD = '0.15em 0.45em'
+/**
+ * 有背景色時色塊左右比字多出來的寬度。上下不能加：行內元素的背景本來就畫滿字的高度，
+ * 縮圖標題（g.css 的 .gl4t）是 10pt 字配 16px 行高，字高已經佔掉 15px 多，上下再撐開就會
+ * 疊到上一行與下一行，在 overflow: hidden 的標題框邊緣被裁掉，半透明的色塊重疊處還會變深
+ */
+const TEXT_BACKGROUND_PAD = '0.45em'
 
 export const CARD_MODIFIERS = ['background', 'blur', 'dim', 'hidden'] as const
 export type CardModifier = (typeof CARD_MODIFIERS)[number]
