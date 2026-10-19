@@ -236,7 +236,7 @@ onBeforeUnmount(() => {
             <p>{{ t('rulePage.helpOrder') }}</p>
             <h3>{{ t('rulePage.helpUsageTitle') }}</h3>
             <ul>
-              <li v-for="key in HELP_USAGE" :key="key">{{ t(`rulePage.${key}`, { depth: MAX_GROUP_DEPTH }) }}</li>
+              <li v-for="key in HELP_USAGE" :key="key">{{ t(`rulePage.${key}`, { depth: MAX_GROUP_DEPTH, view: t('rulePage.sourceView') }) }}</li>
             </ul>
             <h3>{{ t('rulePage.helpSyntaxTitle') }}</h3>
             <!-- 語法本身不翻譯，只有右邊的解說跟著語系 -->
