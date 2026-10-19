@@ -491,9 +491,9 @@ export default {
 
   'settings.tagAppearance': '태그 외관',
   'settings.appearanceExample': '예시 {n}',
-  'settings.appearanceColors': '개인 색상 표시',
-  'settings.appearanceScores': '점수 표시',
-  'settings.appearanceMarks': '관심 및 숨김 표시',
+  'settings.appearanceColors': '개인 색상',
+  'settings.appearanceScores': '점수',
+  'settings.appearanceMarks': '관심 및 숨김 마크',
 
   // Intro panel
   'intro.close': '닫기',

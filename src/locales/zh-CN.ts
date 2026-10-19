@@ -491,9 +491,9 @@ export default {
 
   'settings.tagAppearance': '标签外观',
   'settings.appearanceExample': '示例 {n}',
-  'settings.appearanceColors': '显示个人颜色',
-  'settings.appearanceScores': '显示分数',
-  'settings.appearanceMarks': '显示关注与隐藏标记',
+  'settings.appearanceColors': '个人颜色',
+  'settings.appearanceScores': '分数',
+  'settings.appearanceMarks': '关注与隐藏标记',
 
   // Intro panel
   'intro.close': '关闭',

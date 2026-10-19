@@ -46,33 +46,35 @@ const samples = [
 <template>
   <section class="eqt-settings__section">
     <h4 class="eqt-settings__subtitle"><Palette :size="14" /> {{ t('settings.tagAppearance') }}</h4>
-    <label class="eqt-settings__row">
-      <input
-        type="checkbox"
-        :checked="scope.colors.value"
-        :disabled="!scope.enabled.value"
-        @change="scope.colors.value = ($event.target as HTMLInputElement).checked"
-      />
-      <span class="eqt-settings__label">{{ t('settings.appearanceColors') }}</span>
-    </label>
-    <label class="eqt-settings__row">
-      <input
-        type="checkbox"
-        :checked="scope.scores.value"
-        :disabled="!scope.enabled.value"
-        @change="scope.scores.value = ($event.target as HTMLInputElement).checked"
-      />
-      <span class="eqt-settings__label">{{ t('settings.appearanceScores') }}</span>
-    </label>
-    <label class="eqt-settings__row">
-      <input
-        type="checkbox"
-        :checked="scope.marks.value"
-        :disabled="!scope.enabled.value"
-        @change="scope.marks.value = ($event.target as HTMLInputElement).checked"
-      />
-      <span class="eqt-settings__label">{{ t('settings.appearanceMarks') }}</span>
-    </label>
+    <div class="eqt-settings__appearance-toggles">
+      <label class="eqt-settings__row">
+        <input
+          type="checkbox"
+          :checked="scope.colors.value"
+          :disabled="!scope.enabled.value"
+          @change="scope.colors.value = ($event.target as HTMLInputElement).checked"
+        />
+        <span class="eqt-settings__label">{{ t('settings.appearanceColors') }}</span>
+      </label>
+      <label class="eqt-settings__row">
+        <input
+          type="checkbox"
+          :checked="scope.scores.value"
+          :disabled="!scope.enabled.value"
+          @change="scope.scores.value = ($event.target as HTMLInputElement).checked"
+        />
+        <span class="eqt-settings__label">{{ t('settings.appearanceScores') }}</span>
+      </label>
+      <label class="eqt-settings__row">
+        <input
+          type="checkbox"
+          :checked="scope.marks.value"
+          :disabled="!scope.enabled.value"
+          @change="scope.marks.value = ($event.target as HTMLInputElement).checked"
+        />
+        <span class="eqt-settings__label">{{ t('settings.appearanceMarks') }}</span>
+      </label>
+    </div>
     <div class="eqt-settings__tag-preview" role="group" :aria-label="t('settings.preview')">
       <TagChip
         v-for="(sample, index) in samples"
@@ -91,11 +93,18 @@ const samples = [
 </template>
 
 <style lang="scss">
+.eqt-settings__appearance-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 16px;
+}
+
 .eqt-settings__tag-preview {
   display: flex;
   flex-wrap: wrap;
-  margin-top: var(--eqt-fs-sm);
-  padding: var(--eqt-fs-sm);
+  margin-top: 4px;
+  // chip 自己帶 5px 的下邊距，底部不再另加
+  padding: 4px 4px 0;
   border: var(--eqt-border-width) solid var(--eqt-border);
   border-radius: var(--eqt-radius-sm);
   font-size: var(--eqt-fs-md);

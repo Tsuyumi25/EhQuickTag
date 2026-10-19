@@ -491,9 +491,9 @@ export default {
 
   'settings.tagAppearance': '標籤外觀',
   'settings.appearanceExample': '範例 {n}',
-  'settings.appearanceColors': '顯示個人顏色',
-  'settings.appearanceScores': '顯示分數',
-  'settings.appearanceMarks': '顯示關注與隱藏標記',
+  'settings.appearanceColors': '個人顏色',
+  'settings.appearanceScores': '分數',
+  'settings.appearanceMarks': '關注與隱藏標記',
 
   // Intro panel
   'intro.close': '關閉',

@@ -491,9 +491,9 @@ export default {
 
   'settings.tagAppearance': 'Tag appearance',
   'settings.appearanceExample': 'Example {n}',
-  'settings.appearanceColors': 'Show personal colors',
-  'settings.appearanceScores': 'Show scores',
-  'settings.appearanceMarks': 'Show watched and hidden marks',
+  'settings.appearanceColors': 'Personal colors',
+  'settings.appearanceScores': 'Scores',
+  'settings.appearanceMarks': 'Watched and hidden marks',
 
   // Intro panel
   'intro.close': 'Close',

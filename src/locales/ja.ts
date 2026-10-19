@@ -491,9 +491,9 @@ export default {
 
   'settings.tagAppearance': 'タグの外観',
   'settings.appearanceExample': 'サンプル {n}',
-  'settings.appearanceColors': '個人の色を表示',
-  'settings.appearanceScores': 'スコアを表示',
-  'settings.appearanceMarks': 'ウォッチ中と非表示のマークを表示',
+  'settings.appearanceColors': '個人の色',
+  'settings.appearanceScores': 'スコア',
+  'settings.appearanceMarks': 'ウォッチ中と非表示のマーク',
 
   // Intro panel
   'intro.close': '閉じる',
