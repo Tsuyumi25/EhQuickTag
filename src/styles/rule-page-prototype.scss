@@ -1049,6 +1049,14 @@
   font-size: var(--eqt-fs-sm);
 }
 
+// 同一行排好幾欄（背景與它的圓角）；窄的時候照樣換行
+.eqt-rule-page__field-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--eqt-rule-page-gap) * 2) calc(var(--eqt-rule-page-gap) * 4);
+}
+
 // 強度滑桿：0 是不做，100 是最強；旁邊的數字固定寬度，拖的時候整排不會跟著晃
 .eqt-rule-page__amount { gap: var(--eqt-rule-page-gap); }
 .eqt-rule-page__slider {

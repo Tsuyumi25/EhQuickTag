@@ -113,19 +113,24 @@ const hideHelpOpen = ref(false)
             >
           </label>
           <RuleColorField v-model="actions.prefixColor" :label="t('rulePagePrototype.textColor')" />
-          <RuleColorField v-model="actions.prefixBackground" :label="t('rulePagePrototype.background')" />
-          <span class="eqt-rule-page__field">
-            <span>{{ t('rulePagePrototype.radius') }}</span>
-            <EqtNumberField v-model="actions.prefixRadius" :min="0" :max="MAX_RADIUS" :label="t('rulePagePrototype.radius')" />
+          <!-- 圓角只在有背景時看得出來，跟背景排在同一行 -->
+          <span class="eqt-rule-page__field-row">
+            <RuleColorField v-model="actions.prefixBackground" :label="t('rulePagePrototype.background')" />
+            <span class="eqt-rule-page__field">
+              <span>{{ t('rulePagePrototype.radius') }}</span>
+              <EqtNumberField v-model="actions.prefixRadius" :min="0" :max="MAX_RADIUS" :label="t('rulePagePrototype.radius')" />
+            </span>
           </span>
         </template>
 
         <template v-else>
           <RuleColorField v-model="actions.titleColor" :label="t('rulePagePrototype.textColor')" />
-          <RuleColorField v-model="actions.titleBackground" :label="t('rulePagePrototype.background')" />
-          <span class="eqt-rule-page__field">
-            <span>{{ t('rulePagePrototype.radius') }}</span>
-            <EqtNumberField v-model="actions.titleRadius" :min="0" :max="MAX_RADIUS" :label="t('rulePagePrototype.radius')" />
+          <span class="eqt-rule-page__field-row">
+            <RuleColorField v-model="actions.titleBackground" :label="t('rulePagePrototype.background')" />
+            <span class="eqt-rule-page__field">
+              <span>{{ t('rulePagePrototype.radius') }}</span>
+              <EqtNumberField v-model="actions.titleRadius" :min="0" :max="MAX_RADIUS" :label="t('rulePagePrototype.radius')" />
+            </span>
           </span>
           <span class="eqt-rule-page__choice" role="group" :aria-label="t('rulePagePrototype.target.title')">
             <button
