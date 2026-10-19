@@ -427,8 +427,12 @@ export default {
   // Gallery
   'gallery.searchN': 'Search {n}',
   'gallery.vote': 'Vote',
-  'gallery.importToggle': 'Import candidates',
+  'gallery.import': 'Import candidates',
+  'gallery.importHint': 'Import tag candidates from the gallery URL on the clipboard',
   'gallery.importFailed': 'Could not load that gallery.',
+  'gallery.importPasteFailed': 'Could not read the clipboard.',
+  'gallery.importNotGallery': 'Not a gallery URL: {text}',
+  'gallery.importClipboardEmpty': 'The clipboard is empty.',
   'gallery.clearSelection': 'Clear selection',
   'gallery.addTags': 'Add tags',
   'gallery.sessionExpired': 'Your session has expired. Please refresh the page to log in again.',

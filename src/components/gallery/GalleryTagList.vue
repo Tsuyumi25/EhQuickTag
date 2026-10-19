@@ -9,7 +9,7 @@
 //     (cancel)、起點 -1 + 左 = 把 -1 推 0 (cancel)，依此類推
 //   - 任何選取動作都 setPanelTag(chip.tag)：對 x tag 的任何操作都繼續顯示定義，
 //     直到 selection 全空才 auto close panel
-import { ref, shallowRef, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import { ref, shallowRef, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { GM } from '$'
 import { serializeEntry } from '@/services/search/searchSyntax'
 import { findEntryByNsTag, DEFAULT_NS_ORDER, tagDbVersion } from '@/services/tags/tagDb'
@@ -25,7 +25,7 @@ import { batchVote, type VoteState } from '@/services/gallery/galleryVote'
 import { useEqtToast } from '@/composables/useEqtToast'
 import { useEhGalleryHost, parseTaglistRoot, type GalleryTag } from '@/composables/useEhGalleryHost'
 import { useIntroPanel } from '@/composables/useIntroPanel'
-import { Settings, Search, BookOpen, Tags, TagPlus, SquareArrowRightEnter, X } from '@lucide/vue'
+import { Settings, Search, BookOpen, Tags, TagPlus, ClipboardPaste, X } from '@lucide/vue'
 import type { Selection } from '@/services/gallery/dragSelectMachine'
 import GalleryAddInline from './GalleryAddInline.vue'
 import GalleryIntroPanel from './GalleryIntroPanel.vue'
@@ -107,9 +107,6 @@ const showAddPopup = ref(false)
 // 導入不替使用者選任何一顆。這本已經有的標籤不重複列出，改在 chip 開頭掛佐證記號：
 // 別本是實線 / 虛線，就是這個標籤在別處站得住腳的程度；這本已經是實線的就不必了
 const imports = shallowRef<Imports>(new Map())
-const importOpen = ref(false)
-const importInput = ref<HTMLInputElement | null>(null)
-const importUrl = ref('')
 const importBusy = ref(false)
 
 const currentNsRaws = computed(() => new Set(currentTags.value.map(t => t.nsRaw)))
@@ -282,16 +279,23 @@ function onPickFromAdd(entry: TagEntry, mode: 'positive' | 'negative'): void {
   setPanelTag(newAdded)
 }
 
-async function toggleImport(): Promise<void> {
-  importOpen.value = !importOpen.value
-  if (!importOpen.value) return
-  await nextTick()
-  importInput.value?.focus()
-}
+const CLIPBOARD_ECHO_LIMIT = 80
 
-async function importFrom(input: string): Promise<void> {
-  const target = parseGalleryUrl(input)
-  if (!target || importBusy.value) return
+async function importFromClipboard(): Promise<void> {
+  if (importBusy.value) return
+  let text: string
+  try {
+    text = (await navigator.clipboard.readText()).trim()
+  } catch {
+    toast.error(t('gallery.importPasteFailed'))
+    return
+  }
+  const target = parseGalleryUrl(text)
+  if (!target) {
+    const echo = text.length > CLIPBOARD_ECHO_LIMIT ? `${text.slice(0, CLIPBOARD_ECHO_LIMIT)}…` : text
+    toast.error(text ? t('gallery.importNotGallery', { text: echo }) : t('gallery.importClipboardEmpty'))
+    return
+  }
   importBusy.value = true
   // 網址是哪個站都只取 gid / token、抓目前這個站：跨站 fetch 會被 CORS 擋，而同一本在
   // 兩站的 gid、token 和 taglist 是同一份。只在 exhentai 上的本子從 e-hentai 抓不到，
@@ -303,7 +307,6 @@ async function importFrom(input: string): Promise<void> {
     return
   }
   imports.value = withImport(imports.value, detail)
-  importUrl.value = ''
 }
 
 function setPanelTagById(nsRaw: string): void {
@@ -516,21 +519,8 @@ watch(selection, () => {
 
   <!-- Action 區：search 左跨 2 列、vote 右跨 2 列（兩個大方塊，物理距離把誤觸代價較高的
        vote 跟 search 隔開），中間夾 add / 導入 / wiki 與 clear / My Tags / settings。
-       導入打開時網址欄插在最上面、橫跨全寬 -->
-  <div class="eqt-gallery-actions" :class="{ 'eqt-gallery-actions--import': importOpen }">
-    <input
-      v-if="importOpen"
-      ref="importInput"
-      v-model="importUrl"
-      class="eqt-gallery-actions__import"
-      type="text"
-      placeholder="https://e-hentai.org/g/123456/0123456789/"
-      :aria-label="t('gallery.importToggle')"
-      :readonly="importBusy"
-      spellcheck="false"
-      autocomplete="off"
-      @input="importFrom(importUrl)"
-    >
+       導入讀剪貼簿裡的圖庫網址 -->
+  <div class="eqt-gallery-actions">
     <button
       type="button"
       class="eqt-gallery-actions__btn eqt-gallery-actions__btn--search"
@@ -554,11 +544,12 @@ watch(selection, () => {
     <button
       type="button"
       class="eqt-gallery-actions__btn eqt-gallery-actions__btn--import"
-      :aria-pressed="importOpen"
-      @click="toggleImport"
+      :title="t('gallery.importHint')"
+      :disabled="importBusy"
+      @click="importFromClipboard"
     >
-      <SquareArrowRightEnter :size="14" />
-      <span>{{ t('gallery.importToggle') }}</span>
+      <ClipboardPaste :size="14" />
+      <span>{{ t('gallery.import') }}</span>
     </button>
 
     <button

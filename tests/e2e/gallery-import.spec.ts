@@ -1,5 +1,11 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 import { injectGalleryUserscript } from './helpers'
+
+async function setClipboard(page: Page, text: string): Promise<void> {
+  await page.evaluate((value) => {
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { readText: async () => value } })
+  }, text)
+}
 
 test('導入標籤按命名空間分列、去重，候選不預先選取且只能投正向票', async ({ page }) => {
   await injectGalleryUserscript(page)
@@ -28,18 +34,14 @@ test('導入標籤按命名空間分列、去重，候選不預先選取且只�
     route.fulfill({ contentType: 'text/html', body: other })
   ))
 
-  const input = page.locator('.eqt-gallery-actions__import')
-  const toggle = page.locator('.eqt-gallery-actions__btn--import')
-  await expect(input).toHaveCount(0)
-  await toggle.click()
-  await expect(toggle).toHaveAttribute('aria-pressed', 'true')
-  await expect(input).toBeFocused()
-  await input.fill('https://e-hentai.org/g/1002/bbbbbbbbbb/')
+  const importBtn = page.locator('.eqt-gallery-actions__btn--import')
+  await setClipboard(page, 'https://e-hentai.org/g/1002/bbbbbbbbbb/')
+  await importBtn.click()
 
   const tag = (nsRaw: string) => taglist.locator(`.eqt-gallery-chip[data-ns-raw="${nsRaw}"]`)
   const lead = (nsRaw: string) => tag(nsRaw).locator('.eqt-gallery-chip__lead svg')
   await expect(tag('other:imported only')).toBeVisible()
-  await expect(input).toHaveValue('')
+  await expect(importBtn).toBeEnabled()
 
   // 語言標籤不導入
   await expect(tag('language:translated')).toHaveCount(0)
@@ -70,26 +72,25 @@ test('導入標籤按命名空間分列、去重，候選不預先選取且只�
   await candidate.click()
   await expect(tag('other:imported only')).toHaveClass(/--selected-positive/)
   await expect(page.locator('.eqt-gallery-actions__vote-counts')).toHaveText('↑1 ↓0')
-
-  await toggle.click()
-  await expect(toggle).toHaveAttribute('aria-pressed', 'false')
-  await expect(input).toHaveCount(0)
-  await expect(tag('other:imported only')).toBeVisible()
 })
 
-test('導入網址欄是操作區第一列、橫跨整個寬度，導入按鈕跟新增標籤均分寬度', async ({ page }) => {
+test('剪貼簿裡不是圖庫網址時，toast 回顯實際讀到的文字，不發出請求', async ({ page }) => {
   await injectGalleryUserscript(page)
-  const toggle = page.locator('.eqt-gallery-actions__btn--import')
-  await toggle.click()
-  const input = (await page.locator('.eqt-gallery-actions__import').boundingBox())!
+  let fetched = false
+  await page.route('https://e-hentai.org/g/**', (route) => {
+    fetched = true
+    return route.abort()
+  })
+  await setClipboard(page, '  not a gallery link  ')
+  await page.locator('.eqt-gallery-actions__btn--import').click()
+  await expect(page.locator('.Vue-Toastification__toast')).toContainText('剪貼簿裡的不是圖庫網址：not a gallery link')
+  expect(fetched).toBe(false)
+})
+
+test('導入按鈕跟新增標籤同一列、均分寬度', async ({ page }) => {
+  await injectGalleryUserscript(page)
+  const importBox = (await page.locator('.eqt-gallery-actions__btn--import').boundingBox())!
   const add = (await page.locator('.eqt-gallery-actions__btn--add').boundingBox())!
-  const toggleBox = (await toggle.boundingBox())!
-  const search = (await page.locator('.eqt-gallery-actions__btn--search').boundingBox())!
-  const vote = (await page.locator('.eqt-gallery-actions__btn--vote').boundingBox())!
-  expect(toggleBox.width).toBeCloseTo(add.width, 0)
-  expect(toggleBox.y).toBeCloseTo(add.y, 0)
-  expect(input.x).toBeCloseTo(search.x, 0)
-  expect(input.x + input.width).toBeCloseTo(vote.x + vote.width, 0)
-  expect(search.y).toBeGreaterThan(input.y + input.height)
-  expect(vote.y).toBeGreaterThan(input.y + input.height)
+  expect(importBox.width).toBeCloseTo(add.width, 0)
+  expect(importBox.y).toBeCloseTo(add.y, 0)
 })

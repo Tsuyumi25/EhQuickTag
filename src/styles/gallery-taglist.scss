@@ -246,43 +246,15 @@ $eqt-gallery-height: 330px;
 
 // search / vote 兩個大方塊跨兩列，把誤觸代價較高的 vote 從 search 拉開。中間一列
 // add + 導入 + wiki，另一列 clear + My Tags + settings，兩列各自均分同一段寬度。
-// 導入打開時網址欄在最上面多一列、橫跨全部欄位
 .eqt-gallery-actions {
   flex: none;
   display: grid;
   grid-template-columns: 64px minmax(0, 1fr) minmax(0, 1fr) auto 64px;
   grid-template-areas:
-    "search add toggle wiki vote"
+    "search add import wiki vote"
     "search clear mytags settings vote";
   gap: 5px;
   margin: 6px 6px 0 0;
-
-  &--import {
-    grid-template-areas:
-      "import import import import import"
-      "search add toggle wiki vote"
-      "search clear mytags settings vote";
-  }
-}
-
-// EH 的 g.css 對 input[type="text"] 設了 margin / padding / line-height / border /
-// border-radius，權重 (0,1,1) 高過單一 class，所以這裡多掛一層父層把它們蓋掉
-.eqt-gallery-actions > .eqt-gallery-actions__import {
-  grid-area: import;
-  min-width: 0;
-  margin: 0;
-  border: var(--eqt-border-width) solid var(--eqt-border);
-  border-radius: var(--eqt-radius-sm);
-  background: var(--eqt-bg);
-  color: var(--eqt-text);
-  padding: 4px 8px;
-  font-size: var(--eqt-fs-md);
-  font-family: inherit;
-  line-height: normal;
-
-  &[readonly] {
-    opacity: 0.6;
-  }
 }
 
 .eqt-gallery-actions__btn {
@@ -298,11 +270,6 @@ $eqt-gallery-height: 330px;
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-  }
-
-  &[aria-pressed='true'] {
-    border-color: var(--eqt-text);
-    background: var(--eqt-bg-active);
   }
 
   // search / vote 大方塊：column flow 把 icon (或 vote 的 ↑↓ 計數) 疊在 label 上方
@@ -324,7 +291,7 @@ $eqt-gallery-height: 330px;
   &--search { grid-area: search; }
   &--vote { grid-area: vote; }
   &--add { grid-area: add; }
-  &--import { grid-area: toggle; }
+  &--import { grid-area: import; }
   &--wiki { grid-area: wiki; }
   &--clear { grid-area: clear; }
   &--mytags { grid-area: mytags; }

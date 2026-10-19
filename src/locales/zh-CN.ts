@@ -427,8 +427,12 @@ export default {
   // Gallery
   'gallery.searchN': '搜索 {n}',
   'gallery.vote': '投票',
-  'gallery.importToggle': '导入标签候选',
+  'gallery.import': '导入标签候选',
+  'gallery.importHint': '从剪贴板里的图库网址导入标签候选',
   'gallery.importFailed': '无法读取该图库。',
+  'gallery.importPasteFailed': '无法读取剪贴板。',
+  'gallery.importNotGallery': '剪贴板里的不是图库网址：{text}',
+  'gallery.importClipboardEmpty': '剪贴板是空的。',
   'gallery.clearSelection': '取消选取',
   'gallery.addTags': '新增标签',
   'gallery.sessionExpired': '登录状态已过期，请刷新页面后重试。',

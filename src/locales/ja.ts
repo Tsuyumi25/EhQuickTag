@@ -427,8 +427,12 @@ export default {
   // Gallery
   'gallery.searchN': '検索 {n}',
   'gallery.vote': '投票',
-  'gallery.importToggle': 'タグ候補を取込',
+  'gallery.import': 'タグ候補を取込',
+  'gallery.importHint': 'クリップボードのギャラリー URL からタグ候補を取り込みます',
   'gallery.importFailed': 'そのギャラリーを読み込めませんでした。',
+  'gallery.importPasteFailed': 'クリップボードを読み取れませんでした。',
+  'gallery.importNotGallery': 'ギャラリーの URL ではありません：{text}',
+  'gallery.importClipboardEmpty': 'クリップボードが空です。',
   'gallery.clearSelection': '選択解除',
   'gallery.addTags': 'タグを追加',
   'gallery.sessionExpired': 'セッションの有効期限が切れました。ページを再読み込みして再ログインしてください。',

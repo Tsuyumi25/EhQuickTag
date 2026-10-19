@@ -427,8 +427,12 @@ export default {
   // Gallery
   'gallery.searchN': '검색 {n}',
   'gallery.vote': '투표',
-  'gallery.importToggle': '태그 후보 가져오기',
+  'gallery.import': '태그 후보 가져오기',
+  'gallery.importHint': '클립보드에 있는 갤러리 URL에서 태그 후보를 가져옵니다',
   'gallery.importFailed': '해당 갤러리를 불러오지 못했습니다.',
+  'gallery.importPasteFailed': '클립보드를 읽지 못했습니다.',
+  'gallery.importNotGallery': '갤러리 URL이 아닙니다: {text}',
+  'gallery.importClipboardEmpty': '클립보드가 비어 있습니다.',
   'gallery.clearSelection': '선택 해제',
   'gallery.addTags': '태그 추가',
   'gallery.sessionExpired': '세션이 만료되었습니다. 페이지를 새로고침하여 다시 로그인하세요.',
