@@ -19,6 +19,7 @@ import { parseGalleryRef } from '@/composables/useEhSearchListing'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
 import { isZhLocale, t } from '@/composables/useI18n'
 import { DEFAULT_NS_ORDER, entryForTag, tagDbVersion } from '@/services/tags/tagDb'
+import { sortByNamespace } from '@/services/listing/tagGroups'
 import {
   conditionRange, resolveRuleEffects, type GalleryProbe, type RangeCondition, type RuleEffects,
 } from '@/services/listing/galleryRules'
@@ -142,6 +143,7 @@ watch(selection, (next, previous) => {
 })
 
 const tagTiers = computed(() => new Map(chips.value.map(chip => [chip.name, chip.tier])))
+const DOCK_NS_ORDER: readonly string[] = [...DEFAULT_NS_ORDER, 'uploader']
 const sessionGroups = computed<GalleryTagListGroup[]>(() => {
   void tagDbVersion.value
   const groups = new Map<string, GalleryTagListGroup>()
@@ -175,7 +177,7 @@ const sessionGroups = computed<GalleryTagListGroup[]>(() => {
       sources: '',
     })
   }
-  return [...groups.values()]
+  return sortByNamespace([...groups.values()], group => group.key, DOCK_NS_ORDER)
 })
 // dock 開不開跟選取分開：選了第一個標籤時打開，取消選取不會收起來，只有關閉會——關閉一律連選取一起清掉。
 // 規則頁開著時 dock 一直在：預覽、返回與關閉都在這裡，沒選標籤也要按得到
