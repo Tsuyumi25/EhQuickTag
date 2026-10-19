@@ -206,6 +206,7 @@ export default {
 
   // Settings
   'settings.title': '설정',
+  'menu.evrSettings': 'Eh View Refined 설정',
   'settings.close': '닫기',
   'settings.tabGeneral': '일반',
   'settings.tabTagBar': '태그 바',

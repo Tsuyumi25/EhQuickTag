@@ -131,6 +131,14 @@ function gmShimCode(): string {
         .then((r) => r.text().then((text) => onload?.({ responseText: text, status: r.status })))
         .catch((e) => onerror?.({ error: String(e), readyState: 4, status: 0 }))
     }
+    window.__eqtMenuCommands = new Map()
+    let nextMenuCommandId = 0
+    window.GM_registerMenuCommand = (name, onClick) => {
+      const id = ++nextMenuCommandId
+      window.__eqtMenuCommands.set(id, { name, onClick })
+      return id
+    }
+    window.GM_unregisterMenuCommand = (id) => { window.__eqtMenuCommands.delete(id) }
     window.GM = {
       openInTab: (url) => { window.open(url, '_blank') },
       getValue: async (key, def) => {

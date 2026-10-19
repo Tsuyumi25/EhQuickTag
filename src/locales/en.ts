@@ -206,6 +206,7 @@ export default {
 
   // Settings
   'settings.title': 'Settings',
+  'menu.evrSettings': 'Eh View Refined settings',
   'settings.close': 'Close',
   'settings.tabGeneral': 'General',
   'settings.tabTagBar': 'Tag Bar',

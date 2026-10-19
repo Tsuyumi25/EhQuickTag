@@ -9,6 +9,7 @@ import { loadTagCount } from '@/services/tags/tagCount'
 import { loadTagWiki, WikiSchemaMismatchError } from '@/services/tags/tagWiki'
 import { useEqtToast } from '@/composables/useEqtToast'
 import { t } from '@/composables/useI18n'
+import { registerMenuCommands } from '@/services/menuCommands'
 import '@/styles/tagbar.scss'
 import '@/styles/theme.scss'
 import '@/styles/popup.scss'
@@ -63,6 +64,7 @@ import '@/styles/toast-overrides.scss'
     })
 
   app.mount(appContainer)
+  registerMenuCommands()
 
   startAutoSave()
 })()

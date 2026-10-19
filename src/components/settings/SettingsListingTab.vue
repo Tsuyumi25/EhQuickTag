@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { nextTick } from 'vue'
 import { Funnel, PanelBottom, Rows3, Settings, ToggleLeft } from '@lucide/vue'
 import { t } from '@/composables/useI18n'
-import { showSettings } from '@/services/appOverlays'
+import { openEvrSettings } from '@/services/appOverlays'
 import SettingsTagAppearanceSection from './SettingsTagAppearanceSection.vue'
 import {
   listingDockAlwaysVisible, listingRulesPaused, listingTagSelectEnabled, listingTagsEnabled,
@@ -12,14 +11,6 @@ import { evrInstalled } from '@/utils/evr'
 // TODO: EhViewRefined 上架 Sleazy Fork 之後換成那邊的網址
 const EVR_URL = 'https://github.com/Tsuyumi25/EhViewRefined'
 const evrInstall = () => t('settings.listingEvrInstall').split(/(\{evr\})/)
-
-// EVR 的 README 寫明的 hook。先關掉這裡：兩邊都會鎖 body 的捲動，EVR 打開時記下的是
-// 「已經被我們鎖住」的狀態，關掉後會把頁面還原成鎖住；等我們卸載、鎖解開了再請它打開
-async function openEvrSettings() {
-  showSettings.value = false
-  await nextTick()
-  document.dispatchEvent(new Event('evr:open-settings'))
-}
 </script>
 
 <template>

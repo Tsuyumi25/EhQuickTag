@@ -206,6 +206,7 @@ export default {
 
   // Settings
   'settings.title': '設定',
+  'menu.evrSettings': 'Eh View Refined の設定',
   'settings.close': '閉じる',
   'settings.tabGeneral': '一般',
   'settings.tabTagBar': 'タグバー',
