@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue'
-import { Bold, CircleQuestionMark, EyeClosed, Italic, Paintbrush, Strikethrough, Underline } from '@lucide/vue'
+import { Bold, CircleQuestionMark, EyeClosed, Italic, Paintbrush, RotateCcw, Strikethrough, Underline } from '@lucide/vue'
 import AnchoredPopover from '@/components/AnchoredPopover.vue'
 import EqtNumberField from '@/components/EqtNumberField.vue'
 import RuleActionPreview from '@/components/rules/RuleActionPreview.vue'
 import RuleColorField from '@/components/rules/RuleColorField.vue'
 import { t } from '@/composables/useI18n'
-import { COVER_BLUR_MODES, MAX_RADIUS, normalizePrefix, type GalleryRule } from '@/services/listing/galleryRules'
+import { COVER_BLUR_MODES, createActions, MAX_RADIUS, normalizePrefix, type GalleryRule, type RuleActions } from '@/services/listing/galleryRules'
 import { ACTION_TARGETS, targetInUse, type ActionTarget } from '@/services/listing/ruleActionItems'
 
 // 拿整條規則：預覽的規則按鈕要用到規則名稱
@@ -48,10 +48,22 @@ const TITLE_STYLES = [
 
 const hideHelpAnchor = ref<HTMLElement | null>(null)
 const hideHelpOpen = ref(false)
+
+const DEFAULT_ACTIONS = createActions()
+const isDefault = computed(() =>
+  (Object.keys(DEFAULT_ACTIONS) as (keyof RuleActions)[]).every(key => actions.value[key] === DEFAULT_ACTIONS[key]))
 </script>
 
 <template>
-  <h2><Paintbrush class="eqt-rule-page__icon" />{{ t('listingRules.actions') }}</h2>
+  <div class="eqt-rule-page__section-head">
+    <h2><Paintbrush class="eqt-rule-page__icon" />{{ t('listingRules.actions') }}</h2>
+    <button
+      type="button" class="eqt-rule-page__reset" :disabled="isDefault" :title="t('settings.resetTitle')"
+      @click="rule.actions = createActions()"
+    >
+      <RotateCcw class="eqt-rule-page__icon" />{{ t('settings.reset') }}
+    </button>
+  </div>
   <div class="eqt-rule-page__actions">
     <!-- 動作作用在圖庫卡片的哪個位置：一頁一個位置，有設定的那幾頁左邊畫一條綠色條 -->
     <div class="eqt-rule-page__action-tabs" role="tablist" aria-orientation="vertical" :aria-label="t('listingRules.actions')">

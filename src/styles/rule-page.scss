@@ -1146,6 +1146,17 @@
   }
 }
 
+.eqt-rule-page__reset {
+  @include btn-outlined;
+  gap: var(--eqt-rule-page-gap);
+  margin-inline-start: auto;
+  // 跟條件標題那排的「圖形／代碼」同一個高度
+  padding: 2px 8px;
+  color: var(--eqt-text-hint);
+
+  &:hover:not(:disabled) { color: var(--eqt-text); }
+}
+
 .eqt-rule-page__source {
   display: flex;
   flex-direction: column;
