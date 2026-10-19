@@ -17,6 +17,6 @@ test('搜尋是帶著選取詞的連結，中鍵在背景開新分頁後才清�
   await search.click({ button: 'middle' })
   const opened = await opening
   await opened.waitForURL(href)
-  await expect(page.locator('.eqt-gallery-actions__vote-counts')).toHaveText('↑0 ↓0')
+  await expect(page.locator('.eqt-gallery-actions__btn--vote .eqt-gallery-actions__count')).toHaveText(['0', '0'])
   await expect(search).toBeDisabled()
 })

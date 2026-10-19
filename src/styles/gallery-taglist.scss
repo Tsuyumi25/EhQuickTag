@@ -277,20 +277,13 @@ $eqt-gallery-height: 330px;
     cursor: not-allowed;
   }
 
-  // search / vote 大方塊：column flow 把 icon (或 vote 的 ↑↓ 計數) 疊在 label 上方
+  // search / vote 大方塊：上面是狀態（選了幾顆、正負各幾票），下面是動作。
+  // 內容只有 48px 寬，數字不跟動作寫在同一行，英文的 Search 才不會被擠到下一行
   &--search,
   &--vote {
     flex-direction: column;
     padding: 6px;
     gap: 2px;
-  }
-
-  // vote 把計數放在原本 icon 的位置，bold + 大字撐住視覺份量、對齊 search icon size
-  &--vote .eqt-gallery-actions__vote-counts {
-    font-weight: bold;
-    font-size: 14px;
-    line-height: 1;
-    white-space: nowrap;
   }
 
   &--search { grid-area: search; }
@@ -301,5 +294,25 @@ $eqt-gallery-height: 330px;
   &--clear { grid-area: clear; }
   &--mytags { grid-area: mytags; }
   &--settings { grid-area: settings; }
+}
 
+.eqt-gallery-actions__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+// vote 的拇指上下兩行：排成一行的話，兩邊都是 0 就已經超過 48px
+.eqt-gallery-actions__tally {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.eqt-gallery-actions__count {
+  font-weight: bold;
+  font-size: 14px;
+  line-height: 1;
+  white-space: nowrap;
 }

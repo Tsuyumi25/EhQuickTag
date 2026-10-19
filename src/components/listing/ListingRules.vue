@@ -519,10 +519,12 @@ onBeforeUnmount(() => {
             <button type="button" class="eqt-listing-rules__rules-toggle" @click="openRulesEditor"><Funnel aria-hidden="true" />{{ t('listingRules.rules') }}</button>
             <span class="eqt-listing-rules__separator" aria-hidden="true" />
             <a
-              v-if="myTagsHref" class="eqt-listing-rules__mytags" :href="myTagsHref" target="_blank" rel="noopener"
+              v-if="myTagsHref" class="eqt-listing-rules__mytags" :href="myTagsHref" target="_blank" rel="noopener" :title="t('gallery.openInMyTags')"
               @pointerdown="myTagsPick.persist" @keydown.enter="myTagsPick.persist" @click="clearAfterOpen" @auxclick="clearAfterOpen"
-            ><Tags aria-hidden="true" />{{ t('gallery.openInMyTags') }}</a>
-            <button v-else type="button" class="eqt-listing-rules__mytags" disabled><Tags aria-hidden="true" />{{ t('gallery.openInMyTags') }}</button>
+            ><Tags aria-hidden="true" />{{ t('gallery.myTagsN', { n: selection.size }) }}</a>
+            <button v-else type="button" class="eqt-listing-rules__mytags" :title="t('gallery.openInMyTags')" disabled>
+              <Tags aria-hidden="true" />{{ t('gallery.myTagsN', { n: selection.size }) }}
+            </button>
             <span class="eqt-listing-rules__separator" aria-hidden="true" />
             <a v-if="searchHref" class="eqt-listing-rules__search" :href="searchHref" target="_blank" rel="noopener noreferrer"><Search aria-hidden="true" />{{ t('tagbar.search') }}</a>
             <button v-else type="button" class="eqt-listing-rules__search" disabled><Search aria-hidden="true" />{{ t('tagbar.search') }}</button>

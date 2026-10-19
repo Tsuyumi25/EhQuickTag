@@ -426,7 +426,6 @@ export default {
   'default.general': '일반',
 
   // Gallery
-  'gallery.searchN': '검색 {n}',
   'gallery.vote': '투표',
   'gallery.import': '태그 후보 가져오기',
   'gallery.importHint': '클립보드에 있는 갤러리 URL에서 태그 후보를 가져옵니다',
@@ -440,6 +439,7 @@ export default {
   'gallery.tagDbLoadFailed': '태그 데이터베이스를 불러오지 못했습니다. 나중에 다시 시도하거나 네트워크를 확인하세요.',
   'gallery.openInMyTags': 'My Tags에서 보기',
   'gallery.myTagsAll': 'All',
+  'gallery.myTagsN': 'My Tags ({n})',
   'panel.gallerySourceInvalid': '갤러리 링크에는 유효한 eqt_gid와 eqt_token이 필요합니다.',
   'gallery.myTagsOpenFailed': 'My Tags를 열지 못했습니다. 현재 선택은 유지됩니다.',
   'panel.pickMissing': '선택 스냅샷이 없거나 정리되었습니다. 원래 페이지에서 선택 내용을 다시 저장하세요.',

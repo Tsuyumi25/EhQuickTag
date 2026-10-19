@@ -426,7 +426,6 @@ export default {
   'default.general': 'General',
 
   // Gallery
-  'gallery.searchN': 'Search {n}',
   'gallery.vote': 'Vote',
   'gallery.import': 'Import candidates',
   'gallery.importHint': 'Import tag candidates from the gallery URL on the clipboard',
@@ -440,6 +439,7 @@ export default {
   'gallery.tagDbLoadFailed': 'Failed to load tag database. Please retry later or check your network.',
   'gallery.openInMyTags': 'View in My Tags',
   'gallery.myTagsAll': 'All',
+  'gallery.myTagsN': 'My Tags ({n})',
   'panel.gallerySourceInvalid': 'This gallery link requires a valid eqt_gid and eqt_token.',
   'gallery.myTagsOpenFailed': 'Could not open My Tags. Your selection has been kept.',
   'panel.pickMissing': 'This selection snapshot is unavailable or has expired. Save the selection again on the source page.',

@@ -426,7 +426,6 @@ export default {
   'default.general': '一般',
 
   // Gallery
-  'gallery.searchN': '検索 {n}',
   'gallery.vote': '投票',
   'gallery.import': 'タグ候補を取込',
   'gallery.importHint': 'クリップボードのギャラリー URL からタグ候補を取り込みます',
@@ -440,6 +439,7 @@ export default {
   'gallery.tagDbLoadFailed': 'タグ DB の読み込みに失敗しました。後でリトライするかネットワークをご確認ください。',
   'gallery.openInMyTags': 'My Tags で表示',
   'gallery.myTagsAll': 'All',
+  'gallery.myTagsN': 'My Tags ({n})',
   'panel.gallerySourceInvalid': 'ギャラリーのリンクには有効な eqt_gid と eqt_token が必要です。',
   'gallery.myTagsOpenFailed': 'My Tags を開けませんでした。現在の選択は保持されています。',
   'panel.pickMissing': '選択スナップショットが存在しないか、削除されています。元のページで選択を保存し直してください。',

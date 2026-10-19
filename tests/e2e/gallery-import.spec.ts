@@ -63,7 +63,7 @@ test('導入標籤按命名空間分列、去重，候選不預先選取且只�
   await expect(cells.last().locator(':scope > :first-child')).toHaveClass(/eqt-gallery-chip/)
 
   await expect(chips.and(page.locator('[class*="--selected-"]'))).toHaveCount(0)
-  await expect(page.locator('.eqt-gallery-actions__vote-counts')).toHaveText('↑0 ↓0')
+  await expect(page.locator('.eqt-gallery-actions__btn--vote .eqt-gallery-actions__count')).toHaveText(['0', '0'])
 
   // 候選最低只到不選，右鍵不會變成負向
   const candidate = tag('other:imported only').locator('.eqt-gallery-chip__body')
@@ -71,7 +71,7 @@ test('導入標籤按命名空間分列、去重，候選不預先選取且只�
   await expect(tag('other:imported only')).not.toHaveClass(/--selected-/)
   await candidate.click()
   await expect(tag('other:imported only')).toHaveClass(/--selected-positive/)
-  await expect(page.locator('.eqt-gallery-actions__vote-counts')).toHaveText('↑1 ↓0')
+  await expect(page.locator('.eqt-gallery-actions__btn--vote .eqt-gallery-actions__count')).toHaveText(['1', '0'])
 })
 
 test('剪貼簿裡不是圖庫網址時，toast 回顯實際讀到的文字，不發出請求', async ({ page }) => {

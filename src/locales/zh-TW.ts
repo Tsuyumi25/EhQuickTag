@@ -426,7 +426,6 @@ export default {
   'default.general': '一般',
 
   // Gallery
-  'gallery.searchN': '搜尋 {n}',
   'gallery.vote': '投票',
   'gallery.import': '導入標籤候選',
   'gallery.importHint': '從剪貼簿裡的圖庫網址導入標籤候選',
@@ -440,6 +439,7 @@ export default {
   'gallery.tagDbLoadFailed': '標籤資料庫載入失敗，請稍後再試或檢查網路。',
   'gallery.openInMyTags': '到 My Tags 檢視',
   'gallery.myTagsAll': 'All',
+  'gallery.myTagsN': 'My Tags ({n})',
   'panel.gallerySourceInvalid': '圖庫連結需要有效的 eqt_gid 與 eqt_token。',
   'gallery.myTagsOpenFailed': '無法開啟 My Tags，已保留目前選取。',
   'panel.pickMissing': '選取快照不存在或已清理，請回來源頁重新保存選取。',

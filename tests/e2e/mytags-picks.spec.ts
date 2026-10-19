@@ -22,7 +22,7 @@ test('圖庫選中標籤存成獨立快照，以短 ID fragment 打開 My Tags',
   const opened = await popup
   await opened.waitForLoadState()
   // 開完才清選取，連結回到整本圖庫的 My Tags
-  await expect(page.locator('.eqt-gallery-actions__vote-counts')).toHaveText('↑0 ↓0')
+  await expect(page.locator('.eqt-gallery-actions__btn--vote .eqt-gallery-actions__count')).toHaveText(['0', '0'])
   await expect(link).toHaveAttribute('href', /#eqt_gid=/)
   const url = new URL(opened.url())
   expect(url.origin + url.pathname).toBe('https://e-hentai.org/mytags')

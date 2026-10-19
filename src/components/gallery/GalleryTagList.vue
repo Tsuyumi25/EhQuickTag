@@ -25,7 +25,7 @@ import { batchVote, type VoteState } from '@/services/gallery/galleryVote'
 import { useEqtToast } from '@/composables/useEqtToast'
 import { useEhGalleryHost, parseTaglistRoot, type GalleryTag } from '@/composables/useEhGalleryHost'
 import { useIntroPanel } from '@/composables/useIntroPanel'
-import { Settings, Search, BookOpen, Tags, TagPlus, ClipboardPaste, X } from '@lucide/vue'
+import { Settings, Search, BookOpen, Tags, TagPlus, ClipboardPaste, ThumbsDown, ThumbsUp, X } from '@lucide/vue'
 import type { Selection } from '@/services/gallery/dragSelectMachine'
 import GalleryAddInline from './GalleryAddInline.vue'
 import GalleryIntroPanel from './GalleryIntroPanel.vue'
@@ -521,12 +521,16 @@ watch(selection, () => {
       @click="clearAfterOpen"
       @auxclick="clearAfterOpen"
     >
-      <Search :size="20" />
-      <span>{{ t('gallery.searchN', { n: String(selectedCount) }) }}</span>
+      <span class="eqt-gallery-actions__status">
+        <Search :size="16" /><span class="eqt-gallery-actions__count">{{ selectedCount }}</span>
+      </span>
+      <span>{{ t('tagbar.search') }}</span>
     </a>
     <button v-else type="button" class="eqt-gallery-actions__btn eqt-gallery-actions__btn--search" disabled>
-      <Search :size="20" />
-      <span>{{ t('gallery.searchN', { n: '0' }) }}</span>
+      <span class="eqt-gallery-actions__status">
+        <Search :size="16" /><span class="eqt-gallery-actions__count">0</span>
+      </span>
+      <span>{{ t('tagbar.search') }}</span>
     </button>
 
     <button
@@ -573,11 +577,17 @@ watch(selection, () => {
       @auxclick="clearAfterOpen"
     >
       <Tags :size="14" />
-      <span>{{ t('gallery.openInMyTags') }} ({{ selectedCount || t('gallery.myTagsAll') }})</span>
+      <span>{{ t('gallery.myTagsN', { n: selectedCount || t('gallery.myTagsAll') }) }}</span>
     </a>
-    <button v-else type="button" class="eqt-gallery-actions__btn eqt-gallery-actions__btn--mytags" disabled>
+    <button
+      v-else
+      type="button"
+      class="eqt-gallery-actions__btn eqt-gallery-actions__btn--mytags"
+      :title="t('gallery.openInMyTags')"
+      disabled
+    >
       <Tags :size="14" />
-      <span>{{ t('gallery.openInMyTags') }} ({{ selectedCount }})</span>
+      <span>{{ t('gallery.myTagsN', { n: selectedCount }) }}</span>
     </button>
 
     <a
@@ -607,7 +617,14 @@ watch(selection, () => {
       :disabled="selectedCount === 0 || votePending"
       @click="onSendBatchVotes"
     >
-      <span class="eqt-gallery-actions__vote-counts">↑{{ positiveCount }} ↓{{ negativeCount }}</span>
+      <span class="eqt-gallery-actions__tally">
+        <span class="eqt-gallery-actions__status">
+          <ThumbsUp :size="13" /><span class="eqt-gallery-actions__count">{{ positiveCount }}</span>
+        </span>
+        <span class="eqt-gallery-actions__status">
+          <ThumbsDown :size="13" /><span class="eqt-gallery-actions__count">{{ negativeCount }}</span>
+        </span>
+      </span>
       <span>{{ t('gallery.vote') }}</span>
     </button>
   </div>
