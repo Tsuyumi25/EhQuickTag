@@ -903,8 +903,17 @@
   background: var(--eqt-green);
 }
 
-// fieldset 的預設框線、內距與 min-width: min-content 都拿掉，當成一般的直排容器
+// 欄位與卡片頁的隱藏各排一段；隱藏另外放，打開時才只停用上面那段
 .eqt-rule-page__action-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: calc(var(--eqt-rule-page-gap) * 4);
+  min-width: 0;
+}
+
+// fieldset 的預設框線、內距與 min-width: min-content 都拿掉，當成一般的直排容器
+.eqt-rule-page__action-fields {
   display: flex;
   flex-direction: column;
   align-items: flex-start;

@@ -76,7 +76,6 @@ export default {
   'rulePagePrototype.target.card': '卡片',
   'rulePagePrototype.target.cover': '封面',
   'rulePagePrototype.target.title': '标题',
-  'rulePagePrototype.target.tags': '标签列',
   'rulePagePrototype.blurShort': '模糊',
   'rulePagePrototype.prefix': '前缀',
   'rulePagePrototype.dimShort': '淡化',

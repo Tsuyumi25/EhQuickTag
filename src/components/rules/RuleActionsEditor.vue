@@ -64,88 +64,90 @@ const hideHelpOpen = ref(false)
       </button>
     </div>
 
-    <!-- 隱藏時圖庫整個不見，其他動作都不作用：整組停用，但值留著，關掉隱藏就回來；分頁照樣能切 -->
-    <fieldset
+    <div
       :id="`eqt-rule-action-panel-${target}`" class="eqt-rule-page__action-panel" role="tabpanel"
-      :aria-labelledby="`eqt-rule-action-tab-${target}`" :disabled="actions.hide"
+      :aria-labelledby="`eqt-rule-action-tab-${target}`"
     >
-      <template v-if="target === 'card'">
-        <RuleColorField v-model="actions.background" :label="t('rulePagePrototype.background')" />
-        <label class="eqt-rule-page__field eqt-rule-page__amount">
-          <span>{{ t('rulePagePrototype.dimShort') }}</span>
-          <input class="eqt-rule-page__slider" type="range" min="0" max="100" step="1" :value="actions.dim" @input="setAmount('dim', $event)">
-          <span class="eqt-rule-page__amount-value">{{ actions.dim }}</span>
-        </label>
-      </template>
+      <!-- 隱藏時圖庫整個不見，其他動作都不作用：整組停用，但值留著，關掉隱藏就回來；分頁照樣能切 -->
+      <fieldset class="eqt-rule-page__action-fields" :disabled="actions.hide">
+        <template v-if="target === 'card'">
+          <RuleColorField v-model="actions.background" :label="t('rulePagePrototype.background')" />
+          <label class="eqt-rule-page__field eqt-rule-page__amount">
+            <span>{{ t('rulePagePrototype.dimShort') }}</span>
+            <input class="eqt-rule-page__slider" type="range" min="0" max="100" step="1" :value="actions.dim" @input="setAmount('dim', $event)">
+            <span class="eqt-rule-page__amount-value">{{ actions.dim }}</span>
+          </label>
+          <label class="eqt-rule-page__enabled" :title="t('rulePagePrototype.showNameHint')">
+            <input type="checkbox" :checked="actions.showName" @change="actions.showName = ($event.target as HTMLInputElement).checked" />
+            {{ t('rulePagePrototype.showName') }}
+          </label>
+        </template>
 
-      <template v-else-if="target === 'cover'">
-        <span class="eqt-rule-page__choice" role="group" :aria-label="t('rulePagePrototype.target.cover')">
-          <button
-            v-for="mode in COVER_BLUR_MODES" :key="mode" type="button" class="eqt-rule-page__choice-item"
-            :aria-pressed="actions.blurMode === mode" @click="actions.blurMode = mode"
-          >{{ t(mode === 'blur' ? 'rulePagePrototype.blurShort' : 'rulePagePrototype.mosaicShort') }}</button>
-        </span>
-        <span class="eqt-rule-page__field eqt-rule-page__amount">
-          <input
-            class="eqt-rule-page__slider" type="range" min="0" max="100" step="1" :value="actions.blur"
-            :aria-label="t(actions.blurMode === 'blur' ? 'rulePagePrototype.blurShort' : 'rulePagePrototype.mosaicShort')"
-            @input="setAmount('blur', $event)"
-          >
-          <span class="eqt-rule-page__amount-value">{{ actions.blur }}</span>
-        </span>
-      </template>
+        <template v-else-if="target === 'cover'">
+          <span class="eqt-rule-page__choice" role="group" :aria-label="t('rulePagePrototype.target.cover')">
+            <button
+              v-for="mode in COVER_BLUR_MODES" :key="mode" type="button" class="eqt-rule-page__choice-item"
+              :aria-pressed="actions.blurMode === mode" @click="actions.blurMode = mode"
+            >{{ t(mode === 'blur' ? 'rulePagePrototype.blurShort' : 'rulePagePrototype.mosaicShort') }}</button>
+          </span>
+          <span class="eqt-rule-page__field eqt-rule-page__amount">
+            <input
+              class="eqt-rule-page__slider" type="range" min="0" max="100" step="1" :value="actions.blur"
+              :aria-label="t(actions.blurMode === 'blur' ? 'rulePagePrototype.blurShort' : 'rulePagePrototype.mosaicShort')"
+              @input="setAmount('blur', $event)"
+            >
+            <span class="eqt-rule-page__amount-value">{{ actions.blur }}</span>
+          </span>
+        </template>
 
-      <template v-else-if="target === 'prefix'">
-        <label class="eqt-rule-page__field" :title="t('rulePagePrototype.titlePrefixHint')">
-          <span>{{ t('rulePagePrototype.prefix') }}</span>
-          <input
-            class="eqt-rule-page__input" type="text" :value="actions.prefix ?? ''" autocomplete="off"
-            :aria-label="t('rulePagePrototype.titlePrefix')"
-            @change="setPrefix" @keydown.enter.prevent="($event.target as HTMLInputElement).blur()"
-          >
-        </label>
-        <RuleColorField v-model="actions.prefixColor" :label="t('rulePagePrototype.textColor')" />
-        <RuleColorField v-model="actions.prefixBackground" :label="t('rulePagePrototype.background')" />
-        <span class="eqt-rule-page__field">
-          <span>{{ t('rulePagePrototype.radius') }}</span>
-          <EqtNumberField v-model="actions.prefixRadius" :min="0" :max="MAX_RADIUS" :label="t('rulePagePrototype.radius')" />
-        </span>
-      </template>
+        <template v-else-if="target === 'prefix'">
+          <label class="eqt-rule-page__field" :title="t('rulePagePrototype.titlePrefixHint')">
+            <span>{{ t('rulePagePrototype.prefix') }}</span>
+            <input
+              class="eqt-rule-page__input" type="text" :value="actions.prefix ?? ''" autocomplete="off"
+              :aria-label="t('rulePagePrototype.titlePrefix')"
+              @change="setPrefix" @keydown.enter.prevent="($event.target as HTMLInputElement).blur()"
+            >
+          </label>
+          <RuleColorField v-model="actions.prefixColor" :label="t('rulePagePrototype.textColor')" />
+          <RuleColorField v-model="actions.prefixBackground" :label="t('rulePagePrototype.background')" />
+          <span class="eqt-rule-page__field">
+            <span>{{ t('rulePagePrototype.radius') }}</span>
+            <EqtNumberField v-model="actions.prefixRadius" :min="0" :max="MAX_RADIUS" :label="t('rulePagePrototype.radius')" />
+          </span>
+        </template>
 
-      <template v-else-if="target === 'title'">
-        <RuleColorField v-model="actions.titleColor" :label="t('rulePagePrototype.textColor')" />
-        <RuleColorField v-model="actions.titleBackground" :label="t('rulePagePrototype.background')" />
-        <span class="eqt-rule-page__field">
-          <span>{{ t('rulePagePrototype.radius') }}</span>
-          <EqtNumberField v-model="actions.titleRadius" :min="0" :max="MAX_RADIUS" :label="t('rulePagePrototype.radius')" />
-        </span>
-        <span class="eqt-rule-page__choice" role="group" :aria-label="t('rulePagePrototype.target.title')">
-          <button
-            v-for="style in TITLE_STYLES" :key="style.key" type="button" class="eqt-rule-page__choice-item"
-            :aria-pressed="actions[style.key]" :aria-label="t(style.label)" :title="t(style.label)"
-            @click="actions[style.key] = !actions[style.key]"
-          ><component :is="style.icon" class="eqt-rule-page__icon" /></button>
-        </span>
-      </template>
+        <template v-else>
+          <RuleColorField v-model="actions.titleColor" :label="t('rulePagePrototype.textColor')" />
+          <RuleColorField v-model="actions.titleBackground" :label="t('rulePagePrototype.background')" />
+          <span class="eqt-rule-page__field">
+            <span>{{ t('rulePagePrototype.radius') }}</span>
+            <EqtNumberField v-model="actions.titleRadius" :min="0" :max="MAX_RADIUS" :label="t('rulePagePrototype.radius')" />
+          </span>
+          <span class="eqt-rule-page__choice" role="group" :aria-label="t('rulePagePrototype.target.title')">
+            <button
+              v-for="style in TITLE_STYLES" :key="style.key" type="button" class="eqt-rule-page__choice-item"
+              :aria-pressed="actions[style.key]" :aria-label="t(style.label)" :title="t(style.label)"
+              @click="actions[style.key] = !actions[style.key]"
+            ><component :is="style.icon" class="eqt-rule-page__icon" /></button>
+          </span>
+        </template>
+      </fieldset>
 
-      <label v-else class="eqt-rule-page__enabled" :title="t('rulePagePrototype.showNameHint')">
-        <input type="checkbox" :checked="actions.showName" @change="actions.showName = ($event.target as HTMLInputElement).checked" />
-        {{ t('rulePagePrototype.showName') }}
-      </label>
-    </fieldset>
-  </div>
-
-  <div class="eqt-rule-page__hide-row">
-    <button type="button" class="eqt-rule-page__hide" :aria-pressed="actions.hide" @click="actions.hide = !actions.hide">
-      <EyeClosed class="eqt-rule-page__icon" />{{ t('rulePagePrototype.hideShort') }}
-    </button>
-    <button
-      ref="hideHelpAnchor" type="button" class="eqt-rule-page__help" :aria-label="t('rulePagePrototype.hideHelp')"
-      @mouseenter="hideHelpOpen = true" @mouseleave="hideHelpOpen = false"
-      @focus="hideHelpOpen = true" @blur="hideHelpOpen = false"
-    ><CircleQuestionMark class="eqt-rule-page__icon" /></button>
-    <AnchoredPopover v-model:open="hideHelpOpen" :anchor="hideHelpAnchor" placement="top-start">
-      <p class="eqt-rule-page__help-tip" role="tooltip">{{ t('rulePagePrototype.hideHelp') }}</p>
-    </AnchoredPopover>
+      <!-- 隱藏也是對整張卡片做的事；它自己不在停用的那組裡，才關得掉 -->
+      <div v-if="target === 'card'" class="eqt-rule-page__hide-row">
+        <button type="button" class="eqt-rule-page__hide" :aria-pressed="actions.hide" @click="actions.hide = !actions.hide">
+          <EyeClosed class="eqt-rule-page__icon" />{{ t('rulePagePrototype.hideShort') }}
+        </button>
+        <button
+          ref="hideHelpAnchor" type="button" class="eqt-rule-page__help" :aria-label="t('rulePagePrototype.hideHelp')"
+          @mouseenter="hideHelpOpen = true" @mouseleave="hideHelpOpen = false"
+          @focus="hideHelpOpen = true" @blur="hideHelpOpen = false"
+        ><CircleQuestionMark class="eqt-rule-page__icon" /></button>
+        <AnchoredPopover v-model:open="hideHelpOpen" :anchor="hideHelpAnchor" placement="top-start">
+          <p class="eqt-rule-page__help-tip" role="tooltip">{{ t('rulePagePrototype.hideHelp') }}</p>
+        </AnchoredPopover>
+      </div>
+    </div>
   </div>
 </template>

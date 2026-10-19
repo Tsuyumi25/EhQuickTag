@@ -76,7 +76,6 @@ export default {
   'rulePagePrototype.target.card': 'Card',
   'rulePagePrototype.target.cover': 'Cover',
   'rulePagePrototype.target.title': 'Title',
-  'rulePagePrototype.target.tags': 'Tag list',
   'rulePagePrototype.blurShort': 'Blur',
   'rulePagePrototype.prefix': 'Prefix',
   'rulePagePrototype.dimShort': 'Fade',

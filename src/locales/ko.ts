@@ -76,7 +76,6 @@ export default {
   'rulePagePrototype.target.card': '카드',
   'rulePagePrototype.target.cover': '표지',
   'rulePagePrototype.target.title': '제목',
-  'rulePagePrototype.target.tags': '태그 목록',
   'rulePagePrototype.blurShort': '흐리게',
   'rulePagePrototype.prefix': '접두어',
   'rulePagePrototype.dimShort': '흐리게',

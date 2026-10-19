@@ -76,7 +76,6 @@ export default {
   'rulePagePrototype.target.card': 'カード',
   'rulePagePrototype.target.cover': '表紙',
   'rulePagePrototype.target.title': 'タイトル',
-  'rulePagePrototype.target.tags': 'タグ一覧',
   'rulePagePrototype.blurShort': 'ぼかす',
   'rulePagePrototype.prefix': '接頭辞',
   'rulePagePrototype.dimShort': '薄く表示',
