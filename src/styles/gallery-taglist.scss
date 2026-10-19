@@ -238,9 +238,12 @@ $eqt-gallery-height: 330px;
     0 0 var(--eqt-vote-halo-blur) var(--eqt-vote-halo),
     0 0 var(--eqt-vote-halo-blur) var(--eqt-vote-halo);
 
-  // SVG 圖示不受 text-shadow 影響，需以 drop-shadow 產生光暈。
+  // SVG 圖示不受 text-shadow 影響，需以 drop-shadow 產生光暈。跟文字一樣疊兩層：
+  // 圖示是 1px 左右的細線，只有一層時光暈淡到看不出來
   svg {
-    filter: drop-shadow(0 0 var(--eqt-vote-halo-blur) var(--eqt-vote-halo));
+    filter:
+      drop-shadow(0 0 var(--eqt-vote-halo-blur) var(--eqt-vote-halo))
+      drop-shadow(0 0 var(--eqt-vote-halo-blur) var(--eqt-vote-halo));
   }
 }
 
