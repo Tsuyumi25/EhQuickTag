@@ -2,6 +2,22 @@
 
 import type { FixedActions } from './fixedRulePrototype'
 
+/** 動作作用在圖庫卡片的哪個位置；編輯時照這個分頁，新的動作照位置放進對應的那一頁 */
+export const ACTION_TARGETS = ['card', 'cover', 'prefix', 'title', 'tags'] as const
+export type ActionTarget = (typeof ACTION_TARGETS)[number]
+
+/** 這個位置有沒有設定任何動作；分頁上標一個點，不必一頁頁點開才知道哪裡有改 */
+export function targetInUse(actions: FixedActions, target: ActionTarget): boolean {
+  switch (target) {
+    case 'card': return actions.background !== null || actions.dim > 0
+    case 'cover': return actions.blur > 0
+    case 'prefix': return actions.prefix !== null
+    case 'title': return actions.titleColor !== null || actions.titleBackground !== null
+      || actions.strike || actions.underline || actions.bold || actions.italic
+    case 'tags': return actions.showName
+  }
+}
+
 export type ActionItemKey =
   | 'hide' | 'background' | 'dim' | 'blur' | 'showName' | 'prefix'
   | 'titleColor' | 'titleBackground' | 'bold' | 'italic' | 'underline' | 'strike'
