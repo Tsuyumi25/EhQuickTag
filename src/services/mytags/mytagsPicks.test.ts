@@ -13,7 +13,13 @@ const { storage, cacheGet, cacheSet, cacheKeys, cacheDelete } = vi.hoisted(() =>
 
 vi.mock('@/services/gmStorage', () => ({ cacheGet, cacheSet, cacheKeys, cacheDelete }))
 
-import { loadPick, parsePick, pickTags, pickUrl, savePick, stalePicks, PICKS_LIMIT } from '@/services/mytags/mytagsPicks'
+import { loadPick, newPickId, parsePick, pickTags, pickUrl, savePick, stalePicks, PICKS_LIMIT } from '@/services/mytags/mytagsPicks'
+
+async function saveNew(terms: readonly string[]): Promise<string> {
+  const id = await newPickId()
+  await savePick(id, terms)
+  return id
+}
 
 beforeEach(() => {
   storage.clear()
@@ -47,27 +53,33 @@ describe('parsePick', () => {
   })
 })
 
-describe('savePick / loadPick', () => {
-  it('每次保存各自取得短 ID，還原搜尋詞的順序與狀態', async () => {
+describe('newPickId / savePick / loadPick', () => {
+  it('各自的 ID 存各自的快照，還原搜尋詞的順序與狀態', async () => {
     const terms = ['-f:"some tag$"', '~p:sample$', 'male:sample']
-    const first = await savePick(terms)
-    const second = await savePick(['other:sample'])
-    const repeated = await savePick(terms)
+    const first = await saveNew(terms)
+    const second = await saveNew(['other:sample'])
     expect(first).toMatch(/^[A-Za-z0-9_-]{12}$/)
-    expect(new Set([first, second, repeated]).size).toBe(3)
+    expect(first).not.toBe(second)
     expect((await loadPick(first))?.terms).toEqual(terms)
     expect((await loadPick(second))?.terms).toEqual(['other:sample'])
-    expect((await loadPick(repeated))?.terms).toEqual(terms)
     expect(await loadPick('missing')).toBeNull()
   })
 
-  it('碰到已存在的 ID 時重取，不覆蓋原快照', async () => {
+  it('同一個 ID 再存一次是覆蓋，不會多出一份', async () => {
+    const id = await newPickId()
+    await savePick(id, ['female:sample'])
+    await savePick(id, ['female:sample', 'male:sample'])
+    expect((await loadPick(id))?.terms).toEqual(['female:sample', 'male:sample'])
+    expect((await cacheKeys('eqt_pick:')).length).toBe(1)
+  })
+
+  it('取 ID 時避開已存在的，不覆蓋原快照', async () => {
     const random = vi.spyOn(crypto, 'getRandomValues')
       .mockReturnValueOnce(new Uint8Array(12).fill(0))
       .mockReturnValueOnce(new Uint8Array(12).fill(0))
       .mockReturnValueOnce(new Uint8Array(12).fill(1))
-    const first = await savePick(['female:sample'])
-    const second = await savePick(['male:sample'])
+    const first = await saveNew(['female:sample'])
+    const second = await saveNew(['male:sample'])
     expect(first).not.toBe(second)
     expect((await loadPick(first))?.terms).toEqual(['female:sample'])
     expect((await loadPick(second))?.terms).toEqual(['male:sample'])
@@ -75,7 +87,7 @@ describe('savePick / loadPick', () => {
   })
 
   it('同時送出不同選取，各自仍能讀回', async () => {
-    const [first, second] = await Promise.all([savePick(['female:sample']), savePick(['male:sample'])])
+    const [first, second] = await Promise.all([saveNew(['female:sample']), saveNew(['male:sample'])])
     expect((await loadPick(first))?.terms).toEqual(['female:sample'])
     expect((await loadPick(second))?.terms).toEqual(['male:sample'])
   })
@@ -85,7 +97,7 @@ describe('savePick / loadPick', () => {
     const ids: string[] = []
     for (let i = 1; i <= PICKS_LIMIT + 1; i++) {
       vi.setSystemTime(sameTime ? 1000 : i * 1000)
-      ids.push(await savePick([`other:sample${i}`]))
+      ids.push(await saveNew([`other:sample${i}`]))
     }
     if (!sameTime) expect(await loadPick(ids[0])).toBeNull()
     expect((await loadPick(ids[PICKS_LIMIT]))?.terms).toEqual([`other:sample${PICKS_LIMIT + 1}`])

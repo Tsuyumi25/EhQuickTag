@@ -15,10 +15,15 @@ test('圖庫選中標籤存成獨立快照，以短 ID fragment 打開 My Tags',
 
   // 新分頁不在 page 的 mock 範圍裡，攔在 context 上免得它真的連到 EH
   await page.context().route(/\/mytags$/, (route) => route.fulfill({ contentType: 'text/html', body: '' }))
+  const link = page.locator('.eqt-gallery-actions__btn--mytags')
+  await expect(link).toHaveAttribute('href', /\/mytags#eqt_hash=[A-Za-z0-9_-]{12}$/)
   const popup = page.waitForEvent('popup')
-  await page.locator('.eqt-gallery-actions__btn--mytags').click()
+  await link.click()
   const opened = await popup
   await opened.waitForLoadState()
+  // 開完才清選取，連結回到整本圖庫的 My Tags
+  await expect(page.locator('.eqt-gallery-actions__vote-counts')).toHaveText('↑0 ↓0')
+  await expect(link).toHaveAttribute('href', /#eqt_gid=/)
   const url = new URL(opened.url())
   expect(url.origin + url.pathname).toBe('https://e-hentai.org/mytags')
   expect(url.search).toBe('')

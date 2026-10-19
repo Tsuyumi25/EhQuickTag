@@ -42,15 +42,19 @@ export function stalePicks(
     .map((entry) => entry.key)
 }
 
-export async function savePick(terms: readonly string[]): Promise<string> {
-  const saved = JSON.stringify({ schema: PICK_SCHEMA, terms, savedAt: Date.now() })
+/** 連結要先有網址才放得進 href，所以 ID 在選取改變時就先取好，真正寫入等使用者按下去 */
+export async function newPickId(): Promise<string> {
   let id: string
-  let key: string
   do {
     id = Array.from(crypto.getRandomValues(new Uint8Array(12)), byte => PICK_ALPHABET[byte & 63]).join('')
-    key = `${PICK_PREFIX}${id}`
-  } while (await cacheGet(key) !== null)
-  await cacheSet(key, saved)
+  } while (await cacheGet(`${PICK_PREFIX}${id}`) !== null)
+  return id
+}
+
+/** 同一個 ID 重複寫入是覆蓋，按下去好幾次也只留一份 */
+export async function savePick(id: string, terms: readonly string[]): Promise<void> {
+  const key = `${PICK_PREFIX}${id}`
+  await cacheSet(key, JSON.stringify({ schema: PICK_SCHEMA, terms, savedAt: Date.now() }))
   const keys = await cacheKeys(PICK_PREFIX)
   if (keys.length > PICKS_LIMIT) {
     const entries = await Promise.all(keys.filter(k => k !== key).map(async (k) => ({
@@ -59,7 +63,6 @@ export async function savePick(terms: readonly string[]): Promise<string> {
     })))
     await Promise.all(stalePicks(entries, PICKS_LIMIT - 1).map(cacheDelete))
   }
-  return id
 }
 
 export async function loadPick(id: string): Promise<TagPick | null> {

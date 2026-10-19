@@ -1,7 +1,6 @@
 <script setup lang="ts">
 // 列表頁：選標籤送規則頁，並把規則頁存下來的圖庫規則套回真實圖庫外觀。
 import { computed, h, onBeforeUnmount, onMounted, ref, render, shallowRef, watch, watchEffect } from 'vue'
-import { GM } from '$'
 import { useFloating, autoUpdate, flip, offset, shift } from '@floating-ui/vue'
 import { Ban, ChevronDown, Eye, Funnel, ListChecks, Search, Settings, Shapes, Tags, UserRound, X } from '@lucide/vue'
 import TagChip from '@/components/TagChip.vue'
@@ -29,7 +28,7 @@ import { parseTerm, serializeEntry } from '@/services/search/searchSyntax'
 import { tokenIdentity } from '@/services/search/tagState'
 import { markEntriesOffPure, syncFromSearchPure, type TermEntry } from '@/services/search/sessionState'
 import { loadMyTagsPalette, type MyTagsPalette } from '@/services/mytags/mytagsPalette'
-import { pickUrl, savePick } from '@/services/mytags/mytagsPicks'
+import { useMyTagsPickLink } from '@/composables/useMyTagsPickLink'
 import { openRule, openRules, openSettings, rulesCollapsed, showRules } from '@/services/appOverlays'
 import {
   defaultExactMatch, listingDockAlwaysVisible, listingMyTagsColorsEnabled, listingMyTagsMarksEnabled, listingMyTagsScoresEnabled,
@@ -364,16 +363,12 @@ const searchDraft = computed(() => selectedTerms.value.join(' '))
 watch(searchDraft, text => {
   dockSessionTerms.value = syncFromSearchPure(text, dockSessionTerms.value)
 }, { flush: 'sync' })
-async function openMyTags(): Promise<void> {
-  const terms = selectedTerms.value
-  if (!terms.length) return
-  try {
-    const href = pickUrl(location.origin, await savePick(terms))
-    await GM.openInTab(href, { active: true })
-    clearSelection()
-  } catch {
-    toast.error(t('gallery.myTagsOpenFailed'))
-  }
+const myTagsPick = useMyTagsPickLink(() => selectedTerms.value, () => toast.error(t('gallery.myTagsOpenFailed')))
+const myTagsHref = myTagsPick.href
+// 左鍵與中鍵開完才清選取，晚一拍是為了不讓 href 在導航前就被換掉；右鍵選單開的分頁抓不到時機，選取留著
+function clearAfterOpen(event: MouseEvent): void {
+  if (event.type === 'auxclick' && event.button !== 1) return
+  setTimeout(clearSelection)
 }
 function openRulesEditor() {
   openRules(selectedTerms.value)
@@ -523,7 +518,11 @@ onBeforeUnmount(() => {
           <template v-else>
             <button type="button" class="eqt-listing-rules__rules-toggle" @click="openRulesEditor"><Funnel aria-hidden="true" />{{ t('listingRules.rules') }}</button>
             <span class="eqt-listing-rules__separator" aria-hidden="true" />
-            <button type="button" class="eqt-listing-rules__mytags" :disabled="selection.size === 0" @click="openMyTags"><Tags aria-hidden="true" />{{ t('gallery.openInMyTags') }}</button>
+            <a
+              v-if="myTagsHref" class="eqt-listing-rules__mytags" :href="myTagsHref" target="_blank" rel="noopener"
+              @pointerdown="myTagsPick.persist" @keydown.enter="myTagsPick.persist" @click="clearAfterOpen" @auxclick="clearAfterOpen"
+            ><Tags aria-hidden="true" />{{ t('gallery.openInMyTags') }}</a>
+            <button v-else type="button" class="eqt-listing-rules__mytags" disabled><Tags aria-hidden="true" />{{ t('gallery.openInMyTags') }}</button>
             <span class="eqt-listing-rules__separator" aria-hidden="true" />
             <a v-if="searchHref" class="eqt-listing-rules__search" :href="searchHref" target="_blank" rel="noopener noreferrer"><Search aria-hidden="true" />{{ t('tagbar.search') }}</a>
             <button v-else type="button" class="eqt-listing-rules__search" disabled><Search aria-hidden="true" />{{ t('tagbar.search') }}</button>

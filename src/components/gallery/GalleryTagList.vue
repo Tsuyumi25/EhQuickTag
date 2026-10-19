@@ -15,7 +15,7 @@ import { serializeEntry } from '@/services/search/searchSyntax'
 import { findEntryByNsTag, DEFAULT_NS_ORDER, tagDbVersion } from '@/services/tags/tagDb'
 import { nsFormat, defaultExactMatch, galleryDblClickLeft, galleryDblClickRight, galleryDblClickLeftNewTabActive, galleryDblClickRightNewTabActive, type GalleryDblClickAction } from '@/services/store'
 import { loadMyTagsPalette, type MyTagsPalette } from '@/services/mytags/mytagsPalette'
-import { pickUrl, savePick } from '@/services/mytags/mytagsPicks'
+import { useMyTagsPickLink } from '@/composables/useMyTagsPickLink'
 import { bestTier, evidenceOf, parseGalleryUrl, withImport, type Imports } from '@/services/gallery/galleryImport'
 import { fetchGallery } from '@/composables/useEhGalleryPreview'
 import { openSettings } from '@/services/appOverlays'
@@ -366,8 +366,6 @@ function execGalleryDblClickAction(action: GalleryDblClickAction, newTabActive: 
   }
 }
 
-// 拆兩個 function（不用 mode 參數）避免 template `@click="onSearchNewTab"`
-// 意外把 MouseEvent 當 mode 傳進來——沒 arg 的 caller 也不會踩到預設值不 kick in 的坑
 function selectedTerms(): string[] {
   const tokens: string[] = []
   for (const group of groups.value) {
@@ -394,9 +392,13 @@ function doSearchNewTab(activate: boolean): void {
   onClearSelection()
 }
 
-// action bar 的 Search 按鈕沒有對應的「切換過去」設定，一律切換
-function onSearchNewTab(): void {
-  doSearchNewTab(true)
+const searchHref = computed(buildSearchUrl)
+
+// 連結交給瀏覽器開：左鍵與中鍵開完才清選取，晚一拍是為了不讓 href 在導航前就被換掉。
+// 右鍵選單開的分頁抓不到時機，選取留著
+function clearAfterOpen(event: MouseEvent): void {
+  if (event.type === 'auxclick' && event.button !== 1) return
+  setTimeout(onClearSelection)
 }
 
 function onSearchCurrent(): void {
@@ -406,19 +408,8 @@ function onSearchCurrent(): void {
   // navigation 觸發，component 即將卸載——不用 clearSelection
 }
 
-async function onOpenInMyTags(): Promise<void> {
-  const terms = selectedTerms()
-  if (!terms.length && !galleryRef) return
-  try {
-    const href = terms.length
-      ? pickUrl(location.origin, await savePick(terms))
-      : galleryMyTagsUrl.href
-    await GM.openInTab(href, { active: true })
-    onClearSelection()
-  } catch {
-    toast.error(t('gallery.myTagsOpenFailed'))
-  }
-}
+const myTagsPick = useMyTagsPickLink(selectedTerms, () => toast.error(t('gallery.myTagsOpenFailed')))
+const myTagsHref = computed(() => selectedTerms().length ? myTagsPick.href.value : galleryMyTagsUrl.href)
 
 const galleryRef = parseGalleryUrl(location.href)
 const galleryMyTagsUrl = new URL('/mytags', location.origin)
@@ -521,14 +512,21 @@ watch(selection, () => {
        vote 跟 search 隔開），中間夾 add / 導入 / wiki 與 clear / My Tags / settings。
        導入讀剪貼簿裡的圖庫網址 -->
   <div class="eqt-gallery-actions">
-    <button
-      type="button"
+    <a
+      v-if="searchHref"
       class="eqt-gallery-actions__btn eqt-gallery-actions__btn--search"
-      :disabled="selectedCount === 0"
-      @click="onSearchNewTab"
+      :href="searchHref"
+      target="_blank"
+      rel="noopener"
+      @click="clearAfterOpen"
+      @auxclick="clearAfterOpen"
     >
       <Search :size="20" />
       <span>{{ t('gallery.searchN', { n: String(selectedCount) }) }}</span>
+    </a>
+    <button v-else type="button" class="eqt-gallery-actions__btn eqt-gallery-actions__btn--search" disabled>
+      <Search :size="20" />
+      <span>{{ t('gallery.searchN', { n: '0' }) }}</span>
     </button>
 
     <button
@@ -562,14 +560,24 @@ watch(selection, () => {
       <span>{{ t('gallery.clearSelection') }}</span>
     </button>
 
-    <button
-      type="button"
+    <a
+      v-if="myTagsHref"
       class="eqt-gallery-actions__btn eqt-gallery-actions__btn--mytags"
+      :href="myTagsHref"
+      target="_blank"
+      rel="noopener"
       :title="t('gallery.openInMyTags')"
-      @click="onOpenInMyTags"
+      @pointerdown="myTagsPick.persist"
+      @keydown.enter="myTagsPick.persist"
+      @click="clearAfterOpen"
+      @auxclick="clearAfterOpen"
     >
       <Tags :size="14" />
       <span>{{ t('gallery.openInMyTags') }} ({{ selectedCount || t('gallery.myTagsAll') }})</span>
+    </a>
+    <button v-else type="button" class="eqt-gallery-actions__btn eqt-gallery-actions__btn--mytags" disabled>
+      <Tags :size="14" />
+      <span>{{ t('gallery.openInMyTags') }} ({{ selectedCount }})</span>
     </button>
 
     <a
