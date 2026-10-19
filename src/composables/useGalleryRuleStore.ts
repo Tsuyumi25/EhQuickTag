@@ -1,14 +1,14 @@
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { GM_addValueChangeListener, GM_removeValueChangeListener, type GmValueListenerId } from '$'
 import { cacheGet, cacheSet, hasGM } from '@/services/gmStorage'
-import { reserveRuleIds, type FixedRule } from '@/services/listing/fixedRulePrototype'
+import { reserveRuleIds, type GalleryRule } from '@/services/listing/galleryRules'
 import { decodeRules, RULE_SCHEMA } from '@/services/listing/ruleStorage'
 import { createPageContext } from '@/composables/createPageContext'
 
 const STORAGE_KEY = 'eqt_gallery_rules'
 
-export const useFixedRuleStore = createPageContext(() => {
-  const rules = ref<FixedRule[]>([])
+export const useGalleryRuleStore = createPageContext(() => {
+  const rules = ref<GalleryRule[]>([])
   const ready = ref(false)
   const saving = ref(false)
   const error = ref<string | null>(null)
@@ -36,7 +36,7 @@ export const useFixedRuleStore = createPageContext(() => {
       stale = true
       return
     }
-    try { accept(raw) } catch { error.value = 'rulePagePrototype.loadFailed' }
+    try { accept(raw) } catch { error.value = 'rulePage.loadFailed' }
   }
 
   async function flush() {
@@ -50,7 +50,7 @@ export const useFixedRuleStore = createPageContext(() => {
           // 重讀途中又改了就讓本地這次留到下一輪寫出去：它比讀到的那份還新
           if (!disposed && pending === null) accept(raw)
         } catch {
-          error.value = 'rulePagePrototype.loadFailed'
+          error.value = 'rulePage.loadFailed'
         }
         continue
       }
@@ -61,7 +61,7 @@ export const useFixedRuleStore = createPageContext(() => {
         accepted = raw
         error.value = null
       } catch {
-        error.value = 'rulePagePrototype.saveFailed'
+        error.value = 'rulePage.saveFailed'
       }
     }
     saving.value = false
@@ -80,7 +80,7 @@ export const useFixedRuleStore = createPageContext(() => {
   }
 
   function onBeforeUnload(event: BeforeUnloadEvent) {
-    if (!saving.value && error.value !== 'rulePagePrototype.saveFailed') return
+    if (!saving.value && error.value !== 'rulePage.saveFailed') return
     event.preventDefault()
     event.returnValue = ''
   }
@@ -99,7 +99,7 @@ export const useFixedRuleStore = createPageContext(() => {
       const raw = await cacheGet(STORAGE_KEY)
       if (!disposed && revision === received) accept(raw)
     } catch {
-      if (!disposed) error.value = 'rulePagePrototype.loadFailed'
+      if (!disposed) error.value = 'rulePage.loadFailed'
     }
   })
 

@@ -1,5 +1,5 @@
 import { baseDragOptions } from '@/utils/drag'
-import { MAX_GROUP_DEPTH } from '@/services/listing/fixedRulePrototype'
+import { MAX_GROUP_DEPTH } from '@/services/listing/galleryRules'
 
 // 各層群組與素材清單共用一個 group，素材才能拖進任何一層，條件也能丟回素材
 export const RULE_CONDITIONS_GROUP = 'eqt-rule-conditions'

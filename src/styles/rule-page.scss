@@ -19,8 +19,8 @@
 // 三欄沿用 /mytags 工作台：兩側是 stripe 卡片；每一欄各自捲動，所以標題列不需要 sticky。
 .eqt-rule-page {
   position: fixed;
-  // 底下讓出列表的 dock：預覽、返回與關閉在 dock 上（--eqt-rule-prototype-dock-clearance 定義在 rule-prototype.scss）
-  inset: var(--eqt-rule-page-margin) var(--eqt-rule-page-margin) var(--eqt-rule-prototype-dock-clearance);
+  // 底下讓出列表的 dock：預覽、返回與關閉在 dock 上（--eqt-listing-rules-dock-clearance 定義在 listing-rules.scss）
+  inset: var(--eqt-rule-page-margin) var(--eqt-rule-page-margin) var(--eqt-listing-rules-dock-clearance);
   z-index: var(--eqt-z-overlay);
   display: grid;
   grid-template-columns:

@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { conditionsFromTerms, type MaterialCondition } from '@/services/listing/fixedRulePrototype'
+import { conditionsFromTerms, type MaterialCondition } from '@/services/listing/galleryRules'
 
 export const showSettings = ref(false)
 export const initialSettingsTab = ref<string | null>(null)

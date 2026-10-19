@@ -3,9 +3,9 @@ import { onMounted } from 'vue'
 import TagBar from '@/components/tagbar/TagBar.vue'
 import GalleryTagList from '@/components/gallery/GalleryTagList.vue'
 import MyTagsPanel from '@/components/mytags/MyTagsPanel.vue'
-import ListingRulesPrototype from '@/components/listing/ListingRulesPrototype.vue'
-import RulePagePrototype from '@/components/rules/RulePagePrototype.vue'
-import { useFixedRuleStore } from '@/composables/useFixedRuleStore'
+import ListingRules from '@/components/listing/ListingRules.vue'
+import RulePage from '@/components/rules/RulePage.vue'
+import { useGalleryRuleStore } from '@/composables/useGalleryRuleStore'
 import SettingsPopup from '@/components/settings/SettingsPopup.vue'
 import SearchPopup from '@/components/search/SearchPopup.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
@@ -20,7 +20,7 @@ import { useEqtToast } from '@/composables/useEqtToast'
 import { t } from '@/composables/useI18n'
 import { evrInstalled } from '@/utils/evr'
 
-useFixedRuleStore()
+useGalleryRuleStore()
 const formHost = useEhFormHost()
 const galleryHost = taggingEnhancerEnabled.value ? useEhGalleryHost() : null
 const myTagsHost = myTagsEnhancerEnabled.value ? useEhMyTagsHost() : null
@@ -34,8 +34,8 @@ onMounted(() => {
 </script>
 
 <template>
-  <ListingRulesPrototype v-if="evrInstalled" />
-  <RulePagePrototype v-if="showRules" @close="showRules = false" />
+  <ListingRules v-if="evrInstalled" />
+  <RulePage v-if="showRules" @close="showRules = false" />
 
   <Teleport v-if="formHost" :to="formHost.anchor">
     <TagBar />

@@ -2,8 +2,8 @@ import { fc } from '@fast-check/vitest'
 import {
   createActions, createCategoryCondition, createGroup, createRangeCondition, createRule, createTagCondition, createUploaderCondition,
   GROUP_MODES, RANGE_OPS,
-  type FixedConditionItem, type FixedRule, type GalleryProbe, type GroupMode, type RangeField, type RangeOp,
-} from '@/services/listing/fixedRulePrototype'
+  type RuleConditionItem, type GalleryRule, type GalleryProbe, type GroupMode, type RangeField, type RangeOp,
+} from '@/services/listing/galleryRules'
 import type { GalleryCategory } from '@/services/listing/galleryCategory'
 
 // === 規則的 property test 共用 arbitraries ===
@@ -15,7 +15,7 @@ const CATEGORIES: GalleryCategory[] = ['doujinshi', 'manga', 'misc']
 // 上傳者兩個就夠碰出互斥；同一個人寫成不同大小寫，比對要當成同一個
 const UPLOADERS = ['uploader a', 'Uploader A', 'uploader b']
 
-export function rule(mode: GroupMode, conditions: FixedConditionItem[], negate = false): FixedRule {
+export function rule(mode: GroupMode, conditions: RuleConditionItem[], negate = false): GalleryRule {
   return { ...createRule(1), root: createGroup(mode, conditions, negate), actions: createActions() }
 }
 
@@ -42,10 +42,10 @@ const leafArb = fc.oneof(
   { weight: 1, arbitrary: rangeConditionArb('pages', pagesArb) },
 )
 const modeArb = fc.constantFrom<GroupMode>(...GROUP_MODES)
-const groupArb = (inner: fc.Arbitrary<FixedConditionItem>) =>
+const groupArb = (inner: fc.Arbitrary<RuleConditionItem>) =>
   fc.tuple(modeArb, fc.array(inner, { minLength: 1, maxLength: 3 }), fc.boolean())
     .map(([mode, conditions, negate]) => createGroup(mode, conditions, negate))
-export const itemArb: fc.Arbitrary<FixedConditionItem> = fc.oneof(
+export const itemArb: fc.Arbitrary<RuleConditionItem> = fc.oneof(
   { weight: 3, arbitrary: leafArb },
   { weight: 1, arbitrary: groupArb(fc.oneof({ weight: 3, arbitrary: leafArb }, { weight: 1, arbitrary: groupArb(leafArb) })) },
 )

@@ -6,11 +6,11 @@ import RuleRangeChip from './RuleRangeChip.vue'
 import RuleTagChip from './RuleTagChip.vue'
 import RuleUploaderChip from './RuleUploaderChip.vue'
 import { RULE_CONDITIONS_GROUP, fitsGroupDepth, ruleDragOptions } from './ruleDrag'
-import { itemHeight, type FixedConditionItem } from '@/services/listing/fixedRulePrototype'
+import { itemHeight, type RuleConditionItem } from '@/services/listing/galleryRules'
 
 // 條件樹直接就地改：跨清單拖曳時來源與目標各自 splice，若改成往上 emit 新陣列，
 // 同一個群組內「拖進子群組」會讓後到的那次 emit 拿舊 props 蓋掉先到的那次
-defineProps<{ conditions: FixedConditionItem[]; emptyHint: string; depth: number }>()
+defineProps<{ conditions: RuleConditionItem[]; emptyHint: string; depth: number }>()
 
 const group = { name: RULE_CONDITIONS_GROUP, put: fitsGroupDepth }
 </script>

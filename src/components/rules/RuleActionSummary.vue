@@ -2,11 +2,11 @@
 import { computed, type Component } from 'vue'
 import { Bold, EyeClosed, EyeOff, Italic, Strikethrough, SunDim, Tag, Type, Underline } from '@lucide/vue'
 import { t } from '@/composables/useI18n'
-import type { FixedActions } from '@/services/listing/fixedRulePrototype'
+import type { RuleActions } from '@/services/listing/galleryRules'
 import { actionItems, type ActionItemKey } from '@/services/listing/ruleActionItems'
 
 // verbose：情境裡要讀得出做了什麼，每一項都寫成字；空間小的地方只放圖示
-const props = defineProps<{ actions: FixedActions; verbose?: boolean }>()
+const props = defineProps<{ actions: RuleActions; verbose?: boolean }>()
 
 const ICONS: Partial<Record<ActionItemKey, Component>> = {
   hide: EyeClosed, dim: SunDim, blur: EyeOff, showName: Tag, prefix: Type,
@@ -31,6 +31,6 @@ const items = computed(() => actionItems(props.actions).map(item => ({
       />
       <template v-if="verbose">{{ item.text }}</template>
     </span>
-    <span v-if="!items.length">{{ t('rulePagePrototype.noAction') }}</span>
+    <span v-if="!items.length">{{ t('rulePage.noAction') }}</span>
   </span>
 </template>

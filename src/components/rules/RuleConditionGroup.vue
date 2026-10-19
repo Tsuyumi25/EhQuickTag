@@ -2,7 +2,7 @@
 import { X } from '@lucide/vue'
 import RuleConditionList from './RuleConditionList.vue'
 import { t } from '@/composables/useI18n'
-import { GROUP_MODE_OPERATORS, GROUP_MODES, type ConditionGroup } from '@/services/listing/fixedRulePrototype'
+import { GROUP_MODE_OPERATORS, GROUP_MODES, type ConditionGroup } from '@/services/listing/galleryRules'
 
 // root：規則本身的那個群組，不能刪也不能拖，標題用 section 的字級。
 // depth 是這個群組裡那份清單在根底下第幾層（根的清單是 0），拖曳時用來擋超過上限的巢狀
@@ -27,7 +27,7 @@ function toggleMode(): void {
       <button
         type="button" class="eqt-rule-page__segment"
         :class="{ 'eqt-rule-page__segment--on': group.negate }"
-        :title="t('rulePagePrototype.negateHint')" @click="group.negate = !group.negate"
+        :title="t('rulePage.negateHint')" @click="group.negate = !group.negate"
       >
         <span
           v-for="(label, index) in NEGATE_LABELS" :key="label"
@@ -36,7 +36,7 @@ function toggleMode(): void {
       </button>
       <button
         type="button" class="eqt-rule-page__segment eqt-rule-page__segment--mode"
-        :title="t('rulePagePrototype.groupMode')" @click="toggleMode"
+        :title="t('rulePage.groupMode')" @click="toggleMode"
       >
         <span
           v-for="mode in GROUP_MODES" :key="mode"
@@ -45,13 +45,13 @@ function toggleMode(): void {
       </button>
       <button
         v-if="!root" type="button" class="eqt-rule-page__chip-remove"
-        :aria-label="t('rulePagePrototype.removeGroup')" :title="t('rulePagePrototype.removeGroup')"
+        :aria-label="t('rulePage.removeGroup')" :title="t('rulePage.removeGroup')"
         @click="emit('remove')"
       ><X /></button>
     </div>
     <RuleConditionList
       :conditions="group.conditions" :depth="depth"
-      :empty-hint="t(root ? 'rulePagePrototype.dropHere' : 'rulePagePrototype.emptyGroup')"
+      :empty-hint="t(root ? 'rulePage.dropHere' : 'rulePage.emptyGroup')"
     />
   </div>
 </template>

@@ -3,7 +3,7 @@ import { test, fc } from '@fast-check/vitest'
 import {
   createCategoryCondition, createGroup, createRangeCondition, createTagCondition, createUploaderCondition, evaluateRule,
   type GalleryProbe, type RangeField, type ValueRange,
-} from '@/services/listing/fixedRulePrototype'
+} from '@/services/listing/galleryRules'
 import { digestRule, formatRange, type DigestTerm, type RuleDigest } from './ruleDigest'
 import { probeArb, rule, ruleArb } from './test-helpers'
 
@@ -112,11 +112,11 @@ describe('formatRange', () => {
 
 // 摘要是判定的另一種寫法，不能說謊：任何完整規則與完整圖庫，摘要與原本的判定都要一致
 describe('摘要與判定一致', () => {
-  test.prop([ruleArb, probeArb])('摘要命中 ⇔ 規則命中', (fixedRule, probe) => {
-    expect(digestHolds(digestRule(fixedRule), probe)).toBe(evaluateRule(fixedRule, probe) === true)
+  test.prop([ruleArb, probeArb])('摘要命中 ⇔ 規則命中', (galleryRule, probe) => {
+    expect(digestHolds(digestRule(galleryRule), probe)).toBe(evaluateRule(galleryRule, probe) === true)
   })
 
-  test.prop([ruleArb, probeArb])('標成「永遠不會命中」的規則不會命中', (fixedRule, probe) => {
-    if (digestRule(fixedRule).never) expect(evaluateRule(fixedRule, probe)).not.toBe(true)
+  test.prop([ruleArb, probeArb])('標成「永遠不會命中」的規則不會命中', (galleryRule, probe) => {
+    if (digestRule(galleryRule).never) expect(evaluateRule(galleryRule, probe)).not.toBe(true)
   })
 })

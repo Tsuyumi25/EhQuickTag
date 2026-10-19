@@ -9,16 +9,16 @@ import RuleConditionGroup from './RuleConditionGroup.vue'
 import RuleConditionSource from './RuleConditionSource.vue'
 import RuleDigest from './RuleDigest.vue'
 import RuleMaterialPanel from './RuleMaterialPanel.vue'
-import { useFixedRuleStore } from '@/composables/useFixedRuleStore'
+import { useGalleryRuleStore } from '@/composables/useGalleryRuleStore'
 import { t } from '@/composables/useI18n'
-import { createRule, duplicateRule } from '@/services/listing/fixedRulePrototype'
+import { createRule, duplicateRule } from '@/services/listing/galleryRules'
 import {
   openSettings, requestedRuleId, ruleConditionSource, rulesCollapsed, showSettings,
 } from '@/services/appOverlays'
-import '@/styles/rule-page-prototype.scss'
+import '@/styles/rule-page.scss'
 
 const emit = defineEmits<{ close: [] }>()
-const { rules, ready, error } = useFixedRuleStore()
+const { rules, ready, error } = useGalleryRuleStore()
 const selectedId = ref<number | null>(null)
 const ruleMenuOpen = ref(false)
 const ruleMenuId = ref<number | null>(null)
@@ -86,8 +86,8 @@ const TABBABLE = 'a[href], button:not(:disabled), input:not(:disabled), select:n
 // 規則頁是非模態的：四周露出的搜尋頁照樣能點、能捲，點下去也不會關掉規則頁。
 // 最後一次按下或聚焦的位置在搜尋頁上，就代表使用者在操作搜尋頁，Space、Esc 與 Tab 留給搜尋頁自己用。
 // 鍵盤要離開規則頁走預覽：預覽時不再接 Tab，焦點能一路走進搜尋頁。
-// 預覽、返回與關閉放在列表的 dock 上（ListingRulesPrototype），dock 也算規則頁的一部分
-const DOCK = '.eqt-rule-prototype__floating'
+// 預覽、返回與關閉放在列表的 dock 上（ListingRules），dock 也算規則頁的一部分
+const DOCK = '.eqt-listing-rules__floating'
 const root = ref<HTMLElement | null>(null)
 let engaged = true
 // 關掉時把焦點還給打開規則頁的那顆按鈕
@@ -113,7 +113,7 @@ watch(rulesCollapsed, async collapsed => {
   await nextTick()
   const active = document.activeElement
   // 預覽時規則頁整個藏起來，焦點留在裡面會無處可去，移到 dock 上同一顆按鈕，再按一次就返回
-  if (collapsed && root.value?.contains(active)) document.querySelector<HTMLElement>(`${DOCK} .eqt-rule-prototype__preview`)?.focus({ preventScroll: true })
+  if (collapsed && root.value?.contains(active)) document.querySelector<HTMLElement>(`${DOCK} .eqt-listing-rules__preview`)?.focus({ preventScroll: true })
   else if (!collapsed && !ownsTarget(active)) root.value?.focus({ preventScroll: true })
 })
 
@@ -188,14 +188,14 @@ onBeforeUnmount(() => {
   if (active && active !== document.body && !ownsTarget(active)) return
   if (opener?.isConnected) opener.focus({ preventScroll: true })
   // 從 dock 打開的話，那顆「圖庫規則」在規則頁開著時不在 dock 上；等 dock 換回來再把焦點交給它
-  else void nextTick(() => document.querySelector<HTMLElement>(`${DOCK} .eqt-rule-prototype__rules-toggle`)?.focus({ preventScroll: true }))
+  else void nextTick(() => document.querySelector<HTMLElement>(`${DOCK} .eqt-listing-rules__rules-toggle`)?.focus({ preventScroll: true }))
 })
 </script>
 
 <template>
   <div
     ref="root" class="eqt-rule-page" :class="{ 'eqt-rule-page--collapsed': rulesCollapsed }"
-    role="dialog" :aria-label="t('rulePagePrototype.title')" translate="no" tabindex="-1"
+    role="dialog" :aria-label="t('rulePage.title')" translate="no" tabindex="-1"
   >
     <!-- 標題列橫跨三欄：左邊是設定、中間是選中的規則、右邊是規則頁唯一的出口 -->
     <header class="eqt-rule-page__header">
@@ -208,27 +208,27 @@ onBeforeUnmount(() => {
         <template v-if="selected">
           <input
             class="eqt-rule-page__input eqt-rule-page__name" :value="selected.name"
-            :aria-label="t('rulePrototype.namePlaceholder')" :placeholder="t('rulePrototype.namePlaceholder')"
+            :aria-label="t('listingRules.namePlaceholder')" :placeholder="t('listingRules.namePlaceholder')"
             @input="rename"
           />
           <label class="eqt-rule-page__enabled">
             <input type="checkbox" :checked="selected.enabled" @change="toggleEnabled" />
-            {{ t('rulePagePrototype.enabled') }}
+            {{ t('rulePage.enabled') }}
           </label>
         </template>
       </div>
       <div class="eqt-rule-page__header-end">
         <button type="button" class="eqt-rule-page__close" @click="emit('close')">
-          <X class="eqt-rule-page__icon" />{{ t('rulePrototype.close') }}
+          <X class="eqt-rule-page__icon" />{{ t('listingRules.close') }}
         </button>
       </div>
     </header>
 
     <aside class="eqt-rule-page__side">
       <div class="eqt-rule-page__side-head">
-        <h1 class="eqt-rule-page__title">{{ t('rulePrototype.rules') }}</h1>
+        <h1 class="eqt-rule-page__title">{{ t('listingRules.rules') }}</h1>
         <button type="button" class="eqt-rule-page__add-rule" :disabled="!ready" @click="addRule()">
-          <Plus class="eqt-rule-page__icon" />{{ t('rulePrototype.addRule') }}
+          <Plus class="eqt-rule-page__icon" />{{ t('listingRules.addRule') }}
         </button>
       </div>
       <Draggable
@@ -247,7 +247,7 @@ onBeforeUnmount(() => {
           >
             <div
               class="eqt-rule-page__drag-handle"
-              :title="`${t('rulePagePrototype.dragRule')} · ${t('rulePagePrototype.orderHint')}`"
+              :title="`${t('rulePage.dragRule')} · ${t('rulePage.orderHint')}`"
             ><GripVertical class="eqt-rule-page__icon" /></div>
             <button
               type="button" class="eqt-rule-page__list-select"
@@ -255,12 +255,12 @@ onBeforeUnmount(() => {
               @click="selectedId = rule.id; ruleMenuOpen = false"
             >
               <span class="eqt-rule-page__list-name">{{ rule.name }}</span>
-              <small v-if="!rule.enabled" class="eqt-rule-page__badge">{{ t('rulePrototype.disabled') }}</small>
+              <small v-if="!rule.enabled" class="eqt-rule-page__badge">{{ t('listingRules.disabled') }}</small>
             </button>
             <button
               type="button" class="eqt-rule-page__list-menu"
-              :title="t('rulePagePrototype.ruleActions')"
-              :aria-label="`${t('rulePagePrototype.ruleActions')}: ${rule.name}`"
+              :title="t('rulePage.ruleActions')"
+              :aria-label="`${t('rulePage.ruleActions')}: ${rule.name}`"
               aria-haspopup="dialog" :aria-expanded="ruleMenuOpen && ruleMenuId === rule.id"
               @click="toggleRuleMenu($event, rule.id)"
             ><Ellipsis class="eqt-rule-page__icon" /></button>
@@ -270,19 +270,19 @@ onBeforeUnmount(() => {
       <ContextMenu
         v-if="!rulesCollapsed" v-model:open="ruleMenuOpen"
         :anchor-el="ruleMenuTrigger" :ignore="[ruleMenuTrigger]"
-        auto-focus aria-role="dialog" :aria-label="t('rulePagePrototype.ruleActions')"
+        auto-focus aria-role="dialog" :aria-label="t('rulePage.ruleActions')"
         placement="right-start"
       >
         <button type="button" class="eqt-context-menu__item" @click="duplicateMenuRule">
           <CopyPlus class="eqt-rule-page__icon eqt-context-menu__icon" />
-          <span class="eqt-context-menu__label">{{ t('rulePagePrototype.duplicateRule') }}</span>
+          <span class="eqt-context-menu__label">{{ t('rulePage.duplicateRule') }}</span>
         </button>
         <button
           type="button" class="eqt-context-menu__item eqt-context-menu__item--danger"
           @click="removeMenuRule"
         >
           <Trash2 class="eqt-rule-page__icon eqt-context-menu__icon" />
-          <span class="eqt-context-menu__label">{{ t('rulePagePrototype.removeRule') }}</span>
+          <span class="eqt-context-menu__label">{{ t('rulePage.removeRule') }}</span>
         </button>
       </ContextMenu>
     </aside>
@@ -294,13 +294,13 @@ onBeforeUnmount(() => {
         <template v-if="selected">
           <section class="eqt-rule-page__section">
             <div class="eqt-rule-page__section-head">
-              <h2><Funnel class="eqt-rule-page__icon" />{{ t('rulePagePrototype.conditions') }}</h2>
-              <div class="eqt-rule-page__views" role="group" :aria-label="t('rulePagePrototype.conditionView')">
+              <h2><Funnel class="eqt-rule-page__icon" />{{ t('rulePage.conditions') }}</h2>
+              <div class="eqt-rule-page__views" role="group" :aria-label="t('rulePage.conditionView')">
                 <button type="button" class="eqt-rule-page__view" :aria-pressed="!ruleConditionSource" @click="ruleConditionSource = false">
-                  <Blocks class="eqt-rule-page__icon" />{{ t('rulePagePrototype.visualView') }}
+                  <Blocks class="eqt-rule-page__icon" />{{ t('rulePage.visualView') }}
                 </button>
                 <button type="button" class="eqt-rule-page__view" :aria-pressed="ruleConditionSource" @click="ruleConditionSource = true">
-                  <CodeXml class="eqt-rule-page__icon" />{{ t('rulePagePrototype.sourceView') }}
+                  <CodeXml class="eqt-rule-page__icon" />{{ t('rulePage.sourceView') }}
                 </button>
               </div>
             </div>

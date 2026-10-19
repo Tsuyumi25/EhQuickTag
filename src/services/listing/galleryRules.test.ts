@@ -3,14 +3,14 @@ import { test } from '@fast-check/vitest'
 import {
   averageOfStars, conditionReady, conditionsFromTerms, createActions, createCategoryCondition, createGroup, createRangeCondition, createRule, createTagCondition, createUploaderCondition, duplicateRule,
   evaluateCondition, evaluateRule, itemHeight, resolveRuleEffects, ruleEvidence, starsFromAverage,
-  type ConditionGroup, type FixedConditionItem, type FixedRule, type GalleryProbe, type RangeOp,
-} from '@/services/listing/fixedRulePrototype'
+  type ConditionGroup, type RuleConditionItem, type GalleryRule, type GalleryProbe, type RangeOp,
+} from '@/services/listing/galleryRules'
 import { probeArb, ruleArb } from './test-helpers'
 
 const probe = (rating: number | null, tags: string[] = [], pages: number | null = null, category: GalleryProbe['category'] = null, uploader: string | null = null): GalleryProbe =>
   ({ tags: new Set(tags), complete: true, rating, pages, category, uploader })
 
-function ruleWith(tag: string, background: string | null, blur: number, enabled = true, name = ''): FixedRule {
+function ruleWith(tag: string, background: string | null, blur: number, enabled = true, name = ''): GalleryRule {
   const rule = createRule(1)
   rule.root.conditions.push(createTagCondition(tag))
   rule.name = name
@@ -238,9 +238,9 @@ describe('上傳者條件', () => {
 })
 
 describe('duplicateRule', () => {
-  const ids = (rule: FixedRule): number[] => {
+  const ids = (rule: GalleryRule): number[] => {
     const out = [rule.id]
-    const walk = (item: FixedConditionItem) => {
+    const walk = (item: RuleConditionItem) => {
       out.push(item.id)
       if (item.kind === 'group') item.conditions.forEach(walk)
     }

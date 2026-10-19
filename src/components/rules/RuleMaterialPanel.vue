@@ -16,8 +16,8 @@ import { ruleMaterials } from '@/services/appOverlays'
 import { CATEGORY_LABELS, GALLERY_CATEGORIES, type GalleryCategory } from '@/services/listing/galleryCategory'
 import {
   createCategoryCondition, createGroup, createRangeCondition, createTagCondition, GROUP_MODE_OPERATORS, materialKey,
-  type FixedConditionItem, type GroupMode, type MaterialCondition, type RangeField,
-} from '@/services/listing/fixedRulePrototype'
+  type RuleConditionItem, type GroupMode, type MaterialCondition, type RangeField,
+} from '@/services/listing/galleryRules'
 import { sortByNamespace } from '@/services/listing/tagGroups'
 import { listingMyTagsColorsEnabled } from '@/services/store'
 import { DEFAULT_NS_ORDER, entryForTag, getFallbackEntries, tagDbVersion, type TagEntry } from '@/services/tags/tagDb'
@@ -81,7 +81,7 @@ const materialRows = computed(() => {
   const rows = ruleMaterials.value.map((material) => {
     if (material.kind === 'uploader') {
       const full = `uploader:${material.uploader}`
-      return { material, ns: 'uploader', namespace: t('rulePagePrototype.uploader'), name: material.uploader, full, style: undefined }
+      return { material, ns: 'uploader', namespace: t('rulePage.uploader'), name: material.uploader, full, style: undefined }
     }
     const entry = entryForTag(material.tag)
     return {
@@ -95,7 +95,7 @@ const materialRows = computed(() => {
 function generatorLabel(generator: Generator): string {
   if (generator.kind === 'group') return GROUP_MODE_OPERATORS[generator.id]
   if (generator.kind === 'category') return CATEGORY_LABELS[generator.id]
-  return t(`rulePagePrototype.${generator.id}`)
+  return t(`rulePage.${generator.id}`)
 }
 
 // 只列素材時打字，是要找標籤：換回「全部」，結果才看得到
@@ -113,9 +113,9 @@ function onKeydown(event: KeyboardEvent) {
 
 // 清單的列都是一般 DOM，不是 vuedraggable 的項目。條件區是 vuedraggable 4.1：收下項目時從
 // item._underlying_vm_ 取資料，所以拖曳開始時照同一個約定把要放進去的東西掛上去
-type DraggedItem = HTMLElement & { _underlying_vm_?: FixedConditionItem }
+type DraggedItem = HTMLElement & { _underlying_vm_?: RuleConditionItem }
 
-function conditionOf(row: HTMLElement): FixedConditionItem | undefined {
+function conditionOf(row: HTMLElement): RuleConditionItem | undefined {
   const { source, id } = row.dataset
   if (source === 'group') return createGroup(id as GroupMode)
   if (source === 'range') return createRangeCondition(id as RangeField)
@@ -204,28 +204,28 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section ref="panel" class="eqt-rule-page__finder" :aria-label="t('rulePagePrototype.materials')">
+  <section ref="panel" class="eqt-rule-page__finder" :aria-label="t('rulePage.materials')">
     <header class="eqt-rule-page__finder-head">
-      <h2><Shapes class="eqt-rule-page__icon" />{{ t('rulePagePrototype.materials') }}</h2>
+      <h2><Shapes class="eqt-rule-page__icon" />{{ t('rulePage.materials') }}</h2>
       <label class="eqt-rule-page__enabled">
         <input v-model="onlyColored" type="checkbox" :disabled="!palette" />
-        {{ t('rulePagePrototype.onlyMyTagsColored') }}
+        {{ t('rulePage.onlyMyTagsColored') }}
       </label>
       <button
         type="button" class="eqt-rule-page__tool eqt-rule-page__tool--icon" :disabled="!ruleMaterials.length"
-        :title="t('rulePagePrototype.clearMaterials')" :aria-label="t('rulePagePrototype.clearMaterials')"
+        :title="t('rulePage.clearMaterials')" :aria-label="t('rulePage.clearMaterials')"
         @click="ruleMaterials.splice(0)"
       ><BrushCleaning class="eqt-rule-page__icon" /></button>
     </header>
     <input
       v-model="query" class="eqt-rule-page__input"
-      :placeholder="t('rulePagePrototype.findTag')" :aria-label="t('rulePagePrototype.findTag')"
+      :placeholder="t('rulePage.findTag')" :aria-label="t('rulePage.findTag')"
       autocomplete="off" spellcheck="false" @input="onInput" @keydown="onKeydown"
     />
     <div class="eqt-rule-page__finder-body">
       <NamespaceFilter
         v-model="namespace" v-model:picked="materialsOnly"
-        :picked-label="t('rulePagePrototype.materials')"
+        :picked-label="t('rulePage.materials')"
       />
       <SuggestionList
         ref="list" class="eqt-rule-page__finder-list"
@@ -238,7 +238,7 @@ onBeforeUnmount(() => {
               v-for="generator in GENERATORS" :key="generator.id"
               class="eqt-popup__suggestion eqt-rule-page__generator" :data-source="generator.kind" :data-id="generator.id"
             >
-              <span class="eqt-popup__suggestion-ns">{{ t(`rulePagePrototype.generator.${generator.kind}`) }}：</span>
+              <span class="eqt-popup__suggestion-ns">{{ t(`rulePage.generator.${generator.kind}`) }}：</span>
               <span class="eqt-popup__suggestion-name">
                 <span
                   v-if="generator.kind === 'group'" class="eqt-rule-page__segment" :class="`eqt-rule-page__segment--${generator.id}`"
@@ -268,7 +268,7 @@ onBeforeUnmount(() => {
                 {{ row.full }}
                 <button
                   type="button" class="eqt-rule-page__material-remove"
-                  :title="t('rulePrototype.removeCondition')" :aria-label="t('rulePrototype.removeCondition')"
+                  :title="t('listingRules.removeCondition')" :aria-label="t('listingRules.removeCondition')"
                   @click="ruleMaterials.splice(ruleMaterials.indexOf(row.material), 1)"
                 ><X /></button>
               </span>

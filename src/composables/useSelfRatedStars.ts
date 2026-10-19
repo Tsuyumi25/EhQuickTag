@@ -3,13 +3,13 @@
 
 import { onScopeDispose, shallowRef, watch, type Ref, type ShallowRef } from 'vue'
 import { fetchAverageRatings, GDATA_BATCH, parseGalleryRef, type GalleryRef } from '@/composables/useEhSearchListing'
-import type { PrototypeListingItem } from '@/composables/useRulePrototypeHost'
-import { ruleUsesField, starsFromAverage, type FixedRule } from '@/services/listing/fixedRulePrototype'
+import type { ListingItem } from '@/composables/useListingRuleHost'
+import { ruleUsesField, starsFromAverage, type GalleryRule } from '@/services/listing/galleryRules'
 
 /** gid → 星等。拿不到的圖庫不在裡面，判定維持未知 */
 export function useSelfRatedStars(
-  items: Ref<PrototypeListingItem[]>,
-  rules: Ref<FixedRule[]>,
+  items: Ref<ListingItem[]>,
+  rules: Ref<GalleryRule[]>,
   onError: () => void,
 ): ShallowRef<ReadonlyMap<number, number>> {
   const stars = shallowRef<ReadonlyMap<number, number>>(new Map())

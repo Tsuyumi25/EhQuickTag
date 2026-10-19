@@ -78,7 +78,7 @@ export interface UploaderCondition {
   exclude: boolean
 }
 
-export type FixedCondition = TagCondition | RangeCondition | CategoryCondition | UploaderCondition
+export type RuleCondition = TagCondition | RangeCondition | CategoryCondition | UploaderCondition
 
 /** 素材清單收的條件：從列表選回來的標籤與上傳者 */
 export type MaterialCondition = TagCondition | UploaderCondition
@@ -97,10 +97,10 @@ export interface ConditionGroup {
   mode: GroupMode
   /** 套在判定模式外面的 NOT：all + negate = 任一不成立、any + negate = 全部不成立 */
   negate: boolean
-  conditions: FixedConditionItem[]
+  conditions: RuleConditionItem[]
 }
 
-export type FixedConditionItem = FixedCondition | ConditionGroup
+export type RuleConditionItem = RuleCondition | ConditionGroup
 
 export type CoverBlurMode = 'blur' | 'mosaic'
 export const COVER_BLUR_MODES: readonly CoverBlurMode[] = ['blur', 'mosaic']
@@ -108,7 +108,7 @@ export const COVER_BLUR_MODES: readonly CoverBlurMode[] = ['blur', 'mosaic']
 export const MAX_RADIUS = 12
 
 // 顏色都是 #rrggbbaa，null 是不指定；強度都是 0–100，0 是不做
-export interface FixedActions {
+export interface RuleActions {
   /** 卡片背景；透明度直接決定疊在圖庫原本底色上有多濃 */
   background: string | null
   dim: number
@@ -134,13 +134,13 @@ export interface FixedActions {
 
 // 一條規則只有一組動作：條件裡不分岔出不同的動作。想要不同的結果就另開一條規則，
 // 誰優先由規則清單的順序決定，跟只有一條規則時是同一套讀法
-export interface FixedRule {
+export interface GalleryRule {
   id: number
   name: string
   enabled: boolean
   /** 規則本身就是一個群組；條件不只一個時才有東西決定它們之間是「且」還是「或」 */
   root: ConditionGroup
-  actions: FixedActions
+  actions: RuleActions
 }
 
 /** 受測圖庫：tags 不完整時「沒看到」不等於「沒有」，complete 才允許推斷缺席 */
@@ -165,14 +165,14 @@ export function nextEntityId(): number {
 }
 
 /** 讀進來的資料自帶 id，序號要跳過它們，之後新建的才不會撞號 */
-function reserveIds(items: readonly FixedConditionItem[]): void {
+function reserveIds(items: readonly RuleConditionItem[]): void {
   for (const item of items) {
     sequence = Math.max(sequence, item.id)
     if (item.kind === 'group') reserveIds(item.conditions)
   }
 }
 
-export function reserveRuleIds(rules: readonly FixedRule[]): void {
+export function reserveRuleIds(rules: readonly GalleryRule[]): void {
   for (const rule of rules) {
     sequence = Math.max(sequence, rule.id)
     reserveIds([rule.root])
@@ -216,7 +216,7 @@ export function conditionRange(condition: RangeCondition): ValueRange {
 }
 
 /** 背景沒選代表「沒指定」，讓給下一條規則 */
-export function createActions(): FixedActions {
+export function createActions(): RuleActions {
   return {
     background: null, dim: 0, blur: 0, blurMode: 'blur', showName: false,
     prefix: null, prefixColor: null, prefixBackground: null, prefixRadius: 3,
@@ -230,7 +230,7 @@ export function normalizePrefix(raw: string): string | null {
   return raw.trim() || null
 }
 
-export function createGroup(mode: GroupMode = 'all', conditions: FixedConditionItem[] = [], negate = false): ConditionGroup {
+export function createGroup(mode: GroupMode = 'all', conditions: RuleConditionItem[] = [], negate = false): ConditionGroup {
   return { id: nextEntityId(), kind: 'group', mode, negate, conditions }
 }
 
@@ -240,15 +240,15 @@ export function tagConditionKey(condition: Pick<TagCondition, 'tag' | 'exclude'>
 }
 
 /** 群組自己算一層；條件本身是 0。用來判斷拖進某層之後會不會超過 MAX_GROUP_DEPTH */
-export function itemHeight(item: FixedConditionItem): number {
+export function itemHeight(item: RuleConditionItem): number {
   if (item.kind !== 'group') return 0
   return 1 + Math.max(0, ...item.conditions.map(itemHeight))
 }
 
-export function createRule(index: number): FixedRule {
+export function createRule(index: number): GalleryRule {
   return {
     id: nextEntityId(),
-    name: t('rulePagePrototype.newRule', { n: index }),
+    name: t('rulePage.newRule', { n: index }),
     enabled: true,
     root: createGroup('all'),
     // 新規則先在縮圖上掛規則按鈕：剛建好時最想確認的就是它命中了哪些圖庫
@@ -261,21 +261,21 @@ function cloneGroup(group: ConditionGroup): ConditionGroup {
 }
 
 /** 每個群組與條件都換上新的 id：跟原本共用 id 的話，畫面上的列、拖曳與選取都會認錯對象 */
-function cloneItem(item: FixedConditionItem): FixedConditionItem {
+function cloneItem(item: RuleConditionItem): RuleConditionItem {
   return item.kind === 'group' ? cloneGroup(item) : { ...item, id: nextEntityId() }
 }
 
-export function duplicateRule(rule: FixedRule): FixedRule {
+export function duplicateRule(rule: GalleryRule): GalleryRule {
   return {
     id: nextEntityId(),
-    name: t('rulePagePrototype.duplicateName', { name: rule.name }),
+    name: t('rulePage.duplicateName', { name: rule.name }),
     enabled: rule.enabled,
     root: cloneGroup(rule.root),
     actions: { ...rule.actions },
   }
 }
 
-export function conditionReady(condition: FixedCondition): boolean {
+export function conditionReady(condition: RuleCondition): boolean {
   if (condition.kind === 'tag') return !!normalizeTag(condition.tag)
   if (condition.kind === 'category') return true
   if (condition.kind === 'uploader') return !!normalizeUploader(condition.uploader)
@@ -287,24 +287,24 @@ export function conditionReady(condition: FixedCondition): boolean {
 }
 
 /** depth 是群組自己在根底下第幾層（根是 0）；空群組與太深的群組都是未完成，不給求值 */
-function itemReady(item: FixedConditionItem, depth: number): boolean {
+function itemReady(item: RuleConditionItem, depth: number): boolean {
   if (item.kind !== 'group') return conditionReady(item)
   return depth <= MAX_GROUP_DEPTH && item.conditions.length > 0
     && item.conditions.every(child => itemReady(child, depth + 1))
 }
 
 /** 規則裡有沒有用到某個數值欄位；只有用到時才值得去補那個欄位的資料 */
-export function ruleUsesField(rule: FixedRule, field: RangeField): boolean {
-  const uses = (item: FixedConditionItem): boolean => (item.kind === 'group' ? item.conditions.some(uses) : item.kind === field)
+export function ruleUsesField(rule: GalleryRule, field: RangeField): boolean {
+  const uses = (item: RuleConditionItem): boolean => (item.kind === 'group' ? item.conditions.some(uses) : item.kind === field)
   return uses(rule.root)
 }
 
 /** 根群組也一樣：一個條件都沒有的規則不知道要套到誰身上，算未完成 */
-function isRuleComplete(rule: FixedRule): boolean {
+function isRuleComplete(rule: GalleryRule): boolean {
   return itemReady(rule.root, 0)
 }
 
-export function evaluateCondition(condition: FixedCondition, probe: GalleryProbe): Tri {
+export function evaluateCondition(condition: RuleCondition, probe: GalleryProbe): Tri {
   if (condition.kind === 'category') {
     if (probe.category === null) return null
     return (probe.category === condition.category) !== condition.exclude
@@ -346,14 +346,14 @@ export function kleeneAny(values: readonly Tri[]): Tri {
   return unknown ? null : false
 }
 
-function evaluateItem(item: FixedConditionItem, probe: GalleryProbe): Tri {
+function evaluateItem(item: RuleConditionItem, probe: GalleryProbe): Tri {
   if (item.kind !== 'group') return evaluateCondition(item, probe)
   const values = item.conditions.map(child => evaluateItem(child, probe))
   const matched = item.mode === 'all' ? kleeneAll(values) : kleeneAny(values)
   return item.negate && matched !== null ? !matched : matched
 }
 
-export function evaluateRule(rule: FixedRule, probe: GalleryProbe): Tri {
+export function evaluateRule(rule: GalleryRule, probe: GalleryProbe): Tri {
   return isRuleComplete(rule) ? evaluateItem(rule.root, probe) : null
 }
 
@@ -369,12 +369,12 @@ export interface RuleEvidence {
  * 只走成立的分支：任一成立底下沒成立的那幾支不算原因。
  * NOT 群組與「不含」成立靠的是缺了什麼，指不出是哪個標籤，略過
  */
-export function ruleEvidence(rule: FixedRule, probe: GalleryProbe): RuleEvidence {
+export function ruleEvidence(rule: GalleryRule, probe: GalleryProbe): RuleEvidence {
   const tags = new Set<string>()
   const categories = new Set<GalleryCategory>()
   const uploaders = new Set<string>()
   const ranges: RangeCondition[] = []
-  const walk = (item: FixedConditionItem) => {
+  const walk = (item: RuleConditionItem) => {
     if (evaluateItem(item, probe) !== true) return
     if (item.kind === 'group') {
       if (!item.negate) item.conditions.forEach(walk)
@@ -433,7 +433,7 @@ export interface RuleEffects {
  * 標示與標題前綴不互相搶：每條命中的規則各加一個，照清單順序排，配色各自帶著。
  * 強度取命中規則裡最強的那條，模糊的方式跟著它；刪除線這類樣式與隱藏只要有一條要就做
  */
-export function resolveRuleEffects(rules: readonly FixedRule[], probe: GalleryProbe): RuleEffects {
+export function resolveRuleEffects(rules: readonly GalleryRule[], probe: GalleryProbe): RuleEffects {
   const effects = emptyEffects()
   for (const rule of rules) {
     if (rule.enabled && evaluateRule(rule, probe) === true) addRuleEffects(effects, rule, () => ruleEvidence(rule, probe))
@@ -442,7 +442,7 @@ export function resolveRuleEffects(rules: readonly FixedRule[], probe: GalleryPr
 }
 
 /** 規則頁的預覽：這一條命中時圖庫會變成什麼樣子；沒有真的圖庫，命中原因是空的 */
-export function previewRuleEffects(rule: FixedRule): RuleEffects {
+export function previewRuleEffects(rule: GalleryRule): RuleEffects {
   const effects = emptyEffects()
   addRuleEffects(effects, rule, () => ({ tags: [], categories: [], uploaders: [], ranges: [] }))
   return effects
@@ -455,7 +455,7 @@ function emptyEffects(): RuleEffects {
   }
 }
 
-function addRuleEffects(effects: RuleEffects, rule: FixedRule, evidence: () => RuleEvidence): void {
+function addRuleEffects(effects: RuleEffects, rule: GalleryRule, evidence: () => RuleEvidence): void {
   const { actions } = rule
   const name = rule.name.trim()
   const tone = actions.background

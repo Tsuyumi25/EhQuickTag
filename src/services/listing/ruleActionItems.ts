@@ -1,13 +1,13 @@
 // 一條規則的動作一項一項寫出來：畫面上的摘要與複製出去的 Markdown 讀同一份，兩邊列的項目與順序才會一樣
 
-import type { FixedActions } from './fixedRulePrototype'
+import type { RuleActions } from './galleryRules'
 
 /** 動作作用在圖庫卡片的哪個位置；編輯時照這個分頁，新的動作照位置放進對應的那一頁 */
 export const ACTION_TARGETS = ['card', 'cover', 'prefix', 'title'] as const
 export type ActionTarget = (typeof ACTION_TARGETS)[number]
 
 /** 這個位置有沒有設定任何動作；分頁上標一個點，不必一頁頁點開才知道哪裡有改 */
-export function targetInUse(actions: FixedActions, target: ActionTarget): boolean {
+export function targetInUse(actions: RuleActions, target: ActionTarget): boolean {
   switch (target) {
     case 'card': return actions.background !== null || actions.dim > 0 || actions.showName || actions.hide
     case 'cover': return actions.blur > 0
@@ -31,24 +31,24 @@ export interface ActionItem {
 }
 
 /** 隱藏時其他動作都不作用，只列隱藏 */
-export function actionItems(actions: FixedActions): ActionItem[] {
-  if (actions.hide) return [{ key: 'hide', message: 'rulePagePrototype.hideShort' }]
+export function actionItems(actions: RuleActions): ActionItem[] {
+  if (actions.hide) return [{ key: 'hide', message: 'rulePage.hideShort' }]
   const items: ActionItem[] = []
   const color = (key: ActionItemKey, message: string, value: string | null) => {
     if (value) items.push({ key, message, params: { color: value }, swatch: value })
   }
-  color('background', 'rulePagePrototype.backgroundIs', actions.background)
-  if (actions.dim) items.push({ key: 'dim', message: 'rulePagePrototype.dimIs', params: { amount: actions.dim } })
+  color('background', 'rulePage.backgroundIs', actions.background)
+  if (actions.dim) items.push({ key: 'dim', message: 'rulePage.dimIs', params: { amount: actions.dim } })
   if (actions.blur) {
-    const message = actions.blurMode === 'mosaic' ? 'rulePagePrototype.mosaicIs' : 'rulePagePrototype.blurIs'
+    const message = actions.blurMode === 'mosaic' ? 'rulePage.mosaicIs' : 'rulePage.blurIs'
     items.push({ key: 'blur', message, params: { amount: actions.blur } })
   }
-  if (actions.showName) items.push({ key: 'showName', message: 'rulePagePrototype.showNameShort' })
-  if (actions.prefix) items.push({ key: 'prefix', message: 'rulePagePrototype.titlePrefixIs', params: { prefix: actions.prefix } })
-  color('titleColor', 'rulePagePrototype.titleColorIs', actions.titleColor)
-  color('titleBackground', 'rulePagePrototype.titleBackgroundIs', actions.titleBackground)
+  if (actions.showName) items.push({ key: 'showName', message: 'rulePage.showNameShort' })
+  if (actions.prefix) items.push({ key: 'prefix', message: 'rulePage.titlePrefixIs', params: { prefix: actions.prefix } })
+  color('titleColor', 'rulePage.titleColorIs', actions.titleColor)
+  color('titleBackground', 'rulePage.titleBackgroundIs', actions.titleBackground)
   for (const key of ['bold', 'italic', 'underline', 'strike'] as const) {
-    if (actions[key]) items.push({ key, message: `rulePagePrototype.${key}Short` })
+    if (actions[key]) items.push({ key, message: `rulePage.${key}Short` })
   }
   return items
 }

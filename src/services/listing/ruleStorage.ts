@@ -3,9 +3,9 @@
 import { parseColorInput } from '@/services/color'
 import {
   COVER_BLUR_MODES, GROUP_MODES, MAX_GROUP_DEPTH, MAX_RADIUS, normalizePrefix, RANGE_FIELDS, RANGE_OPS,
-  type ConditionGroup, type CoverBlurMode, type FixedActions, type FixedCondition,
-  type FixedRule, type GroupMode, type RangeCondition, type RangeField, type RangeOp,
-} from '@/services/listing/fixedRulePrototype'
+  type ConditionGroup, type CoverBlurMode, type RuleActions, type RuleCondition,
+  type GalleryRule, type GroupMode, type RangeCondition, type RangeField, type RangeOp,
+} from '@/services/listing/galleryRules'
 import { isGalleryCategory } from '@/services/listing/galleryCategory'
 
 // 版號只在舊版會把新資料讀錯時才升：多一種條件或動作時，舊版讀到認不得的欄位本來就會丟錯、不會寫回，
@@ -17,7 +17,7 @@ function isObject(value: unknown): value is Record<string, unknown> {
 }
 
 function invalid(): never {
-  throw new Error('Invalid fixed rule storage')
+  throw new Error('Invalid gallery rule storage')
 }
 
 function inField(field: RangeField, value: unknown): value is number {
@@ -25,7 +25,7 @@ function inField(field: RangeField, value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max
 }
 
-function decodeCondition(value: unknown): FixedCondition {
+function decodeCondition(value: unknown): RuleCondition {
   if (!isObject(value) || !Number.isSafeInteger(value.id)) invalid()
   const id = value.id as number
   if (value.kind === 'tag') {
@@ -87,7 +87,7 @@ function decodeFlag(value: unknown): boolean {
   return value
 }
 
-function decodeActions(actions: unknown): FixedActions {
+function decodeActions(actions: unknown): RuleActions {
   if (!isObject(actions) || !COVER_BLUR_MODES.includes(actions.blurMode as CoverBlurMode)) invalid()
   return {
     background: decodeColor(actions.background),
@@ -110,7 +110,7 @@ function decodeActions(actions: unknown): FixedActions {
   }
 }
 
-function decodeRule(rule: unknown): FixedRule {
+function decodeRule(rule: unknown): GalleryRule {
   if (!isObject(rule) || !Number.isSafeInteger(rule.id) || typeof rule.name !== 'string' || typeof rule.enabled !== 'boolean') {
     invalid()
   }
@@ -124,7 +124,7 @@ function decodeRule(rule: unknown): FixedRule {
  * 讀出存著的規則；格式不對就丟錯，呼叫端不能把壞資料當成空清單覆寫回去。
  * 認不得的版號（較新版本存的）也一樣丟錯，舊版才不會把新資料寫回成舊格式
  */
-export function decodeRules(raw: string | null): FixedRule[] {
+export function decodeRules(raw: string | null): GalleryRule[] {
   if (raw === null) return []
   const data: unknown = JSON.parse(raw)
   if (!isObject(data) || data.schema !== RULE_SCHEMA || !Array.isArray(data.rules)) invalid()

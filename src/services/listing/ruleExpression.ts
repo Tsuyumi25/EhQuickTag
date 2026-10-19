@@ -5,8 +5,8 @@
 
 import {
   GROUP_MODE_OPERATORS, MAX_GROUP_DEPTH, nextEntityId, normalizeTag,
-  type ConditionGroup, type FixedConditionItem, type GroupMode, type RangeField, type RangeOp,
-} from '@/services/listing/fixedRulePrototype'
+  type ConditionGroup, type RuleConditionItem, type GroupMode, type RangeField, type RangeOp,
+} from '@/services/listing/galleryRules'
 import { isGalleryCategory, type GalleryCategory } from '@/services/listing/galleryCategory'
 
 export type ExpressionNode =
@@ -78,7 +78,7 @@ function printTag(raw: string): string {
 
 const negation = (exclude: boolean) => (exclude ? 'NOT ' : '')
 
-function printItem(item: FixedConditionItem): string {
+function printItem(item: RuleConditionItem): string {
   if (item.kind === 'tag') return negation(item.exclude) + printTag(item.tag)
   if (item.kind === 'category') return `${negation(item.exclude)}${CATEGORY_PREFIX}${item.category}`
   if (item.kind === 'uploader') {
@@ -299,7 +299,7 @@ export function parseConditions(source: string): ExpressionResult {
  * 照位置跟原本的樹對齊：同一個位置還是同一種條件就沿用它的 id，畫面上的列不會整排換掉；
  * 文字裡看不出 AND／OR 的群組（只有一個或沒有條件）也沿用原本的判定模式
  */
-function buildItem(node: ExpressionNode, previous: FixedConditionItem | undefined): FixedConditionItem {
+function buildItem(node: ExpressionNode, previous: RuleConditionItem | undefined): RuleConditionItem {
   const id = previous?.kind === node.kind ? previous.id : nextEntityId()
   if (node.kind !== 'group') return { ...node, id }
   return buildGroup(node, previous?.kind === 'group' ? previous : undefined, id)

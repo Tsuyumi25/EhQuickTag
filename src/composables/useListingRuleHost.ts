@@ -2,11 +2,11 @@ import { onBeforeUnmount, onMounted, shallowRef, watch } from 'vue'
 import { categoryFromClassList, type GalleryCategory } from '@/services/listing/galleryCategory'
 import { CHIP_CLASS, decorate, undecorate } from '@/services/listing/listingChipDom'
 
-export interface PrototypeListingTag {
+export interface ListingTag {
   name: string
 }
 
-export interface PrototypeListingItem {
+export interface ListingItem {
   id: number
   root: HTMLElement
   /** 只有縮圖模式（.gl1t）才有：規則的標示清單，插在原生標籤列 .gl6t 前面 */
@@ -15,7 +15,7 @@ export interface PrototypeListingItem {
   titleAnchor: HTMLElement | null
   /** 標題文字包在這一層裡：標題的樣式只套在它身上，前綴是它的兄弟，不會被刪除線、背景之類波及 */
   titleText: HTMLElement | null
-  tags: PrototypeListingTag[]
+  tags: ListingTag[]
   tagSet: ReadonlySet<string>
   complete: boolean
   /** 列表上的星等；讀不到或是自己評過分（selfRated）時是 null */
@@ -34,7 +34,7 @@ export interface PrototypeListingItem {
 /** 列表上的一顆 chip：就是 EhViewRefined 畫出的那個標籤元素本身 */
 export interface ListingChip {
   id: number
-  item: PrototypeListingItem
+  item: ListingItem
   name: string
   element: HTMLElement
   /** 標籤排在一起的那塊；點在 chip 之間的空白也算在標籤區裡 */
@@ -46,7 +46,7 @@ export interface ListingChip {
 // EhViewRefined 畫的上傳者標籤也長得像 .gt，但它不是網站的標籤，不能算進規則的標籤裡
 const SITE_TAGS = ':is(.gt, .gtl, .gtw):not(.evr-uploader-tag)'
 const UPLOADER_NAMESPACE = 'uploader'
-const TITLE_TEXT = 'eqt-rule-prototype__title-text'
+const TITLE_TEXT = 'eqt-listing-rules__title-text'
 
 // 頁數沒有自己的 class：原生五種版型與 EhViewRefined 模擬的版型，都把它放在評分 .ir 後面的
 // 兄弟 div，只有 Extended 中間隔著上傳者那格（含 /uploader/ 連結），Thumbnail 後面接著 .gldown。
@@ -92,10 +92,10 @@ function starRating(root: Element): { rating: number | null; selfRated: boolean 
  * tagsEnabled：要不要把標籤改成插件的 chip；關掉時標籤照樣讀進來給規則判定，只是不動原生的 DOM。
  * 標籤怎麼排（每個 namespace 一列、上傳者要不要顯示成標籤）是 EhViewRefined 的設定，這裡只認它畫出來的 [data-evr-tag]
  */
-export function useRulePrototypeHost(options: { tagsEnabled: () => boolean }) {
-  const items = shallowRef<PrototypeListingItem[]>([])
+export function useListingRuleHost(options: { tagsEnabled: () => boolean }) {
+  const items = shallowRef<ListingItem[]>([])
   const chips = shallowRef<ListingChip[]>([])
-  const records = new Map<HTMLElement, { item: PrototypeListingItem; signature: string }>()
+  const records = new Map<HTMLElement, { item: ListingItem; signature: string }>()
   const bindings = new Map<HTMLElement, ListingChip>()
   let nextId = 1
   let observer: MutationObserver | null = null
@@ -107,7 +107,7 @@ export function useRulePrototypeHost(options: { tagsEnabled: () => boolean }) {
     bindings.delete(element)
   }
 
-  function restore(record: { item: PrototypeListingItem }) {
+  function restore(record: { item: ListingItem }) {
     for (const [element, chip] of bindings) {
       if (chip.item === record.item) release(element)
     }
@@ -119,9 +119,9 @@ export function useRulePrototypeHost(options: { tagsEnabled: () => boolean }) {
     }
     const root = record.item.root
     for (const name of [...root.classList]) {
-      if (name.startsWith('eqt-rule-prototype__gallery')) root.classList.remove(name)
+      if (name.startsWith('eqt-listing-rules__gallery')) root.classList.remove(name)
     }
-    root.style.removeProperty('--eqt-rule-prototype-background')
+    root.style.removeProperty('--eqt-listing-rules-background')
   }
 
   function chipName(element: HTMLElement): string | null {
@@ -134,12 +134,12 @@ export function useRulePrototypeHost(options: { tagsEnabled: () => boolean }) {
   function scan() {
     scheduled = false
     if (disposed) return
-    const next: PrototypeListingItem[] = []
+    const next: ListingItem[] = []
     const nextChips: ListingChip[] = []
     const seen = new Set<HTMLElement>()
     const seenTags = new Set<HTMLElement>()
     for (const link of document.querySelectorAll<HTMLAnchorElement>('.itg a[href*="/g/"]')) {
-      if (link.closest('.eqt-rule-prototype')) continue
+      if (link.closest('.eqt-listing-rules')) continue
       const root = link.closest<HTMLElement>('tr, .gl1t')
       if (!root || seen.has(root)) continue
       seen.add(root)
@@ -149,9 +149,9 @@ export function useRulePrototypeHost(options: { tagsEnabled: () => boolean }) {
       const hasMetadata = Array.isArray(parsed) && parsed.every(tag => tag && typeof tag.name === 'string')
       const complete = hasMetadata || !!root.closest('table.glte')
       const source = hasMetadata
-        ? parsed as PrototypeListingTag[]
+        ? parsed as ListingTag[]
         : [...root.querySelectorAll<HTMLElement>(SITE_TAGS)].map(tag => ({ name: tag.title }))
-      const tags: PrototypeListingTag[] = []
+      const tags: ListingTag[] = []
       const names = new Set<string>()
       for (const tag of source) {
         const name = tag.name.trim().toLowerCase()
@@ -176,13 +176,13 @@ export function useRulePrototypeHost(options: { tagsEnabled: () => boolean }) {
       if (!record) {
         if (!root.querySelector('.gl4e, .glname')) continue
         const title = root.querySelector('.glink')?.textContent?.trim() ?? link.textContent?.trim() ?? ''
-        root.classList.add('eqt-rule-prototype__gallery')
+        root.classList.add('eqt-listing-rules__gallery')
         // 縮圖卡片裡評分列上方是 margin: auto，評分列以下整塊貼著卡片底部，同一排卡片撐高時差距由那段 margin 吸收；
         // 標示插在這一塊裡，封面與標題就不會因為某幾張多一行而對不齊
         let labelAnchor: HTMLElement | null = null
         if (root.matches('.gl1t')) {
           labelAnchor = document.createElement('div')
-          labelAnchor.className = 'eqt-rule-prototype__mount eqt-rule-prototype__labels'
+          labelAnchor.className = 'eqt-listing-rules__mount eqt-listing-rules__labels'
           labelAnchor.setAttribute('translate', 'no')
           const nativeTags = root.querySelector('.gl6t')
           if (nativeTags) nativeTags.before(labelAnchor)
@@ -192,7 +192,7 @@ export function useRulePrototypeHost(options: { tagsEnabled: () => boolean }) {
         let titleAnchor: HTMLElement | null = null
         if (titleText) {
           titleAnchor = document.createElement('span')
-          titleAnchor.className = 'eqt-rule-prototype__mount eqt-rule-prototype__prefixes'
+          titleAnchor.className = 'eqt-listing-rules__mount eqt-listing-rules__prefixes'
           titleAnchor.setAttribute('translate', 'no')
           titleText.prepend(titleAnchor)
         }
@@ -246,7 +246,7 @@ export function useRulePrototypeHost(options: { tagsEnabled: () => boolean }) {
   }
 
   // chip 裡面的變動是插件自己畫的（文字、class），不必為它再掃一次
-  const OWN_NODES = `.eqt-rule-prototype, .eqt-rule-prototype__mount, .${TITLE_TEXT}, .${CHIP_CLASS}`
+  const OWN_NODES = `.eqt-listing-rules, .eqt-listing-rules__mount, .${TITLE_TEXT}, .${CHIP_CLASS}`
   function schedule(mutations: MutationRecord[]) {
     const relevant = mutations.some(mutation => {
       const target = mutation.target instanceof Element ? mutation.target : mutation.target.parentElement

@@ -4,7 +4,7 @@ import { X } from '@lucide/vue'
 import EqtNumberField from '@/components/EqtNumberField.vue'
 import { RANGE_FIELD_ICONS } from './rangeFieldIcons'
 import { t } from '@/composables/useI18n'
-import { RANGE_FIELDS, RANGE_OPS, type RangeCondition, type RangeOp } from '@/services/listing/fixedRulePrototype'
+import { RANGE_FIELDS, RANGE_OPS, type RangeCondition, type RangeOp } from '@/services/listing/galleryRules'
 
 const props = defineProps<{ condition: RangeCondition }>()
 const emit = defineEmits<{ remove: [] }>()
@@ -12,7 +12,7 @@ const emit = defineEmits<{ remove: [] }>()
 // 介於寫成閉區間，下拉選單裡的「[」就是區間的左括號
 const OP_SYMBOLS: Record<RangeOp, string> = { eq: '=', lt: '<', lte: '≤', gt: '>', gte: '≥', between: '[' }
 const field = computed(() => RANGE_FIELDS[props.condition.kind])
-const label = computed(() => t(`rulePagePrototype.${props.condition.kind}`))
+const label = computed(() => t(`rulePage.${props.condition.kind}`))
 // 沒有上限的欄位（頁數）傳 undefined；上限欄留空就是不設上限
 const ceiling = computed(() => (Number.isFinite(field.value.max) ? field.value.max : undefined))
 </script>
@@ -41,7 +41,7 @@ const ceiling = computed(() => (Number.isFinite(field.value.max) ? field.value.m
     </template>
     <button
       type="button" class="eqt-rule-page__chip-remove"
-      :aria-label="t('rulePrototype.removeCondition')" :title="t('rulePrototype.removeCondition')"
+      :aria-label="t('listingRules.removeCondition')" :title="t('listingRules.removeCondition')"
       @click="emit('remove')"
     ><X /></button>
   </div>

@@ -2,13 +2,13 @@
 import { computed } from 'vue'
 import RuleStars from './RuleStars.vue'
 import { t } from '@/composables/useI18n'
-import type { RangeField, ValueRange } from '@/services/listing/fixedRulePrototype'
+import type { RangeField, ValueRange } from '@/services/listing/galleryRules'
 import { formatRange } from '@/services/listing/ruleDigest'
 
 // 星等只有 0 到 5，摘要把兩端都畫出來（★★★~★★★★★），不留給讀者去推「≥ 3 的另一端在哪」；
 // 頁數沒有上限，照舊寫數字
 const props = defineProps<{ field: RangeField; range: ValueRange }>()
-const label = computed(() => t(`rulePagePrototype.${props.field}`))
+const label = computed(() => t(`rulePage.${props.field}`))
 </script>
 
 <template>

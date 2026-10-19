@@ -1,7 +1,7 @@
 // 摘要的「複製」：畫面上的分行照同一套字串寫成 Markdown，貼到別處不看畫面也讀得懂。
 // 標籤一律寫原始的 namespace:tag 並包在反引號裡，翻譯後的顯示名稱不夠精確，貼給別人或 AI 時會對不上
 
-import type { FixedActions, FixedRule } from '@/services/listing/fixedRulePrototype'
+import type { RuleActions, GalleryRule } from '@/services/listing/galleryRules'
 import { CATEGORY_LABELS } from './galleryCategory'
 import { actionItems } from './ruleActionItems'
 import { formatAverage, formatRange, rangeTerms, type DigestNote, type DigestTerm, type RuleDigest } from './ruleDigest'
@@ -17,27 +17,27 @@ function phrase(tr: Translate, key: string, items: string, params?: Record<strin
 
 function rangeText(tr: Translate, term: Extract<DigestTerm, { kind: 'range' }>): string {
   const value = code(formatRange(term.field, term.range))
-  const average = term.field === 'rating' ? ` (${tr('rulePagePrototype.digest.average', { range: formatAverage(term.range) })})` : ''
+  const average = term.field === 'rating' ? ` (${tr('rulePage.digest.average', { range: formatAverage(term.range) })})` : ''
   return `${value}${average}`
 }
 
 export function termMarkdown(tr: Translate, term: DigestTerm): string {
-  if (term.kind === 'tag') return term.exclude ? phrase(tr, 'rulePagePrototype.digest.lacks', code(term.tag)) : code(term.tag)
+  if (term.kind === 'tag') return term.exclude ? phrase(tr, 'rulePage.digest.lacks', code(term.tag)) : code(term.tag)
   if (term.kind === 'category') {
     const label = code(CATEGORY_LABELS[term.category])
-    return term.exclude ? phrase(tr, 'rulePagePrototype.digest.lacks', label) : label
+    return term.exclude ? phrase(tr, 'rulePage.digest.lacks', label) : label
   }
   if (term.kind === 'uploader') {
     const label = code(`uploader:${term.uploader}`)
-    return term.exclude ? phrase(tr, 'rulePagePrototype.digest.lacks', label) : label
+    return term.exclude ? phrase(tr, 'rulePage.digest.lacks', label) : label
   }
   if (term.kind === 'range') {
-    return `${tr(`rulePagePrototype.${term.field}`)} ${term.exclude ? '∉ ' : ''}${rangeText(tr, term)}`
+    return `${tr(`rulePage.${term.field}`)} ${term.exclude ? '∉ ' : ''}${rangeText(tr, term)}`
   }
   return `(${term.terms.map(child => termMarkdown(tr, child)).join(term.kind === 'all' ? ' AND ' : ' OR ')})`
 }
 
-export function actionsMarkdown(tr: Translate, actions: FixedActions): string {
+export function actionsMarkdown(tr: Translate, actions: RuleActions): string {
   const parts = actionItems(actions).map(item => {
     const { color, prefix, amount } = item.params ?? {}
     return tr(item.message, {
@@ -46,7 +46,7 @@ export function actionsMarkdown(tr: Translate, actions: FixedActions): string {
       ...(amount === undefined ? {} : { amount }),
     })
   })
-  return parts.length ? parts.join(tr('rulePagePrototype.digest.clauseSep')) : tr('rulePagePrototype.noAction')
+  return parts.length ? parts.join(tr('rulePage.digest.clauseSep')) : tr('rulePage.noAction')
 }
 
 export function noteTerms(note: DigestNote): DigestTerm[] {
@@ -59,16 +59,16 @@ export function noteTerms(note: DigestNote): DigestTerm[] {
 
 export function noteParams(tr: Translate, note: DigestNote): Record<string, string> | undefined {
   if (note.kind !== 'rangeEmpty' && note.kind !== 'rangeExcluded' && note.kind !== 'rangeMerged') return undefined
-  return { field: tr(`rulePagePrototype.${note.field}`) }
+  return { field: tr(`rulePage.${note.field}`) }
 }
 
 function notesMarkdown(tr: Translate, digest: RuleDigest): string[] {
   return digest.notes.map(note => `> ${phrase(
-    tr, `rulePagePrototype.digest.note.${note.kind}`, noteTerms(note).map(term => termMarkdown(tr, term)).join(' '), noteParams(tr, note),
+    tr, `rulePage.digest.note.${note.kind}`, noteTerms(note).map(term => termMarkdown(tr, term)).join(' '), noteParams(tr, note),
   )}`)
 }
 
-function document(rule: FixedRule, body: string[], tr: Translate, digest: RuleDigest): string {
+function document(rule: GalleryRule, body: string[], tr: Translate, digest: RuleDigest): string {
   const notes = notesMarkdown(tr, digest)
   return [`### ${rule.name}`, '', ...body, ...(notes.length ? ['', ...notes] : [])].join('\n')
 }
@@ -77,7 +77,7 @@ function row(label: string, items: string): string {
   return `- **${label}** — ${items}`
 }
 
-export function rowsMarkdown(tr: Translate, rule: FixedRule, digest: RuleDigest): string {
+export function rowsMarkdown(tr: Translate, rule: GalleryRule, digest: RuleDigest): string {
   const lines: string[] = []
   const must = [
     ...digest.categories.map(category => code(CATEGORY_LABELS[category])),
@@ -85,9 +85,9 @@ export function rowsMarkdown(tr: Translate, rule: FixedRule, digest: RuleDigest)
     ...digest.tags.map(code),
     ...rangeTerms(digest.ranges).map(term => termMarkdown(tr, term)),
   ]
-  if (must.length) lines.push(row(tr('rulePagePrototype.digest.must'), must.join(' ')))
-  for (const group of digest.groups) lines.push(row(tr('rulePagePrototype.digest.any'), group.map(term => termMarkdown(tr, term)).join(' ')))
-  if (digest.unless.length) lines.push(row(tr('rulePagePrototype.digest.none'), digest.unless.map(term => termMarkdown(tr, term)).join(' ')))
-  lines.push(row(tr('rulePrototype.actions'), actionsMarkdown(tr, rule.actions)))
+  if (must.length) lines.push(row(tr('rulePage.digest.must'), must.join(' ')))
+  for (const group of digest.groups) lines.push(row(tr('rulePage.digest.any'), group.map(term => termMarkdown(tr, term)).join(' ')))
+  if (digest.unless.length) lines.push(row(tr('rulePage.digest.none'), digest.unless.map(term => termMarkdown(tr, term)).join(' ')))
+  lines.push(row(tr('listingRules.actions'), actionsMarkdown(tr, rule.actions)))
   return document(rule, lines, tr, digest)
 }

@@ -2,11 +2,11 @@
 import { computed, nextTick, onMounted, ref, useId, watch } from 'vue'
 import { useResizeObserver } from '@vueuse/core'
 import { t } from '@/composables/useI18n'
-import { MAX_GROUP_DEPTH, type FixedRule } from '@/services/listing/fixedRulePrototype'
+import { MAX_GROUP_DEPTH, type GalleryRule } from '@/services/listing/galleryRules'
 import { applyConditions, parseConditions, printConditions, type ExpressionError } from '@/services/listing/ruleExpression'
 
 // 換規則時由上層換 key，草稿與錯誤跟著重來
-const props = defineProps<{ rule: FixedRule }>()
+const props = defineProps<{ rule: GalleryRule }>()
 
 const printed = computed(() => printConditions(props.rule.root))
 const draft = ref(printed.value)
@@ -14,9 +14,9 @@ const editing = ref(false)
 const parseError = ref<ExpressionError | null>(null)
 const errorId = useId()
 const input = ref<HTMLTextAreaElement | null>(null)
-const errorText = computed(() => parseError.value && t('rulePagePrototype.expression.errorAt', {
+const errorText = computed(() => parseError.value && t('rulePage.expression.errorAt', {
   at: parseError.value.at + 1,
-  message: t(`rulePagePrototype.expression.error.${parseError.value.kind}`, { text: parseError.value.text, max: MAX_GROUP_DEPTH }),
+  message: t(`rulePage.expression.error.${parseError.value.kind}`, { text: parseError.value.text, max: MAX_GROUP_DEPTH }),
 }))
 
 // 打字途中讀得懂的文字會立刻換掉條件樹，printed 也跟著變；這時不能拿標準寫法蓋掉使用者正在打的字
@@ -67,8 +67,8 @@ function onBlur() {
   <div class="eqt-rule-page__source">
     <textarea
       ref="input" v-model="draft" class="eqt-rule-page__source-input" rows="2"
-      spellcheck="false" autocomplete="off" :aria-label="t('rulePagePrototype.expression.label')"
-      :placeholder="t('rulePagePrototype.expression.placeholder')"
+      spellcheck="false" autocomplete="off" :aria-label="t('rulePage.expression.label')"
+      :placeholder="t('rulePage.expression.placeholder')"
       :aria-invalid="!!parseError" :aria-describedby="parseError ? errorId : undefined"
       @focus="editing = true" @blur="onBlur" @input="onInput"
     />

@@ -6,11 +6,11 @@ import EqtNumberField from '@/components/EqtNumberField.vue'
 import RuleActionPreview from '@/components/rules/RuleActionPreview.vue'
 import RuleColorField from '@/components/rules/RuleColorField.vue'
 import { t } from '@/composables/useI18n'
-import { COVER_BLUR_MODES, MAX_RADIUS, normalizePrefix, type FixedRule } from '@/services/listing/fixedRulePrototype'
+import { COVER_BLUR_MODES, MAX_RADIUS, normalizePrefix, type GalleryRule } from '@/services/listing/galleryRules'
 import { ACTION_TARGETS, targetInUse, type ActionTarget } from '@/services/listing/ruleActionItems'
 
 // 拿整條規則：預覽的規則按鈕要用到規則名稱
-const props = defineProps<{ rule: FixedRule }>()
+const props = defineProps<{ rule: GalleryRule }>()
 const actions = computed(() => props.rule.actions)
 
 const target = ref<ActionTarget>('card')
@@ -40,10 +40,10 @@ function setAmount(key: 'dim' | 'blur', event: Event) {
 }
 
 const TITLE_STYLES = [
-  { key: 'bold', icon: Bold, label: 'rulePagePrototype.boldShort' },
-  { key: 'italic', icon: Italic, label: 'rulePagePrototype.italicShort' },
-  { key: 'underline', icon: Underline, label: 'rulePagePrototype.underlineShort' },
-  { key: 'strike', icon: Strikethrough, label: 'rulePagePrototype.strikeShort' },
+  { key: 'bold', icon: Bold, label: 'rulePage.boldShort' },
+  { key: 'italic', icon: Italic, label: 'rulePage.italicShort' },
+  { key: 'underline', icon: Underline, label: 'rulePage.underlineShort' },
+  { key: 'strike', icon: Strikethrough, label: 'rulePage.strikeShort' },
 ] as const
 
 const hideHelpAnchor = ref<HTMLElement | null>(null)
@@ -51,10 +51,10 @@ const hideHelpOpen = ref(false)
 </script>
 
 <template>
-  <h2><Paintbrush class="eqt-rule-page__icon" />{{ t('rulePrototype.actions') }}</h2>
+  <h2><Paintbrush class="eqt-rule-page__icon" />{{ t('listingRules.actions') }}</h2>
   <div class="eqt-rule-page__actions">
     <!-- 動作作用在圖庫卡片的哪個位置：一頁一個位置，有設定的那幾頁左邊畫一條綠色條 -->
-    <div class="eqt-rule-page__action-tabs" role="tablist" aria-orientation="vertical" :aria-label="t('rulePrototype.actions')">
+    <div class="eqt-rule-page__action-tabs" role="tablist" aria-orientation="vertical" :aria-label="t('listingRules.actions')">
       <button
         v-for="(name, index) in ACTION_TARGETS" :id="`eqt-rule-action-tab-${name}`" :key="name"
         :ref="el => { tabs[index] = el as HTMLButtonElement | null }"
@@ -63,7 +63,7 @@ const hideHelpOpen = ref(false)
         :aria-selected="target === name" :aria-controls="`eqt-rule-action-panel-${name}`" :tabindex="target === name ? 0 : -1"
         @click="target = name" @keydown="moveTab"
       >
-        {{ t(`rulePagePrototype.target.${name}`) }}
+        {{ t(`rulePage.target.${name}`) }}
       </button>
     </div>
 
@@ -74,29 +74,29 @@ const hideHelpOpen = ref(false)
       <!-- 隱藏時圖庫整個不見，其他動作都不作用：整組停用，但值留著，關掉隱藏就回來；分頁照樣能切 -->
       <fieldset class="eqt-rule-page__action-fields" :disabled="actions.hide">
         <template v-if="target === 'card'">
-          <RuleColorField v-model="actions.background" :label="t('rulePagePrototype.background')" />
+          <RuleColorField v-model="actions.background" :label="t('rulePage.background')" />
           <label class="eqt-rule-page__field eqt-rule-page__amount">
-            <span>{{ t('rulePagePrototype.dimShort') }}</span>
+            <span>{{ t('rulePage.dimShort') }}</span>
             <input class="eqt-rule-page__slider" type="range" min="0" max="100" step="1" :value="actions.dim" @input="setAmount('dim', $event)">
             <span class="eqt-rule-page__amount-value">{{ actions.dim }}</span>
           </label>
-          <label class="eqt-rule-page__enabled" :title="t('rulePagePrototype.showNameHint')">
+          <label class="eqt-rule-page__enabled" :title="t('rulePage.showNameHint')">
             <input type="checkbox" :checked="actions.showName" @change="actions.showName = ($event.target as HTMLInputElement).checked" />
-            {{ t('rulePagePrototype.showName') }}
+            {{ t('rulePage.showName') }}
           </label>
         </template>
 
         <template v-else-if="target === 'cover'">
-          <span class="eqt-rule-page__choice" role="group" :aria-label="t('rulePagePrototype.target.cover')">
+          <span class="eqt-rule-page__choice" role="group" :aria-label="t('rulePage.target.cover')">
             <button
               v-for="mode in COVER_BLUR_MODES" :key="mode" type="button" class="eqt-rule-page__choice-item"
               :aria-pressed="actions.blurMode === mode" @click="actions.blurMode = mode"
-            >{{ t(mode === 'blur' ? 'rulePagePrototype.blurShort' : 'rulePagePrototype.mosaicShort') }}</button>
+            >{{ t(mode === 'blur' ? 'rulePage.blurShort' : 'rulePage.mosaicShort') }}</button>
           </span>
           <span class="eqt-rule-page__field eqt-rule-page__amount">
             <input
               class="eqt-rule-page__slider" type="range" min="0" max="100" step="1" :value="actions.blur"
-              :aria-label="t(actions.blurMode === 'blur' ? 'rulePagePrototype.blurShort' : 'rulePagePrototype.mosaicShort')"
+              :aria-label="t(actions.blurMode === 'blur' ? 'rulePage.blurShort' : 'rulePage.mosaicShort')"
               @input="setAmount('blur', $event)"
             >
             <span class="eqt-rule-page__amount-value">{{ actions.blur }}</span>
@@ -104,35 +104,35 @@ const hideHelpOpen = ref(false)
         </template>
 
         <template v-else-if="target === 'prefix'">
-          <label class="eqt-rule-page__field" :title="t('rulePagePrototype.titlePrefixHint')">
-            <span>{{ t('rulePagePrototype.prefix') }}</span>
+          <label class="eqt-rule-page__field" :title="t('rulePage.titlePrefixHint')">
+            <span>{{ t('rulePage.prefix') }}</span>
             <input
               class="eqt-rule-page__input" type="text" :value="actions.prefix ?? ''" autocomplete="off"
-              :aria-label="t('rulePagePrototype.titlePrefix')"
+              :aria-label="t('rulePage.titlePrefix')"
               @change="setPrefix" @keydown.enter.prevent="($event.target as HTMLInputElement).blur()"
             >
           </label>
-          <RuleColorField v-model="actions.prefixColor" :label="t('rulePagePrototype.textColor')" />
+          <RuleColorField v-model="actions.prefixColor" :label="t('rulePage.textColor')" />
           <!-- 圓角只在有背景時看得出來，跟背景排在同一行 -->
           <span class="eqt-rule-page__field-row">
-            <RuleColorField v-model="actions.prefixBackground" :label="t('rulePagePrototype.background')" />
+            <RuleColorField v-model="actions.prefixBackground" :label="t('rulePage.background')" />
             <span class="eqt-rule-page__field">
-              <span>{{ t('rulePagePrototype.radius') }}</span>
-              <EqtNumberField v-model="actions.prefixRadius" :min="0" :max="MAX_RADIUS" :label="t('rulePagePrototype.radius')" />
+              <span>{{ t('rulePage.radius') }}</span>
+              <EqtNumberField v-model="actions.prefixRadius" :min="0" :max="MAX_RADIUS" :label="t('rulePage.radius')" />
             </span>
           </span>
         </template>
 
         <template v-else>
-          <RuleColorField v-model="actions.titleColor" :label="t('rulePagePrototype.textColor')" />
+          <RuleColorField v-model="actions.titleColor" :label="t('rulePage.textColor')" />
           <span class="eqt-rule-page__field-row">
-            <RuleColorField v-model="actions.titleBackground" :label="t('rulePagePrototype.background')" />
+            <RuleColorField v-model="actions.titleBackground" :label="t('rulePage.background')" />
             <span class="eqt-rule-page__field">
-              <span>{{ t('rulePagePrototype.radius') }}</span>
-              <EqtNumberField v-model="actions.titleRadius" :min="0" :max="MAX_RADIUS" :label="t('rulePagePrototype.radius')" />
+              <span>{{ t('rulePage.radius') }}</span>
+              <EqtNumberField v-model="actions.titleRadius" :min="0" :max="MAX_RADIUS" :label="t('rulePage.radius')" />
             </span>
           </span>
-          <span class="eqt-rule-page__choice" role="group" :aria-label="t('rulePagePrototype.target.title')">
+          <span class="eqt-rule-page__choice" role="group" :aria-label="t('rulePage.target.title')">
             <button
               v-for="style in TITLE_STYLES" :key="style.key" type="button" class="eqt-rule-page__choice-item"
               :aria-pressed="actions[style.key]" :aria-label="t(style.label)" :title="t(style.label)"
@@ -145,15 +145,15 @@ const hideHelpOpen = ref(false)
       <!-- 隱藏也是對整張卡片做的事；它自己不在停用的那組裡，才關得掉 -->
       <div v-if="target === 'card'" class="eqt-rule-page__hide-row">
         <button type="button" class="eqt-rule-page__hide" :aria-pressed="actions.hide" @click="actions.hide = !actions.hide">
-          <EyeClosed class="eqt-rule-page__icon" />{{ t('rulePagePrototype.hideShort') }}
+          <EyeClosed class="eqt-rule-page__icon" />{{ t('rulePage.hideShort') }}
         </button>
         <button
-          ref="hideHelpAnchor" type="button" class="eqt-rule-page__help" :aria-label="t('rulePagePrototype.hideHelp')"
+          ref="hideHelpAnchor" type="button" class="eqt-rule-page__help" :aria-label="t('rulePage.hideHelp')"
           @mouseenter="hideHelpOpen = true" @mouseleave="hideHelpOpen = false"
           @focus="hideHelpOpen = true" @blur="hideHelpOpen = false"
         ><CircleQuestionMark class="eqt-rule-page__icon" /></button>
         <AnchoredPopover v-model:open="hideHelpOpen" :anchor="hideHelpAnchor" placement="top-start">
-          <p class="eqt-rule-page__help-tip" role="tooltip">{{ t('rulePagePrototype.hideHelp') }}</p>
+          <p class="eqt-rule-page__help-tip" role="tooltip">{{ t('rulePage.hideHelp') }}</p>
         </AnchoredPopover>
       </div>
     </div>

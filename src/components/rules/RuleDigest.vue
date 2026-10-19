@@ -6,11 +6,11 @@ import RuleActionSummary from './RuleActionSummary.vue'
 import RuleDigestPhrase from './RuleDigestPhrase.vue'
 import RuleDigestTerm from './RuleDigestTerm.vue'
 import { t } from '@/composables/useI18n'
-import type { FixedRule } from '@/services/listing/fixedRulePrototype'
+import type { GalleryRule } from '@/services/listing/galleryRules'
 import { digestRule, NEVER_NOTES, rangeTerms, type DigestTerm } from '@/services/listing/ruleDigest'
 import { noteParams, noteTerms, rowsMarkdown } from '@/services/listing/ruleDigestMarkdown'
 
-const props = defineProps<{ rule: FixedRule }>()
+const props = defineProps<{ rule: GalleryRule }>()
 const clipboard = useClipboard({ legacy: true })
 
 const digest = computed(() => digestRule(props.rule))
@@ -31,7 +31,7 @@ function copyDigest() {
 <template>
   <section class="eqt-rule-page__section">
     <div class="eqt-rule-page__section-head">
-      <h2><ScrollText class="eqt-rule-page__icon" />{{ t('rulePagePrototype.summary') }}</h2>
+      <h2><ScrollText class="eqt-rule-page__icon" />{{ t('rulePage.summary') }}</h2>
       <button
         type="button" class="eqt-rule-page__digest-copy"
         :title="t(clipboard.copied.value ? 'settings.editorCopied' : 'settings.editorCopy')"
@@ -43,22 +43,22 @@ function copyDigest() {
     <div class="eqt-rule-page__digest" :class="{ 'eqt-rule-page__digest--never': digest.never }">
       <dl class="eqt-rule-page__digest-rows">
         <div v-if="hasMust" class="eqt-rule-page__digest-row eqt-rule-page__digest-row--all">
-          <dt>{{ t('rulePagePrototype.digest.must') }}</dt>
+          <dt>{{ t('rulePage.digest.must') }}</dt>
           <dd>
             <RuleDigestTerm v-for="(term, index) in mustTerms" :key="`must-${index}`" :term="term" />
             <RuleDigestTerm v-for="(term, index) in mustRanges" :key="`range-${index}`" :term="term" />
           </dd>
         </div>
         <div v-for="(group, index) in digest.groups" :key="index" class="eqt-rule-page__digest-row eqt-rule-page__digest-row--any">
-          <dt>{{ t('rulePagePrototype.digest.any') }}</dt>
+          <dt>{{ t('rulePage.digest.any') }}</dt>
           <dd><RuleDigestTerm v-for="(term, termIndex) in group" :key="termIndex" :term="term" /></dd>
         </div>
         <div v-if="digest.unless.length" class="eqt-rule-page__digest-row eqt-rule-page__digest-row--none">
-          <dt>{{ t('rulePagePrototype.digest.none') }}</dt>
+          <dt>{{ t('rulePage.digest.none') }}</dt>
           <dd><RuleDigestTerm v-for="(term, index) in digest.unless" :key="index" :term="term" /></dd>
         </div>
         <div class="eqt-rule-page__digest-row eqt-rule-page__digest-row--action">
-          <dt>{{ t('rulePrototype.actions') }}</dt>
+          <dt>{{ t('listingRules.actions') }}</dt>
           <dd><RuleActionSummary class="eqt-rule-page__digest-action" :actions="rule.actions" verbose /></dd>
         </div>
       </dl>
@@ -69,7 +69,7 @@ function copyDigest() {
           :class="{ 'eqt-rule-page__digest-note--never': NEVER_NOTES[note.kind] }"
         >
           <RuleDigestPhrase
-            :text-key="`rulePagePrototype.digest.note.${note.kind}`"
+            :text-key="`rulePage.digest.note.${note.kind}`"
             :params="noteParams(t, note)"
           >
             <RuleDigestTerm v-for="(term, termIndex) in noteTerms(note)" :key="termIndex" :term="term" />

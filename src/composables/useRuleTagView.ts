@@ -11,7 +11,7 @@ export function useRuleTagView(tag: () => string) {
   return computed(() => {
     const full = tag()
     // 舊版逐列編輯留下的空白條件也要看得見，不然只剩一顆空殼 chip
-    if (!full) return { text: t('rulePrototype.emptyTag'), iconUrl: undefined, colors: undefined }
+    if (!full) return { text: t('listingRules.emptyTag'), iconUrl: undefined, colors: undefined }
     const { nsLabel, display, iconUrl } = label.value(full)
     return {
       text: nsLabel ? `${nsLabel}:${display}` : display,

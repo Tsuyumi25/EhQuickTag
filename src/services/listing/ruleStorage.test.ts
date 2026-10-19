@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
-  createActions, type ConditionGroup, type FixedActions, type FixedConditionItem,
-} from '@/services/listing/fixedRulePrototype'
+  createActions, type ConditionGroup, type RuleActions, type RuleConditionItem,
+} from '@/services/listing/galleryRules'
 import { decodeRules, RULE_SCHEMA } from './ruleStorage'
 
 const RED = '#cc000080'
-const actions: FixedActions = { ...createActions(), background: RED, showName: true }
+const actions: RuleActions = { ...createActions(), background: RED, showName: true }
 // 每一欄都填上非預設值，確認每一欄都存得回來
-const fullActions: FixedActions = {
+const fullActions: RuleActions = {
   background: RED, dim: 40, blur: 70, blurMode: 'mosaic', showName: true,
   prefix: 'some prefix', prefixColor: '#112233ff', prefixBackground: '#445566cc', prefixRadius: 5,
   titleColor: '#778899ff', titleBackground: '#aabbcc80', titleRadius: 12,
@@ -17,11 +17,11 @@ const tag = (id: number, name: string, exclude = false) => ({ id, kind: 'tag', t
 
 describe('decodeRules', () => {
   it('目前的格式原樣讀回來', () => {
-    const category: FixedConditionItem = { id: 5, kind: 'category', category: 'non-h', exclude: true }
-    const uploader: FixedConditionItem = { id: 6, kind: 'uploader', uploader: 'Some Uploader', exclude: false }
-    const range: FixedConditionItem = { id: 7, kind: 'pages', op: 'between', value: 20, max: 80 }
+    const category: RuleConditionItem = { id: 5, kind: 'category', category: 'non-h', exclude: true }
+    const uploader: RuleConditionItem = { id: 6, kind: 'uploader', uploader: 'Some Uploader', exclude: false }
+    const range: RuleConditionItem = { id: 7, kind: 'pages', op: 'between', value: 20, max: 80 }
     const child: ConditionGroup = {
-      id: 3, kind: 'group', mode: 'all', negate: false, conditions: [tag(4, 'female:a') as FixedConditionItem, category, uploader, range],
+      id: 3, kind: 'group', mode: 'all', negate: false, conditions: [tag(4, 'female:a') as RuleConditionItem, category, uploader, range],
     }
     const root: ConditionGroup = { id: 2, kind: 'group', mode: 'any', negate: true, conditions: [child] }
     const stored = { id: 1, name: 'r', enabled: false, root, actions: fullActions }

@@ -3,8 +3,8 @@
 
 import {
   averageOfStars, conditionRange, normalizeTag, normalizeUploader, RANGE_FIELDS,
-  type FixedConditionItem, type FixedRule, type RangeField, type ValueRange,
-} from '@/services/listing/fixedRulePrototype'
+  type RuleConditionItem, type GalleryRule, type RangeField, type ValueRange,
+} from '@/services/listing/galleryRules'
 import type { GalleryCategory } from '@/services/listing/galleryCategory'
 
 export type DigestTerm =
@@ -87,7 +87,7 @@ function junction(k: 'and' | 'or', items: readonly (Expr | null)[]): Expr | null
 
 interface Context { incomplete: boolean }
 
-function itemExpr(item: FixedConditionItem, neg: boolean, ctx: Context): Expr | null {
+function itemExpr(item: RuleConditionItem, neg: boolean, ctx: Context): Expr | null {
   if (item.kind === 'tag') {
     const tag = normalizeTag(item.tag)
     if (!tag) {
@@ -178,7 +178,7 @@ export function rangeTerms(ranges: DigestRanges): DigestTerm[] {
   })
 }
 
-export function digestRule(rule: FixedRule): RuleDigest {
+export function digestRule(rule: GalleryRule): RuleDigest {
   const ctx: Context = { incomplete: false }
   const root = itemExpr(rule.root, false, ctx)
   const conjuncts = !root ? [] : root.k === 'and' ? root.xs : [root]

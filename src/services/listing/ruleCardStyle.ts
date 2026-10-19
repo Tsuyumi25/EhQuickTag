@@ -1,6 +1,6 @@
 // 命中的規則效果換成圖庫卡片上的 class 與 CSS 變數；樣式表照這些畫，元件只負責把它們套到卡片上
 
-import type { PrefixMark, RuleEffects } from './fixedRulePrototype'
+import type { PrefixMark, RuleEffects } from './galleryRules'
 
 /** 強度 100 的樣子：模糊半徑、馬賽克格子邊長（px）與淡化後的不透明度 */
 export const MAX_BLUR = 16
@@ -19,16 +19,16 @@ export const CARD_MODIFIERS = ['background', 'blur', 'dim', 'hidden'] as const
 export type CardModifier = (typeof CARD_MODIFIERS)[number]
 
 export const CARD_VARS = [
-  '--eqt-rule-prototype-background',
-  '--eqt-rule-prototype-opacity',
-  '--eqt-rule-prototype-cover-filter',
-  '--eqt-rule-prototype-title-color',
-  '--eqt-rule-prototype-title-background',
-  '--eqt-rule-prototype-title-radius',
-  '--eqt-rule-prototype-title-pad',
-  '--eqt-rule-prototype-title-decoration',
-  '--eqt-rule-prototype-title-weight',
-  '--eqt-rule-prototype-title-style',
+  '--eqt-listing-rules-background',
+  '--eqt-listing-rules-opacity',
+  '--eqt-listing-rules-cover-filter',
+  '--eqt-listing-rules-title-color',
+  '--eqt-listing-rules-title-background',
+  '--eqt-listing-rules-title-radius',
+  '--eqt-listing-rules-title-pad',
+  '--eqt-listing-rules-title-decoration',
+  '--eqt-listing-rules-title-weight',
+  '--eqt-listing-rules-title-style',
 ] as const
 export type CardVar = (typeof CARD_VARS)[number]
 
@@ -90,28 +90,28 @@ export function cardStyle(effects: RuleEffects): CardStyle {
   return {
     modifiers: { background: !!effects.background, blur: effects.blur > 0, dim: effects.dim > 0, hidden: effects.hide },
     vars: {
-      '--eqt-rule-prototype-background': effects.background,
-      '--eqt-rule-prototype-opacity': effects.dim ? String(1 - (effects.dim / 100) * (1 - MIN_OPACITY)) : null,
-      '--eqt-rule-prototype-cover-filter': coverFilter(effects),
-      '--eqt-rule-prototype-title-color': title.color,
-      '--eqt-rule-prototype-title-background': title.background,
-      '--eqt-rule-prototype-title-radius': title.background ? `${title.radius}px` : null,
-      '--eqt-rule-prototype-title-pad': title.background ? TEXT_BACKGROUND_PAD : null,
-      '--eqt-rule-prototype-title-decoration': decoration || null,
-      '--eqt-rule-prototype-title-weight': title.bold ? 'bold' : null,
-      '--eqt-rule-prototype-title-style': title.italic ? 'italic' : null,
+      '--eqt-listing-rules-background': effects.background,
+      '--eqt-listing-rules-opacity': effects.dim ? String(1 - (effects.dim / 100) * (1 - MIN_OPACITY)) : null,
+      '--eqt-listing-rules-cover-filter': coverFilter(effects),
+      '--eqt-listing-rules-title-color': title.color,
+      '--eqt-listing-rules-title-background': title.background,
+      '--eqt-listing-rules-title-radius': title.background ? `${title.radius}px` : null,
+      '--eqt-listing-rules-title-pad': title.background ? TEXT_BACKGROUND_PAD : null,
+      '--eqt-listing-rules-title-decoration': decoration || null,
+      '--eqt-listing-rules-title-weight': title.bold ? 'bold' : null,
+      '--eqt-listing-rules-title-style': title.italic ? 'italic' : null,
     },
   }
 }
 
 export function prefixStyle(prefix: PrefixMark): Record<string, string> {
   const style: Record<string, string> = {}
-  if (prefix.tone) style['--eqt-rule-prototype-tone'] = prefix.tone
-  if (prefix.color) style['--eqt-rule-prototype-prefix-color'] = prefix.color
+  if (prefix.tone) style['--eqt-listing-rules-tone'] = prefix.tone
+  if (prefix.color) style['--eqt-listing-rules-prefix-color'] = prefix.color
   if (prefix.background) {
-    style['--eqt-rule-prototype-prefix-background'] = prefix.background
-    style['--eqt-rule-prototype-prefix-radius'] = `${prefix.radius}px`
-    style['--eqt-rule-prototype-prefix-pad'] = TEXT_BACKGROUND_PAD
+    style['--eqt-listing-rules-prefix-background'] = prefix.background
+    style['--eqt-listing-rules-prefix-radius'] = `${prefix.radius}px`
+    style['--eqt-listing-rules-prefix-pad'] = TEXT_BACKGROUND_PAD
   }
   return style
 }

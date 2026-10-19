@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { test, fc } from '@fast-check/vitest'
 import {
   createGroup, createRangeCondition, createTagCondition, evaluateRule, GROUP_MODES, MAX_GROUP_DEPTH, normalizeTag, RANGE_OPS,
-  type ConditionGroup, type FixedConditionItem, type GroupMode, type RangeField,
-} from '@/services/listing/fixedRulePrototype'
+  type ConditionGroup, type RuleConditionItem, type GroupMode, type RangeField,
+} from '@/services/listing/galleryRules'
 import { GALLERY_CATEGORIES } from '@/services/listing/galleryCategory'
 import { applyConditions, parseConditions, printConditions, type ExpressionErrorKind } from './ruleExpression'
 import { probeArb, ruleArb } from './test-helpers'
@@ -27,7 +27,7 @@ const valueArb = (field: RangeField) => field === 'rating' ? fc.integer({ min: 0
 let id = 0
 const nextId = () => ++id
 
-const leafArb: fc.Arbitrary<FixedConditionItem> = fc.oneof(
+const leafArb: fc.Arbitrary<RuleConditionItem> = fc.oneof(
   fc.record({ tag: tagTextArb, exclude: fc.boolean() }).map(({ tag, exclude }) => ({ id: nextId(), kind: 'tag' as const, tag, exclude })),
   fc.record({ category: fc.constantFrom(...GALLERY_CATEGORIES), exclude: fc.boolean() })
     .map(({ category, exclude }) => ({ id: nextId(), kind: 'category' as const, category, exclude })),
@@ -35,7 +35,7 @@ const leafArb: fc.Arbitrary<FixedConditionItem> = fc.oneof(
     .map(({ uploader, exclude }) => ({ id: nextId(), kind: 'uploader' as const, uploader, exclude })),
   fc.constantFrom<RangeField>('rating', 'pages').chain(field => fc.tuple(
     fc.constantFrom(...RANGE_OPS), valueArb(field), valueArb(field), fc.boolean(),
-  ).map(([op, a, b, open]): FixedConditionItem => ({
+  ).map(([op, a, b, open]): RuleConditionItem => ({
     id: nextId(), kind: field, op, value: Math.min(a, b),
     ...(op === 'between' && !open ? { max: Math.max(a, b) } : {}),
   }))),
