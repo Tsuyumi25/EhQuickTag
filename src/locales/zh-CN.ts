@@ -62,6 +62,7 @@ export default {
   'rulePage.expression.error.category': '不认识的分类“{text}”',
   'rulePage.expression.error.field': '“{text}”不是数值字段，只能用 stars 或 pages',
   'rulePage.expression.error.number': '这里需要一个数字',
+  'rulePage.expression.error.range': '「{text}」超出范围：stars 只能是 0 到 5，pages 至少要 1',
   'rulePage.expression.error.depth': '群组最多只能嵌套 {max} 层',
   'rulePage.digest.lacks': '不含 {items}',
   'rulePage.digest.average': '平均约 {range}',

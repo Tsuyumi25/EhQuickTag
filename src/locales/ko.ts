@@ -62,6 +62,7 @@ export default {
   'rulePage.expression.error.category': '알 수 없는 카테고리 "{text}"',
   'rulePage.expression.error.field': '"{text}"은(는) 숫자 항목이 아닙니다. stars 또는 pages를 사용해 주세요',
   'rulePage.expression.error.number': '여기에는 숫자가 필요합니다',
+  'rulePage.expression.error.range': '「{text}」은(는) 범위를 벗어났습니다. stars는 0부터 5까지, pages는 1 이상입니다',
   'rulePage.expression.error.depth': '그룹은 최대 {max}단계까지 중첩할 수 있습니다',
   'rulePage.digest.lacks': '{items} 미포함',
   'rulePage.digest.average': '평균 약 {range}',

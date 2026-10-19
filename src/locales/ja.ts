@@ -62,6 +62,7 @@ export default {
   'rulePage.expression.error.category': '不明なカテゴリ「{text}」',
   'rulePage.expression.error.field': '「{text}」は数値の項目ではありません。stars か pages を使ってください',
   'rulePage.expression.error.number': 'ここには数値が必要です',
+  'rulePage.expression.error.range': '「{text}」は範囲外です。stars は 0 から 5、pages は 1 以上です',
   'rulePage.expression.error.depth': 'グループの入れ子は {max} 階層までです',
   'rulePage.digest.lacks': '{items}を含まない',
   'rulePage.digest.average': '平均 約{range}',

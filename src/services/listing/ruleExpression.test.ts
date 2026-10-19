@@ -136,6 +136,10 @@ describe('原始算式與條件樹', () => {
     ['比較符號前面不是欄位', 'female:a >= 3', 'field', 0],
     ['欄位名稱不會撈到 Object.prototype', 'constructor >= 3', 'field', 0],
     ['比較符號後面不是數字', 'stars >= x', 'number', 9],
+    ['星級超過上限', 'stars >= 99', 'range', 9],
+    ['頁數低於下限', 'pages <= 0', 'range', 9],
+    ['介於的下限超出範圍', '0 <= pages <= 80', 'range', 0],
+    ['介於的上限超出範圍', '1 <= stars <= 5.5', 'range', 14],
     ['介於只能用 <=', '2 < stars', 'unexpected', 2],
     ['群組太深', `${'('.repeat(MAX_GROUP_DEPTH + 1)}a${')'.repeat(MAX_GROUP_DEPTH + 1)}`, 'depth', MAX_GROUP_DEPTH],
   ])('%s', (_name, text, kind, at) => {

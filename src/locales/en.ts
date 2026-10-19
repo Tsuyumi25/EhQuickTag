@@ -62,6 +62,7 @@ export default {
   'rulePage.expression.error.category': 'Unknown category "{text}"',
   'rulePage.expression.error.field': '"{text}" is not a number field; use stars or pages',
   'rulePage.expression.error.number': 'A number is expected here',
+  'rulePage.expression.error.range': '"{text}" is out of range: stars goes from 0 to 5, pages starts at 1',
   'rulePage.expression.error.depth': 'Groups can be nested at most {max} levels deep',
   'rulePage.digest.lacks': 'lacks {items}',
   'rulePage.digest.average': 'average ≈ {range}',

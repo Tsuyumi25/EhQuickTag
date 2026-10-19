@@ -4,7 +4,7 @@
 // 不偷偷補括號，否則改完再印出來就不是使用者打的那段字了。
 
 import {
-  GROUP_MODE_OPERATORS, MAX_GROUP_DEPTH, nextEntityId, normalizeTag,
+  GROUP_MODE_OPERATORS, MAX_GROUP_DEPTH, nextEntityId, normalizeTag, RANGE_FIELDS,
   type ConditionGroup, type RuleConditionItem, type GroupMode, type RangeField, type RangeOp,
 } from '@/services/listing/galleryRules'
 import { isGalleryCategory, type GalleryCategory } from '@/services/listing/galleryCategory'
@@ -28,7 +28,7 @@ export interface ExpressionGroup {
 
 export type ExpressionErrorKind =
   | 'unexpected' | 'end' | 'unclosed' | 'unterminated' | 'mixed'
-  | 'notRange' | 'doubleNot' | 'category' | 'field' | 'number' | 'depth'
+  | 'notRange' | 'doubleNot' | 'category' | 'field' | 'number' | 'range' | 'depth'
 
 export interface ExpressionError {
   kind: ExpressionErrorKind
@@ -211,10 +211,18 @@ class Parser {
     return fail('notRange', start)
   }
 
-  private number(): number {
+  private number(field: RangeField): number {
     const token = this.next()
     if (token.type !== 'word' || !NUMBER.test(token.text)) fail(token.type === 'end' ? 'end' : 'number', token)
-    return Number(token.text)
+    return this.inRange(field, token)
+  }
+
+  // 儲存端也守著同一個範圍：這裡放過的數字會讓整份規則下次載入時讀不回來
+  private inRange(field: RangeField, token: Token): number {
+    const value = Number(token.text)
+    const { min, max } = RANGE_FIELDS[field]
+    if (value < min || value > max) fail('range', token)
+    return value
   }
 
   private field(): RangeField {
@@ -246,14 +254,15 @@ class Parser {
         if (following.text !== '<=') fail('unexpected', following)
         this.next()
         const field = this.field()
-        if (this.peek().type !== 'op') return { kind: field, op: 'between', value: Number(token.text) }
+        const value = this.inRange(field, token)
+        if (this.peek().type !== 'op') return { kind: field, op: 'between', value }
         if (this.peek().text !== '<=') fail('unexpected', this.peek())
         this.next()
-        return { kind: field, op: 'between', value: Number(token.text), max: this.number() }
+        return { kind: field, op: 'between', value, max: this.number(field) }
       }
       const field = lookup(FIELDS_BY_WORD, token.text) ?? fail('field', token)
       this.next()
-      return { kind: field, op: lookup(OPS_BY_SYMBOL, following.text) ?? fail('unexpected', following), value: this.number() }
+      return { kind: field, op: lookup(OPS_BY_SYMBOL, following.text) ?? fail('unexpected', following), value: this.number(field) }
     }
     if (token.text.startsWith(CATEGORY_PREFIX)) {
       const category = token.text.slice(CATEGORY_PREFIX.length)
