@@ -11,17 +11,13 @@ import '@/styles/rule-prototype.scss'
 // 樣式表照同一份規則畫，預覽才不會跟實際長得不一樣
 const props = defineProps<{ rule: FixedRule }>()
 
-// 封面要有色塊與細節，模糊與馬賽克才看得出差別；全是幾何形狀，不放任何真的圖
+// 黑底白字：不放任何圖，也不必替別人的圖煩惱版權；字的邊緣夠銳利，模糊與馬賽克一眼看得出來
 const COVER = `data:image/svg+xml,${encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" width="250" height="340" viewBox="0 0 250 340">'
-  + '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6a8fd4"/><stop offset="1" stop-color="#d47aa0"/></linearGradient></defs>'
-  + '<rect width="250" height="340" fill="url(#g)"/>'
-  + '<circle cx="80" cy="110" r="52" fill="#ffe08a"/>'
-  + '<rect x="130" y="170" width="90" height="120" rx="10" fill="#2d3a5c"/>'
-  + '<path d="M0 300 L70 230 L140 300 Z" fill="#4c9a6a"/>'
-  + '<g stroke="#ffffff" stroke-width="3">'
-  + '<line x1="20" y1="20" x2="230" y2="20"/><line x1="20" y1="34" x2="180" y2="34"/><line x1="20" y1="48" x2="200" y2="48"/>'
-  + '</g></svg>',
+  + '<rect width="250" height="340" fill="#000"/>'
+  + '<text x="125" y="170" fill="#fff" font-family="arial, helvetica, sans-serif" font-size="40" font-weight="bold"'
+  + ' text-anchor="middle" dominant-baseline="central">Preview</text>'
+  + '</svg>',
 )}`
 
 const effects = computed(() => previewRuleEffects(props.rule))
