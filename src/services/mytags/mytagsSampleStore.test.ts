@@ -125,7 +125,7 @@ describe('mytags sample persistence', () => {
     expect((await createSampleStore().load()).galleries).toEqual({})
   })
 
-  it('兩個面板依序標記不同畫廊，人工判斷都能重新載入', async () => {
+  it('兩個面板依序標記不同圖庫，人工判斷都能重新載入', async () => {
     const first = createSampleStore()
     const second = createSampleStore()
     await Promise.all([first.load(), second.load()])

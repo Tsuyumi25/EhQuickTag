@@ -453,7 +453,7 @@ export default {
   'settings.myTagsSamplesCleared': '已清除所有圖庫樣本。',
   'settings.myTagsClearSamplesFailed': '圖庫樣本清除失敗。',
   // Gallery settings tab
-  'settings.tabGallery': '畫廊',
+  'settings.tabGallery': '圖庫',
   'settings.tabListing': '列表',
   'settings.sectionListingToggles': '功能開關',
   'settings.listingTags': '啟用圖庫列表強化',
@@ -582,7 +582,7 @@ export default {
   'taglist.headLeft': '標籤與影響（{n}）',
   'taglist.empty': '找不到符合條件的標籤',
   'taglist.impact': '樣本裡：被擋 {left} · 顯示 {right}',
-  'taglist.impactNone': '樣本裡還沒有帶這個標籤的畫廊',
+  'taglist.impactNone': '樣本裡還沒有帶這個標籤的圖庫',
   'taglist.picked': '已選 {n} 個',
   'taglist.moveTo': '移到標籤集⋯',
   'taglist.bulkWatch': '設為關注',

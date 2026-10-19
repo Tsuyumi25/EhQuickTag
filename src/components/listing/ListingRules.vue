@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// 列表頁：選標籤送規則頁，並把規則頁存下來的圖庫規則套回真實畫廊外觀。
+// 列表頁：選標籤送規則頁，並把規則頁存下來的圖庫規則套回真實圖庫外觀。
 import { computed, h, onBeforeUnmount, onMounted, ref, render, shallowRef, watch, watchEffect } from 'vue'
 import { GM } from '$'
 import { useFloating, autoUpdate, flip, offset, shift } from '@floating-ui/vue'

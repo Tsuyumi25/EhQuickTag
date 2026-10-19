@@ -76,7 +76,7 @@ describe('outcomeOf', () => {
   })
 
   // wiki：「the sum of all tag weights that appear in the gallery」
-  it('⭐ watch 不參與計分，帶關注標籤的畫廊照它的權重算', () => {
+  it('⭐ watch 不參與計分，帶關注標籤的圖庫照它的權重算', () => {
     const o = run(['male:fav', 'male:save', 'male:core'])
     expect(o.parts.map((p) => p.tag)).toEqual(['male:core', 'male:save', 'male:fav'])
     expect(o.score).toBe(-20 + 10 + 12)

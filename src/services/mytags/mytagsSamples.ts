@@ -1,6 +1,6 @@
-// 抓回來的畫廊樣本，以及對每一本的判斷。
+// 抓回來的圖庫樣本，以及對每一本的判斷。
 //
-// ⭐ 判斷綁在畫廊上，不綁在設定上——所以改權重之後先前判過的不用重判。
+// ⭐ 判斷綁在圖庫上，不綁在設定上——所以改權重之後先前判過的不用重判。
 
 import { outcomeOf, type FactsOf } from '@/services/mytags/mytagsScore'
 
@@ -40,7 +40,7 @@ export interface Accuracy {
 /**
  * 拿判過的每一本重算一次，看這組設定對幾本。
  *
- * 只算判過的：沒判過的畫廊沒有正確答案可比，算進分母沒有意義。
+ * 只算判過的：沒判過的圖庫沒有正確答案可比，算進分母沒有意義。
  */
 export function accuracy(
   store: SampleStore,

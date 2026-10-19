@@ -1,4 +1,4 @@
-// 撈一批畫廊的完整標籤，分兩段。
+// 撈一批圖庫的完整標籤，分兩段。
 //
 // ⛔ 不從搜尋結果頁讀標籤。只有「擴充」顯示模式的列會帶完整標籤表，而顯示模式存在
 // `sl` cookie 裡，不是每次請求的參數——想切就得改使用者自己的瀏覽設定，而且 cookie
@@ -22,7 +22,7 @@ const UNEXT = /id="unext"[^>]*\bhref="[^"]*[?&](?:amp;)?next=([\d-]+)/
 
 export interface GalleryRef { gid: number; token: string }
 
-/** 搜尋結果頁裡的所有畫廊連結。緊湊 / 擴充 / 縮圖模式的 href 格式都一樣 */
+/** 搜尋結果頁裡的所有圖庫連結。緊湊 / 擴充 / 縮圖模式的 href 格式都一樣 */
 export function parseRefs(html: string): GalleryRef[] {
   const seen = new Set<number>()
   const out: GalleryRef[] = []
@@ -35,7 +35,7 @@ export function parseRefs(html: string): GalleryRef[] {
   return out
 }
 
-/** 單一畫廊連結的 gid + token；與 {@link parseRefs} 共用同一條 pattern */
+/** 單一圖庫連結的 gid + token；與 {@link parseRefs} 共用同一條 pattern */
 export function parseGalleryRef(href: string): GalleryRef | null {
   for (const match of href.matchAll(HREF)) return { gid: Number(match[1]), token: match[2] }
   return null
@@ -83,7 +83,7 @@ async function sampleGalleries(refs: GalleryRef[], signal?: AbortSignal): Promis
   }))
 }
 
-/** 每本的平均分（gid → 分數）。缺值或壞值的畫廊不放進結果，呼叫端當成未知 */
+/** 每本的平均分（gid → 分數）。缺值或壞值的圖庫不放進結果，呼叫端當成未知 */
 export async function fetchAverageRatings(refs: GalleryRef[], signal?: AbortSignal): Promise<Map<number, number>> {
   const ratings = new Map<number, number>()
   for (const g of await gdata(refs, signal)) {

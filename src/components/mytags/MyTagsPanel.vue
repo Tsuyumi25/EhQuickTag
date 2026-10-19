@@ -203,7 +203,7 @@ const paletteSets = computed<TagSetSnapshot[]>(() => {
   return order.flatMap((value) => byValue.get(value) ?? [])
 })
 
-/** 有一組沒讀到就不發佈：那會把畫廊那邊完整的快取換成缺一組的版本 */
+/** 有一組沒讀到就不發佈：那會把圖庫那邊完整的快取換成缺一組的版本 */
 const paletteComplete = ref(false)
 
 function publishPalette(): void {
@@ -305,7 +305,7 @@ const catalogTagStyle = computed(() => {
 
 type TagAppearance = { colors: TagColors; weight: number; hidden: boolean; watch: boolean }
 
-/** 攤開的畫廊上那排 chip 的外觀。取編輯中的狀態，不讀已存檔的 palette——改了顏色、
+/** 攤開的圖庫上那排 chip 的外觀。取編輯中的狀態，不讀已存檔的 palette——改了顏色、
  *  還沒送出去也要當場看得到 */
 function appearanceOf(tag: string): TagAppearance | null {
   const row = rowMap.value.get(tag)
@@ -696,7 +696,7 @@ async function refreshPreview(expunged = false): Promise<void> {
   await grabTag(tag, expunged)
 }
 
-/** 直接指定，不用一格一格輪。只認 gid——判斷本來就綁畫廊不綁設定 */
+/** 直接指定，不用一格一格輪。只認 gid——判斷本來就綁圖庫不綁設定 */
 function setVerdict(gid: number, want: Verdict | null): void {
   const verdicts = { ...store.value.verdicts }
   if (want) verdicts[String(gid)] = want

@@ -1,4 +1,4 @@
-// 一本畫廊落在哪一欄，以及為什麼。
+// 一本圖庫落在哪一欄，以及為什麼。
 //
 //    左 被擋      右 會顯示      加總 vs Tag Filtering Threshold
 //
@@ -52,7 +52,7 @@ export function outcomeOf(
     .filter((x): x is { tag: string; facts: TagFacts } => x.facts !== null)
   const hiddenBy = known.filter((x) => x.facts.hidden).map((x) => x.tag)
 
-  // 加總的範圍是畫廊上所有非隱藏標籤的權重，wiki 的原文是
+  // 加總的範圍是圖庫上所有非隱藏標籤的權重，wiki 的原文是
   // "the sum of all tag weights that appear in the gallery"
   const counted = known.filter((x) => !x.facts.hidden && x.facts.weight !== 0)
   const parts: Contribution[] = counted

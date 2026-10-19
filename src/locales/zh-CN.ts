@@ -582,7 +582,7 @@ export default {
   'taglist.headLeft': '标签与影响（{n}）',
   'taglist.empty': '找不到符合条件的标签',
   'taglist.impact': '样本里：被挡 {left} · 显示 {right}',
-  'taglist.impactNone': '样本里还没有带这个标签的画廊',
+  'taglist.impactNone': '样本里还没有带这个标签的图库',
   'taglist.picked': '已选 {n} 个',
   'taglist.moveTo': '移到标签集⋯',
   'taglist.bulkWatch': '设为关注',

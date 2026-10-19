@@ -46,7 +46,7 @@ describe('accuracy', () => {
     })
   })
 
-  it('判斷指向已經不在快取裡的畫廊時跳過', () => {
+  it('判斷指向已經不在快取裡的圖庫時跳過', () => {
     const sample = store()
     sample.verdicts = { '999': 'block' }
     expect(accuracy(sample, factsOf, -2).judged).toBe(0)

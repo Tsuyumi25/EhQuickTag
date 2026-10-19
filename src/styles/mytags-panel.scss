@@ -1089,7 +1089,7 @@
   min-width: 0;
 }
 
-// chip 沿用畫廊頁那一套（.eqt-gallery-chip），連原生的 gt/gtl/gtw 外框都一樣，
+// chip 沿用圖庫頁那一套（.eqt-gallery-chip），連原生的 gt/gtl/gtw 外框都一樣，
 // 所以這裡只管排列
 .eqt-gal__tags {
   display: flex;
@@ -1107,7 +1107,7 @@
   span { display: block; }
 }
 
-// 攤開的畫廊裡，加總和門檻的那一行
+// 攤開的圖庫裡，加總和門檻的那一行
 .eqt-gal__sum {
   display: flex;
   flex-wrap: wrap;

@@ -99,7 +99,7 @@ function url(): string {
         </aside>
 
         <div class="eqt-gal__main">
-          <!-- ⭐ 沿用畫廊頁那套 chip：原生的 gt / gtl / gtw 外框（EH 用它表示這個標籤
+          <!-- ⭐ 沿用圖庫頁那套 chip：原生的 gt / gtl / gtw 外框（EH 用它表示這個標籤
                確不確定），加上翻譯過的名稱。在你清單裡的另外帶權重 -->
           <div class="eqt-gal__tags">
             <TagChip
