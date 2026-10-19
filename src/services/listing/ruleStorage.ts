@@ -2,8 +2,8 @@
 
 import { parseColorInput } from '@/services/color'
 import {
-  createActions, GROUP_MODES, MAX_GROUP_DEPTH, normalizeTitlePrefix, RANGE_FIELDS, RANGE_OPS,
-  type ConditionGroup, type FixedActions, type FixedCondition,
+  COVER_BLUR_MODES, GROUP_MODES, MAX_GROUP_DEPTH, MAX_RADIUS, normalizePrefix, RANGE_FIELDS, RANGE_OPS,
+  type ConditionGroup, type CoverBlurMode, type FixedActions, type FixedCondition,
   type FixedRule, type GroupMode, type RangeCondition, type RangeField, type RangeOp,
 } from '@/services/listing/fixedRulePrototype'
 import { isGalleryCategory } from '@/services/listing/galleryCategory'
@@ -65,32 +65,48 @@ function decodeGroup(value: unknown, depth: number): ConditionGroup {
   }
 }
 
-function decodeBackground(value: unknown): string | null {
+function decodeColor(value: unknown): string | null {
   if (value === null) return null
   if (typeof value !== 'string' || parseColorInput(value, true) !== value) invalid()
   return value
 }
 
-function decodeTitlePrefix(value: unknown): string | null {
+function decodePrefix(value: unknown): string | null {
   if (value === null) return null
-  if (typeof value !== 'string' || normalizeTitlePrefix(value) !== value) invalid()
+  if (typeof value !== 'string' || normalizePrefix(value) !== value) invalid()
+  return value
+}
+
+function decodeAmount(value: unknown, max = 100): number {
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value > max) invalid()
+  return value
+}
+
+function decodeFlag(value: unknown): boolean {
+  if (typeof value !== 'boolean') invalid()
   return value
 }
 
 function decodeActions(actions: unknown): FixedActions {
-  if (!isObject(actions)) invalid()
-  for (const flag of ['blur', 'showName', 'strike', 'dim', 'hide'] as const) {
-    if (typeof actions[flag] !== 'boolean') invalid()
-  }
+  if (!isObject(actions) || !COVER_BLUR_MODES.includes(actions.blurMode as CoverBlurMode)) invalid()
   return {
-    ...createActions(),
-    background: decodeBackground(actions.background),
-    blur: actions.blur as boolean,
-    showName: actions.showName as boolean,
-    titlePrefix: decodeTitlePrefix(actions.titlePrefix),
-    strike: actions.strike as boolean,
-    dim: actions.dim as boolean,
-    hide: actions.hide as boolean,
+    background: decodeColor(actions.background),
+    dim: decodeAmount(actions.dim),
+    blur: decodeAmount(actions.blur),
+    blurMode: actions.blurMode as CoverBlurMode,
+    showName: decodeFlag(actions.showName),
+    prefix: decodePrefix(actions.prefix),
+    prefixColor: decodeColor(actions.prefixColor),
+    prefixBackground: decodeColor(actions.prefixBackground),
+    prefixRadius: decodeAmount(actions.prefixRadius, MAX_RADIUS),
+    titleColor: decodeColor(actions.titleColor),
+    titleBackground: decodeColor(actions.titleBackground),
+    titleRadius: decodeAmount(actions.titleRadius, MAX_RADIUS),
+    strike: decodeFlag(actions.strike),
+    underline: decodeFlag(actions.underline),
+    bold: decodeFlag(actions.bold),
+    italic: decodeFlag(actions.italic),
+    hide: decodeFlag(actions.hide),
   }
 }
 

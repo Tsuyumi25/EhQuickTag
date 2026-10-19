@@ -937,6 +937,20 @@
   gap: calc(var(--eqt-rule-page-gap) * 2) calc(var(--eqt-rule-page-gap) * 6);
 }
 
+// 強度滑桿：0 是不做，100 是最強；旁邊的數字固定寬度，拖的時候整排不會跟著晃
+.eqt-rule-page__amount { gap: var(--eqt-rule-page-gap); }
+.eqt-rule-page__slider {
+  width: calc(var(--eqt-row-h) * 5);
+  margin: 0;
+  accent-color: var(--eqt-green);
+}
+.eqt-rule-page__amount-value {
+  min-width: 3ch;
+  color: var(--eqt-text-hint);
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+}
+
 // 同一組互斥的選項
 .eqt-rule-page__choice { @include btn-split-group; }
 

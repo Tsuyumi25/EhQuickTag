@@ -10,7 +10,7 @@ import { probeArb, ruleArb } from './test-helpers'
 const probe = (rating: number | null, tags: string[] = [], pages: number | null = null, category: GalleryProbe['category'] = null, uploader: string | null = null): GalleryProbe =>
   ({ tags: new Set(tags), complete: true, rating, pages, category, uploader })
 
-function ruleWith(tag: string, background: string | null, blur: boolean, enabled = true, name = ''): FixedRule {
+function ruleWith(tag: string, background: string | null, blur: number, enabled = true, name = ''): FixedRule {
   const rule = createRule(1)
   rule.root.conditions.push(createTagCondition(tag))
   rule.name = name
@@ -20,35 +20,37 @@ function ruleWith(tag: string, background: string | null, blur: boolean, enabled
 }
 
 describe('resolveRuleEffects', () => {
-  it('背景由清單中位置最高、命中且有選背景的規則決定；模糊有一條要就做', () => {
+  it('背景由清單中位置最高、命中且有選背景的規則決定；模糊取最強的那條，方式跟著它', () => {
     const rules = [
-      ruleWith('female:a', null, false),
-      ruleWith('female:a', 'red', false),
-      ruleWith('female:a', 'green', true),
+      ruleWith('female:a', null, 0),
+      ruleWith('female:a', 'red', 30),
+      ruleWith('female:a', 'green', 80),
+      ruleWith('female:a', 'blue', 80),
     ]
-    expect(resolveRuleEffects(rules, probe(null, ['female:a']))).toMatchObject({ background: 'red', blur: true })
+    rules[2].actions.blurMode = 'mosaic'
+    expect(resolveRuleEffects(rules, probe(null, ['female:a']))).toMatchObject({ background: 'red', blur: 80, blurMode: 'mosaic' })
   })
 
   it('沒命中、停用或沒選背景的規則都讓給下面', () => {
     const rules = [
-      ruleWith('female:b', 'red', true),
-      ruleWith('female:a', 'green', true, false),
-      ruleWith('female:a', null, false),
-      ruleWith('female:a', 'blue', true),
+      ruleWith('female:b', 'red', 100),
+      ruleWith('female:a', 'green', 90, false),
+      ruleWith('female:a', null, 0),
+      ruleWith('female:a', 'blue', 20),
     ]
-    expect(resolveRuleEffects(rules, probe(null, ['female:a']))).toMatchObject({ background: 'blue', blur: true })
+    expect(resolveRuleEffects(rules, probe(null, ['female:a']))).toMatchObject({ background: 'blue', blur: 20 })
   })
 
   it('勾了顯示名稱的規則各貼一個名稱，照清單順序，帶著自己的背景色', () => {
-    const hidden = ruleWith('female:a', 'blue', false, true, 'hidden')
+    const hidden = ruleWith('female:a', 'blue', 0, true, 'hidden')
     hidden.actions.showName = false
     const rules = [
-      ruleWith('female:a', 'red', true, true, ' first '),
-      ruleWith('female:b', 'green', false, true, 'missed'),
-      ruleWith('female:a', null, false, false, 'disabled'),
+      ruleWith('female:a', 'red', 50, true, ' first '),
+      ruleWith('female:b', 'green', 0, true, 'missed'),
+      ruleWith('female:a', null, 0, false, 'disabled'),
       hidden,
-      ruleWith('female:a', null, false, true, '  '),
-      ruleWith('female:a', null, false, true, 'last'),
+      ruleWith('female:a', null, 0, true, '  '),
+      ruleWith('female:a', null, 0, true, 'last'),
     ]
     expect(resolveRuleEffects(rules, probe(null, ['female:a'])).labels).toEqual([
       { ruleId: rules[0].id, text: 'first', tone: 'red', evidence: { tags: ['female:a'], categories: [], uploaders: [], ranges: [] } },
@@ -56,18 +58,27 @@ describe('resolveRuleEffects', () => {
     ])
   })
 
-  it('標題前綴每條命中的規則各加一個；刪除線、淡化與隱藏有一條要就做', () => {
-    const top = ruleWith('female:a', null, false, true, 'top')
-    Object.assign(top.actions, { titlePrefix: 'first' })
-    const middle = ruleWith('female:a', 'red', false, true, 'middle')
-    Object.assign(middle.actions, { hide: true })
-    const bottom = ruleWith('female:a', null, false, true, 'bottom')
-    Object.assign(bottom.actions, { titlePrefix: 'second', dim: true, strike: true })
-    const missed = ruleWith('female:b', null, false, true, 'missed')
-    Object.assign(missed.actions, { titlePrefix: 'missed' })
+  it('標題前綴每條命中的規則各加一個，帶著自己的配色；淡化取最強，標題樣式與隱藏有一條要就做', () => {
+    const top = ruleWith('female:a', null, 0, true, 'top')
+    Object.assign(top.actions, { prefix: 'first', prefixColor: '#111111ff', dim: 30, bold: true })
+    const middle = ruleWith('female:a', 'red', 0, true, 'middle')
+    Object.assign(middle.actions, { hide: true, titleColor: '#222222ff' })
+    const bottom = ruleWith('female:a', null, 0, true, 'bottom')
+    Object.assign(bottom.actions, {
+      prefix: 'second', prefixBackground: '#333333ff', prefixRadius: 6, dim: 70, strike: true,
+      titleColor: '#444444ff', titleBackground: '#555555ff', titleRadius: 9,
+    })
+    const missed = ruleWith('female:b', null, 0, true, 'missed')
+    Object.assign(missed.actions, { prefix: 'missed', dim: 100, italic: true })
     const effects = resolveRuleEffects([top, missed, middle, bottom], probe(null, ['female:a']))
-    expect(effects).toMatchObject({ strike: true, dim: true, hide: true })
-    expect(effects.prefixes.map(prefix => prefix.text)).toEqual(['first', 'second'])
+    expect(effects).toMatchObject({ dim: 70, hide: true })
+    expect(effects.title).toEqual({
+      color: '#222222ff', background: '#555555ff', radius: 9, strike: true, underline: false, bold: true, italic: false,
+    })
+    expect(effects.prefixes.map(({ text, color, background, radius }) => ({ text, color, background, radius }))).toEqual([
+      { text: 'first', color: '#111111ff', background: null, radius: 3 },
+      { text: 'second', color: null, background: '#333333ff', radius: 6 },
+    ])
   })
 })
 
@@ -252,8 +263,8 @@ describe('duplicateRule', () => {
     const copy = duplicateRule(rule)
     const group = copy.root.conditions[0]
     if (group.kind === 'group') group.conditions.push(createTagCondition('female:b'))
-    copy.actions.blur = true
+    copy.actions.blur = 60
     expect((rule.root.conditions[0] as ConditionGroup).conditions).toHaveLength(1)
-    expect(rule.actions.blur).toBe(false)
+    expect(rule.actions.blur).toBe(0)
   })
 })

@@ -13,6 +13,8 @@ export interface PrototypeListingItem {
   labelAnchor: HTMLElement | null
   /** 標題文字最前面：標題前綴 */
   titleAnchor: HTMLElement | null
+  /** 標題文字包在這一層裡：標題的樣式只套在它身上，前綴是它的兄弟，不會被刪除線、背景之類波及 */
+  titleText: HTMLElement | null
   tags: PrototypeListingTag[]
   tagSet: ReadonlySet<string>
   complete: boolean
@@ -44,6 +46,7 @@ export interface ListingChip {
 // EhViewRefined 畫的上傳者標籤也長得像 .gt，但它不是網站的標籤，不能算進規則的標籤裡
 const SITE_TAGS = ':is(.gt, .gtl, .gtw):not(.evr-uploader-tag)'
 const UPLOADER_NAMESPACE = 'uploader'
+const TITLE_TEXT = 'eqt-rule-prototype__title-text'
 
 // 頁數沒有自己的 class：原生五種版型與 EhViewRefined 模擬的版型，都把它放在評分 .ir 後面的
 // 兄弟 div，只有 Extended 中間隔著上傳者那格（含 /uploader/ 連結），Thumbnail 後面接著 .gldown。
@@ -110,6 +113,10 @@ export function useRulePrototypeHost(options: { tagsEnabled: () => boolean }) {
     }
     record.item.labelAnchor?.remove()
     record.item.titleAnchor?.remove()
+    const wrap = record.item.titleText
+    if (wrap?.parentNode) {
+      wrap.replaceWith(...wrap.childNodes)
+    }
     const root = record.item.root
     for (const name of [...root.classList]) {
       if (name.startsWith('eqt-rule-prototype__gallery')) root.classList.remove(name)
@@ -160,7 +167,8 @@ export function useRulePrototypeHost(options: { tagsEnabled: () => boolean }) {
       const signature = JSON.stringify([complete, stars, pages, category, uploader, tags])
       let record = records.get(root)
       const detached = (anchor: HTMLElement | null) => !!anchor && !root.contains(anchor)
-      if (record && (detached(record.item.labelAnchor) || detached(record.item.titleAnchor) || record.signature !== signature)) {
+      if (record && (detached(record.item.labelAnchor) || detached(record.item.titleAnchor) || detached(record.item.titleText)
+        || record.signature !== signature)) {
         restore(record)
         records.delete(root)
         record = undefined
@@ -188,10 +196,19 @@ export function useRulePrototypeHost(options: { tagsEnabled: () => boolean }) {
           titleAnchor.setAttribute('translate', 'no')
           titleText.prepend(titleAnchor)
         }
+        // 只包標題本身的文字；其他腳本插在標題裡的東西（例如序號）留在外面，不吃標題的樣式
+        let titleWrap: HTMLElement | null = null
+        const words = titleText ? [...titleText.childNodes].filter(node => node instanceof Text && node.data.trim()) : []
+        if (words.length) {
+          titleWrap = document.createElement('span')
+          titleWrap.className = TITLE_TEXT
+          words[0].before(titleWrap)
+          titleWrap.append(...words)
+        }
         record = {
           signature,
           item: {
-            id: nextId++, root, labelAnchor, titleAnchor,
+            id: nextId++, root, labelAnchor, titleAnchor, titleText: titleWrap,
             tags, tagSet: names, complete, ...stars, pages, category, uploader, title, href: link.href,
           },
         }
@@ -229,7 +246,7 @@ export function useRulePrototypeHost(options: { tagsEnabled: () => boolean }) {
   }
 
   // chip 裡面的變動是插件自己畫的（文字、class），不必為它再掃一次
-  const OWN_NODES = `.eqt-rule-prototype, .eqt-rule-prototype__mount, .${CHIP_CLASS}`
+  const OWN_NODES = `.eqt-rule-prototype, .eqt-rule-prototype__mount, .${TITLE_TEXT}, .${CHIP_CLASS}`
   function schedule(mutations: MutationRecord[]) {
     const relevant = mutations.some(mutation => {
       const target = mutation.target instanceof Element ? mutation.target : mutation.target.parentElement

@@ -10,6 +10,7 @@ import { useDragSelect } from '@/composables/useDragSelect'
 import type { ChipRef } from '@/services/gallery/dragSelectMachine'
 import { useRulePrototypeHost, type ListingChip } from '@/composables/useRulePrototypeHost'
 import { CHIP_CLASS, installChipIcons, myTagsLayer, paint, type ChipPaint } from '@/services/listing/listingChipDom'
+import { CARD_MODIFIERS, CARD_VARS, cardStyle, mosaicFiltersSvg, prefixStyle } from '@/services/listing/ruleCardStyle'
 import { chipBadges, myTagsVars } from '@/services/mytags/chipBadges'
 import { useMyTagsColors } from '@/composables/useMyTagsColors'
 import { useFixedRuleStore } from '@/composables/useFixedRuleStore'
@@ -249,27 +250,20 @@ watch(labelTargets, targets => {
   if (whyAnchor.value && !targets.some(target => target.anchor.contains(whyAnchor.value))) hideWhy()
 })
 
-const MODIFIERS = ['background', 'blur', 'dim', 'strike', 'hidden'] as const
-type Modifier = (typeof MODIFIERS)[number]
-
 function clearEffects(item: { root: HTMLElement }) {
-  item.root.classList.remove(...MODIFIERS.map(name => `eqt-rule-prototype__gallery--${name}`))
-  item.root.style.removeProperty('--eqt-rule-prototype-background')
+  item.root.classList.remove(...CARD_MODIFIERS.map(name => `eqt-rule-prototype__gallery--${name}`))
+  for (const name of CARD_VARS) item.root.style.removeProperty(name)
 }
 
 watchEffect(() => {
   for (const item of items.value) {
-    const effect = effects.value.get(item.id)!
-    const active: Record<Modifier, boolean> = {
-      'background': !!effect.background,
-      'blur': effect.blur,
-      'dim': effect.dim,
-      'strike': effect.strike,
-      'hidden': effect.hide,
+    const { modifiers, vars } = cardStyle(effects.value.get(item.id)!)
+    for (const name of CARD_MODIFIERS) item.root.classList.toggle(`eqt-rule-prototype__gallery--${name}`, modifiers[name])
+    for (const name of CARD_VARS) {
+      const value = vars[name]
+      if (value === null) item.root.style.removeProperty(name)
+      else if (item.root.style.getPropertyValue(name) !== value) item.root.style.setProperty(name, value)
     }
-    for (const name of MODIFIERS) item.root.classList.toggle(`eqt-rule-prototype__gallery--${name}`, active[name])
-    if (effect.background) item.root.style.setProperty('--eqt-rule-prototype-background', effect.background)
-    else item.root.style.removeProperty('--eqt-rule-prototype-background')
   }
 })
 watch(rulesError, key => {
@@ -408,7 +402,15 @@ function svgOf(icon: typeof Eye): string {
   return svg
 }
 
+// 馬賽克的 SVG 濾鏡要在文件裡才能被 CSS 的 filter: url(#…) 引用
+let mosaicFilters: HTMLElement | null = null
+
 onMounted(() => {
+  mosaicFilters = document.createElement('div')
+  mosaicFilters.style.cssText = 'position: absolute; width: 0; height: 0; overflow: hidden'
+  mosaicFilters.setAttribute('aria-hidden', 'true')
+  mosaicFilters.innerHTML = mosaicFiltersSvg()
+  document.body.append(mosaicFilters)
   installChipIcons({ eye: svgOf(Eye), ban: svgOf(Ban), user: svgOf(UserRound) })
   document.addEventListener('keydown', keydown)
   listenTagEvents(tagSelectEnabled.value)
@@ -417,6 +419,7 @@ onBeforeUnmount(() => {
   document.removeEventListener('keydown', keydown)
   listenTagEvents(false)
   for (const item of items.value) clearEffects(item)
+  mosaicFilters?.remove()
 })
 </script>
 
@@ -433,7 +436,7 @@ onBeforeUnmount(() => {
 
   <Teleport v-for="target in prefixTargets" :key="target.id" :to="target.anchor">
     <span
-      v-for="prefix in target.prefixes" :key="prefix.ruleId" class="eqt-rule-prototype__prefix" :style="toneStyle(prefix.tone)"
+      v-for="prefix in target.prefixes" :key="prefix.ruleId" class="eqt-rule-prototype__prefix" :style="prefixStyle(prefix)"
     >{{ prefix.text }}</span>
   </Teleport>
 

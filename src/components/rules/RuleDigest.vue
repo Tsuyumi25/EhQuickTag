@@ -59,7 +59,7 @@ function copyDigest() {
         </div>
         <div class="eqt-rule-page__digest-row eqt-rule-page__digest-row--action">
           <dt>{{ t('rulePrototype.actions') }}</dt>
-          <dd><RuleActionSummary class="eqt-rule-page__digest-action" v-bind="rule.actions" verbose /></dd>
+          <dd><RuleActionSummary class="eqt-rule-page__digest-action" :actions="rule.actions" verbose /></dd>
         </div>
       </dl>
 

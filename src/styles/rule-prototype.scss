@@ -9,8 +9,6 @@
   --eqt-rule-prototype-dock-clearance: calc(
     var(--eqt-rule-prototype-gap) * 4 + var(--eqt-border-width) * 2 + var(--eqt-rule-prototype-gap) * 2 + var(--eqt-row-h)
   );
-  --eqt-rule-prototype-blur: calc(var(--eqt-gallery-chip-content-gap) * 4);
-  --eqt-rule-prototype-faded: 0.35;
 }
 
 .eqt-rule-prototype,
@@ -271,12 +269,25 @@ tr.eqt-rule-prototype__gallery--background > td {
   background-image: linear-gradient(var(--eqt-rule-prototype-background), var(--eqt-rule-prototype-background)) !important;
 }
 .eqt-rule-prototype__gallery--blur {
-  .glthumb:not(:hover) img, .gl3t:not(:hover) img, .gl1e:not(:hover) img { filter: blur(var(--eqt-rule-prototype-blur)) !important; }
+  .glthumb:not(:hover) img, .gl3t:not(:hover) img, .gl1e:not(:hover) img { filter: var(--eqt-rule-prototype-cover-filter) !important; }
 }
 
-.eqt-rule-prototype__gallery--dim { opacity: var(--eqt-rule-prototype-faded); }
-.eqt-rule-prototype__gallery--strike .glink { text-decoration: line-through; }
+.eqt-rule-prototype__gallery--dim { opacity: var(--eqt-rule-prototype-opacity); }
 .eqt-rule-prototype__gallery--hidden { display: none !important; }
+
+// 標題的樣式只套在包住標題文字的那層：前綴是它的兄弟，刪除線、背景都不會延伸過去。
+// 沒有規則指定時每一項都回到標題原本的樣子
+.eqt-rule-prototype__title-text {
+  color: var(--eqt-rule-prototype-title-color, inherit);
+  background: var(--eqt-rule-prototype-title-background, none);
+  border-radius: var(--eqt-rule-prototype-title-radius, 0);
+  text-decoration-line: var(--eqt-rule-prototype-title-decoration, none);
+  font-weight: var(--eqt-rule-prototype-title-weight, inherit);
+  font-style: var(--eqt-rule-prototype-title-style, inherit);
+  padding-inline: var(--eqt-rule-prototype-title-pad, 0);
+  // 標題換行時每一行都畫到背景與圓角
+  box-decoration-break: clone;
+}
 
 // 規則的顏色：背景色帶透明度，色條與文字要用不透明的版本才看得出來
 .eqt-rule-prototype__label,
@@ -297,8 +308,14 @@ tr.eqt-rule-prototype__gallery--background > td {
 }
 .eqt-rule-prototype__prefix {
   margin-inline-end: 0.3em;
-  color: color-mix(in srgb, var(--eqt-rule-prototype-solid) 65%, currentColor);
+  padding-inline: var(--eqt-rule-prototype-prefix-pad, 0);
+  // 沒指定文字色時沿用規則的背景色，沒背景色就是框線色
+  color: var(--eqt-rule-prototype-prefix-color, color-mix(in srgb, var(--eqt-rule-prototype-solid) 65%, currentColor));
+  background: var(--eqt-rule-prototype-prefix-background, none);
+  border-radius: var(--eqt-rule-prototype-prefix-radius, 0);
   font-weight: bold;
+  font-style: normal;
+  box-decoration-break: clone;
 }
 
 // 貼在規則名稱下方的浮層；不接滑鼠，移開名稱就收起來

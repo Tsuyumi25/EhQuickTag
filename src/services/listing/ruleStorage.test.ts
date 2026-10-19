@@ -8,7 +8,10 @@ const RED = '#cc000080'
 const actions: FixedActions = { ...createActions(), background: RED, showName: true }
 // 每一欄都填上非預設值，確認每一欄都存得回來
 const fullActions: FixedActions = {
-  background: RED, blur: true, showName: true, titlePrefix: 'some prefix', strike: true, dim: true, hide: true,
+  background: RED, dim: 40, blur: 70, blurMode: 'mosaic', showName: true,
+  prefix: 'some prefix', prefixColor: '#112233ff', prefixBackground: '#445566cc', prefixRadius: 5,
+  titleColor: '#778899ff', titleBackground: '#aabbcc80', titleRadius: 12,
+  strike: true, underline: true, bold: true, italic: true, hide: true,
 }
 const tag = (id: number, name: string, exclude = false) => ({ id, kind: 'tag', tag: name, exclude })
 
@@ -39,9 +42,14 @@ describe('decodeRules', () => {
     expect(() => decodeRules(ruleWith({ id: 2, kind: 'group', mode: 'all', conditions: [tag(3, 'female:a')] }))).toThrow()
     expect(() => decodeRules(ruleWith(deep(1), null))).toThrow()
     expect(() => decodeRules(ruleWith(deep(1), { ...actions, background: 'var(--eqt-status-or)' }))).toThrow()
-    expect(() => decodeRules(ruleWith(deep(1), { ...actions, blur: 'blur' }))).toThrow()
-    expect(() => decodeRules(ruleWith(deep(1), { ...actions, titlePrefix: ' padded ' }))).toThrow()
-    expect(() => decodeRules(ruleWith(deep(1), { ...actions, titlePrefix: true }))).toThrow()
+    expect(() => decodeRules(ruleWith(deep(1), { ...actions, blur: true }))).toThrow()
+    expect(() => decodeRules(ruleWith(deep(1), { ...actions, blur: 101 }))).toThrow()
+    expect(() => decodeRules(ruleWith(deep(1), { ...actions, dim: 12.5 }))).toThrow()
+    expect(() => decodeRules(ruleWith(deep(1), { ...actions, blurMode: 'pixel' }))).toThrow()
+    expect(() => decodeRules(ruleWith(deep(1), { ...actions, prefixRadius: 13 }))).toThrow()
+    expect(() => decodeRules(ruleWith(deep(1), { ...actions, titleColor: 'red' }))).toThrow()
+    expect(() => decodeRules(ruleWith(deep(1), { ...actions, prefix: ' padded ' }))).toThrow()
+    expect(() => decodeRules(ruleWith(deep(1), { ...actions, prefix: true }))).toThrow()
     expect(() => decodeRules(ruleWith(deep(1), { ...actions, hide: 'yes' }))).toThrow()
     expect(() => decodeRules(ruleWith({ id: 2, kind: 'group', mode: 'all', negate: false, conditions: [{ id: 3, kind: 'category', category: 'hentai', exclude: false }] }))).toThrow()
     const { strike: _, ...missingFlag } = actions

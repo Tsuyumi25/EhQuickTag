@@ -3,6 +3,7 @@
 
 import type { FixedActions, FixedRule } from '@/services/listing/fixedRulePrototype'
 import { CATEGORY_LABELS } from './galleryCategory'
+import { actionItems } from './ruleActionItems'
 import { formatAverage, formatRange, rangeTerms, type DigestNote, type DigestTerm, type RuleDigest } from './ruleDigest'
 
 export type Translate = (key: string, params?: Record<string, string | number>) => string
@@ -37,14 +38,14 @@ export function termMarkdown(tr: Translate, term: DigestTerm): string {
 }
 
 export function actionsMarkdown(tr: Translate, actions: FixedActions): string {
-  if (actions.hide) return tr('rulePagePrototype.hideShort')
-  const parts: string[] = []
-  if (actions.background) parts.push(tr('rulePagePrototype.backgroundIs', { color: code(actions.background) }))
-  if (actions.blur) parts.push(tr('rulePrototype.blur'))
-  if (actions.showName) parts.push(tr('rulePagePrototype.showNameShort'))
-  if (actions.titlePrefix) parts.push(tr('rulePagePrototype.titlePrefixIs', { prefix: code(actions.titlePrefix) }))
-  if (actions.strike) parts.push(tr('rulePagePrototype.strikeShort'))
-  if (actions.dim) parts.push(tr('rulePagePrototype.dimShort'))
+  const parts = actionItems(actions).map(item => {
+    const { color, prefix, amount } = item.params ?? {}
+    return tr(item.message, {
+      ...(color === undefined ? {} : { color: code(color) }),
+      ...(prefix === undefined ? {} : { prefix: code(prefix) }),
+      ...(amount === undefined ? {} : { amount }),
+    })
+  })
   return parts.length ? parts.join(tr('rulePagePrototype.digest.clauseSep')) : tr('rulePagePrototype.noAction')
 }
 

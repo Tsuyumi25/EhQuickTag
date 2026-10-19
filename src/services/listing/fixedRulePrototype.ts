@@ -102,16 +102,32 @@ export interface ConditionGroup {
 
 export type FixedConditionItem = FixedCondition | ConditionGroup
 
+export type CoverBlurMode = 'blur' | 'mosaic'
+export const COVER_BLUR_MODES: readonly CoverBlurMode[] = ['blur', 'mosaic']
+/** 圓角的上限（px）；比字還高就整個變成膠囊，再大也看不出差別 */
+export const MAX_RADIUS = 12
+
+// 顏色都是 #rrggbbaa，null 是不指定；強度都是 0–100，0 是不做
 export interface FixedActions {
-  /** #rrggbbaa；透明度直接決定疊在圖庫原本底色上有多濃 */
+  /** 卡片背景；透明度直接決定疊在圖庫原本底色上有多濃 */
   background: string | null
-  blur: boolean
+  dim: number
+  blur: number
+  blurMode: CoverBlurMode
   /** 命中時把規則名稱貼在縮圖模式的標籤列上方 */
   showName: boolean
-  /** 加在標題最前面的自填文字 */
-  titlePrefix: string | null
+  /** 加在標題最前面的自填文字；它自己的配色跟標題的分開，標題的效果不會套到前綴上 */
+  prefix: string | null
+  prefixColor: string | null
+  prefixBackground: string | null
+  prefixRadius: number
+  titleColor: string | null
+  titleBackground: string | null
+  titleRadius: number
   strike: boolean
-  dim: boolean
+  underline: boolean
+  bold: boolean
+  italic: boolean
   /** 從列表上拿掉這些圖庫；開著時其他動作都不作用，但設定留著，關掉隱藏就回來 */
   hide: boolean
 }
@@ -201,11 +217,16 @@ export function conditionRange(condition: RangeCondition): ValueRange {
 
 /** 背景沒選代表「沒指定」，讓給下一條規則 */
 export function createActions(): FixedActions {
-  return { background: null, blur: false, showName: false, titlePrefix: null, strike: false, dim: false, hide: false }
+  return {
+    background: null, dim: 0, blur: 0, blurMode: 'blur', showName: false,
+    prefix: null, prefixColor: null, prefixBackground: null, prefixRadius: 3,
+    titleColor: null, titleBackground: null, titleRadius: 3,
+    strike: false, underline: false, bold: false, italic: false, hide: false,
+  }
 }
 
 /** 前後的空白沒有意義，標題本身會跟前綴隔開；只剩空白就是不加 */
-export function normalizeTitlePrefix(raw: string): string | null {
+export function normalizePrefix(raw: string): string | null {
   return raw.trim() || null
 }
 
@@ -378,24 +399,45 @@ export interface RuleMark {
   tone: string | null
 }
 
+export interface PrefixMark extends RuleMark {
+  color: string | null
+  background: string | null
+  radius: number
+}
+
+export interface TitleEffects {
+  color: string | null
+  background: string | null
+  /** 跟著決定背景的那條規則，沒有背景時看不出圓角 */
+  radius: number
+  strike: boolean
+  underline: boolean
+  bold: boolean
+  italic: boolean
+}
+
 export interface RuleEffects {
   background: string | null
-  blur: boolean
+  dim: number
+  blur: number
+  blurMode: CoverBlurMode
   /** ruleId 讓點標示時能打開那一條；evidence 是滑鼠移上去看到的命中原因 */
   labels: (RuleMark & { evidence: RuleEvidence })[]
-  prefixes: RuleMark[]
-  strike: boolean
-  dim: boolean
+  prefixes: PrefixMark[]
+  title: TitleEffects
   hide: boolean
 }
 
 /**
- * 背景由清單裡位置最高、命中且有選背景的規則決定；沒選背景讓給下面的規則。
- * 標示與標題前綴不互相搶：每條命中的規則各加一個，照清單順序排。
- * 模糊、刪除線、淡化與隱藏只要有一條命中的規則要就做
+ * 顏色（卡片背景、標題文字與背景）由清單裡位置最高、命中且有指定的規則決定，沒指定讓給下面的規則。
+ * 標示與標題前綴不互相搶：每條命中的規則各加一個，照清單順序排，配色各自帶著。
+ * 強度取命中規則裡最強的那條，模糊的方式跟著它；刪除線這類樣式與隱藏只要有一條要就做
  */
 export function resolveRuleEffects(rules: readonly FixedRule[], probe: GalleryProbe): RuleEffects {
-  const effects: RuleEffects = { background: null, blur: false, labels: [], prefixes: [], strike: false, dim: false, hide: false }
+  const effects: RuleEffects = {
+    background: null, dim: 0, blur: 0, blurMode: 'blur', labels: [], prefixes: [], hide: false,
+    title: { color: null, background: null, radius: 0, strike: false, underline: false, bold: false, italic: false },
+  }
   for (const rule of rules) {
     if (!rule.enabled || evaluateRule(rule, probe) !== true) continue
     const { actions } = rule
@@ -403,10 +445,27 @@ export function resolveRuleEffects(rules: readonly FixedRule[], probe: GalleryPr
     const tone = actions.background
     effects.background ??= tone
     if (actions.showName && name) effects.labels.push({ ruleId: rule.id, text: name, tone, evidence: ruleEvidence(rule, probe) })
-    if (actions.titlePrefix) effects.prefixes.push({ ruleId: rule.id, text: actions.titlePrefix, tone })
-    effects.blur ||= actions.blur
-    effects.strike ||= actions.strike
-    effects.dim ||= actions.dim
+    if (actions.prefix) {
+      effects.prefixes.push({
+        ruleId: rule.id, text: actions.prefix, tone,
+        color: actions.prefixColor, background: actions.prefixBackground, radius: actions.prefixRadius,
+      })
+    }
+    effects.dim = Math.max(effects.dim, actions.dim)
+    if (actions.blur > effects.blur) {
+      effects.blur = actions.blur
+      effects.blurMode = actions.blurMode
+    }
+    const { title } = effects
+    title.color ??= actions.titleColor
+    if (title.background === null && actions.titleBackground !== null) {
+      title.background = actions.titleBackground
+      title.radius = actions.titleRadius
+    }
+    title.strike ||= actions.strike
+    title.underline ||= actions.underline
+    title.bold ||= actions.bold
+    title.italic ||= actions.italic
     effects.hide ||= actions.hide
   }
   return effects

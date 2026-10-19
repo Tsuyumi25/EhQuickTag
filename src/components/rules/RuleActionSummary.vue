@@ -1,30 +1,21 @@
 <script setup lang="ts">
 import { computed, type Component } from 'vue'
-import { EyeClosed, EyeOff, Strikethrough, SunDim, Tag, Type } from '@lucide/vue'
+import { Bold, EyeClosed, EyeOff, Italic, Strikethrough, SunDim, Tag, Type, Underline } from '@lucide/vue'
 import { t } from '@/composables/useI18n'
 import type { FixedActions } from '@/services/listing/fixedRulePrototype'
+import { actionItems, type ActionItemKey } from '@/services/listing/ruleActionItems'
 
 // verbose：情境裡要讀得出做了什麼，每一項都寫成字；空間小的地方只放圖示
-const props = defineProps<FixedActions & { verbose?: boolean }>()
+const props = defineProps<{ actions: FixedActions; verbose?: boolean }>()
 
-type Item = { key: string; text: string; icon?: Component; swatch?: string }
+const ICONS: Partial<Record<ActionItemKey, Component>> = {
+  hide: EyeClosed, dim: SunDim, blur: EyeOff, showName: Tag, prefix: Type,
+  bold: Bold, italic: Italic, underline: Underline, strike: Strikethrough,
+}
 
-// 隱藏時其他動作都不作用，摘要只寫隱藏
-const items = computed(() => {
-  if (props.hide) return [{ key: 'hide', text: t('rulePagePrototype.hideShort'), icon: EyeClosed }] as Item[]
-  const list: Item[] = []
-  if (props.background) {
-    list.push({ key: 'background', text: t('rulePagePrototype.backgroundIs', { color: props.background }), swatch: props.background })
-  }
-  if (props.blur) list.push({ key: 'blur', text: t('rulePrototype.blur'), icon: EyeOff })
-  if (props.showName) list.push({ key: 'showName', text: t('rulePagePrototype.showNameShort'), icon: Tag })
-  if (props.titlePrefix) {
-    list.push({ key: 'titlePrefix', text: t('rulePagePrototype.titlePrefixIs', { prefix: props.titlePrefix }), icon: Type })
-  }
-  if (props.strike) list.push({ key: 'strike', text: t('rulePagePrototype.strikeShort'), icon: Strikethrough })
-  if (props.dim) list.push({ key: 'dim', text: t('rulePagePrototype.dimShort'), icon: SunDim })
-  return list
-})
+const items = computed(() => actionItems(props.actions).map(item => ({
+  key: item.key, text: t(item.message, item.params), icon: ICONS[item.key], swatch: item.swatch,
+})))
 </script>
 
 <template>

@@ -1,37 +1,31 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { CircleQuestionMark, EyeClosed, Paintbrush } from '@lucide/vue'
+import { Bold, CircleQuestionMark, EyeClosed, Italic, Paintbrush, Strikethrough, Underline } from '@lucide/vue'
 import AnchoredPopover from '@/components/AnchoredPopover.vue'
-import LineColorSwatch from '@/components/LineColorSwatch.vue'
+import EqtNumberField from '@/components/EqtNumberField.vue'
+import RuleColorField from '@/components/rules/RuleColorField.vue'
 import { t } from '@/composables/useI18n'
-import { parseColorInput } from '@/services/color'
-import { normalizeTitlePrefix, type FixedActions } from '@/services/listing/fixedRulePrototype'
+import { COVER_BLUR_MODES, MAX_RADIUS, normalizePrefix, type FixedActions } from '@/services/listing/fixedRulePrototype'
 
 const props = defineProps<{ actions: FixedActions }>()
 
-// 跟 My Tags 的標籤顏色同一組：色盤選、或直接貼色碼；色碼框留空就是不上色
-function onHexInput(event: Event) {
-  const raw = (event.target as HTMLInputElement).value
-  if (!raw.trim()) props.actions.background = null
-  else {
-    const color = parseColorInput(raw, true)
-    if (color) props.actions.background = color
-  }
-}
-
-function resetInput(event: Event, value: string | null) {
-  (event.target as HTMLInputElement).value = value ?? ''
-}
-
 // 輸入法組字中間的半成品也會觸發 input，等離開欄位再收
-function setTitlePrefix(event: Event) {
-  props.actions.titlePrefix = normalizeTitlePrefix((event.target as HTMLInputElement).value)
-  resetInput(event, props.actions.titlePrefix)
+function setPrefix(event: Event) {
+  const input = event.target as HTMLInputElement
+  props.actions.prefix = normalizePrefix(input.value)
+  input.value = props.actions.prefix ?? ''
 }
 
-function toggle(key: 'blur' | 'strike' | 'showName', event: Event) {
-  props.actions[key] = (event.target as HTMLInputElement).checked
+function setAmount(key: 'dim' | 'blur', event: Event) {
+  props.actions[key] = Number((event.target as HTMLInputElement).value)
 }
+
+const TITLE_STYLES = [
+  { key: 'bold', icon: Bold, label: 'rulePagePrototype.boldShort' },
+  { key: 'italic', icon: Italic, label: 'rulePagePrototype.italicShort' },
+  { key: 'underline', icon: Underline, label: 'rulePagePrototype.underlineShort' },
+  { key: 'strike', icon: Strikethrough, label: 'rulePagePrototype.strikeShort' },
+] as const
 
 const hideHelpAnchor = ref<HTMLElement | null>(null)
 const hideHelpOpen = ref(false)
@@ -44,60 +38,71 @@ const hideHelpOpen = ref(false)
   <fieldset class="eqt-rule-page__actions" :disabled="actions.hide">
     <span class="eqt-rule-page__action-target">{{ t('rulePagePrototype.target.card') }}</span>
     <div class="eqt-rule-page__action-row">
-      <span class="eqt-rule-page__field">
-        <span>{{ t('rulePagePrototype.background') }}</span>
-        <span class="eqt-rule-page__color-control">
-          <LineColorSwatch
-            class="eqt-rule-page__color-swatch"
-            :model-value="actions.background ?? undefined"
-            :style="actions.background ? { '--eqt-rule-page-color-preview': actions.background } : undefined"
-            :title="t('rulePagePrototype.background')"
-            @update:model-value="actions.background = $event ?? null"
-          />
-          <input
-            class="eqt-rule-page__input eqt-rule-page__color" type="text" :value="actions.background ?? ''"
-            placeholder="#rrggbbaa" maxlength="9" spellcheck="false" autocomplete="off"
-            :aria-label="t('rulePagePrototype.background')"
-            @input="onHexInput" @blur="resetInput($event, actions.background)" @keydown.enter.prevent="($event.target as HTMLInputElement).blur()"
-          >
-        </span>
-      </span>
-      <span class="eqt-rule-page__choice" role="group" :aria-label="t('rulePagePrototype.visibility')">
-        <button
-          v-for="dim in [false, true]" :key="String(dim)" type="button" class="eqt-rule-page__choice-item"
-          :aria-pressed="actions.dim === dim" @click="actions.dim = dim"
-        >{{ t(dim ? 'rulePagePrototype.dimShort' : 'rulePagePrototype.normalShort') }}</button>
-      </span>
+      <RuleColorField v-model="actions.background" :label="t('rulePagePrototype.background')" />
+      <label class="eqt-rule-page__field eqt-rule-page__amount">
+        <span>{{ t('rulePagePrototype.dimShort') }}</span>
+        <input class="eqt-rule-page__slider" type="range" min="0" max="100" step="1" :value="actions.dim" @input="setAmount('dim', $event)">
+        <span class="eqt-rule-page__amount-value">{{ actions.dim }}</span>
+      </label>
     </div>
 
     <span class="eqt-rule-page__action-target">{{ t('rulePagePrototype.target.cover') }}</span>
     <div class="eqt-rule-page__action-row">
-      <label class="eqt-rule-page__enabled">
-        <input type="checkbox" :checked="actions.blur" @change="toggle('blur', $event)" />
-        {{ t('rulePagePrototype.blurShort') }}
-      </label>
+      <span class="eqt-rule-page__choice" role="group" :aria-label="t('rulePagePrototype.target.cover')">
+        <button
+          v-for="mode in COVER_BLUR_MODES" :key="mode" type="button" class="eqt-rule-page__choice-item"
+          :aria-pressed="actions.blurMode === mode" @click="actions.blurMode = mode"
+        >{{ t(mode === 'blur' ? 'rulePagePrototype.blurShort' : 'rulePagePrototype.mosaicShort') }}</button>
+      </span>
+      <span class="eqt-rule-page__field eqt-rule-page__amount">
+        <input
+          class="eqt-rule-page__slider" type="range" min="0" max="100" step="1" :value="actions.blur"
+          :aria-label="t(actions.blurMode === 'blur' ? 'rulePagePrototype.blurShort' : 'rulePagePrototype.mosaicShort')"
+          @input="setAmount('blur', $event)"
+        >
+        <span class="eqt-rule-page__amount-value">{{ actions.blur }}</span>
+      </span>
     </div>
 
-    <span class="eqt-rule-page__action-target">{{ t('rulePagePrototype.target.title') }}</span>
+    <span class="eqt-rule-page__action-target">{{ t('rulePagePrototype.target.prefix') }}</span>
     <div class="eqt-rule-page__action-row">
       <label class="eqt-rule-page__field" :title="t('rulePagePrototype.titlePrefixHint')">
         <span>{{ t('rulePagePrototype.prefix') }}</span>
         <input
-          class="eqt-rule-page__input" type="text" :value="actions.titlePrefix ?? ''" autocomplete="off"
+          class="eqt-rule-page__input" type="text" :value="actions.prefix ?? ''" autocomplete="off"
           :aria-label="t('rulePagePrototype.titlePrefix')"
-          @change="setTitlePrefix" @keydown.enter.prevent="($event.target as HTMLInputElement).blur()"
+          @change="setPrefix" @keydown.enter.prevent="($event.target as HTMLInputElement).blur()"
         >
       </label>
-      <label class="eqt-rule-page__enabled">
-        <input type="checkbox" :checked="actions.strike" @change="toggle('strike', $event)" />
-        {{ t('rulePagePrototype.strikeShort') }}
-      </label>
+      <RuleColorField v-model="actions.prefixColor" :label="t('rulePagePrototype.textColor')" />
+      <RuleColorField v-model="actions.prefixBackground" :label="t('rulePagePrototype.background')" />
+      <span class="eqt-rule-page__field">
+        <span>{{ t('rulePagePrototype.radius') }}</span>
+        <EqtNumberField v-model="actions.prefixRadius" :min="0" :max="MAX_RADIUS" :label="t('rulePagePrototype.radius')" />
+      </span>
+    </div>
+
+    <span class="eqt-rule-page__action-target">{{ t('rulePagePrototype.target.title') }}</span>
+    <div class="eqt-rule-page__action-row">
+      <RuleColorField v-model="actions.titleColor" :label="t('rulePagePrototype.textColor')" />
+      <RuleColorField v-model="actions.titleBackground" :label="t('rulePagePrototype.background')" />
+      <span class="eqt-rule-page__field">
+        <span>{{ t('rulePagePrototype.radius') }}</span>
+        <EqtNumberField v-model="actions.titleRadius" :min="0" :max="MAX_RADIUS" :label="t('rulePagePrototype.radius')" />
+      </span>
+      <span class="eqt-rule-page__choice" role="group" :aria-label="t('rulePagePrototype.target.title')">
+        <button
+          v-for="style in TITLE_STYLES" :key="style.key" type="button" class="eqt-rule-page__choice-item"
+          :aria-pressed="actions[style.key]" :aria-label="t(style.label)" :title="t(style.label)"
+          @click="actions[style.key] = !actions[style.key]"
+        ><component :is="style.icon" class="eqt-rule-page__icon" /></button>
+      </span>
     </div>
 
     <span class="eqt-rule-page__action-target">{{ t('rulePagePrototype.target.tags') }}</span>
     <div class="eqt-rule-page__action-row">
       <label class="eqt-rule-page__enabled" :title="t('rulePagePrototype.showNameHint')">
-        <input type="checkbox" :checked="actions.showName" @change="toggle('showName', $event)" />
+        <input type="checkbox" :checked="actions.showName" @change="actions.showName = ($event.target as HTMLInputElement).checked" />
         {{ t('rulePagePrototype.showName') }}
       </label>
     </div>
