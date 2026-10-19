@@ -18,7 +18,6 @@ export default {
   'rulePage.helpDrag': '中间的条件可以拖拽排序，也能拖进或拖出群组；右边素材里的标签、分类与上传者拖进来就会变成条件。',
   'rulePage.helpToggle': '点 IS／IS NOT 切换含有与不含，点 AND／OR 切换全部成立与任一成立。',
   'rulePage.helpNest': '群组里还能再放群组，最多 {depth} 层。',
-  'rulePage.helpSource': '条件标题切到「{view}」就能用文字撰写条件。',
   'rulePage.helpSyntaxTitle': '语法',
   'rulePage.helpSyntaxTag': '标签，写成 namespace:tag',
   'rulePage.helpSyntaxQuote': '有空格的标签加上引号',

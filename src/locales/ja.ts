@@ -18,7 +18,6 @@ export default {
   'rulePage.helpDrag': '中央の条件はドラッグで並べ替えたり、グループに出し入れしたりできます。右の素材のタグ・カテゴリ・アップローダーはドラッグすると条件として追加されます。',
   'rulePage.helpToggle': 'IS / IS NOT をクリックすると含む・含まないが、AND / OR をクリックするとすべて・いずれかが切り替わります。',
   'rulePage.helpNest': 'グループの中にさらにグループを入れられます（最大 {depth} 階層）。',
-  'rulePage.helpSource': '条件の見出しで「{view}」に切り替えると、条件を文字で書けます。',
   'rulePage.helpSyntaxTitle': '書き方',
   'rulePage.helpSyntaxTag': 'タグ。namespace:tag の形で書きます',
   'rulePage.helpSyntaxQuote': '空白を含むタグは引用符で囲みます',

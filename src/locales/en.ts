@@ -18,7 +18,6 @@ export default {
   'rulePage.helpDrag': 'Drag conditions in the middle to reorder them or move them in and out of groups; drag tags, categories and uploaders from the materials on the right to add them as conditions.',
   'rulePage.helpToggle': 'Click IS / IS NOT to switch between has and lacks, and AND / OR to switch between all and any.',
   'rulePage.helpNest': 'Groups can hold more groups, up to {depth} levels.',
-  'rulePage.helpSource': 'Switch the condition heading to {view} to write the conditions as text.',
   'rulePage.helpSyntaxTitle': 'Syntax',
   'rulePage.helpSyntaxTag': 'A tag, written namespace:tag',
   'rulePage.helpSyntaxQuote': 'Quote a tag that has spaces',

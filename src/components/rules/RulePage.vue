@@ -92,7 +92,7 @@ const DOCK = '.eqt-listing-rules__floating'
 const root = ref<HTMLElement | null>(null)
 const helpOpen = ref(false)
 const helpAnchor = ref<HTMLElement | null>(null)
-const HELP_USAGE = ['helpDrag', 'helpToggle', 'helpNest', 'helpSource'] as const
+const HELP_USAGE = ['helpDrag', 'helpToggle', 'helpNest'] as const
 const HELP_SYNTAX = [
   { code: 'female:tag', key: 'helpSyntaxTag' },
   { code: 'female:"two words"', key: 'helpSyntaxQuote' },
@@ -236,7 +236,7 @@ onBeforeUnmount(() => {
             <p>{{ t('rulePage.helpOrder') }}</p>
             <h3>{{ t('rulePage.helpUsageTitle') }}</h3>
             <ul>
-              <li v-for="key in HELP_USAGE" :key="key">{{ t(`rulePage.${key}`, { depth: MAX_GROUP_DEPTH, view: t('rulePage.sourceView') }) }}</li>
+              <li v-for="key in HELP_USAGE" :key="key">{{ t(`rulePage.${key}`, { depth: MAX_GROUP_DEPTH }) }}</li>
             </ul>
             <h3>{{ t('rulePage.helpSyntaxTitle') }}</h3>
             <!-- 語法本身不翻譯，只有右邊的解說跟著語系 -->

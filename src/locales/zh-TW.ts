@@ -18,7 +18,6 @@ export default {
   'rulePage.helpDrag': '中間的條件可以拖曳排序，也能拖進或拖出群組；右邊素材裡的標籤、分類與上傳者拖進來就會變成條件。',
   'rulePage.helpToggle': '點 IS／IS NOT 切換含有與不含，點 AND／OR 切換全部成立與任一成立。',
   'rulePage.helpNest': '群組裡還能再放群組，最多 {depth} 層。',
-  'rulePage.helpSource': '條件標題切到「{view}」就能用文字撰寫條件。',
   'rulePage.helpSyntaxTitle': '語法',
   'rulePage.helpSyntaxTag': '標籤，寫成 namespace:tag',
   'rulePage.helpSyntaxQuote': '有空白的標籤加上引號',
