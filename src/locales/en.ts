@@ -459,6 +459,7 @@ export default {
   'settings.listingTags': 'Enable gallery list enhancement',
   'settings.sectionListingTagLayout': 'Tag layout',
   'settings.listingTagLayoutHint': 'One row per namespace and showing the uploader among the tags are layout choices in Eh View Refined\'s settings.',
+  'settings.listingOpenEvrSettings': 'Open Eh View Refined settings',
   'settings.sectionListingDock': 'Dock',
   'settings.listingTagSelect': 'Enable tag selection and the Dock',
   'settings.listingTagSelectHint': 'Left-click includes, right-click excludes, drag selects several.',

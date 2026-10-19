@@ -459,6 +459,7 @@ export default {
   'settings.listingTags': 'ギャラリーリスト強化を有効にする',
   'settings.sectionListingTagLayout': 'タグの表示',
   'settings.listingTagLayoutHint': 'namespace ごとに 1 行、アップローダーをタグとして表示する設定は Eh View Refined の設定にあります。',
+  'settings.listingOpenEvrSettings': 'Eh View Refined の設定を開く',
   'settings.sectionListingDock': 'Dock',
   'settings.listingTagSelect': 'タグの選択と Dock を有効にする',
   'settings.listingTagSelectHint': '左クリックで含む、右クリックで除外、ドラッグでまとめて選択。',

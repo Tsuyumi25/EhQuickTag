@@ -459,6 +459,7 @@ export default {
   'settings.listingTags': '啟用圖庫列表強化',
   'settings.sectionListingTagLayout': '標籤排列',
   'settings.listingTagLayoutHint': '每個 namespace 一列、把上傳者顯示在標籤裡，這些排列在 Eh View Refined 的設定裡切換。',
+  'settings.listingOpenEvrSettings': '打開 Eh View Refined 設定',
   'settings.sectionListingDock': 'Dock',
   'settings.listingTagSelect': '啟用標籤選取和 Dock',
   'settings.listingTagSelectHint': '左鍵含有、右鍵排除、拖曳多選。',

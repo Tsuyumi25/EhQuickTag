@@ -459,6 +459,7 @@ export default {
   'settings.listingTags': '갤러리 목록 강화 사용',
   'settings.sectionListingTagLayout': '태그 배치',
   'settings.listingTagLayoutHint': 'namespace마다 한 줄, 업로더를 태그로 표시하는 설정은 Eh View Refined 설정에 있습니다.',
+  'settings.listingOpenEvrSettings': 'Eh View Refined 설정 열기',
   'settings.sectionListingDock': 'Dock',
   'settings.listingTagSelect': '태그 선택과 Dock 사용',
   'settings.listingTagSelectHint': '왼쪽 클릭은 포함, 오른쪽 클릭은 제외, 드래그로 여러 개 선택.',
