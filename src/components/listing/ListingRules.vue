@@ -489,6 +489,7 @@ onBeforeUnmount(() => {
                 </header>
                 <GalleryTagListRows
                   :groups="sessionGroups"
+                  scene="listing"
                   @select="(tag, mode) => selectTag(tag, mode === 'positive' ? 1 : -1)"
                   @contextmenu.prevent
                 />

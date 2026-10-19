@@ -30,7 +30,10 @@ export interface GalleryTagListGroup {
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { galleryDragSelectEnabled, galleryMyTagsColorsEnabled, galleryMyTagsScoresEnabled, galleryMyTagsMarksEnabled, galleryTaglistZoom } from '@/services/store'
+import {
+  galleryDragSelectEnabled, galleryMyTagsColorsEnabled, galleryMyTagsScoresEnabled, galleryMyTagsMarksEnabled, galleryTaglistZoom,
+  listingMyTagsColorsEnabled, listingMyTagsScoresEnabled, listingMyTagsMarksEnabled,
+} from '@/services/store'
 import { useDragSelect } from '@/composables/useDragSelect'
 import type { ChipRef, TriState } from '@/services/gallery/dragSelectMachine'
 import type { VoteState } from '@/services/gallery/galleryVote'
@@ -40,8 +43,16 @@ import TagChip from '@/components/TagChip.vue'
 
 const props = defineProps<{
   groups: readonly GalleryTagListGroup[]
+  /** 標籤外觀跟著哪一頁的設定走：列表的 dock 也借這份清單來顯示 */
+  scene: 'gallery' | 'listing'
   userVotes?: Record<string, VoteState>
 }>()
+
+const APPEARANCE = {
+  gallery: { colors: galleryMyTagsColorsEnabled, scores: galleryMyTagsScoresEnabled, marks: galleryMyTagsMarksEnabled },
+  listing: { colors: listingMyTagsColorsEnabled, scores: listingMyTagsScoresEnabled, marks: listingMyTagsMarksEnabled },
+}
+const appearance = computed(() => APPEARANCE[props.scene])
 
 const emit = defineEmits<{
   select: [nsRaw: string, mode: Selection]
@@ -107,12 +118,12 @@ const { onAreaMouseDown } = useDragSelect({
           :display="chip.display"
           :icon-url="chip.iconUrl"
           :tier="chip.tier"
-          :colors="galleryMyTagsColorsEnabled ? chip.personalTag : undefined"
+          :colors="appearance.colors.value ? chip.personalTag : undefined"
           :weight="chip.personalTag?.weight"
           :hidden="chip.personalTag?.hidden"
           :watch="chip.personalTag?.watch"
-          :show-score="galleryMyTagsScoresEnabled"
-          :show-marks="galleryMyTagsMarksEnabled"
+          :show-score="appearance.scores.value"
+          :show-marks="appearance.marks.value"
           :selection="chip.selected"
           :vote="userVotes?.[chip.tag.nsRaw]"
         >

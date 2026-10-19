@@ -506,6 +506,7 @@ watch(selection, () => {
 <template>
   <GalleryTagListRows
     :groups="groups"
+    scene="gallery"
     :user-votes="userVotes"
     @select="setSelection"
     @inspect="setPanelTagById"
