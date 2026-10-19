@@ -181,6 +181,20 @@
   }
   .eqt-listing-rules__preview[aria-pressed='true'] { background: var(--eqt-bg-active); }
 }
+// 預覽與規則兩種字疊在同一格，按鈕寬度取寬的那個：切換時 dock 上其他按鈕不會跟著挪
+.eqt-listing-rules__preview-labels {
+  display: inline-grid;
+  justify-items: center;
+
+  > span {
+    grid-area: 1 / 1;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--eqt-listing-rules-gap);
+  }
+}
+// 佔位用：撐開寬度但看不見，也不進無障礙名稱
+.eqt-listing-rules__preview-spare { visibility: hidden; }
 .eqt-listing-rules__kbd {
   padding: 0 var(--eqt-listing-rules-gap);
   border: var(--eqt-border-width-thin) solid var(--eqt-border);

@@ -504,8 +504,14 @@ onBeforeUnmount(() => {
               type="button" class="eqt-listing-rules__preview" :aria-pressed="rulesCollapsed" aria-keyshortcuts="Space"
               @click="rulesCollapsed = !rulesCollapsed"
             >
-              <component :is="rulesCollapsed ? Funnel : Eye" aria-hidden="true" />
-              {{ t(rulesCollapsed ? 'rulePage.backToRules' : 'rulePage.preview') }}
+              <span class="eqt-listing-rules__preview-labels">
+                <span :class="{ 'eqt-listing-rules__preview-spare': rulesCollapsed }">
+                  <Eye aria-hidden="true" />{{ t('rulePage.preview') }}
+                </span>
+                <span :class="{ 'eqt-listing-rules__preview-spare': !rulesCollapsed }">
+                  <Funnel aria-hidden="true" />{{ t('rulePage.backToRules') }}
+                </span>
+              </span>
               <kbd class="eqt-listing-rules__kbd">{{ t('rulePage.spaceKey') }}</kbd>
             </button>
             <button
