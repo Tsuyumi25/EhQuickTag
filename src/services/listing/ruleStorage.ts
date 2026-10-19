@@ -8,8 +8,8 @@ import {
 } from '@/services/listing/galleryRules'
 import { isGalleryCategory } from '@/services/listing/galleryCategory'
 
-// 版號只在舊版會把新資料讀錯時才升：多一種條件或動作時，舊版讀到認不得的欄位本來就會丟錯、不會寫回，
-// 跟升版號的效果一樣。升版號時要在這裡寫下哪裡變了，並讓 decodeRules 讀得懂上一版
+// 多一種條件或動作、或多一個欄位都要升版號：decoder 只挑認得的欄位讀，舊版讀到新資料會默默丟掉新欄位，
+// 存回去時新欄位就消失了。升了版號，舊版讀到就丟錯、停止寫入。升版號時要在這裡寫下哪裡變了，並讓 decodeRules 讀得懂上一版
 export const RULE_SCHEMA = 1
 
 function isObject(value: unknown): value is Record<string, unknown> {
