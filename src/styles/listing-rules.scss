@@ -123,6 +123,14 @@
       var(--eqt-gallery-chip-bg) padding-box;
   }
 }
+// 跟 TagChip 一樣，選取中的個人配色 chip 整串字加光暈：右上角還是個人配色，角裡的字可能跟它撞色。
+// 圖示是 mask 畫的，filter 會在 mask 之前套用、光暈被裁掉，所以只有文字與分數有光暈
+.eqt-listing-chip.eqt-listing-chip--mytags-colored:is(.eqt-listing-chip--selected-positive, .eqt-listing-chip--selected-negative) {
+  --eqt-vote-halo: oklch(from currentColor round(1.21 - l) 0 0);
+  text-shadow:
+    0 0 var(--eqt-vote-halo-blur) var(--eqt-vote-halo),
+    0 0 var(--eqt-vote-halo-blur) var(--eqt-vote-halo);
+}
 .eqt-listing-chip:is(.eqt-listing-chip--mytags-colored, .eqt-listing-chip--selected-positive, .eqt-listing-chip--selected-negative) {
   background: var(--eqt-listing-chip-paint) !important;
 }

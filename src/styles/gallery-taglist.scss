@@ -231,7 +231,9 @@ $eqt-gallery-height: 330px;
 
 // 有底色的 chip（個人配色或選取中）用與投票字色相反的黑／白光暈保留對比。
 // 不用 contrast-color()：其亮度門檻會讓純紅拿到黑色；沿用 OKLCH 亮度取整。
-.eqt-gallery-chip:is(.eqt-gallery-chip--voted-up, .eqt-gallery-chip--voted-down):is(.eqt-gallery-chip--mytags-colored, .eqt-gallery-chip--selected-positive, .eqt-gallery-chip--selected-negative) .eqt-gallery-chip__body {
+// 選取中的個人配色 chip 沒投票也要：字換成 --eqt-text，右上角卻還是個人配色，角裡的字可能跟它撞色
+.eqt-gallery-chip:is(.eqt-gallery-chip--voted-up, .eqt-gallery-chip--voted-down):is(.eqt-gallery-chip--mytags-colored, .eqt-gallery-chip--selected-positive, .eqt-gallery-chip--selected-negative) .eqt-gallery-chip__body,
+.eqt-gallery-chip.eqt-gallery-chip--mytags-colored:is(.eqt-gallery-chip--selected-positive, .eqt-gallery-chip--selected-negative) .eqt-gallery-chip__body {
   --eqt-vote-halo: oklch(from currentColor round(1.21 - l) 0 0);
 
   text-shadow:
