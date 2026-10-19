@@ -12,6 +12,8 @@ export default {
 
   // Rule page
   'rulePage.title': '图库规则编辑器',
+  'rulePage.help': '说明',
+  'rulePage.helpOrder': '图库规则的顺序决定规则的优先：颜色取较上方的规则，模糊与淡化取最强的值，前缀每条规则各加一个，隐藏只要任一条成立就执行。',
   'rulePage.togglePolarity': '点一下切换含有／不含',
   'rulePage.materials': '素材',
   'rulePage.generator.group': '群组',

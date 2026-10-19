@@ -12,6 +12,8 @@ export default {
 
   // Rule page
   'rulePage.title': 'ギャラリールールエディター',
+  'rulePage.help': 'ヘルプ',
+  'rulePage.helpOrder': 'ギャラリールールの並び順が優先度になります。色は一覧で上にあるルール、ぼかしと薄くは最も強い値が使われ、接頭辞はルールごとに付き、非表示はどれか一つが一致すれば実行されます。',
   'rulePage.togglePolarity': 'クリックで「含む／含まない」を切り替え',
   'rulePage.materials': '素材',
   'rulePage.generator.group': 'グループ',

@@ -12,6 +12,8 @@ export default {
 
   // Rule page
   'rulePage.title': 'Gallery rule editor',
+  'rulePage.help': 'Help',
+  'rulePage.helpOrder': 'The order of the gallery rules sets their priority: colours come from the rule higher in the list, blur and fading take the strongest value, each rule adds its own prefix, and hiding applies as soon as any rule matches.',
   'rulePage.togglePolarity': 'Click to switch between contains and does not contain',
   'rulePage.materials': 'Materials',
   'rulePage.generator.group': 'Group',

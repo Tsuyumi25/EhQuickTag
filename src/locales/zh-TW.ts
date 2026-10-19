@@ -12,6 +12,8 @@ export default {
 
   // Rule page
   'rulePage.title': '圖庫規則編輯器',
+  'rulePage.help': '說明',
+  'rulePage.helpOrder': '圖庫規則的順序決定規則的優先：顏色取較上方的規則，模糊與淡化取最強的值，前綴每條規則各加一個，隱藏只要任一條成立就執行。',
   'rulePage.togglePolarity': '點一下切換含有／不含',
   'rulePage.materials': '素材',
   'rulePage.generator.group': '群組',

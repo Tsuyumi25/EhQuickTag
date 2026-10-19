@@ -12,6 +12,8 @@ export default {
 
   // Rule page
   'rulePage.title': '갤러리 규칙 편집기',
+  'rulePage.help': '도움말',
+  'rulePage.helpOrder': '갤러리 규칙의 순서가 우선순위를 정합니다. 색은 목록에서 위에 있는 규칙을, 흐리게와 옅게는 가장 강한 값을 따르고, 접두어는 규칙마다 붙으며, 숨기기는 하나라도 일치하면 실행됩니다.',
   'rulePage.togglePolarity': '클릭하면 포함/제외가 전환됩니다',
   'rulePage.materials': '소재',
   'rulePage.generator.group': '그룹',

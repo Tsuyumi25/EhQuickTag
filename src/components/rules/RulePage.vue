@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import Draggable from 'vuedraggable'
-import { Blocks, CodeXml, CopyPlus, Ellipsis, Funnel, GripVertical, Plus, Settings, Trash2, X } from '@lucide/vue'
+import { Blocks, CircleQuestionMark, CodeXml, CopyPlus, Ellipsis, Funnel, GripVertical, Plus, Settings, Trash2, X } from '@lucide/vue'
+import AnchoredPopover from '@/components/AnchoredPopover.vue'
 import ContextMenu from '@/components/ContextMenu.vue'
 import { baseDragOptions } from '@/utils/drag'
 import RuleActionsEditor from './RuleActionsEditor.vue'
@@ -89,6 +90,8 @@ const TABBABLE = 'a[href], button:not(:disabled), input:not(:disabled), select:n
 // 預覽、返回與關閉放在列表的 dock 上（ListingRules），dock 也算規則頁的一部分
 const DOCK = '.eqt-listing-rules__floating'
 const root = ref<HTMLElement | null>(null)
+const helpOpen = ref(false)
+const helpAnchor = ref<HTMLElement | null>(null)
 let engaged = true
 // 關掉時把焦點還給打開規則頁的那顆按鈕
 const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
@@ -203,6 +206,26 @@ onBeforeUnmount(() => {
         <button type="button" class="eqt-rule-page__settings" @click="openSettings('listing')">
           <Settings class="eqt-rule-page__icon" />{{ t('settings.title') }}
         </button>
+        <!-- Esc 先關說明；不擋下的話規則頁的 Esc 會連整頁一起關掉 -->
+        <button
+          ref="helpAnchor" type="button" class="eqt-rule-page__settings"
+          :aria-expanded="helpOpen" aria-controls="eqt-rule-page-help"
+          @click="helpOpen = !helpOpen" @keydown.esc.prevent="helpOpen = false"
+        >
+          <CircleQuestionMark class="eqt-rule-page__icon" />{{ t('rulePage.help') }}
+        </button>
+        <AnchoredPopover v-model:open="helpOpen" :anchor="helpAnchor">
+          <section
+            id="eqt-rule-page-help" class="eqt-panel__help" aria-labelledby="eqt-rule-page-help-title"
+            @keydown.esc.prevent="helpOpen = false"
+          >
+            <header class="eqt-panel__help-head">
+              <h2 id="eqt-rule-page-help-title">{{ t('rulePage.help') }}</h2>
+              <button type="button" class="eqt-panel__btn" @click="helpOpen = false">{{ t('settings.close') }}</button>
+            </header>
+            <p>{{ t('rulePage.helpOrder') }}</p>
+          </section>
+        </AnchoredPopover>
       </div>
       <div class="eqt-rule-page__meta">
         <template v-if="selected">
