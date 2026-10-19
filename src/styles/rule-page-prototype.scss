@@ -873,7 +873,6 @@
 .eqt-rule-page__action-tab {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: calc(var(--eqt-rule-page-gap) * 2);
   padding: var(--eqt-rule-page-gap) calc(var(--eqt-rule-page-gap) * 2);
   border: none;
@@ -884,6 +883,10 @@
   white-space: nowrap;
   text-align: start;
   cursor: pointer;
+  // 有設定的那一頁畫綠色條，跟條件裡 AND 群組的色條同一款；沒有時留同寬的透明條，字才對齊
+  border-inline-start: var(--eqt-rule-page-tone-width) solid transparent;
+
+  &--in-use { border-inline-start-color: var(--eqt-status-include); }
 
   &:hover, &:focus-visible {
     outline: none;
@@ -894,13 +897,6 @@
     background: var(--eqt-bg-active);
     font-weight: bold;
   }
-}
-
-.eqt-rule-page__action-dot {
-  width: calc(var(--eqt-rule-page-gap) * 1.5);
-  height: calc(var(--eqt-rule-page-gap) * 1.5);
-  border-radius: 50%;
-  background: var(--eqt-green);
 }
 
 // 欄位與卡片頁的隱藏各排一段；隱藏另外放，打開時才只停用上面那段

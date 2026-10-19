@@ -276,9 +276,11 @@ tr.eqt-rule-prototype__gallery--background > td {
 .eqt-rule-prototype__gallery--hidden { display: none !important; }
 
 // 標題的樣式只套在包住標題文字的那層：前綴是它的兄弟，刪除線、背景都不會延伸過去。
-// 沒有規則指定時每一項都回到標題原本的樣子
+// 沒有規則指定時每一項都回到標題原本的樣子。
+// 網站 g.css 有一條 .glname a :not(.glink) { color: #5C0D11 }，標題裡任何不是 .glink 的元素都會被它染色，
+// 前綴與這一層都在 .glink 裡面，顏色只能靠 !important 拿回來；沒指定時 inherit 就是 .glink 自己的顏色
 .eqt-rule-prototype__title-text {
-  color: var(--eqt-rule-prototype-title-color, inherit);
+  color: var(--eqt-rule-prototype-title-color, inherit) !important;
   background: var(--eqt-rule-prototype-title-background, none);
   border-radius: var(--eqt-rule-prototype-title-radius, 0);
   text-decoration-line: var(--eqt-rule-prototype-title-decoration, none);
@@ -301,7 +303,8 @@ tr.eqt-rule-prototype__gallery--background > td {
 // 標題前綴插在原生標題文字裡，字型跟著標題走，蓋掉 mount 的重設
 .eqt-rule-prototype__mount.eqt-rule-prototype__prefixes {
   display: inline;
-  color: inherit;
+  // 一樣會被 g.css 的 .glname a :not(.glink) 染色，前綴的預設色是從這裡 currentColor 來的
+  color: inherit !important;
   font: inherit;
   line-height: inherit;
   white-space: inherit;
@@ -310,7 +313,7 @@ tr.eqt-rule-prototype__gallery--background > td {
   margin-inline-end: 0.3em;
   padding-inline: var(--eqt-rule-prototype-prefix-pad, 0);
   // 沒指定文字色時沿用規則的背景色，沒背景色就是框線色
-  color: var(--eqt-rule-prototype-prefix-color, color-mix(in srgb, var(--eqt-rule-prototype-solid) 65%, currentColor));
+  color: var(--eqt-rule-prototype-prefix-color, color-mix(in srgb, var(--eqt-rule-prototype-solid) 65%, currentColor)) !important;
   background: var(--eqt-rule-prototype-prefix-background, none);
   border-radius: var(--eqt-rule-prototype-prefix-radius, 0);
   font-weight: bold;

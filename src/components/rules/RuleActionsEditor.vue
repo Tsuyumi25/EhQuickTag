@@ -53,17 +53,17 @@ const hideHelpOpen = ref(false)
 <template>
   <h2><Paintbrush class="eqt-rule-page__icon" />{{ t('rulePrototype.actions') }}</h2>
   <div class="eqt-rule-page__actions">
-    <!-- 動作作用在圖庫卡片的哪個位置：一頁一個位置，有設定的那幾頁標一個點 -->
+    <!-- 動作作用在圖庫卡片的哪個位置：一頁一個位置，有設定的那幾頁左邊畫一條綠色條 -->
     <div class="eqt-rule-page__action-tabs" role="tablist" aria-orientation="vertical" :aria-label="t('rulePrototype.actions')">
       <button
         v-for="(name, index) in ACTION_TARGETS" :id="`eqt-rule-action-tab-${name}`" :key="name"
         :ref="el => { tabs[index] = el as HTMLButtonElement | null }"
         type="button" role="tab" class="eqt-rule-page__action-tab"
+        :class="{ 'eqt-rule-page__action-tab--in-use': targetInUse(actions, name) }"
         :aria-selected="target === name" :aria-controls="`eqt-rule-action-panel-${name}`" :tabindex="target === name ? 0 : -1"
         @click="target = name" @keydown="moveTab"
       >
         {{ t(`rulePagePrototype.target.${name}`) }}
-        <span v-if="targetInUse(actions, name)" class="eqt-rule-page__action-dot" aria-hidden="true" />
       </button>
     </div>
 
