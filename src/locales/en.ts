@@ -476,8 +476,6 @@ export default {
   'settings.sectionGalleryToggles': 'Features',
   'settings.taggingEnhancer': 'Enable Tagging Enhancer',
   'settings.taggingEnhancerHint': 'Takes over the taglist on /g/ detail pages with vote / search / picker affordances. When off, the native UI is preserved. Reload the page to apply.',
-  'settings.galleryDragSelect': 'Enable drag-select',
-  'settings.galleryDragSelectHint': 'When off, chips are click-only; dragging will not toggle multiple at once.',
   'settings.sectionGallerySize': 'Tag list size',
   'settings.galleryTaglistHeight': 'Height',
   'settings.galleryTaglistZoom': 'Zoom',

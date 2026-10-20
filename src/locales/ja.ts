@@ -476,8 +476,6 @@ export default {
   'settings.sectionGalleryToggles': '機能',
   'settings.taggingEnhancer': 'Tagging Enhancer を有効化',
   'settings.taggingEnhancerHint': '/g/ 詳細ページの taglist を引き継ぎ、vote / search / picker などの強化機能を提供します。オフの場合はネイティブ UI のまま。ページを再読み込みすると反映されます。',
-  'settings.galleryDragSelect': 'ドラッグ選択を有効化',
-  'settings.galleryDragSelectHint': 'オフにするとクリックでのみ選択でき、ドラッグで一括切り替えはできません。',
   'settings.sectionGallerySize': 'タグ一覧のサイズ',
   'settings.galleryTaglistHeight': '高さ',
   'settings.galleryTaglistZoom': 'ズーム',

@@ -28,21 +28,14 @@ export interface UseDragSelectOptions {
   setPanelTag?: (id: string) => void
   /** reducer 設定。預設 dragThresholdPx=3 */
   config?: Partial<DragSelectConfig>
-  /**
-   * 是否啟用 drag-select。false 時 threshold = Infinity，reducer 永遠不進 dragging，
-   * 行為等同單純 click（pressed → mouseup → 對 initialChip 套 delta）
-   */
-  enabled?: () => boolean
   takeOver?: boolean
 }
 
 export function useDragSelect(opts: UseDragSelectOptions): {
   onAreaMouseDown: (e: MouseEvent) => void
 } {
-  const baseThreshold = opts.config?.dragThresholdPx ?? 3
-  const store = createDragSelectStore(() => ({
-    dragThresholdPx: opts.enabled?.() === false ? Infinity : baseThreshold,
-  }))
+  const dragThresholdPx = opts.config?.dragThresholdPx ?? 3
+  const store = createDragSelectStore(() => ({ dragThresholdPx }))
 
   function dispatch(event: DragSelectEvent): void {
     const effects = store.dispatch(event)

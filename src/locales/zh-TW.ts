@@ -476,8 +476,6 @@ export default {
   'settings.sectionGalleryToggles': '功能開關',
   'settings.taggingEnhancer': '啟用標籤強化（Tagging Enhancer）',
   'settings.taggingEnhancerHint': '在 /g/ 詳情頁接管 taglist，提供 vote / search / picker 等強化功能。關閉後保持 EH 原生介面。需重新整理頁面生效。',
-  'settings.galleryDragSelect': '啟用拖曳多選',
-  'settings.galleryDragSelectHint': '關閉後僅能單擊選取，拖曳將不會觸發批次標記。',
   'settings.sectionGallerySize': '標籤列尺寸',
   'settings.galleryTaglistHeight': '高度',
   'settings.galleryTaglistZoom': '縮放',

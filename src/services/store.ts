@@ -135,9 +135,6 @@ const INITIAL_SETTINGS = {
   // App.vue setup 階段讀一次，toggle 後需重新整理頁面才生效（mid-flight 改會
   // 留下半生不熟的 wrap state）
   taggingEnhancerEnabled: true,
-  // Gallery taglist 的 drag-select 是否啟用。關掉後 mousedown → mouseup 一律走
-  // click 語意（用 Infinity threshold 讓 reducer 永遠不進 dragging state）
-  galleryDragSelectEnabled: true,
   galleryMyTagsColorsEnabled: true,
   galleryMyTagsScoresEnabled: false,
   galleryMyTagsMarksEnabled: true,
@@ -222,7 +219,6 @@ export const searchPanelLangMode = refs.searchPanelLangMode
 export const convertToTraditional = refs.convertToTraditional
 export const enableHistory      = refs.enableHistory
 export const taggingEnhancerEnabled = refs.taggingEnhancerEnabled
-export const galleryDragSelectEnabled = refs.galleryDragSelectEnabled
 export const galleryMyTagsColorsEnabled = refs.galleryMyTagsColorsEnabled
 export const galleryMyTagsScoresEnabled = refs.galleryMyTagsScoresEnabled
 export const galleryMyTagsMarksEnabled = refs.galleryMyTagsMarksEnabled

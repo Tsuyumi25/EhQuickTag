@@ -476,8 +476,6 @@ export default {
   'settings.sectionGalleryToggles': '기능',
   'settings.taggingEnhancer': 'Tagging Enhancer 활성화',
   'settings.taggingEnhancerHint': '/g/ 상세 페이지의 taglist를 대체하여 vote / search / picker 기능을 제공합니다. 끄면 기본 UI가 유지됩니다. 페이지를 새로고침하면 적용됩니다.',
-  'settings.galleryDragSelect': '드래그 선택 활성화',
-  'settings.galleryDragSelectHint': '끄면 클릭으로만 선택할 수 있으며, 드래그로 여러 개를 한 번에 전환할 수 없습니다.',
   'settings.sectionGallerySize': '태그 리스트 크기',
   'settings.galleryTaglistHeight': '높이',
   'settings.galleryTaglistZoom': '배율',

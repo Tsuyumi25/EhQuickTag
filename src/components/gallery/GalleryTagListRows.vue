@@ -31,7 +31,7 @@ export interface GalleryTagListGroup {
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import {
-  galleryDragSelectEnabled, galleryMyTagsColorsEnabled, galleryMyTagsScoresEnabled, galleryMyTagsMarksEnabled, galleryTaglistZoom,
+  galleryMyTagsColorsEnabled, galleryMyTagsScoresEnabled, galleryMyTagsMarksEnabled, galleryTaglistZoom,
   listingMyTagsColorsEnabled, listingMyTagsScoresEnabled, listingMyTagsMarksEnabled,
 } from '@/services/store'
 import { useDragSelect } from '@/composables/useDragSelect'
@@ -88,7 +88,6 @@ const { onAreaMouseDown } = useDragSelect({
   chipFromEvent: event => chipFromPoint(event.clientX, event.clientY),
   applySelection: (nsRaw, mode) => emit('select', nsRaw, mode),
   setPanelTag: (nsRaw) => emit('inspect', nsRaw),
-  enabled: () => galleryDragSelectEnabled.value,
 })
 </script>
 
