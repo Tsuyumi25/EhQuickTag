@@ -8,8 +8,7 @@ import {
 } from '@/services/store'
 import { evrInstalled } from '@/utils/evr'
 
-// TODO: EhViewRefined 上架 Sleazy Fork 之後換成那邊的網址
-const EVR_URL = 'https://github.com/Tsuyumi25/EhViewRefined'
+const EVR_URL = 'https://sleazyfork.org/scripts/601247-eh-view-refined'
 const evrInstall = () => t('settings.listingEvrInstall').split(/(\{evr\})/)
 </script>
 
