@@ -31,8 +31,8 @@ export function openSettings(tab: string | null = null): void {
   showSettings.value = true
 }
 
-// EVR 的 README 寫明的 hook。先關掉這裡：兩邊都會鎖 body 的捲動，EVR 打開時記下的是
-// 「已經被我們鎖住」的狀態，關掉後會把頁面還原成鎖住；等我們卸載、鎖解開了再請它打開
+// EVR 的整合文件（docs/integration.md）寫明的 hook。先關掉我們的設定頁：它靠 onClickOutside 判斷關閉，
+// EVR 的面板蓋上來之後，第一下點進 EVR 就會把它在背後關掉；等它卸載了再請 EVR 打開
 export async function openEvrSettings(): Promise<void> {
   showSettings.value = false
   await nextTick()
