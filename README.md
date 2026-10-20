@@ -62,6 +62,12 @@ My Tags Enhancer
   - [x] Preview filtering on gallery samples in real time, adjusting weights and thresholds before applying
   - [x] Mark galleries as “block” or “keep” to tune rules to your preferences
   - [x] View and organize tags across tag sets with bulk actions
+- [x] Gallery List Enhancer (needs [Eh View Refined](https://github.com/Tsuyumi25/EhViewRefined))
+  - [x] Every tag on listing pages, with My Tags colors and scores
+  - [x] Left-click includes, right-click excludes, drag selects several; the Dock gathers the selection to search, open in My Tags, or add to a gallery rule
+  - [x] Gallery rules match by tags, categories, uploaders, stars and pages, built visually from AND / OR groups or written as an expression
+  - [x] Rule actions: colors, fade, blur, mosaic, strikethrough and text styles on a gallery's card, cover or title; a title prefix; or hiding the gallery
+  - [x] Live preview on the listing while editing rules
 - [x] Personalization
   - [x] Multiple independent tag profiles
   - [x] Profile ordering, renaming, trash, and JSON editor
@@ -73,7 +79,7 @@ My Tags Enhancer
 
 ## Install
 
-Requires [Tampermonkey](https://www.tampermonkey.net/) or a compatible userscript manager.
+Requires [Tampermonkey](https://www.tampermonkey.net/) or a compatible userscript manager. The Gallery List Enhancer also needs [Eh View Refined](https://sleazyfork.org/scripts/601247-eh-view-refined), placed first in the execution order.
 
 - [x] [Sleazy Fork](https://sleazyfork.org/zh-TW/scripts/578820-eh-quick-tag)
 - [x] [GitHub Releases](https://github.com/Tsuyumi25/EhQuickTag/releases)

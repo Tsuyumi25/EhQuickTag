@@ -64,6 +64,12 @@ My Tags Enhancer
   - [x] 以圖庫樣本即時預覽過濾效果，調整權重與門檻後再套用
   - [x] 標記「該擋／該留」，對照個人偏好調校規則
   - [x] 跨標籤集集中檢視與批次整理標籤
+- [x] 圖庫列表強化（需要 [Eh View Refined](https://github.com/Tsuyumi25/EhViewRefined)）
+  - [x] 列表頁顯示完整標籤，並帶上 My Tags 個人顏色與分數
+  - [x] 左鍵加入、右鍵排除、拖曳多選；Dock 收集選取的標籤，可以搜尋、帶到 My Tags，或加進圖庫規則
+  - [x] 圖庫規則依標籤、分類、上傳者、星數與頁數比對，可以用 AND / OR 群組視覺化組合，也能直接寫成表達式
+  - [x] 規則動作：在圖庫的卡片、封面或標題上套用顏色、淡化、模糊、馬賽克、刪除線與文字樣式，在標題前加上前綴，或直接隱藏圖庫
+  - [x] 編輯規則時在列表上即時預覽
 - [x] 個人化
   - [x] 多組獨立標籤配置
   - [x] 標籤組排序、改名、回收桶與 JSON 編輯器
@@ -75,7 +81,7 @@ My Tags Enhancer
 
 ## 安裝
 
-需要 [Tampermonkey](https://www.tampermonkey.net/) 或相容的 userscript 管理器。
+需要 [Tampermonkey](https://www.tampermonkey.net/) 或相容的 userscript 管理器。圖庫列表強化另外需要 [Eh View Refined](https://sleazyfork.org/scripts/601247-eh-view-refined)，並把它放在腳本執行順序的最前方。
 
 - [x] [Sleazy Fork](https://sleazyfork.org/zh-TW/scripts/578820-eh-quick-tag)
 - [x] [GitHub Releases](https://github.com/Tsuyumi25/EhQuickTag/releases)
