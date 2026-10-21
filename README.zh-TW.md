@@ -25,6 +25,10 @@ E-Hentai / ExHentai 快捷標籤搜尋（自訂配置、多語搜尋）、視覺
 標籤瀏覽器
 <img width="2366" height="2008" alt="標籤瀏覽器" src="https://github.com/user-attachments/assets/6ed46053-80c7-4df9-a56b-4e92e21659c8" />
 
+圖庫列表強化
+<img width="3400" height="1744" alt="圖庫列表強化" src="https://github.com/user-attachments/assets/5d2b5af3-ff96-48d6-8fe2-c3204ef7bd4b" />
+<img width="3305" height="1797" alt="圖庫列表強化" src="https://github.com/user-attachments/assets/2757d456-99fb-403e-ba3a-bf2cd3e418b6" />
+
 Gallery Tagging Enhancer
 <img width="1493" height="873" alt="Gallery Tagging Enhancer" src="https://github.com/user-attachments/assets/288883b5-a667-4f71-88be-203c1b5b0bac" />
 
