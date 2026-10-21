@@ -99,6 +99,8 @@
 // Non-themed design tokens
 :root {
   --eqt-row-h: 24px;
+  // suggestion 列裡 name 與 fullTag 並排時的最小間距
+  --eqt-suggestion-gap: 8px;
   --eqt-border-width-thin: 1px;
 
   // typography scale

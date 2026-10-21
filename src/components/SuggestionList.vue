@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, type CSSProperties } from 'vue'
+import { useResizeObserver } from '@vueuse/core'
+import { useVirtualizer, type VirtualItem, type Virtualizer } from '@tanstack/vue-virtual'
 import { DEFAULT_NS_ORDER, type TagEntry } from '@/services/tags/tagDb'
 import { isZhLocale, locale, t } from '@/composables/useI18n'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
@@ -56,56 +58,86 @@ function onItemContextMenu(entry: TagEntry): void {
   emit('ctxmenu', entry)
 }
 
-// 跟舊版 TagAutocomplete 同等值，behaviour 一致
+// 列高隨內容變（長名稱把 fullTag 擠到第二行），實際高度在 render 後量；
+// 這個值只用在還沒 render 過的列，取單行列的高度
 const EST_ITEM_HEIGHT = 32
 const OVERSCAN = 10
 
 const listEl = ref<HTMLElement | null>(null)
+const leadingEl = ref<HTMLElement | null>(null)
 const rowsEl = ref<HTMLElement | null>(null)
-const scrollTop = ref(0)
-// leading slot 的列排在虛擬列前面、不虛擬化；捲動距離扣掉它們佔的高度才是虛擬列自己捲了多少
+// leading slot 的列排在虛擬列前面、不虛擬化；虛擬列的位置要從它們底下開始算
 const rowsOffset = ref(0)
 
-const visibleRange = computed(() => {
-  const total = props.suggestions.length
-  if (!total) return { start: 0, end: 0 }
-  const containerH = listEl.value?.clientHeight ?? 300
-  const scrolled = Math.max(0, scrollTop.value - rowsOffset.value)
-  const start = Math.max(0, Math.floor(scrolled / EST_ITEM_HEIGHT) - OVERSCAN)
-  const end = Math.min(total, Math.ceil((scrolled + containerH) / EST_ITEM_HEIGHT) + OVERSCAN)
-  return { start, end }
-})
+// virtualizer 的座標（scrollTop、ResizeObserver 回報的尺寸）是元素自己未縮放的 CSS px，
+// getBoundingClientRect 卻是乘過祖先 CSS zoom 的畫面 px。SearchPopup 整個掛著
+// zoom: 1.15、MyTagsPanel 有使用者設定的 zoom，從 rect 換算的值都要除回來，
+// 不然同一列兩條量測路徑報出兩種高度，捲動一停就互相修正、清單跳一下
+function layoutHeight(el: Element, rectHeight: number): number {
+  return rectHeight / ((el as HTMLElement).currentCSSZoom || 1)
+}
 
-const virtualSuggestions = computed(() =>
-  props.suggestions.slice(visibleRange.value.start, visibleRange.value.end).map((data, i) => ({
-    data,
-    index: visibleRange.value.start + i,
-    style: props.styleOf?.(data),
-  })),
-)
+function measureRowsOffset(): void {
+  if (!rowsEl.value || !listEl.value) return
+  const list = listEl.value
+  const delta = rowsEl.value.getBoundingClientRect().top - list.getBoundingClientRect().top
+  rowsOffset.value = layoutHeight(list, delta) - list.clientTop + list.scrollTop
+}
+useResizeObserver(leadingEl, measureRowsOffset)
+// RuleMaterialPanel 切到「全部」「素材」以外的篩選時 leading 整塊不 render；元素消失
+// ResizeObserver 不會回報，舊的 offset 留著會讓 virtualizer 把可視範圍整段往下算、清單下半空白
+watch(leadingEl, measureRowsOffset, { flush: 'post' })
 
-const wrapperStyle = computed(() => ({
-  height: `${props.suggestions.length * EST_ITEM_HEIGHT}px`,
-  paddingTop: `${visibleRange.value.start * EST_ITEM_HEIGHT}px`,
-  boxSizing: 'border-box' as const,
+const virtualizer = useVirtualizer(computed(() => {
+  // 在 computed 裡讀 suggestions，換清單時（即使筆數相同）getItemKey 跟著換，
+  // 量過的高度才不會套到別的 entry 上
+  const list = props.suggestions
+  return {
+    count: list.length,
+    getScrollElement: () => listEl.value,
+    estimateSize: () => EST_ITEM_HEIGHT,
+    overscan: OVERSCAN,
+    scrollMargin: rowsOffset.value,
+    getItemKey: (index: number) => list[index].fullTag,
+    // 預設量法把列高四捨五入成整數，但列在文件流裡的實際高度帶小數（26.19px 這類），
+    // 往下累積幾十列就差出好幾 px，鍵盤捲到的項目底部會被切掉；這裡回報原值。
+    //
+    // RuleMaterialPanel 拖曳時 Sortable 會把列本身搬進條件區、原位放一個複本，
+    // 列在那邊縮成 chip，量到的高度不屬於清單；沿用快取，免得清單在拖曳中跳動
+    measureElement: (el: Element, entry: ResizeObserverEntry | undefined, instance: Virtualizer<HTMLElement, Element>) => {
+      if (rowsEl.value?.contains(el)) return entry?.borderBoxSize[0]?.blockSize ?? layoutHeight(el, el.getBoundingClientRect().height)
+      return instance.itemSizeCache.get(instance.options.getItemKey(instance.indexFromElement(el))) ?? EST_ITEM_HEIGHT
+    },
+  }
 }))
 
-function onScroll(e: Event): void {
-  const top = (e.target as HTMLElement).scrollTop
-  if (rowsEl.value && listEl.value) {
-    rowsOffset.value = rowsEl.value.getBoundingClientRect().top - listEl.value.getBoundingClientRect().top + top
-  }
-  if (top !== scrollTop.value) scrollTop.value = top
+function measureRow(el: unknown): void {
+  virtualizer.value.measureElement(el as Element | null)
 }
+
+const virtualSuggestions = computed(() =>
+  virtualizer.value.getVirtualItems().map((item: VirtualItem) => {
+    const data = props.suggestions[item.index]
+    return { data, index: item.index, style: props.styleOf?.(data) }
+  }),
+)
+
+const wrapperStyle = computed(() => {
+  const first = virtualizer.value.getVirtualItems()[0]
+  return {
+    height: `${virtualizer.value.getTotalSize()}px`,
+    paddingTop: `${first ? first.start - rowsOffset.value : 0}px`,
+    boxSizing: 'border-box' as const,
+  }
+})
 
 // 換新 suggestions 清單時把 scroll 拉回頂端
 watch(() => props.suggestions, () => {
-  scrollTop.value = 0
   if (listEl.value) listEl.value.scrollTop = 0
 })
 
 // ns 欄寬：用 useTextMeasure 量「當前 list 出現的 ns 翻譯字串中最寬的」。
-// 量出的寬度設成 --ns-col-width，outer grid 第一欄寬度跟著走，name 起始點對齊
+// 量出的寬度設成 --ns-col-width，ns 欄寬度跟著走，name 起始點對齊
 const { getWidth, version } = useTextMeasure({
   containerRef: listEl,
   itemSelector: '.eqt-popup__suggestion-ns',
@@ -138,20 +170,20 @@ function onItemMouseenter(si: number): void {
   emit('update:selectedIdx', si)
 }
 
+// 不用 virtualizer.scrollToIndex：它拿 scroll event 回報的 offset 判斷要不要捲，
+// 連按方向鍵時那個值還停在上一格，最後一次捲動會落在錯的位置；這裡直接讀 DOM 的 scrollTop
 watch(() => props.selectedIdx, () => {
   if (mouseDriven) {
     mouseDriven = false
     return
   }
-  if (!listEl.value || props.selectedIdx < 0) return
-  const targetTop = props.selectedIdx * EST_ITEM_HEIGHT
-  const targetBottom = targetTop + EST_ITEM_HEIGHT
-  const visibleTop = scrollTop.value
-  const visibleBottom = visibleTop + listEl.value.clientHeight
-  if (targetTop < visibleTop) {
-    listEl.value.scrollTop = targetTop
-  } else if (targetBottom > visibleBottom) {
-    listEl.value.scrollTop = targetBottom - listEl.value.clientHeight
+  const list = listEl.value
+  const item = virtualizer.value.measurementsCache[props.selectedIdx]
+  if (!list || !item) return
+  if (item.start < list.scrollTop) {
+    list.scrollTop = item.start
+  } else if (item.end > list.scrollTop + list.clientHeight) {
+    list.scrollTop = item.end - list.clientHeight
   }
 })
 
@@ -168,14 +200,15 @@ const { zhDisplay } = useDisplayConfig()
     ref="listEl"
     class="eqt-suggestion-list"
     :style="{ '--ns-col-width': nsColWidth > 0 ? nsColWidth + 'px' : undefined, '--eqt-suggestion-row-height': EST_ITEM_HEIGHT + 'px' }"
-    @scroll="onScroll"
     @mouseleave="emit('update:selectedIdx', -1)"
   >
-    <div v-if="$slots.leading" class="eqt-suggestion-list__leading"><slot name="leading" /></div>
+    <div v-if="$slots.leading" ref="leadingEl" class="eqt-suggestion-list__leading"><slot name="leading" /></div>
     <div ref="rowsEl" class="eqt-suggestion-list__rows" :style="wrapperStyle">
       <div
         v-for="{ data: entry, index: si, style } in virtualSuggestions"
         :key="entry.fullTag"
+        :ref="measureRow"
+        :data-index="si"
         class="eqt-popup__suggestion"
         :style="style"
         :class="[

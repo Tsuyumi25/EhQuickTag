@@ -225,12 +225,17 @@
     z-index: var(--eqt-z-popover);
   }
 
-  // ns / name / tag 三欄對齊：第一欄寬由 SuggestionList 用 useTextMeasure 量「當前
-  // list 出現的 ns 翻譯字串中最寬的」設成 --ns-col-width，name 起始點對齊
+  // ns 欄寬由 SuggestionList 用 useTextMeasure 量「當前 list 出現的 ns 翻譯字串中最寬的」
+  // 設成 --ns-col-width，name 起始點對齊。
+  //
+  // name 與 fullTag 一行放得下就並排；放不下時 flex-wrap 把 fullTag 折到第二行，
+  // margin-left: auto 讓它不論在哪一行都靠右。name 的 max-width 扣掉 ns 欄，
+  // 長名稱才會留在 ns 旁邊、在自己的欄內換行，而不是整段掉到 ns 底下
   &__suggestion {
-    display: grid;
-    grid-template-columns: var(--ns-col-width, 6em) 1fr auto;
-    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    align-content: center;
     padding: 4px 8px;
     cursor: pointer;
 
@@ -258,18 +263,29 @@
   }
 
   &__suggestion-ns {
+    flex: none;
+    width: var(--ns-col-width, 6em);
     font-size: var(--eqt-fs-sm);
     color: var(--eqt-text-hint);
   }
 
   &__suggestion-name {
-    font-size: var(--eqt-fs-lg);
     min-width: 0;
+    max-width: calc(100% - var(--ns-col-width, 6em));
+    font-size: var(--eqt-fs-lg);
+    overflow-wrap: anywhere;
   }
 
   &__suggestion-tag {
+    box-sizing: border-box;
+    // 折到第二行時也不伸進 ns 欄底下，左緣跟 name 對齊
+    max-width: calc(100% - var(--ns-col-width, 6em));
+    margin-left: auto;
+    padding-left: var(--eqt-suggestion-gap);
     font-size: var(--eqt-fs-sm);
     color: var(--eqt-text-hint);
+    text-align: right;
+    overflow-wrap: anywhere;
   }
 }
 

@@ -374,6 +374,8 @@
 
     > .eqt-popup__suggestion-ns,
     > .eqt-popup__suggestion-tag { display: none; }
+    // 清單裡為了讓出 ns 欄而設的上限，在托盤裡只剩名稱、不適用
+    > .eqt-popup__suggestion-name { max-width: none; }
   }
 }
 
@@ -656,8 +658,7 @@
   // 跟 /mytags 標籤目錄同一套：有個人配色的列畫出 chip 的框與粗體，底色與字色走 inline style
   .eqt-popup__suggestion--styled {
     box-sizing: border-box;
-    height: var(--eqt-suggestion-row-height);
-    padding-block: 0;
+    min-height: var(--eqt-suggestion-row-height);
     border: var(--eqt-border-width) solid var(--eqt-border);
     font-weight: 700;
 

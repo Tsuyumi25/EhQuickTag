@@ -343,8 +343,7 @@ function commit(): void {
 
     .eqt-popup__suggestion--styled {
       box-sizing: border-box;
-      height: var(--eqt-suggestion-row-height);
-      padding-block: 0;
+      min-height: var(--eqt-suggestion-row-height);
 
       .eqt-popup__suggestion-ns,
       .eqt-popup__suggestion-tag {
