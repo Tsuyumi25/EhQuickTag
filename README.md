@@ -27,7 +27,6 @@ Gallery List Enhancer
 <img width="3400" height="1744" alt="Gallery List Enhancer" src="https://github.com/user-attachments/assets/5d2b5af3-ff96-48d6-8fe2-c3204ef7bd4b" />
 <img width="3305" height="1797" alt="Gallery List Enhancer" src="https://github.com/user-attachments/assets/2757d456-99fb-403e-ba3a-bf2cd3e418b6" />
 
-
 Gallery Tagging Enhancer
 <img width="1493" height="873" alt="Gallery Tagging Enhancer" src="https://github.com/user-attachments/assets/288883b5-a667-4f71-88be-203c1b5b0bac" />
 
