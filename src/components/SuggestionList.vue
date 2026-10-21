@@ -209,6 +209,7 @@ const { zhDisplay } = useDisplayConfig()
         :key="entry.fullTag"
         :ref="measureRow"
         :data-index="si"
+        :data-tag="entry.fullTag"
         class="eqt-popup__suggestion"
         :style="style"
         :class="[
@@ -221,7 +222,7 @@ const { zhDisplay } = useDisplayConfig()
       >
         <span class="eqt-popup__suggestion-ns">{{ t('ns.' + entry.ns) }}：</span>
         <span class="eqt-popup__suggestion-name"><img v-if="entry.iconUrl" :src="entry.iconUrl" class="eqt-tag-icon" alt="" />{{ isZh ? zhDisplay(entry.name) : entry.raw }}</span>
-        <span class="eqt-popup__suggestion-tag">{{ entry.fullTag }}</span>
+        <span v-if="isZh" class="eqt-popup__suggestion-tag">{{ entry.fullTag }}</span>
       </div>
     </div>
   </div>

@@ -78,15 +78,17 @@ const MATERIAL_NS_ORDER: readonly string[] = [...DEFAULT_NS_ORDER, 'uploader']
 
 const materialRows = computed(() => {
   void tagDbVersion.value
+  // 中文介面名稱欄是翻譯，旁邊附上原文；其他語言名稱欄本身就是原文，不再重複
+  const showFull = isZhLocale()
   const rows = ruleMaterials.value.map((material) => {
     if (material.kind === 'uploader') {
-      const full = `uploader:${material.uploader}`
+      const full = showFull ? `uploader:${material.uploader}` : ''
       return { material, ns: 'uploader', namespace: t('rulePage.uploader'), name: material.uploader, full, style: undefined }
     }
     const entry = entryForTag(material.tag)
     return {
-      material, ns: entry.ns, namespace: t('ns.' + entry.ns), name: isZhLocale() ? zhDisplay(entry.name) : entry.raw,
-      full: material.tag, style: styleOf(entry),
+      material, ns: entry.ns, namespace: t('ns.' + entry.ns), name: showFull ? zhDisplay(entry.name) : entry.raw,
+      full: showFull ? material.tag : '', style: styleOf(entry),
     }
   })
   return sortByNamespace(rows, row => row.ns, MATERIAL_NS_ORDER)
@@ -121,7 +123,7 @@ function conditionOf(row: HTMLElement): RuleConditionItem | undefined {
   if (source === 'range') return createRangeCondition(id as RangeField)
   if (source === 'category') return createCategoryCondition(id as GalleryCategory)
   if (source === 'material') return ruleMaterials.value.find(material => String(material.id) === id)
-  const tag = row.querySelector('.eqt-popup__suggestion-tag')?.textContent
+  const tag = row.dataset.tag
   return tag ? createTagCondition(tag) : undefined
 }
 
