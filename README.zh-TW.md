@@ -114,6 +114,7 @@ pnpm build     # 產出 dist/eh-quick-tag.user.js
 - [Add button on exhentai searchbox](https://sleazyfork.org/scripts/454282)
 - [ExAdvancedSearchMemo](https://sleazyfork.org/scripts/454209)
 - [Lolicon E-Hentai/ExHentai Enhancer](https://sleazyfork.org/scripts/516145)
+- [EH Gallery Quick Tag Voting](https://sleazyfork.org/scripts/16450)
 - [sk2589822/Exhentai-Enhancer](https://github.com/sk2589822/Exhentai-Enhancer) — 技術棧參考
 - [mokurin000/e-hentai-tag-count](https://github.com/mokurin000/e-hentai-tag-count)
 

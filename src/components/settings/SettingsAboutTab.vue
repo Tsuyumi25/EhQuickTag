@@ -29,6 +29,9 @@ const appVersion = __APP_VERSION__
         <a class="eqt-about__item" href="https://sleazyfork.org/scripts/516145" target="_blank" rel="noopener">
           <ExternalLink :size="12" /> Lolicon E-Hentai/ExHentai Enhancer
         </a>
+        <a class="eqt-about__item" href="https://sleazyfork.org/scripts/16450" target="_blank" rel="noopener">
+          <ExternalLink :size="12" /> EH Gallery Quick Tag Voting
+        </a>
       </div>
     </div>
 
