@@ -29,11 +29,15 @@ async function moveTab(event: KeyboardEvent) {
   tabs[index]?.focus()
 }
 
-// 輸入法組字中間的半成品也會觸發 input，等離開欄位再收
-function setPrefix(event: Event) {
-  const input = event.target as HTMLInputElement
-  actions.value.prefix = normalizePrefix(input.value)
-  input.value = actions.value.prefix ?? ''
+// 打字當下就套用，預覽跟著變。輸入法組字中的半成品不收，組完字（compositionend）再收。
+// 框內文字不在打字途中改寫：normalizePrefix 會 trim，改寫的話詞跟詞之間的空格一打就被吃掉
+function onPrefixInput(event: Event) {
+  if ((event as InputEvent).isComposing) return
+  actions.value.prefix = normalizePrefix((event.target as HTMLInputElement).value)
+}
+
+function showNormalizedPrefix(event: Event) {
+  (event.target as HTMLInputElement).value = actions.value.prefix ?? ''
 }
 
 function setAmount(key: 'dim' | 'blur', event: Event) {
@@ -128,7 +132,8 @@ async function resetActions() {
             <input
               class="eqt-rule-page__input" type="text" :value="actions.prefix ?? ''" autocomplete="off"
               :aria-label="t('rulePage.titlePrefix')"
-              @change="setPrefix" @keydown.enter.prevent="($event.target as HTMLInputElement).blur()"
+              @input="onPrefixInput" @compositionend="onPrefixInput" @change="showNormalizedPrefix"
+              @keydown.enter.prevent="($event.target as HTMLInputElement).blur()"
             >
           </label>
           <RuleColorField v-model="actions.prefixColor" :label="t('rulePage.textColor')" />
@@ -137,7 +142,7 @@ async function resetActions() {
             <RuleColorField v-model="actions.prefixBackground" :label="t('rulePage.background')" />
             <span class="eqt-rule-page__field">
               <span>{{ t('rulePage.radius') }}</span>
-              <EqtNumberField v-model="actions.prefixRadius" :min="0" :max="MAX_RADIUS" :label="t('rulePage.radius')" />
+              <EqtNumberField v-model="actions.prefixRadius" live :min="0" :max="MAX_RADIUS" :label="t('rulePage.radius')" />
             </span>
           </span>
         </template>
@@ -148,7 +153,7 @@ async function resetActions() {
             <RuleColorField v-model="actions.titleBackground" :label="t('rulePage.background')" />
             <span class="eqt-rule-page__field">
               <span>{{ t('rulePage.radius') }}</span>
-              <EqtNumberField v-model="actions.titleRadius" :min="0" :max="MAX_RADIUS" :label="t('rulePage.radius')" />
+              <EqtNumberField v-model="actions.titleRadius" live :min="0" :max="MAX_RADIUS" :label="t('rulePage.radius')" />
             </span>
           </span>
           <span class="eqt-rule-page__choice" role="group" :aria-label="t('rulePage.target.title')">

@@ -6,22 +6,36 @@ import {
   NumberFieldRoot,
 } from 'reka-ui'
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
   modelValue: number | null
   min?: number
   max?: number
   step?: number
   disabled?: boolean
   label: string
+  /** 打字當下就送出值；預設跟 NumberField 一樣等離開欄位或按 Enter */
+  live?: boolean
 }>(), {
   step: 1,
   disabled: false,
+  live: false,
 })
 
 const emit = defineEmits<{ 'update:modelValue': [value: number] }>()
 
 function updateModelValue(value: number | undefined): void {
   if (typeof value === 'number' && Number.isFinite(value)) emit('update:modelValue', value)
+}
+
+// 只送出已經是範圍內數字的內容；清空、打到一半超出範圍的，照舊留到離開欄位時由 NumberField 收斂
+function onLiveInput(event: Event): void {
+  if (!props.live) return
+  const raw = (event.target as HTMLInputElement).value.trim()
+  const value = Number(raw)
+  if (!raw || !Number.isFinite(value)) return
+  if (props.min !== undefined && value < props.min) return
+  if (props.max !== undefined && value > props.max) return
+  if (value !== props.modelValue) emit('update:modelValue', value)
 }
 </script>
 
@@ -38,7 +52,7 @@ function updateModelValue(value: number | undefined): void {
     <NumberFieldDecrement class="eqt-number-field__step" :title="`${label} −`">
       -
     </NumberFieldDecrement>
-    <NumberFieldInput class="eqt-number-field__input" :title="label" :aria-label="label" />
+    <NumberFieldInput class="eqt-number-field__input" :title="label" :aria-label="label" @input="onLiveInput" />
     <NumberFieldIncrement class="eqt-number-field__step" :title="`${label} +`">
       +
     </NumberFieldIncrement>
