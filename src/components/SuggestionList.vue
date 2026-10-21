@@ -69,19 +69,19 @@ const rowsEl = ref<HTMLElement | null>(null)
 // leading slot 的列排在虛擬列前面、不虛擬化；虛擬列的位置要從它們底下開始算
 const rowsOffset = ref(0)
 
-// virtualizer 的座標（scrollTop、ResizeObserver 回報的尺寸）是元素自己未縮放的 CSS px，
-// getBoundingClientRect 卻是乘過祖先 CSS zoom 的畫面 px。SearchPopup 整個掛著
-// zoom: 1.15、MyTagsPanel 有使用者設定的 zoom，從 rect 換算的值都要除回來，
+// virtualizer 的座標（scrollTop、ResizeObserver 回報的尺寸）和寫回 CSS 的寬度都是元素
+// 自己未縮放的 CSS px，getBoundingClientRect 卻是乘過祖先 CSS zoom 的畫面 px。SearchPopup
+// 整個掛著 zoom: 1.15、MyTagsPanel 有使用者設定的 zoom，從 rect 換算的值都要除回來，
 // 不然同一列兩條量測路徑報出兩種高度，捲動一停就互相修正、清單跳一下
-function layoutHeight(el: Element, rectHeight: number): number {
-  return rectHeight / ((el as HTMLElement).currentCSSZoom || 1)
+function layoutPx(el: Element, rectPx: number): number {
+  return rectPx / ((el as HTMLElement).currentCSSZoom || 1)
 }
 
 function measureRowsOffset(): void {
   if (!rowsEl.value || !listEl.value) return
   const list = listEl.value
   const delta = rowsEl.value.getBoundingClientRect().top - list.getBoundingClientRect().top
-  rowsOffset.value = layoutHeight(list, delta) - list.clientTop + list.scrollTop
+  rowsOffset.value = layoutPx(list, delta) - list.clientTop + list.scrollTop
 }
 useResizeObserver(leadingEl, measureRowsOffset)
 // RuleMaterialPanel 切到「全部」「素材」以外的篩選時 leading 整塊不 render；元素消失
@@ -105,7 +105,7 @@ const virtualizer = useVirtualizer(computed(() => {
     // RuleMaterialPanel 拖曳時 Sortable 會把列本身搬進條件區、原位放一個複本，
     // 列在那邊縮成 chip，量到的高度不屬於清單；沿用快取，免得清單在拖曳中跳動
     measureElement: (el: Element, entry: ResizeObserverEntry | undefined, instance: Virtualizer<HTMLElement, Element>) => {
-      if (rowsEl.value?.contains(el)) return entry?.borderBoxSize[0]?.blockSize ?? layoutHeight(el, el.getBoundingClientRect().height)
+      if (rowsEl.value?.contains(el)) return entry?.borderBoxSize[0]?.blockSize ?? layoutPx(el, el.getBoundingClientRect().height)
       return instance.itemSizeCache.get(instance.options.getItemKey(instance.indexFromElement(el))) ?? EST_ITEM_HEIGHT
     },
   }
@@ -156,7 +156,8 @@ const nsColWidth = computed(() => {
     const w = getWidth(t('ns.' + ns) + '：')
     if (w > max) max = w
   }
-  return max
+  // getWidth 回的是 rect 寬度
+  return listEl.value ? layoutPx(listEl.value, max) : max
 })
 
 // 分辨 selectedIdx 變動來源：mouseenter 觸發時設旗標，watch 看到旗標就跳過 scroll。

@@ -47,7 +47,9 @@ export function useTextMeasure(opts: UseTextMeasureOptions): TextMeasureApi {
     if (!sample) return null
 
     ruler = sample.cloneNode(false) as HTMLElement
-    // 脫離正常 layout、不影響 scroll / hover / 視覺。class chain 不動所以 CSS 100% 套用
+    // 脫離正常 layout、不影響 scroll / hover / 視覺。class chain 不動所以 CSS 100% 套用。
+    // 寬度類屬性例外：sample 可能被 class 固定寬度（SuggestionList 的 ns 欄就是拿量測結果
+    // 回填成 width），ruler 照抄的話量到的是那個寬度、不是文字
     Object.assign(ruler.style, {
       position: 'absolute',
       top: '-9999px',
@@ -55,6 +57,9 @@ export function useTextMeasure(opts: UseTextMeasureOptions): TextMeasureApi {
       visibility: 'hidden',
       whiteSpace: 'nowrap',
       pointerEvents: 'none',
+      width: 'max-content',
+      minWidth: '0',
+      maxWidth: 'none',
     })
     opts.containerRef.value.appendChild(ruler)
     return ruler
