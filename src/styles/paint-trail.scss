@@ -1,0 +1,14 @@
+// drag-select 筆刷軌跡：蓋在整個 viewport 上、完全不吃滑鼠，
+// 否則 elementFromPoint 的 hit-test 會打到 canvas 而不是底下的 chip
+#eqt-paint-trail {
+  position: fixed;
+  inset: 0;
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  pointer-events: none;
+  z-index: var(--eqt-z-popover);
+}

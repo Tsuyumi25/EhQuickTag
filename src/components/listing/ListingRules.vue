@@ -31,8 +31,8 @@ import { loadMyTagsPalette, type MyTagsPalette } from '@/services/mytags/mytagsP
 import { useMyTagsPickLink } from '@/composables/useMyTagsPickLink'
 import { openRule, openRules, openSettings, rulesCollapsed, showRules } from '@/services/appOverlays'
 import {
-  defaultExactMatch, listingDockAlwaysVisible, listingMyTagsColorsEnabled, listingMyTagsMarksEnabled, listingMyTagsScoresEnabled,
-  listingRulesPaused, listingTagSelectEnabled, listingTagsEnabled, nsFormat,
+  defaultExactMatch, listingDockAlwaysVisible, listingDragTrailEnabled, listingMyTagsColorsEnabled, listingMyTagsMarksEnabled,
+  listingMyTagsScoresEnabled, listingRulesPaused, listingTagSelectEnabled, listingTagsEnabled, nsFormat,
 } from '@/services/store'
 import { useEqtToast } from '@/composables/useEqtToast'
 import { pageWindow } from '@/utils/pageWindow'
@@ -296,16 +296,16 @@ function chipFor(target: EventTarget | null) {
   return element ? chipByElement.value.get(element) : undefined
 }
 
-// chip 就是標籤元素本身，上面沒有任何浮層，滑鼠事件的 target 已經是瀏覽器找好的那顆，不必再 elementFromPoint 一次
-function chipFromEvent(event: MouseEvent): ChipRef | null {
-  const chip = chipFor(event.target)
+function chipAt(x: number, y: number): ChipRef | null {
+  const chip = chipFor(document.elementFromPoint(x, y))
   if (!chip) return null
   return { id: chip.name, state: selection.value.get(chip.name) ?? 0 }
 }
 
 const { onAreaMouseDown } = useDragSelect({
-  chipFromEvent,
+  chipAt,
   applySelection: (id, mode) => selectTag(id, mode === 'positive' ? 1 : -1),
+  trail: () => listingDragTrailEnabled.value,
   takeOver: true,
 })
 

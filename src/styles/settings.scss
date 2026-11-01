@@ -61,7 +61,8 @@
   }
 
   // 二級設定：縮排對齊父 checkbox 的 label 起點（checkbox 25px + gap 8px），
-  // 視覺上表達從屬關係
+  // 視覺上表達從屬關係。checkbox 列與欄位列共用同一個縮排
+  &__row--sub,
   &__field-row--sub {
     padding-left: calc(var(--eqt-ctrl-h) + 8px);
   }

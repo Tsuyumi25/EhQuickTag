@@ -162,6 +162,8 @@ const INITIAL_SETTINGS = {
   // 有一段提醒且通常很長會擋住 90% 定義內容，預設收起 (false)；使用者仍可
   // per-panel 點「▸ Notes」展開，切下個 chip 又回預設
   wikiPreludeExpanded: false,
+  // 拖曳多選時沿游標畫一條會淡掉的軌跡；gallery 與列表（含 dock）各自一個開關
+  galleryDragTrailEnabled: true,
   followCurrentSite: true,
   // 列表頁把原生標籤換成插件的 chip（My Tags 顏色、分數、關注／屏蔽標記）；關掉就留原生標籤，
   // 標籤選取跟著不能用，因為選取是做在 chip 上的
@@ -173,6 +175,7 @@ const INITIAL_SETTINGS = {
   listingTagSelectEnabled: true,
   // 沒選標籤時 dock 也一直在，不必先點一個標籤才叫得出來
   listingDockAlwaysVisible: false,
+  listingDragTrailEnabled: true,
   // 暫停所有圖庫規則在列表上的效果，規則本身不動；想看沒有規則時的列表用
   listingRulesPaused: false,
   // My Tags Enhancer：plugin 在 /mytags 是否接管原生標籤管理 UI。跟
@@ -231,6 +234,7 @@ export const galleryDblClickRight = refs.galleryDblClickRight
 export const galleryDblClickLeftNewTabActive  = refs.galleryDblClickLeftNewTabActive
 export const galleryDblClickRightNewTabActive = refs.galleryDblClickRightNewTabActive
 export const wikiPreludeExpanded = refs.wikiPreludeExpanded
+export const galleryDragTrailEnabled = refs.galleryDragTrailEnabled
 export const followCurrentSite  = refs.followCurrentSite
 export const listingTagsEnabled = refs.listingTagsEnabled
 export const listingMyTagsColorsEnabled = refs.listingMyTagsColorsEnabled
@@ -238,6 +242,7 @@ export const listingMyTagsScoresEnabled = refs.listingMyTagsScoresEnabled
 export const listingMyTagsMarksEnabled = refs.listingMyTagsMarksEnabled
 export const listingTagSelectEnabled = refs.listingTagSelectEnabled
 export const listingDockAlwaysVisible = refs.listingDockAlwaysVisible
+export const listingDragTrailEnabled = refs.listingDragTrailEnabled
 export const listingRulesPaused = refs.listingRulesPaused
 export const myTagsEnhancerEnabled = refs.myTagsEnhancerEnabled
 export const myTagsPreviewCoverScale = refs.myTagsPreviewCoverScale

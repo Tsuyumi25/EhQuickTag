@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { Funnel, PanelBottom, Rows3, Settings, ToggleLeft } from '@lucide/vue'
+import { Funnel, Rows3, Settings, ToggleLeft } from '@lucide/vue'
 import { t } from '@/composables/useI18n'
 import { openEvrSettings } from '@/services/appOverlays'
 import SettingsTagAppearanceSection from './SettingsTagAppearanceSection.vue'
 import {
-  listingDockAlwaysVisible, listingRulesPaused, listingTagSelectEnabled, listingTagsEnabled,
+  listingDockAlwaysVisible, listingDragTrailEnabled, listingRulesPaused, listingTagSelectEnabled, listingTagsEnabled,
 } from '@/services/store'
 import { evrInstalled } from '@/utils/evr'
 
@@ -32,6 +32,30 @@ const evrInstall = () => t('settings.listingEvrInstall').split(/(\{evr\})/)
           />
           <span class="eqt-settings__label">{{ t('settings.listingTags') }}</span>
         </label>
+
+        <!-- 選取做在插件的標籤 chip 上，標籤沒換掉就選不了；軌跡與 Dock 常駐都是選取的附屬行為 -->
+        <label class="eqt-settings__row">
+          <input
+            type="checkbox" :checked="listingTagSelectEnabled" :disabled="!listingTagsEnabled"
+            @change="listingTagSelectEnabled = ($event.target as HTMLInputElement).checked"
+          />
+          <span class="eqt-settings__label">{{ t('settings.listingTagSelect') }}</span>
+        </label>
+        <p class="eqt-settings__hint">{{ t('settings.listingTagSelectHint') }}</p>
+        <label class="eqt-settings__row eqt-settings__row--sub">
+          <input
+            type="checkbox" :checked="listingDragTrailEnabled" :disabled="!listingTagsEnabled || !listingTagSelectEnabled"
+            @change="listingDragTrailEnabled = ($event.target as HTMLInputElement).checked"
+          />
+          <span class="eqt-settings__label">{{ t('settings.dragTrail') }}</span>
+        </label>
+        <label class="eqt-settings__row eqt-settings__row--sub">
+          <input
+            type="checkbox" :checked="listingDockAlwaysVisible" :disabled="!listingTagsEnabled || !listingTagSelectEnabled"
+            @change="listingDockAlwaysVisible = ($event.target as HTMLInputElement).checked"
+          />
+          <span class="eqt-settings__label">{{ t('settings.listingDockAlways') }}</span>
+        </label>
       </section>
 
       <SettingsTagAppearanceSection scene="listing" />
@@ -44,27 +68,7 @@ const evrInstall = () => t('settings.listingEvrInstall').split(/(\{evr\})/)
         </button>
       </section>
 
-      <!-- 選取做在插件的標籤 chip 上，標籤沒換掉就選不了；圖庫規則也是圖庫列表強化的一部分 -->
-      <section class="eqt-settings__section">
-        <h4 class="eqt-settings__subtitle"><PanelBottom :size="14" /> {{ t('settings.sectionListingDock') }}</h4>
-        <label class="eqt-settings__row">
-          <input
-            type="checkbox" :checked="listingTagSelectEnabled" :disabled="!listingTagsEnabled"
-            @change="listingTagSelectEnabled = ($event.target as HTMLInputElement).checked"
-          />
-          <span class="eqt-settings__label">{{ t('settings.listingTagSelect') }}</span>
-        </label>
-        <p class="eqt-settings__hint">{{ t('settings.listingTagSelectHint') }}</p>
-
-        <label class="eqt-settings__row">
-          <input
-            type="checkbox" :checked="listingDockAlwaysVisible" :disabled="!listingTagsEnabled || !listingTagSelectEnabled"
-            @change="listingDockAlwaysVisible = ($event.target as HTMLInputElement).checked"
-          />
-          <span class="eqt-settings__label">{{ t('settings.listingDockAlways') }}</span>
-        </label>
-      </section>
-
+      <!-- 圖庫規則也是圖庫列表強化的一部分 -->
       <section class="eqt-settings__section">
         <h4 class="eqt-settings__subtitle"><Funnel :size="14" /> {{ t('settings.sectionListingRules') }}</h4>
         <label class="eqt-settings__row">

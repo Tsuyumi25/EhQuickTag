@@ -28,8 +28,10 @@ export default defineConfig(({ command }) => ({
       entry: 'src/main.ts',
       generate: ({ userscript, mode }) => {
         if (mode !== 'build') return userscript
-        const license = readFileSync(new URL('./node_modules/dompurify/LICENSE', import.meta.url), 'utf8')
-        return `${userscript}\n\n/*!\nDOMPurify ${pkg.dependencies.dompurify}\nCopyright Cure53 and other contributors\n${license}\n*/`
+        const readLicense = (path: string) => readFileSync(new URL(path, import.meta.url), 'utf8')
+        // laser-pointer 的 dist 沒有附授權 banner，打包後原文就不見了，MIT 要求散布時附上
+        return `${userscript}\n\n/*!\nDOMPurify ${pkg.dependencies.dompurify}\nCopyright Cure53 and other contributors\n${readLicense('./node_modules/dompurify/LICENSE')}\n*/`
+          + `\n\n/*!\n@excalidraw/laser-pointer ${pkg.dependencies['@excalidraw/laser-pointer']}\n${readLicense('./node_modules/@excalidraw/laser-pointer/LICENSE')}\n*/`
       },
       userscript: {
         namespace: 'https://github.com/Tsuyumi25/EhQuickTag',

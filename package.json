@@ -13,6 +13,7 @@
     "release": "release-it"
   },
   "dependencies": {
+    "@excalidraw/laser-pointer": "1.3.2",
     "@floating-ui/vue": "^1.1.11",
     "@lucide/vue": "^1.48.0",
     "@tanstack/vue-virtual": "^3.13.37",
