@@ -159,10 +159,14 @@ export async function fetchThresholds(): Promise<Thresholds> {
   } catch { return { filter: null } }
 }
 
-async function fetchMyTagsDoc(url: string): Promise<Document | null> {
+/** 未登入時 EH 以 302 把 /mytags 導去登入頁，fetch 跟完轉址後拿到的是登入表單 */
+const SIGNED_OUT_PATH = '/bounce_login.php'
+
+async function fetchMyTagsDoc(url: string): Promise<Document | 'signed-out' | null> {
   try {
     const res = await fetch(url, { credentials: 'same-origin' })
     if (!res.ok) return null
+    if (new URL(res.url, location.href).pathname === SIGNED_OUT_PATH) return 'signed-out'
     return new DOMParser().parseFromString(await res.text(), 'text/html')
   } catch { return null }
 }
@@ -182,7 +186,7 @@ export function parseTagSetSnapshot(doc: Document, value: string): TagSetSnapsho
 /** 抓另一組標籤集的頁面。回傳 null 代表抓失敗 */
 export async function fetchTagSet(value: string): Promise<TagSetSnapshot | null> {
   const doc = await fetchMyTagsDoc(`/mytags?tagset=${encodeURIComponent(value)}`)
-  return doc ? parseTagSetSnapshot(doc, value) : null
+  return doc instanceof Document ? parseTagSetSnapshot(doc, value) : null
 }
 
 export interface TagSetIndex {
@@ -191,9 +195,10 @@ export interface TagSetIndex {
   current: TagSetSnapshot
 }
 
-export async function fetchTagSetIndex(): Promise<TagSetIndex | null> {
+/** `'signed-out'` 代表沒有登入、根本沒有 My Tags；null 代表抓失敗 */
+export async function fetchTagSetIndex(): Promise<TagSetIndex | 'signed-out' | null> {
   const doc = await fetchMyTagsDoc('/mytags')
-  if (!doc) return null
+  if (doc === null || doc === 'signed-out') return doc
   const options = [...doc.querySelectorAll<HTMLOptionElement>('#tagset_outer select option')]
   const current = doc.querySelector<HTMLOptionElement>('#tagset_outer option[selected]')?.value
     ?? options[0]?.value ?? '1'

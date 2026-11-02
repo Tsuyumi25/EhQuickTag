@@ -4,6 +4,7 @@ import {
   fetchTagSet, fetchTagSetIndex,
   type MyTagRow, type TagSetSnapshot,
 } from '@/composables/useEhMyTagsHost'
+import { pageWindow } from '@/utils/pageWindow'
 
 type MyTagsPaletteEntry = TagColors & Pick<MyTagRow, 'weight' | 'hidden' | 'watch'>
 export type MyTagsPalette = Record<string, MyTagsPaletteEntry>
@@ -60,8 +61,9 @@ export async function saveMyTagsPalette(palette: MyTagsPalette): Promise<void> {
   await cacheSet(KEY, JSON.stringify({ schema: SCHEMA, tags: palette }))
 }
 
-async function fetchAllTagSets(): Promise<TagSetSnapshot[]> {
+async function fetchAllTagSets(): Promise<TagSetSnapshot[] | null> {
   const index = await fetchTagSetIndex()
+  if (index === 'signed-out') return null
   if (!index) throw new Error('mytags-unreachable')
   const rest = await Promise.all(index.order
     .filter((value) => value !== index.current.value)
@@ -73,13 +75,20 @@ async function fetchAllTagSets(): Promise<TagSetSnapshot[]> {
   return index.order.flatMap((value) => byValue.get(value) ?? [])
 }
 
-export async function refreshMyTagsPalette(): Promise<MyTagsPalette> {
-  const palette = buildMyTagsPalette(await fetchAllTagSets())
+/** null 代表未登入：沒有 My Tags 可抓，也不算失敗 */
+export async function refreshMyTagsPalette(): Promise<MyTagsPalette | null> {
+  const sets = await fetchAllTagSets()
+  if (!sets) return null
+  const palette = buildMyTagsPalette(sets)
   await saveMyTagsPalette(palette)
   return palette
 }
 
-export async function loadMyTagsPalette(): Promise<MyTagsPalette> {
+/** null 代表未登入，chip 照一般配色；只有真的抓不到才 reject */
+export async function loadMyTagsPalette(): Promise<MyTagsPalette | null> {
+  // gallery 頁以 apiuid = -1 標示未登入，不必打 /mytags 也不該拿上一位登入者的快取。
+  // 列表頁不論登入與否都沒有 apiuid，只能交給 /mytags 的轉址判斷
+  if (pageWindow<{ apiuid?: number }>().apiuid === -1) return null
   const cached = parsePalette(await cacheGet(KEY))
   return cached ?? await refreshMyTagsPalette()
 }

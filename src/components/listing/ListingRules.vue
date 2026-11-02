@@ -35,7 +35,6 @@ import {
   listingMyTagsScoresEnabled, listingRulesPaused, listingTagSelectEnabled, listingTagsEnabled, nsFormat,
 } from '@/services/store'
 import { useEqtToast } from '@/composables/useEqtToast'
-import { pageWindow } from '@/utils/pageWindow'
 import '@/styles/listing-rules.scss'
 
 const { items, chips } = useListingRuleHost({ tagsEnabled: () => listingTagsEnabled.value })
@@ -48,7 +47,7 @@ const toast = useEqtToast()
 const myTagsPalette = shallowRef<MyTagsPalette | null>(null)
 let paletteLoading = false
 watch(() => items.value.length > 0, async available => {
-  if (!available || myTagsPalette.value || paletteLoading || pageWindow<{ apiuid?: number }>().apiuid === -1) return
+  if (!available || myTagsPalette.value || paletteLoading) return
   paletteLoading = true
   try {
     myTagsPalette.value = await loadMyTagsPalette()

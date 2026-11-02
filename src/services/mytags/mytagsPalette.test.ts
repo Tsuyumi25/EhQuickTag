@@ -10,13 +10,15 @@ const { storage, cacheGet, cacheSet } = vi.hoisted(() => {
   }
 })
 
-const { fetchTagSet, fetchTagSetIndex } = vi.hoisted(() => ({
+const { fetchTagSet, fetchTagSetIndex, page } = vi.hoisted(() => ({
   fetchTagSet: vi.fn(),
   fetchTagSetIndex: vi.fn(),
+  page: {} as { apiuid?: number },
 }))
 
 vi.mock('@/services/gmStorage', () => ({ cacheGet, cacheSet }))
 vi.mock('@/composables/useEhMyTagsHost', () => ({ fetchTagSet, fetchTagSetIndex }))
+vi.mock('@/utils/pageWindow', () => ({ pageWindow: () => page }))
 
 import {
   buildMyTagsPalette,
@@ -36,6 +38,7 @@ function set(value: string, rows: MyTagRow[], extra: Partial<TagSetSnapshot> = {
 beforeEach(() => {
   storage.clear()
   vi.clearAllMocks()
+  delete page.apiuid
 })
 
 describe('buildMyTagsPalette', () => {
@@ -83,8 +86,8 @@ describe('loadMyTagsPalette', () => {
 
     const palette = await loadMyTagsPalette()
     expect(fetchTagSet).toHaveBeenCalledWith('1')
-    expect(palette['female:a']!.edge).toBe('FF0000')
-    expect(palette['female:b']!.edge).toBe('00FF00')
+    expect(palette!['female:a']!.edge).toBe('FF0000')
+    expect(palette!['female:b']!.edge).toBe('00FF00')
 
     vi.clearAllMocks()
     await expect(loadMyTagsPalette()).resolves.toEqual(palette)
@@ -107,7 +110,7 @@ describe('loadMyTagsPalette', () => {
     }))
     fetchTagSetIndex.mockResolvedValue({ order: ['1'], current: set('1', [row('female:a', '#00FF00')]) })
 
-    expect((await loadMyTagsPalette())['female:a']!.edge).toBe('00FF00')
+    expect((await loadMyTagsPalette())!['female:a']!.edge).toBe('00FF00')
   })
 
   it('舊版快取重新載入追蹤、權重與隱藏狀態，後續直接使用新快取', async () => {
@@ -124,8 +127,8 @@ describe('loadMyTagsPalette', () => {
     })
 
     const palette = await loadMyTagsPalette()
-    expect(palette['female:a']).toMatchObject({ weight: -25, hidden: true, watch: true })
-    expect(palette['female:b']).toMatchObject({ weight: 0, hidden: false, watch: false })
+    expect(palette!['female:a']).toMatchObject({ weight: -25, hidden: true, watch: true })
+    expect(palette!['female:b']).toMatchObject({ weight: 0, hidden: false, watch: false })
     vi.clearAllMocks()
     await expect(loadMyTagsPalette()).resolves.toEqual(palette)
     expect(fetchTagSetIndex).not.toHaveBeenCalled()
@@ -159,5 +162,20 @@ describe('loadMyTagsPalette', () => {
     await expect(loadMyTagsPalette()).resolves.toEqual({
       'female:a': { text: 'f1f1f1', face: 'df0000', edge: 'FF0000', weight: 10, hidden: false, watch: false },
     })
+  })
+
+  it('/mytags 轉去登入頁就當成沒有 My Tags，不報錯也不寫快取', async () => {
+    fetchTagSetIndex.mockResolvedValue('signed-out')
+
+    await expect(loadMyTagsPalette()).resolves.toBeNull()
+    expect(cacheSet).not.toHaveBeenCalled()
+  })
+
+  it('頁面標明未登入時連快取都不讀，免得套上一位登入者的配色', async () => {
+    await saveMyTagsPalette({})
+    page.apiuid = -1
+
+    await expect(loadMyTagsPalette()).resolves.toBeNull()
+    expect(fetchTagSetIndex).not.toHaveBeenCalled()
   })
 })
