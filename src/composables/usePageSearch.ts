@@ -2,12 +2,13 @@ import { ref } from 'vue'
 import { createPageContext } from '@/composables/createPageContext'
 import { useEhFormHost } from '@/composables/useEhFormHost'
 import { bindSearchBar } from '@/services/search/searchSession'
-import { submitSearch } from '@/services/search/submitSearch'
+import { searchHref, submitSearch } from '@/services/search/submitSearch'
 import type { DblClickAction } from '@/services/store'
 
 export const usePageSearch = createPageContext(() => {
   const host = useEhFormHost()
   const searchText = host?.searchText ?? ref('')
+  const form = host?.input.form ?? null
 
   bindSearchBar({
     modelValue: () => searchText.value,
@@ -15,8 +16,13 @@ export const usePageSearch = createPageContext(() => {
   })
 
   function search(action: DblClickAction, newTabActive?: boolean): void {
-    submitSearch(action, host?.input.form ?? null, searchText.value, newTabActive)
+    submitSearch(action, form, searchText.value, newTabActive)
   }
 
-  return { searchText, search }
+  // 原生表單的分類、進階選項由 EH 自己的 onclick 改，不是 reactive：要用的當下再讀
+  function href(): string {
+    return searchHref(form, searchText.value)
+  }
+
+  return { searchText, search, href, inPlace: !!form }
 })

@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { ref, watch } from 'vue'
 import { BrushCleaning, Search, X } from '@lucide/vue'
 import { searchPanelShowZh as showZh, enableHistory } from '@/services/store'
 import { clearSearch, clearHistory, recordSubmitAndFlush } from '@/services/search/searchSession'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
+import { usePageSearch } from '@/composables/usePageSearch'
 import { t } from '@/composables/useI18n'
 
 // 共用 controls：lang toggle / clearHistory / addToSearch / clearSearch / search。
@@ -28,14 +30,32 @@ const { resolvedMode } = useDisplayConfig()
 
 function toggleLang(): void { showZh.value = !showZh.value }
 
-// 送出前先把當前 A 推進 H + sync flush GM storage：
-//   - navigate 走後新頁面 mount 也會在 loadHistory 補一次，但若不 await flush，
-//     form.submit() 同步 navigate 跟 cacheSet async write 會競賽（finding #3）
-//   - searchNewTab 路徑當前 tab 不 navigate，flush 也只是把 100ms debounce 提前
-//     觸發，無副作用
-async function onSearchClick(): Promise<void> {
+// 搜尋做成連結：中鍵、Ctrl 點、右鍵選單都能開新分頁。href 讀的是原生表單，分類與進階選項
+// 不是 reactive，游標移上去、focus、按下時各重讀一次，送出去的永遠是當下的表單
+const pageSearch = usePageSearch()
+const searchHref = ref('')
+function refreshHref(): void { searchHref.value = pageSearch.href() }
+watch(pageSearch.searchText, refreshHref, { immediate: true })
+
+function opensElsewhere(e: MouseEvent): boolean {
+  return e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey
+}
+
+// 在原頁送出時先把當前 A 推進 H + sync flush GM storage：form.submit() 同步 navigate，
+// 不 await 的話 cacheSet async write 會跟 navigate 競賽（finding #3）。
+// 開到別的分頁時原頁還在，flush 只是把 100ms debounce 提前，交給瀏覽器照連結開
+async function onSearchClick(e: MouseEvent): Promise<void> {
+  if (!pageSearch.inPlace || opensElsewhere(e)) {
+    void recordSubmitAndFlush()
+    return
+  }
+  e.preventDefault()
   await recordSubmitAndFlush()
   emit('search')
+}
+
+function onSearchAuxClick(e: MouseEvent): void {
+  if (e.button === 1) void recordSubmitAndFlush()
 }
 </script>
 
@@ -72,13 +92,19 @@ async function onSearchClick(): Promise<void> {
         data-testid="clear-search"
         @click="clearSearch"
       ><X aria-hidden="true" /><span>{{ t('tagbar.clearSearch') }}</span></button>
-      <button
+      <a
         v-if="showSearch"
         class="eqt-search-controls__text-btn"
-        type="button"
         data-testid="search-submit"
+        :href="searchHref"
+        :target="pageSearch.inPlace ? undefined : '_blank'"
+        rel="noopener"
+        @mouseenter="refreshHref"
+        @focus="refreshHref"
+        @mousedown="refreshHref"
         @click="onSearchClick"
-      ><Search aria-hidden="true" /><span>{{ t('tagbar.search') }}</span></button>
+        @auxclick="onSearchAuxClick"
+      ><Search aria-hidden="true" /><span>{{ t('tagbar.search') }}</span></a>
     </div>
   </div>
 </template>
@@ -146,6 +172,7 @@ async function onSearchClick(): Promise<void> {
   padding: 0 10px;
   line-height: 1;
   white-space: nowrap;
+  text-decoration: none;
 
   > svg {
     width: var(--eqt-fs-md);
