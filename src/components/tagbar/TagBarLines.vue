@@ -8,8 +8,11 @@ import LineColorSwatch from '@/components/LineColorSwatch.vue'
 import ContextMenu from '@/components/ContextMenu.vue'
 import SeparatorSettingsPopup from './SeparatorSettingsPopup.vue'
 import { TagState, type Line, type Button, type ButtonLine, type TagButton, type LineTextAlign } from '@/types'
-import { tokenize, buildIdentityIndex, getState as _getState, setTagState, getNextRightClickState } from '@/services/search/tagState'
-import { lines, profiles, activeProfileIdx, moveLineToProfile, moveButtonToProfile, buttonLineTextAlign, separatorLineTextAlign, followCurrentSite } from '@/services/store'
+import { tokenize, buildIdentityIndex, getState as _getState, setTagState, nextTagState, PICK_OF_STATE } from '@/services/search/tagState'
+import type { Selection } from '@/services/tagPick'
+import type { ChipRef } from '@/services/gallery/dragSelectMachine'
+import { useDragSelect } from '@/composables/useDragSelect'
+import { lines, profiles, activeProfileIdx, moveLineToProfile, moveButtonToProfile, buttonLineTextAlign, separatorLineTextAlign, followCurrentSite, tagbarDragTrailEnabled } from '@/services/store'
 import { baseDragOptions, EQT_TAGS_GROUP, EQT_LINES_GROUP } from '@/utils/drag'
 import { resolveButtonUrl } from '@/utils/ehUrl'
 import { dismissTerms } from '@/services/search/searchSession'
@@ -397,23 +400,43 @@ function dispatchTransition(tags: string[], next: TagState): void {
   }
 }
 
-function onLeftClick(b: TagButton) {
-  const state = getState(b)
-  // 身份模型語意：左鍵 = 「這是我對這身份的主要態度」。
-  //   - Include → Off （toggle off）
-  //   - Off / Or / Exclude → Include （宣告：我要這個身份是 Include view）
-  // Or / Exclude 不被當作 toggle-off 觸發態，避免「另一顆按鈕 emit 了 -X，
-  // 點本顆要兩次才能 include」的反直覺 UX。
-  const next = state === TagState.Include ? TagState.Off : TagState.Include
-  dispatchTransition(b.tags, next)
+function press(b: TagButton, key: Selection) {
+  const current = getState(b)
+  const next = nextTagState(b.tags, b.disabledModes, current, key)
+  if (next !== current) dispatchTransition(b.tags, next)
 }
 
-function onRightClick(event: MouseEvent, b: TagButton) {
-  event.preventDefault()
-  const state = getState(b)
-  const next = getNextRightClickState(b.tags, b.disabledModes, state)
-  if (next === null) return
-  dispatchTransition(b.tags, next)
+// tagbar 的按鈕也能刷：跟 tagging list 同一台拖曳狀態機，左／右／中鍵按下去在放開時才生效，
+// 拖過門檻就沿路套到同態的按鈕上。tag 按鈕和行裡的空白處都能起筆；URL 按鈕、行選單這類
+// 其他互動元素不起筆，也不算 chip。按鈕缺筆刷要的狀態時 nextTagState 原地不動，所以刷不動它
+function tagButtonAt(li: number, ti: number): TagButton | null {
+  const line = lines[li]
+  const button = line?.kind === 'buttons' ? line.buttons[ti] : undefined
+  return button?.kind === 'tag' ? button : null
+}
+
+function chipAt(x: number, y: number): ChipRef | null {
+  const el = document.elementFromPoint(x, y)?.closest<HTMLElement>('[data-tag-btn]')
+  if (!el) return null
+  const button = tagButtonAt(Number(el.dataset.li), Number(el.dataset.ti))
+  return button ? { id: `${el.dataset.li}:${el.dataset.ti}`, state: PICK_OF_STATE[getState(button)] } : null
+}
+
+const { onAreaMouseDown } = useDragSelect({
+  chipAt,
+  applySelection: (id, mode) => {
+    const [li, ti] = id.split(':').map(Number)
+    const button = tagButtonAt(li, ti)
+    if (button) press(button, mode)
+  },
+  trail: () => tagbarDragTrailEnabled.value,
+})
+
+function onLinesMouseDown(event: MouseEvent) {
+  if (props.editing) return
+  const target = event.target as Element
+  if (!target.closest('[data-tag-btn]') && target.closest('button, a, input, [contenteditable]')) return
+  onAreaMouseDown(event)
 }
 
 defineExpose({ closeActionMenus })
@@ -436,6 +459,7 @@ defineExpose({ closeActionMenus })
     class="eqt-tag-bar__line-rows"
     @change="onLineChange"
     @start="closeActionMenus"
+    @mousedown="onLinesMouseDown"
   >
     <template #item="{ element: line, index: li }">
       <div
@@ -560,8 +584,9 @@ defineExpose({ closeActionMenus })
               :class="editing ? 'eqt-tag-bar__btn--editing' : STATE_CLASS[getState(b)]"
               type="button"
               :style="b.color ? { '--line-color': b.color } : undefined"
-              @click="editing ? onConfigure(li, ti) : onLeftClick(b)"
-              @contextmenu.prevent.stop="editing ? openTagMenu($event, li, ti) : onRightClick($event, b)"
+              :data-li="li" :data-ti="ti" data-tag-btn
+              @click="editing ? onConfigure(li, ti) : $event.detail === 0 && press(b, 'positive')"
+              @contextmenu.prevent.stop="editing && openTagMenu($event, li, ti)"
             >{{ b.label || b.tags.join(', ') }}</button>
           </template>
         </Draggable>

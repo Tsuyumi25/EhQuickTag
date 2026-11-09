@@ -2,7 +2,7 @@
 import type { GalleryTag } from '@/composables/useEhGalleryHost'
 import type { TagTier } from '@/composables/useEhGalleryPreview'
 import type { MyTagsPalette } from '@/services/mytags/mytagsPalette'
-import type { Selection } from '@/services/gallery/dragSelectMachine'
+import type { Selection } from '@/services/tagPick'
 
 export interface GalleryTagListChip {
   tag: GalleryTag
@@ -35,7 +35,8 @@ import {
   listingMyTagsColorsEnabled, listingMyTagsScoresEnabled, listingMyTagsMarksEnabled, listingDragTrailEnabled,
 } from '@/services/store'
 import { useDragSelect } from '@/composables/useDragSelect'
-import type { ChipRef, TriState } from '@/services/gallery/dragSelectMachine'
+import type { ChipRef } from '@/services/gallery/dragSelectMachine'
+import { pickOf } from '@/services/tagPick'
 import type { VoteState } from '@/services/gallery/galleryVote'
 import { CornerLeftUp, TagPlus, CircleCheck, CircleDashedCheck } from '@lucide/vue'
 import { CircleDottedCheck } from './circleDottedCheck'
@@ -79,9 +80,7 @@ function chipFromPoint(x: number, y: number): ChipRef | null {
   if (!chipEl || !taglistEl.value?.contains(chipEl)) return null
   const nsRaw = chipEl.dataset.nsRaw
   if (!nsRaw) return null
-  const s = selectionByNsRaw.value.get(nsRaw)
-  const state: TriState = s === 'positive' ? 1 : s === 'negative' ? -1 : 0
-  return { id: nsRaw, state }
+  return { id: nsRaw, state: pickOf(selectionByNsRaw.value.get(nsRaw)) }
 }
 
 const { onAreaMouseDown } = useDragSelect({

@@ -4,6 +4,7 @@ import { Ban, Eye } from '@lucide/vue'
 import type { TagColors } from '@/services/mytags/mytagsColors'
 import { useMyTagsColors } from '@/composables/useMyTagsColors'
 import { chipBadges, myTagsVars } from '@/services/mytags/chipBadges'
+import type { Selection } from '@/services/tagPick'
 
 const props = withDefaults(defineProps<{
   full: string
@@ -16,7 +17,7 @@ const props = withDefaults(defineProps<{
   watch?: boolean
   showScore?: boolean
   showMarks?: boolean
-  selection?: 'positive' | 'negative'
+  selection?: Selection
   vote?: 'up' | 'down' | null
 }>(), {
   tier: 'gt',
@@ -40,8 +41,7 @@ const badges = computed(() => chipBadges(props))
     :style="personalStyle"
     :class="[
       colors && 'eqt-gallery-chip--mytags-colored',
-      selection === 'positive' && 'eqt-gallery-chip--selected-positive',
-      selection === 'negative' && 'eqt-gallery-chip--selected-negative',
+      selection && ['eqt-gallery-chip--selected', `eqt-gallery-chip--selected-${selection}`],
       `eqt-gallery-chip--${tier}`,
       vote === 'up' && 'eqt-gallery-chip--voted-up',
       vote === 'down' && 'eqt-gallery-chip--voted-down',

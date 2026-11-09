@@ -1,10 +1,11 @@
 <script setup lang="ts">
 // Gallery 詳情頁的 taglist 接管：
-//   - 統一 selection Map<nsRaw, 'positive' | 'negative'>，state ∈ {1, 0, -1}（後者
-//     用 undefined 代表）。對齊 vote 的心智模型：左鍵 +1、右鍵 −1，clamp 到 [-1, 1]
+//   - 統一 selection Map<nsRaw, Selection>：tagPick 的按法，positive / negative / or
+//     對應 1 / -1 / 'or'，0 用 undefined 代表。左鍵讓排除回到 0、其他回到 1，右鍵把包含或 OR 清掉、把 0
+//     推成排除，中鍵直接到 OR
 //   - selection 跟 action 解耦——同一份選擇可以送 search（positive=include /
-//     negative=exclude）也可以送 vote (positive=+1 / negative=−1)
-//   - drag select 走 cohort 模型：drag 只影響跟起點同態的 chip。起點 + drag 方向
+//     negative=exclude / or=~）也可以送 vote（positive=+1 / negative=−1；or 不投）
+//   - drag select 走 cohort 模型：drag 只影響跟起點同態的 chip。起點 + 按下的鍵
 //     決定 cohort 跟 transition：起點 0 + 左 = 把 0 推 1、起點 1 + 右 = 把 1 推 0
 //     (cancel)、起點 -1 + 左 = 把 -1 推 0 (cancel)，依此類推
 //   - 任何選取動作都 setPanelTag(chip.tag)：對 x tag 的任何操作都繼續顯示定義，
@@ -26,7 +27,7 @@ import { useEqtToast } from '@/composables/useEqtToast'
 import { useEhGalleryHost, parseTaglistRoot, type GalleryTag } from '@/composables/useEhGalleryHost'
 import { useIntroPanel } from '@/composables/useIntroPanel'
 import { Settings, Search, BookOpen, Tags, TagPlus, ClipboardPaste, ThumbsDown, ThumbsUp, X } from '@lucide/vue'
-import type { Selection } from '@/services/gallery/dragSelectMachine'
+import { pickOf, selectionOf, stepPick, prefixOf, type TagPick, type Selection } from '@/services/tagPick'
 import GalleryAddInline from './GalleryAddInline.vue'
 import GalleryIntroPanel from './GalleryIntroPanel.vue'
 import GalleryTagListRows, { type GalleryTagListChip, type GalleryTagListGroup } from './GalleryTagListRows.vue'
@@ -208,34 +209,29 @@ const selectedCount = computed(() => selection.value.size)
 const votePending = ref(false)
 
 // === selection update ===
-// vote-style 3-state: 1/0/-1（positive / off / negative）。
-// target 是「按鍵方向」：左鍵 = +1、右鍵 = −1。當前狀態 + delta 後 clamp 到 [-1, 1]：
-//   off + 左 = positive；positive + 左 = positive（已上限）；negative + 左 = off
-//   off + 右 = negative；negative + 右 = negative（已下限）；positive + 右 = off
-//
-// 「新增」row 的 chip min 抬高到 0（不能 -1）——add 跟 exclude 在語意上無關
+// target 是按下的鍵；落點由 tagPick 決定。
+// 「新增」row 的 chip 不能停在 -1——只有這本已經有的標籤能投反對，純候選 add 跟 exclude 在語意上無關
+const CANDIDATE_PICKS: ReadonlySet<TagPick> = new Set<TagPick>([0, 1, 'or'])
 function setSelection(nsRaw: string, target: Selection): void {
-  const cur = selection.value.get(nsRaw)
-  const curN = cur === 'positive' ? 1 : cur === 'negative' ? -1 : 0
-  const delta = target === 'positive' ? 1 : -1
-  // 只有這本已經有的標籤能投反對；純候選 add 跟 exclude 在語意上無關
-  const min = currentNsRaws.value.has(nsRaw) ? -1 : 0
-  const nextN = Math.max(min, Math.min(1, curN + delta))
-  if (nextN === curN) return
+  const cur = pickOf(selection.value.get(nsRaw))
+  const allowed = currentNsRaws.value.has(nsRaw) ? undefined : CANDIDATE_PICKS
+  const nextSelection = selectionOf(stepPick(cur, target, allowed))
+  if (nextSelection === selection.value.get(nsRaw)) return
 
   const next = new Map(selection.value)
-  if (nextN === 0) next.delete(nsRaw)
-  else next.set(nsRaw, nextN === 1 ? 'positive' : 'negative')
+  if (nextSelection) next.set(nsRaw, nextSelection)
+  else next.delete(nsRaw)
   selection.value = next
 }
 
 // === GalleryAddInline picker 對接 ===
 // pickedIds：popup 用來標亮已選 entry（fullTag 比對）。包含原 taglist 跟
-// 候選內已 positive 的條目，這樣 dedup 後使用者看得到「已加過了」
+// 候選內已選成 positive 或 or 的條目，這樣 dedup 後使用者看得到「已加過了」
 const pickedIds = computed<ReadonlySet<string>>(() => {
   const ids = new Set<string>()
   for (const tag of allTags.value) {
-    if (selection.value.get(tag.nsRaw) === 'positive') ids.add(tag.nsRaw)
+    const state = selection.value.get(tag.nsRaw)
+    if (state === 'positive' || state === 'or') ids.add(tag.nsRaw)
   }
   return ids
 })
@@ -248,8 +244,8 @@ function onPickFromAdd(entry: TagEntry, mode: 'positive' | 'negative'): void {
     // 面板要在任何 click 都刷到當前 tag：即使 selection 沒變（已 positive 再左鍵、
     // off 上右鍵）使用者仍然是「在看這個 tag」，面板該同步過去
     setPanelTag(tag)
-    // 左鍵 (+1)：cur ∈ {off, negative} → positive；cur = positive → no-op (cap=1)
-    // 右鍵 (-1)：cur = positive → off；cur ∈ {off, negative} → no-op (picker min=0)
+    // 左鍵：cur ∈ {off, negative, or} → positive；cur = positive → no-op
+    // 右鍵：positive / or → off；cur ∈ {off, negative} → no-op (picker min=0)
     const cur = selection.value.get(tag.nsRaw)
     if (mode === 'positive') {
       if (cur === 'positive') return
@@ -257,7 +253,7 @@ function onPickFromAdd(entry: TagEntry, mode: 'positive' | 'negative'): void {
       next.set(tag.nsRaw, 'positive')
       selection.value = next
     } else {
-      if (cur !== 'positive') return
+      if (cur !== 'positive' && cur !== 'or') return
       const next = new Map(selection.value)
       next.delete(tag.nsRaw)
       selection.value = next
@@ -367,8 +363,7 @@ function selectedTerms(): string[] {
   const tokens: string[] = []
   for (const group of groups.value) {
     for (const chip of group.chips) {
-      if (chip.selected === 'positive') tokens.push(chip.token)
-      else if (chip.selected === 'negative') tokens.push(`-${chip.token}`)
+      if (chip.selected) tokens.push(`${prefixOf(chip.selected)}${chip.token}`)
     }
   }
   return tokens

@@ -1,5 +1,6 @@
 import { TagState, type TagMode } from '@/types'
 import { parseTerm, serializeTerm, TERM_RE } from './searchSyntax'
+import { stepPick, type TagPick, type Selection } from '@/services/tagPick'
 
 export function tokenize(text: string): string[] {
   return text.match(TERM_RE) ?? []
@@ -303,13 +304,30 @@ export function getEffectiveModifiers(tags: string[], disabledModes?: readonly T
   return result
 }
 
-export function getNextRightClickState(tags: string[], disabledModes: readonly TagMode[] | undefined, currentState: TagState): TagState | null {
-  const modifiers = getEffectiveModifiers(tags, disabledModes)
-  if (!modifiers.length) return null
-  if (currentState === TagState.Off || currentState === TagState.Include) {
-    return modifiers[0]
-  }
-  const idx = modifiers.indexOf(currentState)
-  if (idx === -1) return modifiers[0]
-  return idx === modifiers.length - 1 ? TagState.Off : modifiers[idx + 1]
+export const PICK_OF_STATE: Record<TagState, TagPick> = {
+  [TagState.Exclude]: -1,
+  [TagState.Off]:     0,
+  [TagState.Include]: 1,
+  [TagState.Or]:      'or',
+}
+const STATE_OF_PICK: Record<TagPick, TagState> = {
+  [-1]: TagState.Exclude,
+  0:    TagState.Off,
+  1:    TagState.Include,
+  or:   TagState.Or,
+}
+
+/**
+ * 搜尋那一側（tagbar、搜尋面板、搜尋 popup）按下一顆鍵之後的狀態：走 tagPick 的按法。
+ * 按鈕形狀與 disabledModes 決定缺哪幾個狀態，落點缺格時原地不動（回傳 current）。
+ */
+export function nextTagState(
+  tags: string[],
+  disabledModes: readonly TagMode[] | undefined,
+  current: TagState,
+  press: Selection,
+): TagState {
+  const allowed = new Set<TagPick>([0, 1])
+  for (const modifier of getEffectiveModifiers(tags, disabledModes)) allowed.add(PICK_OF_STATE[modifier])
+  return STATE_OF_PICK[stepPick(PICK_OF_STATE[current], press, allowed)]
 }

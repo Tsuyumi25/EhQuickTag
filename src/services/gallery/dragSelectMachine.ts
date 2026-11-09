@@ -12,30 +12,32 @@
 //   apply       — caller 對 chip 套 setSelection(id, mode)
 //   panelTag    — caller 對 chip 觸發 setPanelTag(id)
 //
-// Cohort 規則：drag 只影響跟 cohort 同態的 chip。computeCohort 由「起點狀態套
-// delta 後是否變動」決定：
+// Cohort 規則：drag 只影響跟 cohort 同態的 chip。computeCohort 由「起點狀態按這顆鍵
+// 之後是否變動」決定，按法是 tagPick 的：
 //   - 起點 0 + 左 → cohort 0 (0 → 1 會變)
-//   - 起點 1 + 右 → cohort 1 (1 → 0 會變)
+//   - 起點 1 或 OR + 右 → cohort 同起點 (→ 0 會變)
 //   - 起點 -1 + 左 → cohort -1 (-1 → 0 會變)
+//   - 起點 1 + 中 → cohort 1 (1 → OR 會變)
 //   - 起點 1 + 左 → cohort 0 (1 → 1 不變、fall through 到 add 模式)
-//   - 起點 -1 + 右 → cohort 0 (-1 → -1 不變、fall through)
+//   - 起點 OR + 左 → cohort OR (OR → 1 會變)
+//   - 起點 -1 + 右、起點 OR + 中 → cohort 0 (不變、fall through)
 //   - 起點空白 → cohort 暫不定 (null)，等第一個 drag 進入的 chip 決定
 //
-// Click semantic（pressed → mouseup，未過 threshold）：直接套 delta 到 initialChip，
-// 不走 cohort filter（單一 chip 不需要 group constraint，clamp 自然處理）。
+// Click semantic（pressed → mouseup，未過 threshold）：直接把這顆鍵套到 initialChip，
+// 不走 cohort filter（單一 chip 不需要 group constraint，按法自己會封頂）。
 //
 // Panel 跟游標：聚光燈跟隨集 = {cohort, 起點 tier(startState)} ∪ 已碰過(toggled)。游標進入
 // 其中之一就 setPanelTag，跟 apply 的一次性 dedupe 脫鉤。fall-through 的 add 模式（起點已
 // 封頂 → cohort 0）靠 startState 讓起點那 tier 也跟手；對面 tier 不在集合裡、不換。toggle
 // 後 chip state 會變，靠 toggled 仍認得出。panelId 記當前面板 chip，只在換 chip 時才 emit。
 
-export type Selection = 'positive' | 'negative'
-export type TriState = -1 | 0 | 1
-export type Cohort = TriState
+import { stepPick, type TagPick, type Selection } from '@/services/tagPick'
+
+export type Cohort = TagPick
 
 export interface ChipRef {
   id: string
-  state: TriState
+  state: TagPick
 }
 
 export type DragSelectState =
@@ -53,14 +55,14 @@ export type DragSelectState =
       mode: Selection
       cohort: Cohort | null
       toggled: ReadonlySet<string>
-      startState: TriState | null // 起點 chip 的 tier；panel 跟隨集含這個 tier（空白起點 = null）
+      startState: TagPick | null // 起點 chip 的 tier；panel 跟隨集含這個 tier（空白起點 = null）
       panelId: string | null // 當前 panel 顯示的 chip，只在游標換 chip 時才重新 emit
     }
 
 export type DragSelectEvent =
   | {
       kind: 'mousedown'
-      button: number // 0 = left, 2 = right; 其他 button 會被 reducer 忽略
+      button: number // 0 = left, 1 = middle, 2 = right; 其他 button 會被 reducer 忽略
       x: number
       y: number
       chip: ChipRef | null
@@ -81,10 +83,9 @@ export const DEFAULT_CONFIG: DragSelectConfig = { dragThresholdPx: 3 }
 
 const IDLE: DragSelectState = { kind: 'idle' }
 
-/** 給 start state + drag direction，回傳要套用 cohort filter 的狀態值 */
-export function computeCohort(startState: TriState, mode: Selection): Cohort {
-  const delta = mode === 'positive' ? 1 : -1
-  const startNew = clamp(startState + delta)
+/** 給 start state + 按下的鍵，回傳要套用 cohort filter 的狀態值 */
+export function computeCohort(startState: TagPick, mode: Selection): Cohort {
+  const startNew = stepPick(startState, mode)
   return startNew === startState ? 0 : startState
 }
 
@@ -94,10 +95,10 @@ export function computeCohort(startState: TriState, mode: Selection): Cohort {
  */
 function resolveCohort(
   cohort: Cohort | null,
-  startState: TriState | null,
-  chipState: TriState,
+  startState: TagPick | null,
+  chipState: TagPick,
   mode: Selection,
-): { cohort: Cohort; startState: TriState } {
+): { cohort: Cohort; startState: TagPick } {
   if (cohort !== null && startState !== null) return { cohort, startState }
   return { cohort: computeCohort(chipState, mode), startState: chipState }
 }
@@ -109,7 +110,7 @@ function resolveCohort(
  */
 function decideChip(
   chip: ChipRef,
-  ctx: { cohort: Cohort; startState: TriState; toggled: ReadonlySet<string> },
+  ctx: { cohort: Cohort; startState: TagPick; toggled: ReadonlySet<string> },
 ): { apply: boolean; follow: boolean } {
   const inCohort = chip.state === ctx.cohort
   const alreadyToggled = ctx.toggled.has(chip.id)
@@ -119,14 +120,9 @@ function decideChip(
   }
 }
 
-function clamp(n: number): TriState {
-  if (n <= -1) return -1
-  if (n >= 1) return 1
-  return 0
-}
-
 function buttonToMode(button: number): Selection | null {
   if (button === 0) return 'positive'
+  if (button === 1) return 'or'
   if (button === 2) return 'negative'
   return null
 }

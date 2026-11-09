@@ -1,7 +1,6 @@
 <script lang="ts">
-// 共用元件：把搜尋 chip 按 namespace 分組顯示成 rows + 提供 toggle / drag-clone。
-// 不含 history row、controls-row、session 狀態管理——只渲染 caller 給的
-// sessionTerms 並 emit state 變更。
+// 共用元件：把搜尋 chip 按 namespace 分組顯示成 rows + 提供點按 / 筆刷 / drag-clone。
+// 不含 history row、controls-row；chip 的 state 變更直接寫進 searchSession 綁的那份 model。
 //
 // 兩個 caller：
 //   - SearchPanel：editing 模式下可拖出 chip → TagBar
@@ -12,7 +11,12 @@
 import { computed, ref } from 'vue'
 import Draggable from 'vuedraggable'
 import { parseTerm, serializeTerm, type Prefix } from '@/services/search/searchSyntax'
-import { tokenize, tokenIdentity, getNextRightClickState, setTagState, buildIdentityIndex } from '@/services/search/tagState'
+import { tokenize, tokenIdentity, nextTagState, buildIdentityIndex, PICK_OF_STATE } from '@/services/search/tagState'
+import { dismissTerms, setTermsState } from '@/services/search/searchSession'
+import type { Selection } from '@/services/tagPick'
+import type { ChipRef } from '@/services/gallery/dragSelectMachine'
+import { useDragSelect } from '@/composables/useDragSelect'
+import { tagbarDragTrailEnabled } from '@/services/store'
 import { findEntryByNsTag, DEFAULT_NS_ORDER, tagDbVersion } from '@/services/tags/tagDb'
 import { t } from '@/composables/useI18n'
 import { baseDragOptions, EQT_TAGS_GROUP } from '@/utils/drag'
@@ -35,8 +39,6 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  'update:modelValue': [value: string]
-  'dismiss-terms': [positives: string[]]
   'drag-start': []
   'drag-end': []
 }>()
@@ -180,26 +182,38 @@ const groupRows = computed<TermGroupRows[]>(() => {
 })
 
 function applyTermState(positive: string, next: TagState): void {
-  if (next === TagState.Off) {
-    emit('dismiss-terms', [positive])
-  } else {
-    emit('update:modelValue', setTagState(props.modelValue, [positive], next))
-  }
+  if (next === TagState.Off) dismissTerms([positive])
+  else setTermsState([positive], next)
 }
 
-function onTermClick(term: TermInfo): void {
-  // editing 時 chip 只負責被拖拽，不再切態——避免「拖之前不小心點到變 Off」
+// editing 時 chip 只負責被拖拽，不再切態——避免「拖之前不小心點到變 Off」
+function pressTerm(term: TermInfo, key: Selection): void {
   if (props.editing) return
-  const next = term.state === TagState.Include ? TagState.Off : TagState.Include
-  applyTermState(term.positive, next)
+  const next = nextTagState([term.positive], undefined, term.state, key)
+  if (next !== term.state) applyTermState(term.positive, next)
 }
 
-function onTermContextMenu(e: MouseEvent, term: TermInfo): void {
-  e.preventDefault()
-  if (props.editing) return
-  const next = getNextRightClickState([term.positive], undefined, term.state)
-  if (next === null) return
-  applyTermState(term.positive, next)
+// 搜尋欄的 chip 也能刷：跟 tagging list 同一台拖曳狀態機，chip 和 rows 裡的空白處都能起筆，
+// 放開時才生效。軌跡跟著 tagbar 的開關，搜尋欄就掛在 tagbar 底下
+const termByPositive = computed(() => new Map(groups.value.flatMap(group => group.terms.map(term => [term.positive, term]))))
+
+function chipAt(x: number, y: number): ChipRef | null {
+  const el = document.elementFromPoint(x, y)?.closest<HTMLElement>('[data-term]')
+  const term = el && containerRef.value?.contains(el) ? termByPositive.value.get(el.dataset.term!) : undefined
+  return term ? { id: term.positive, state: PICK_OF_STATE[term.state] } : null
+}
+
+const { onAreaMouseDown } = useDragSelect({
+  chipAt,
+  applySelection: (positive, mode) => {
+    const term = termByPositive.value.get(positive)
+    if (term) pressTerm(term, mode)
+  },
+  trail: () => tagbarDragTrailEnabled.value,
+})
+
+function onRowsMouseDown(event: MouseEvent): void {
+  if (!props.editing) onAreaMouseDown(event)
 }
 
 // Drag-out 視覺契約跟 ghostClass 等三 class 細節跟 SearchPanel 原版一致——
@@ -226,6 +240,8 @@ function cloneToButton({ literal, cloneLabel }: { literal: string; cloneLabel: s
     ref="containerRef"
     class="eqt-search-panel-rows"
     :class="{ 'eqt-search-panel-rows--editing': editing, 'eqt-search-panel-rows--flat': flat }"
+    @mousedown="onRowsMouseDown"
+    @contextmenu.prevent
   >
     <div
       v-for="group in groupRows"
@@ -252,8 +268,8 @@ function cloneToButton({ literal, cloneLabel }: { literal: string; cloneLabel: s
               class="eqt-search-panel__button"
               :class="STATE_CLASS[(term as TermInfo).state]"
               type="button"
-              @click="onTermClick(term as TermInfo)"
-              @contextmenu="onTermContextMenu($event, term as TermInfo)"
+              :data-term="(term as TermInfo).positive"
+              @click="$event.detail === 0 && pressTerm(term as TermInfo, 'positive')"
             >{{ group.key === MISC_KEY ? (term as TermInfo).displayFull : (term as TermInfo).displayShort }}</button>
           </template>
         </Draggable>

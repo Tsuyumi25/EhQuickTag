@@ -5,7 +5,8 @@ import { nsFormat, defaultExactMatch, dblClickLeft, dblClickRight, dblClickLeftN
 import { useTagSuggestions } from '@/composables/useTagSuggestions'
 import { usePopupBehavior } from '@/composables/usePopupBehavior'
 import { parseTerm, serializeEntry } from '@/services/search/searchSyntax'
-import { tokenize, tokenIdentity, buildIdentityIndex, getNextRightClickState, setTagState } from '@/services/search/tagState'
+import { tokenize, tokenIdentity, buildIdentityIndex, nextTagState, setTagState } from '@/services/search/tagState'
+import type { Selection } from '@/services/tagPick'
 import { sessionTerms, dismissTerms, recordSubmitAndFlush } from '@/services/search/searchSession'
 import { t } from '@/composables/useI18n'
 import SuggestionList from '@/components/SuggestionList.vue'
@@ -126,18 +127,11 @@ function applyEntryState(entry: TagEntry, next: TagState): void {
   }
 }
 
-function onPick(entry: TagEntry): void {
-  // 跟 SearchTermRows.onTermClick 同邏輯：Include → Off，其他態 → Include
+// 跟 SearchTermRows.pressTerm 同一套按法
+function pressEntry(entry: TagEntry, key: Selection): void {
   const cur = entryStateOf(entry)
-  const next = cur === TagState.Include ? TagState.Off : TagState.Include
-  applyEntryState(entry, next)
-}
-
-function onCtxMenu(entry: TagEntry): void {
-  const cur = entryStateOf(entry)
-  const next = getNextRightClickState([entry.fullTag], undefined, cur)
-  if (next === null) return
-  applyEntryState(entry, next)
+  const next = nextTagState([entry.fullTag], undefined, cur, key)
+  if (next !== cur) applyEntryState(entry, next)
 }
 
 // === 背景雙擊 action ===
@@ -210,7 +204,7 @@ function onKeydown(e: KeyboardEvent): void {
   } else if (e.key === 'Enter') {
     e.preventDefault()
     const entry = suggestions.value[selectedIdx.value]
-    if (entry) onPick(entry)
+    if (entry) pressEntry(entry, 'positive')
   }
 }
 </script>
@@ -252,8 +246,9 @@ function onKeydown(e: KeyboardEvent): void {
           :state-of="entryStateOf"
           :ns-list="popupNsList"
           @update:selected-idx="selectedIdx = $event"
-          @pick="onPick"
-          @ctxmenu="onCtxMenu"
+          @pick="pressEntry($event, 'positive')"
+          @ctxmenu="pressEntry($event, 'negative')"
+          @middle="pressEntry($event, 'or')"
         />
         <div v-else-if="dbReady" class="eqt-search-popup__empty">
           {{ t('tagConfig.noResult') }}
@@ -264,8 +259,6 @@ function onKeydown(e: KeyboardEvent): void {
             :model-value="modelValue"
             :session-terms="sessionTerms"
             :identity-index="identityIndex"
-            @update:model-value="emit('update:modelValue', $event)"
-            @dismiss-terms="dismissTerms"
           />
         </div>
         <SearchControls

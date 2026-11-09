@@ -9,13 +9,12 @@ import {
   type DragSelectEvent,
   type DragSelectEffect,
   type ChipRef,
-  type Selection,
-  type TriState,
 } from './dragSelectMachine'
+import type { TagPick } from '@/services/tagPick'
 
 const IDLE: DragSelectState = { kind: 'idle' }
 
-function chip(id: string, state: TriState): ChipRef {
+function chip(id: string, state: TagPick): ChipRef {
   return { id, state }
 }
 
@@ -34,7 +33,7 @@ function runSequence(events: DragSelectEvent[]): {
 }
 
 describe('computeCohort', () => {
-  // 6 個 case + 通則：cohort = (startNew === startState) ? 0 : startState
+  // cohort = (startNew === startState) ? 0 : startState，startNew 走 tagPick 的按法
   it('start 0 + positive → cohort 0 (will move 0 → 1)', () => {
     expect(computeCohort(0, 'positive')).toBe(0)
   })
@@ -53,6 +52,18 @@ describe('computeCohort', () => {
   it('start -1 + negative → cohort 0 (capped, fall through)', () => {
     expect(computeCohort(-1, 'negative')).toBe(0)
   })
+  it('start or + negative → cohort or (右鍵把 OR 清掉)', () => {
+    expect(computeCohort('or', 'negative')).toBe('or')
+  })
+  it('start 1 + or → cohort 1 (把已選推成 OR)', () => {
+    expect(computeCohort(1, 'or')).toBe(1)
+  })
+  it('start or + positive → cohort or (左鍵把 OR 拉回 include)', () => {
+    expect(computeCohort('or', 'positive')).toBe('or')
+  })
+  it('start or + or → cohort 0 (已是 OR，fall through)', () => {
+    expect(computeCohort('or', 'or')).toBe(0)
+  })
 })
 
 describe('reduce: idle', () => {
@@ -63,10 +74,15 @@ describe('reduce: idle', () => {
       .toEqual({ state: IDLE, effects: [] })
   })
 
-  it('ignores mousedown with non-left/right button', () => {
-    const r = reduce(IDLE, { kind: 'mousedown', button: 1, x: 0, y: 0, chip: null }, DEFAULT_CONFIG)
+  it('ignores mousedown with buttons other than left / middle / right', () => {
+    const r = reduce(IDLE, { kind: 'mousedown', button: 3, x: 0, y: 0, chip: null }, DEFAULT_CONFIG)
     expect(r.state).toEqual(IDLE)
     expect(r.effects).toEqual([])
+  })
+
+  it('mousedown(middle) on chip → pressed in or mode', () => {
+    const r = reduce(IDLE, { kind: 'mousedown', button: 1, x: 0, y: 0, chip: chip('a', 0) }, DEFAULT_CONFIG)
+    expect(r.state).toMatchObject({ kind: 'pressed', mode: 'or', cohort: 0 })
   })
 
   it('mousedown(left) on empty → pressed with cohort=null', () => {
@@ -312,8 +328,8 @@ describe('createDragSelectStore', () => {
 })
 
 describe('property: drag invariants', () => {
-  const chipArb = fc.tuple(fc.string({ minLength: 1, maxLength: 5 }), fc.integer({ min: -1, max: 1 }))
-    .map<ChipRef>(([id, st]) => ({ id, state: st as TriState }))
+  const chipArb = fc.tuple(fc.string({ minLength: 1, maxLength: 5 }), fc.constantFrom<TagPick>(-1, 0, 1, 'or'))
+    .map<ChipRef>(([id, state]) => ({ id, state }))
 
   const moveArb = (chips: ChipRef[]) => fc.tuple(
     fc.integer({ min: -100, max: 100 }),
@@ -323,7 +339,7 @@ describe('property: drag invariants', () => {
 
   test.prop([
     fc.array(chipArb, { minLength: 1, maxLength: 5 }),
-    fc.constantFrom(0 as const, 2 as const),
+    fc.constantFrom(0 as const, 1 as const, 2 as const),
   ])('每個 chip ID 最多被 apply 一次（單一 drag 內 dedupe）', (chips, button) => {
     const moves = Array.from({ length: 20 }, (_, i) => ({
       kind: 'mousemove' as const,
@@ -351,15 +367,4 @@ describe('property: drag invariants', () => {
       expect(finalState.kind).toBe('idle')
     },
   )
-
-  test.prop([
-    fc.integer({ min: -1, max: 1 }),
-    fc.constantFrom('positive' as const, 'negative' as const),
-  ])('computeCohort 通則：cohort=(startNew===startState) ? 0 : startState', (start, mode) => {
-    const tri = start as TriState
-    const delta = mode === 'positive' ? 1 : -1
-    const startNew = Math.max(-1, Math.min(1, tri + delta))
-    const expected = startNew === tri ? 0 : tri
-    expect(computeCohort(tri, mode)).toBe(expected)
-  })
 })

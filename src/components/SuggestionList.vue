@@ -27,11 +27,13 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:selectedIdx': [value: number]
-  // 左鍵：dropdown 模式視為「選中此 entry」；toggle 模式視為「切 Include↔Off」
+  // 左鍵：dropdown 模式視為「選中此 entry」；toggle 模式 Exclude → Off，其他一律 → Include
   pick: [entry: TagEntry]
-  // 右鍵：toggle 模式用——cycle 到下一個 Or/Exclude 態。dropdown 模式 caller
+  // 右鍵：toggle 模式用——正數清零、Off 變 Exclude。dropdown 模式 caller
   // 不掛 listener、預設不擋瀏覽器選單
   ctxmenu: [entry: TagEntry]
+  // 中鍵：toggle 模式直接設成 Or；其他模式不掛 listener
+  middle: [entry: TagEntry]
 }>()
 
 // state → class 對照表：Off 不列（Off 視同無 state、不上色），所以用 Partial
@@ -47,11 +49,11 @@ function stateClassOf(entry: TagEntry): string | undefined {
   return STATE_CLASS[props.stateOf(entry)]
 }
 
-// mousedown 路徑：只接 left button。右鍵 mousedown 在某些平台也會 fire，這裡
+// mousedown 路徑：接左鍵與中鍵。右鍵 mousedown 在某些平台也會 fire，這裡
 // filter 掉避免雙觸發（contextmenu 那條另外處理）
 function onItemMousedown(entry: TagEntry, e: MouseEvent): void {
-  if (e.button !== 0) return
-  emit('pick', entry)
+  if (e.button === 0) emit('pick', entry)
+  else if (e.button === 1) emit('middle', entry)
 }
 
 function onItemContextMenu(entry: TagEntry): void {

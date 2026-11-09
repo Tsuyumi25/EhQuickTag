@@ -11,7 +11,7 @@ import {
   dblClickLeft, dblClickRight, dblClickLeftNewTabActive, dblClickRightNewTabActive,
   nsFormat, defaultExactMatch,
   tagStylePreset, buttonLineTextAlign, separatorLineTextAlign, useAccentOnInclude, type DblClickAction,
-  showSearchPanel, searchPanelLangMode, enableHistory, followCurrentSite,
+  showSearchPanel, searchPanelLangMode, enableHistory, followCurrentSite, tagbarDragTrailEnabled,
   SEARCH_PANEL_LANG_MODES,
 } from '@/services/store'
 import { TAG_STYLE_PRESETS, currentTagStyleClass } from '@/composables/useTagStyle'
@@ -130,6 +130,14 @@ const previewLines = computed(() => getDefaultLines())
           <span class="eqt-settings__label">{{ t('settings.newTabActivate') }}</span>
         </label>
       </div>
+      <label class="eqt-settings__row">
+        <input
+          type="checkbox"
+          :checked="tagbarDragTrailEnabled"
+          @change="tagbarDragTrailEnabled = ($event.target as HTMLInputElement).checked"
+        />
+        <span class="eqt-settings__label">{{ t('settings.dragTrail') }}</span>
+      </label>
     </section>
 
     <section class="eqt-settings__section">

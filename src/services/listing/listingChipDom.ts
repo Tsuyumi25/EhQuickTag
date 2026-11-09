@@ -3,10 +3,16 @@
 // 一顆 chip 不多任何節點：改 class、style、attribute 與文字節點的 data 都不是 childList 變動，
 // 監看 DOM 的腳本（翻譯腳本每收到一個新增節點就建一個 NodeIterator）不會被叫醒
 
+import type { Selection } from '@/services/tagPick'
+
 export const CHIP_CLASS = 'eqt-listing-chip'
 const COLORED = `${CHIP_CLASS}--mytags-colored`
-const POSITIVE = `${CHIP_CLASS}--selected-positive`
-const NEGATIVE = `${CHIP_CLASS}--selected-negative`
+const SELECTED = `${CHIP_CLASS}--selected`
+const SELECTED_AS: Record<Selection, string> = {
+  positive: `${CHIP_CLASS}--selected-positive`,
+  negative: `${CHIP_CLASS}--selected-negative`,
+  or: `${CHIP_CLASS}--selected-or`,
+}
 const SITE_COLORS_OFF = `${CHIP_CLASS}--site-colors-off`
 const SCORE = 'data-eqt-score'
 const MARK = 'data-eqt-mark'
@@ -15,7 +21,7 @@ const NATIVE_BACKGROUND = '--eqt-listing-chip-native'
 
 export interface ChipPaint {
   display: string
-  selection?: 'positive' | 'negative'
+  selection?: Selection
   /** My Tags 配色的 CSS 變數；undefined 是不上色 */
   colors?: Record<string, string>
   /** 網站自己畫上的 My Tags 顏色要不要顯示；不顯示時由樣式表蓋成網站預設的外觀，網站寫的 style 不動 */
@@ -83,8 +89,8 @@ export function paint(element: HTMLElement, chip: ChipPaint): void {
     element.textContent = chip.display
   }
   element.classList.toggle(COLORED, !!chip.colors)
-  element.classList.toggle(POSITIVE, chip.selection === 'positive')
-  element.classList.toggle(NEGATIVE, chip.selection === 'negative')
+  element.classList.toggle(SELECTED, !!chip.selection)
+  for (const [selection, name] of Object.entries(SELECTED_AS)) element.classList.toggle(name, chip.selection === selection)
   for (const name of VARS) {
     const value = chip.colors?.[name] ?? ''
     if (element.style.getPropertyValue(name) !== value) {
@@ -100,7 +106,7 @@ export function undecorate(element: HTMLElement): void {
   const original = originals.get(element)
   if (!original) return
   originals.delete(element)
-  element.classList.remove(CHIP_CLASS, COLORED, POSITIVE, NEGATIVE, SITE_COLORS_OFF)
+  element.classList.remove(CHIP_CLASS, COLORED, SELECTED, ...Object.values(SELECTED_AS), SITE_COLORS_OFF)
   setAttribute(element, 'style', original.style)
   element.removeAttribute(SCORE)
   element.removeAttribute(MARK)

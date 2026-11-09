@@ -14,10 +14,10 @@ import { useEventListener } from '@vueuse/core'
 import {
   createDragSelectStore,
   type ChipRef,
-  type Selection,
   type DragSelectConfig,
   type DragSelectEvent,
 } from '@/services/gallery/dragSelectMachine'
+import type { Selection } from '@/services/tagPick'
 import { interpolate, type Point } from '@/services/gallery/dragPath'
 import { endTrail, extendTrail, startTrail } from '@/composables/paintTrailCanvas'
 
@@ -51,19 +51,12 @@ export function useDragSelect(opts: UseDragSelectOptions): {
   }
 
   function onAreaMouseDown(e: MouseEvent): void {
-    if (e.button !== 0 && e.button !== 2) return
-    if (opts.takeOver) {
-      e.preventDefault()
-      e.stopImmediatePropagation()
-    }
+    if (e.button !== 0 && e.button !== 1 && e.button !== 2) return
+    // 中鍵在 tag 區裡一律接手，跟左右鍵一樣能從空隙開始拖；按下時先擋掉瀏覽器的自動捲動與貼上
+    if (opts.takeOver || e.button === 1) e.preventDefault()
+    if (opts.takeOver) e.stopImmediatePropagation()
     lastPoint = { x: e.clientX, y: e.clientY }
-    dispatch({
-      kind: 'mousedown',
-      button: e.button,
-      x: e.clientX,
-      y: e.clientY,
-      chip: opts.chipAt(e.clientX, e.clientY),
-    })
+    dispatch({ kind: 'mousedown', button: e.button, x: e.clientX, y: e.clientY, chip: opts.chipAt(e.clientX, e.clientY) })
   }
 
   useEventListener(document, 'mousemove', (e: MouseEvent) => {

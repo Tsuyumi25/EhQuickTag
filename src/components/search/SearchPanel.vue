@@ -9,7 +9,7 @@ import { t } from '@/composables/useI18n'
 import { baseDragOptions, EQT_TAGS_GROUP } from '@/utils/drag'
 import {
   sessionTerms, history, sessionIdentitySet,
-  dismissTerms, onRestoreHistory, onHistoryChange,
+  onRestoreHistory, onHistoryChange,
 } from '@/services/search/searchSession'
 import { useBilingualWrap } from '@/composables/useBilingualWrap'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
@@ -177,8 +177,6 @@ function onHistoryClick(positive: string): void {
       :model-value="modelValue"
       :session-terms="sessionTerms"
       :editing="editing"
-      @update:model-value="emit('update:modelValue', $event)"
-      @dismiss-terms="dismissTerms"
       @drag-start="emit('drag-start')"
       @drag-end="emit('drag-end')"
     />

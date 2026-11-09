@@ -16,7 +16,7 @@ export interface TagButton {
   tags: string[]                       // 一個按鈕可對應多個 tag（送出時一起加進搜尋）
   label?: string
   color?: string
-  disabledModes?: readonly TagMode[]   // 限定右鍵 cycle 可用的 mode（or / exclude）
+  disabledModes?: readonly TagMode[]   // 使用者關掉的 Or / Exclude：按鈕不會停到這些狀態
 }
 
 export interface UrlButton {

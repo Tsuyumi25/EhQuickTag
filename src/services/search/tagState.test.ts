@@ -12,8 +12,9 @@ import {
   addTag as _addTagArr,
   setTagState as _setTagStateArr,
   getEffectiveModifiers as _getEffectiveModifiersArr,
-  getNextRightClickState as _getNextRightClickStateArr,
+  nextTagState as _nextTagStateArr,
 } from './tagState'
+import type { Selection } from '@/services/tagPick'
 
 // Legacy comma-separated tag string adapter — these tests were written when
 // the public API took a single `tag: string` (with `splitMultiTag` inside).
@@ -28,8 +29,8 @@ const getState = (tag: string, tokens: Set<string>) => _getStateArr(splitMultiTa
 const removeTag = (text: string, tag: string) => _removeTagArr(text, splitMultiTag(tag))
 const addTag = (text: string, tag: string, state: TagState) => _addTagArr(text, splitMultiTag(tag), state)
 const getEffectiveModifiers = (qt: LegacyQt) => _getEffectiveModifiersArr(splitMultiTag(qt.tag), qt.disabledModes)
-const getNextRightClickState = (qt: LegacyQt, state: TagState) =>
-  _getNextRightClickStateArr(splitMultiTag(qt.tag), qt.disabledModes, state)
+const nextTagState = (qt: LegacyQt, state: TagState, press: Selection) =>
+  _nextTagStateArr(splitMultiTag(qt.tag), qt.disabledModes, state, press)
 
 function identityIndex(text: string): Map<string, string | null> {
   return buildIdentityIndex(tokenize(text))
@@ -576,90 +577,62 @@ describe('getEffectiveModifiers — disabledModes override', () => {
 })
 
 // ============================================================
-// getNextRightClickState
+// nextTagState — 搜尋那一側的按法（左鍵到 Include、右鍵正數清零、中鍵到 Or）
 // ============================================================
 
-describe('getNextRightClickState', () => {
-  describe('single positive (full three-state)', () => {
+const { Off, Include, Or, Exclude } = TagState
+
+describe('nextTagState', () => {
+  describe('single positive (full ladder)', () => {
     const qt = { tag: 'foo$' }
-
-    it('Off → Or', () => {
-      expect(getNextRightClickState(qt, TagState.Off)).toBe(TagState.Or)
-    })
-
-    it('Include → Or', () => {
-      expect(getNextRightClickState(qt, TagState.Include)).toBe(TagState.Or)
-    })
-
-    it('Or → Exclude', () => {
-      expect(getNextRightClickState(qt, TagState.Or)).toBe(TagState.Exclude)
-    })
-
-    it('Exclude → Off', () => {
-      expect(getNextRightClickState(qt, TagState.Exclude)).toBe(TagState.Off)
+    it.each([
+      [Exclude, 'positive', Off],
+      [Off, 'positive', Include],
+      [Include, 'positive', Include],
+      [Or, 'positive', Include],
+      [Include, 'negative', Off],
+      [Or, 'negative', Off],
+      [Off, 'negative', Exclude],
+      [Exclude, 'negative', Exclude],
+      [Exclude, 'or', Or],
+    ] as const)('%s + %s → %s', (from, press, to) => {
+      expect(nextTagState(qt, from, press)).toBe(to)
     })
   })
 
-  describe('single negative (Or skipped, Exclude only)', () => {
-    const qt = { tag: '-other:"ai generated"$' }
-
-    it('Off → Exclude', () => {
-      expect(getNextRightClickState(qt, TagState.Off)).toBe(TagState.Exclude)
-    })
-
-    it('Include → Exclude', () => {
-      expect(getNextRightClickState(qt, TagState.Include)).toBe(TagState.Exclude)
-    })
-
-    it('Exclude → Off', () => {
-      expect(getNextRightClickState(qt, TagState.Exclude)).toBe(TagState.Off)
-    })
-  })
-
-  describe('multi-positive (Exclude skipped, Or only)', () => {
+  describe('multi-positive (no Exclude)', () => {
     const qt = { tag: 'foo$, bar$' }
-
-    it('Off → Or', () => {
-      expect(getNextRightClickState(qt, TagState.Off)).toBe(TagState.Or)
-    })
-
-    it('Or → Off', () => {
-      expect(getNextRightClickState(qt, TagState.Or)).toBe(TagState.Off)
+    it('Off + right stays Off, middle → Or', () => {
+      expect(nextTagState(qt, Off, 'negative')).toBe(Off)
+      expect(nextTagState(qt, Off, 'or')).toBe(Or)
     })
   })
 
-  // all-or 的 Or 被禁用（沒 distinct token 形式），cycle 只剩 Include ↔ Exclude
-  describe('all-or (Or skipped, Exclude only)', () => {
-    const qt = { tag: '~foo$, ~bar$' }
-
-    it('Off → Exclude', () => {
-      expect(getNextRightClickState(qt, TagState.Off)).toBe(TagState.Exclude)
-    })
-
-    it('Include → Exclude', () => {
-      expect(getNextRightClickState(qt, TagState.Include)).toBe(TagState.Exclude)
-    })
-
-    it('Exclude → Off', () => {
-      expect(getNextRightClickState(qt, TagState.Exclude)).toBe(TagState.Off)
-    })
+  describe('single negative / all-or (no Or)', () => {
+    for (const tag of ['-other:"ai generated"$', '~foo$, ~bar$']) {
+      it(`${tag}: middle does nothing, right from Off → Exclude`, () => {
+        expect(nextTagState({ tag }, Off, 'or')).toBe(Off)
+        expect(nextTagState({ tag }, Off, 'negative')).toBe(Exclude)
+      })
+    }
   })
 
-  describe('mixed (both disabled, no cycle)', () => {
+  describe('mixed (only Off / Include)', () => {
     const qt = { tag: 'foo$, -bar$' }
-
-    it('returns null for any state', () => {
-      expect(getNextRightClickState(qt, TagState.Off)).toBeNull()
-      expect(getNextRightClickState(qt, TagState.Include)).toBeNull()
+    it('right and middle never leave Off', () => {
+      expect(nextTagState(qt, Off, 'negative')).toBe(Off)
+      expect(nextTagState(qt, Off, 'or')).toBe(Off)
     })
   })
 
-  describe('user-disabled all modes → null', () => {
-    const qt = { tag: '-foo$', disabledModes: ['or', 'exclude'] as const }
-
-    it('returns null for any state', () => {
-      expect(getNextRightClickState(qt, TagState.Off)).toBeNull()
-      expect(getNextRightClickState(qt, TagState.Include)).toBeNull()
+  describe('user-disabled modes', () => {
+    it('disabled or: middle does nothing', () => {
+      const qt = { tag: 'foo$', disabledModes: ['or'] as const }
+      expect(nextTagState(qt, Off, 'or')).toBe(Off)
+    })
+    it('disabled exclude: right on Off does nothing', () => {
+      const qt = { tag: 'foo$', disabledModes: ['exclude'] as const }
+      expect(nextTagState(qt, Off, 'negative')).toBe(Off)
     })
   })
 })
@@ -783,17 +756,11 @@ describe('round-trip: multi-or', () => {
 
 describe('round-trip: mixed (no Or, no Exclude — only Include/Off cycle)', () => {
   const tag = 'language:"chinese"$, -other:"ai generated"$'
-  const qt = { tag }
 
   it('left-click Include adds tags in natural form', () => {
     const text = addTag('', tag, TagState.Include)
     expect(text).toBe('language:"chinese"$ -other:"ai generated"$')
     expect(getState(tag, new Set(tokenize(text)))).toBe(TagState.Include)
-  })
-
-  it('right-click cycle returns null (no modifiers)', () => {
-    expect(getNextRightClickState(qt, TagState.Off)).toBeNull()
-    expect(getNextRightClickState(qt, TagState.Include)).toBeNull()
   })
 
   it('removeTag cleans Include form', () => {

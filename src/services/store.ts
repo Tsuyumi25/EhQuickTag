@@ -162,8 +162,9 @@ const INITIAL_SETTINGS = {
   // 有一段提醒且通常很長會擋住 90% 定義內容，預設收起 (false)；使用者仍可
   // per-panel 點「▸ Notes」展開，切下個 chip 又回預設
   wikiPreludeExpanded: false,
-  // 拖曳多選時沿游標畫一條會淡掉的軌跡；gallery 與列表（含 dock）各自一個開關
+  // 拖曳多選時沿游標畫一條會淡掉的軌跡；gallery、列表（含 dock）與 tagbar（含搜尋欄）各自一個開關
   galleryDragTrailEnabled: true,
+  tagbarDragTrailEnabled: true,
   followCurrentSite: true,
   // 列表頁把原生標籤換成插件的 chip（My Tags 顏色、分數、關注／屏蔽標記）；關掉就留原生標籤，
   // 標籤選取跟著不能用，因為選取是做在 chip 上的
@@ -235,6 +236,7 @@ export const galleryDblClickLeftNewTabActive  = refs.galleryDblClickLeftNewTabAc
 export const galleryDblClickRightNewTabActive = refs.galleryDblClickRightNewTabActive
 export const wikiPreludeExpanded = refs.wikiPreludeExpanded
 export const galleryDragTrailEnabled = refs.galleryDragTrailEnabled
+export const tagbarDragTrailEnabled = refs.tagbarDragTrailEnabled
 export const followCurrentSite  = refs.followCurrentSite
 export const listingTagsEnabled = refs.listingTagsEnabled
 export const listingMyTagsColorsEnabled = refs.listingMyTagsColorsEnabled

@@ -27,6 +27,7 @@ import { CATEGORY_LABELS } from '@/services/listing/galleryCategory'
 import { parseTerm, serializeEntry } from '@/services/search/searchSyntax'
 import { tokenIdentity } from '@/services/search/tagState'
 import { markEntriesOffPure, syncFromSearchPure, type TermEntry } from '@/services/search/sessionState'
+import { prefixOf, pickOf, selectionOf, stepPick, type Selection } from '@/services/tagPick'
 import { loadMyTagsPalette, type MyTagsPalette } from '@/services/mytags/mytagsPalette'
 import { useMyTagsPickLink } from '@/composables/useMyTagsPickLink'
 import { openRule, openRules, openSettings, rulesCollapsed, showRules } from '@/services/appOverlays'
@@ -68,7 +69,7 @@ function closeSearchMenu() {
 }
 const dock = shallowRef<HTMLElement | null>(null)
 const searchPanel = ref<HTMLElement | null>(null)
-const selection = ref(new Map<string, 1 | -1>())
+const selection = ref(new Map<string, Selection>())
 const dockSessionTerms = ref<TermEntry[]>([])
 
 const { floatingStyles: searchFloatingStyles } = useFloating(dock, searchPanel, {
@@ -102,10 +103,9 @@ function colorVars(personal: NonNullable<MyTagsPalette[string]>): Record<string,
 
 function chipPaint(chip: ListingChip): ChipPaint {
   const personal = myTagsPalette.value?.[chip.name]
-  const state = selection.value.get(chip.name)
   return {
     display: display(chip.name),
-    selection: state === 1 ? 'positive' : state === -1 ? 'negative' : undefined,
+    selection: selection.value.get(chip.name),
     colors: listingMyTagsColorsEnabled.value && personal ? colorVars(personal) : undefined,
     siteColors: listingMyTagsColorsEnabled.value,
     ...chipBadges({
@@ -166,7 +166,7 @@ const sessionGroups = computed<GalleryTagListGroup[]>(() => {
       tag: { tagid: 0, ns: entry.ns, raw: entry.raw, nsRaw: full, tierClass: tier, voteClass: '' },
       token: term.positive,
       display: isZhLocale() ? zhDisplay(entry.name) : entry.raw,
-      selected: state === 1 ? 'positive' : state === -1 ? 'negative' : undefined,
+      selected: state,
       tier,
       iconUrl: entry.iconUrl,
       personalTag: myTagsPalette.value?.[full],
@@ -270,17 +270,17 @@ watch(rulesError, key => {
   if (key) toast.error(t(key))
 })
 
-function selectTag(tag: string, direction: 1 | -1) {
-  const current = selection.value.get(tag) ?? 0
-  const state = Math.max(-1, Math.min(1, current + direction))
+function selectTag(tag: string, press: Selection) {
+  const current = selection.value.get(tag)
+  const state = selectionOf(stepPick(pickOf(current), press))
   if (state === current) return
   const next = new Map(selection.value)
-  if (state === 0) {
+  if (!state) {
     const id = tokenIdentity(serializeEntry(entryForTag(tag)))
     if (id) dockSessionTerms.value = markEntriesOffPure(dockSessionTerms.value, new Set([id]))
     next.delete(tag)
   } else {
-    next.set(tag, state as 1 | -1)
+    next.set(tag, state)
   }
   selection.value = next
 }
@@ -298,12 +298,12 @@ function chipFor(target: EventTarget | null) {
 function chipAt(x: number, y: number): ChipRef | null {
   const chip = chipFor(document.elementFromPoint(x, y))
   if (!chip) return null
-  return { id: chip.name, state: selection.value.get(chip.name) ?? 0 }
+  return { id: chip.name, state: pickOf(selection.value.get(chip.name)) }
 }
 
 const { onAreaMouseDown } = useDragSelect({
   chipAt,
-  applySelection: (id, mode) => selectTag(id, mode === 'positive' ? 1 : -1),
+  applySelection: selectTag,
   trail: () => listingDragTrailEnabled.value,
   takeOver: true,
 })
@@ -317,11 +317,13 @@ function ownsTagArea(target: EventTarget | null): boolean {
   return false
 }
 
-function captureTagEvent(event: Event) {
+function captureTagEvent(event: MouseEvent) {
   const chip = chipFor(event.target)
   const owned = !!chip || ownsTagArea(event.target)
+  // tag 區裡的左、中、右鍵都歸我們；tag 區外面照原生行為
+  const ours = event.button === 0 || event.button === 1 || event.button === 2
   if (event.type === 'mousedown') {
-    if (!(event instanceof MouseEvent) || (event.button !== 0 && event.button !== 2)) return
+    if (!ours) return
     suppressContextMenu = owned && event.button === 2
     if (owned) onAreaMouseDown(event)
     return
@@ -332,20 +334,20 @@ function captureTagEvent(event: Event) {
     event.stopImmediatePropagation()
     return
   }
-  if (!owned) return
-  if (event instanceof MouseEvent && event.button !== 0 && event.button !== 2) return
+  if (!owned || !ours) return
   if (event.type === 'pointerdown' || event.type === 'pointerup') {
     event.stopImmediatePropagation()
     return
   }
-  if (event.type === 'click' && event instanceof MouseEvent && event.detail === 0 && chip) {
-    selectTag(chip.name, 1)
+  if (event.type === 'click' && event.detail === 0 && chip) {
+    selectTag(chip.name, 'positive')
   }
   event.preventDefault()
   event.stopImmediatePropagation()
 }
 
-const capturedEvents = ['mousedown', 'pointerdown', 'pointerup', 'click', 'dblclick', 'contextmenu', 'dragstart'] as const
+// auxclick 是中鍵放開時的那一下：chip 包在連結裡時，不攔它瀏覽器會照樣開新分頁
+const capturedEvents = ['mousedown', 'pointerdown', 'pointerup', 'click', 'auxclick', 'dblclick', 'contextmenu', 'dragstart'] as const
 function clearSelection() {
   selection.value = new Map()
   dockSessionTerms.value = []
@@ -355,7 +357,7 @@ function keydown(event: KeyboardEvent) {
   if (event.key === 'Escape') closeSearchMenu()
 }
 const selectedTerms = computed(() => [...selection.value].map(([tag, state]) =>
-  `${state === -1 ? '-' : ''}${serializeEntry(entryForTag(tag), {
+  `${prefixOf(state)}${serializeEntry(entryForTag(tag), {
     nsFormat: nsFormat.value, exactMatch: defaultExactMatch.value,
   })}`))
 const searchDraft = computed(() => selectedTerms.value.join(' '))
@@ -486,7 +488,7 @@ onBeforeUnmount(() => {
                 <GalleryTagListRows
                   :groups="sessionGroups"
                   scene="listing"
-                  @select="(tag, mode) => selectTag(tag, mode === 'positive' ? 1 : -1)"
+                  @select="selectTag"
                   @contextmenu.prevent
                 />
               </section>

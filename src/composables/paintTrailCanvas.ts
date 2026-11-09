@@ -7,7 +7,7 @@
 // dock 三處的 useDragSelect 都畫在這裡，不各自掛 overlay。
 import { LaserPointer, type SizeMappingDetails } from '@excalidraw/laser-pointer'
 import type { Point } from '@/services/gallery/dragPath'
-import type { Selection } from '@/services/gallery/dragSelectMachine'
+import type { Selection } from '@/services/tagPick'
 import '@/styles/paint-trail.scss'
 
 /** 筆刷半徑（px） */
@@ -107,7 +107,7 @@ export function startTrail(mode: Selection, origin: Point): void {
   fitToViewport(ctx)
   endTrail()
   // canvas 讀不到 CSS 變數，只能在起筆前把 token 解析成實際色值；兩個主題的 token 名稱相同
-  const token = mode === 'positive' ? '--eqt-status-include' : '--eqt-status-exclude'
+  const token = { positive: '--eqt-status-include', negative: '--eqt-status-exclude', or: '--eqt-status-or' }[mode]
   current = {
     stroke: new LaserPointer({ size: TRAIL_RADIUS, streamline: 0.2, keepHead: true, sizeMapping }),
     color: getComputedStyle(document.documentElement).getPropertyValue(token).trim(),
