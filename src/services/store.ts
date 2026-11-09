@@ -7,6 +7,8 @@ import { TAG_COUNT_MIRRORS, type TagCountMirror } from '@/services/tags/tagCount
 import { TAG_WIKI_MIRRORS, type TagWikiMirror } from '@/services/tags/tagWiki'
 import { locale, setLocale, detectLocale, isZhLocale, t, type Locale } from '@/composables/useI18n'
 import { PRESETS_BY_ID, type TagStylePresetId } from '@/composables/useTagStyle'
+import type { Selection } from '@/services/tagPick'
+import { MOUSE_BUTTONS, type MouseRoles } from '@/services/mouseRoles'
 
 const KEYS = {
   profiles: 'eqt_profiles',
@@ -60,7 +62,7 @@ export const INTRO_PANEL_PRIMARY_LANGS = [
 ] as const
 export type IntroPanelPrimaryLang = typeof INTRO_PANEL_PRIMARY_LANGS[number]['id']
 
-
+const SELECTIONS: readonly Selection[] = ['positive', 'negative', 'or']
 
 // Gallery taglist 專屬 dblclick action。跟 tagbar 的 DblClickAction 分開——tagbar
 // 對 search 表單／編輯模式操作，gallery 對選取 chip 集合／vote／picker 操作，
@@ -162,9 +164,10 @@ const INITIAL_SETTINGS = {
   // 有一段提醒且通常很長會擋住 90% 定義內容，預設收起 (false)；使用者仍可
   // per-panel 點「▸ Notes」展開，切下個 chip 又回預設
   wikiPreludeExpanded: false,
-  // 拖曳多選時沿游標畫一條會淡掉的軌跡；gallery、列表（含 dock）與 tagbar（含搜尋欄）各自一個開關
-  galleryDragTrailEnabled: true,
-  tagbarDragTrailEnabled: true,
+  // 標籤介面（tagbar、搜尋欄、圖庫、列表）裡三顆滑鼠鍵各自負責的動作，三顆不重複
+  mouseRoles: { left: 'positive', middle: 'or', right: 'negative' } as MouseRoles,
+  // 拖曳多選時沿游標畫一條會淡掉的軌跡，所有標籤介面共用一個開關
+  dragTrailEnabled: true,
   followCurrentSite: true,
   // 列表頁把原生標籤換成插件的 chip（My Tags 顏色、分數、關注／屏蔽標記）；關掉就留原生標籤，
   // 標籤選取跟著不能用，因為選取是做在 chip 上的
@@ -172,11 +175,10 @@ const INITIAL_SETTINGS = {
   listingMyTagsColorsEnabled: true,
   listingMyTagsScoresEnabled: false,
   listingMyTagsMarksEnabled: true,
-  // 列表頁接管標籤的點選（左鍵含有、右鍵排除、拖曳多選）並顯示 dock；關掉的話點標籤照原生行為
+  // 列表頁接管標籤的點選與拖曳多選並顯示 dock；關掉的話點標籤照原生行為
   listingTagSelectEnabled: true,
   // 沒選標籤時 dock 也一直在，不必先點一個標籤才叫得出來
   listingDockAlwaysVisible: false,
-  listingDragTrailEnabled: true,
   // 暫停所有圖庫規則在列表上的效果，規則本身不動；想看沒有規則時的列表用
   listingRulesPaused: false,
   // My Tags Enhancer：plugin 在 /mytags 是否接管原生標籤管理 UI。跟
@@ -235,8 +237,8 @@ export const galleryDblClickRight = refs.galleryDblClickRight
 export const galleryDblClickLeftNewTabActive  = refs.galleryDblClickLeftNewTabActive
 export const galleryDblClickRightNewTabActive = refs.galleryDblClickRightNewTabActive
 export const wikiPreludeExpanded = refs.wikiPreludeExpanded
-export const galleryDragTrailEnabled = refs.galleryDragTrailEnabled
-export const tagbarDragTrailEnabled = refs.tagbarDragTrailEnabled
+export const mouseRoles = refs.mouseRoles
+export const dragTrailEnabled = refs.dragTrailEnabled
 export const followCurrentSite  = refs.followCurrentSite
 export const listingTagsEnabled = refs.listingTagsEnabled
 export const listingMyTagsColorsEnabled = refs.listingMyTagsColorsEnabled
@@ -244,7 +246,6 @@ export const listingMyTagsScoresEnabled = refs.listingMyTagsScoresEnabled
 export const listingMyTagsMarksEnabled = refs.listingMyTagsMarksEnabled
 export const listingTagSelectEnabled = refs.listingTagSelectEnabled
 export const listingDockAlwaysVisible = refs.listingDockAlwaysVisible
-export const listingDragTrailEnabled = refs.listingDragTrailEnabled
 export const listingRulesPaused = refs.listingRulesPaused
 export const myTagsEnhancerEnabled = refs.myTagsEnhancerEnabled
 export const myTagsPreviewCoverScale = refs.myTagsPreviewCoverScale
@@ -264,7 +265,11 @@ const SETTING_VALIDATORS: Partial<{ [K in SettingKey]: (v: unknown) => boolean }
   myTagsPanelZoom:        v => typeof v === 'number' && Number.isFinite(v) && v >= 50 && v <= 150,
   myTagsLayouts: v => !!v && typeof v === 'object' && !Array.isArray(v)
     && Object.values(v).every(value => typeof value === 'string'),
-  myTagsExcludedCategories: v => Array.isArray(v) && v.every(value => typeof value === 'string'),
+  mouseRoles: v => {
+    if (!v || typeof v !== 'object') return false
+    const roles = MOUSE_BUTTONS.map(button => (v as Record<string, unknown>)[button])
+    return new Set(roles).size === roles.length && roles.every(role => SELECTIONS.includes(role as Selection))
+  },
   searchPanelLangMode:    v => SEARCH_PANEL_LANG_MODES.some(m => m.id === v),
   convertToTraditional:   v => CONVERT_TO_TRADITIONAL_MODES.some(m => m.id === v),
   introPanelPrimaryLang:  v => INTRO_PANEL_PRIMARY_LANGS.some(m => m.id === v),

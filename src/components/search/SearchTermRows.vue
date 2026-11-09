@@ -16,7 +16,6 @@ import { dismissTerms, setTermsState } from '@/services/search/searchSession'
 import type { Selection } from '@/services/tagPick'
 import type { ChipRef } from '@/services/gallery/dragSelectMachine'
 import { useDragSelect } from '@/composables/useDragSelect'
-import { tagbarDragTrailEnabled } from '@/services/store'
 import { findEntryByNsTag, DEFAULT_NS_ORDER, tagDbVersion } from '@/services/tags/tagDb'
 import { t } from '@/composables/useI18n'
 import { baseDragOptions, EQT_TAGS_GROUP } from '@/utils/drag'
@@ -194,7 +193,7 @@ function pressTerm(term: TermInfo, key: Selection): void {
 }
 
 // 搜尋欄的 chip 也能刷：跟 tagging list 同一台拖曳狀態機，chip 和 rows 裡的空白處都能起筆，
-// 放開時才生效。軌跡跟著 tagbar 的開關，搜尋欄就掛在 tagbar 底下
+// 放開時才生效
 const termByPositive = computed(() => new Map(groups.value.flatMap(group => group.terms.map(term => [term.positive, term]))))
 
 function chipAt(x: number, y: number): ChipRef | null {
@@ -209,7 +208,6 @@ const { onAreaMouseDown } = useDragSelect({
     const term = termByPositive.value.get(positive)
     if (term) pressTerm(term, mode)
   },
-  trail: () => tagbarDragTrailEnabled.value,
 })
 
 function onRowsMouseDown(event: MouseEvent): void {

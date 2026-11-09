@@ -12,18 +12,18 @@
 //   apply       — caller 對 chip 套 setSelection(id, mode)
 //   panelTag    — caller 對 chip 觸發 setPanelTag(id)
 //
-// Cohort 規則：drag 只影響跟 cohort 同態的 chip。computeCohort 由「起點狀態按這顆鍵
-// 之後是否變動」決定，按法是 tagPick 的：
-//   - 起點 0 + 左 → cohort 0 (0 → 1 會變)
-//   - 起點 1 或 OR + 右 → cohort 同起點 (→ 0 會變)
-//   - 起點 -1 + 左 → cohort -1 (-1 → 0 會變)
-//   - 起點 1 + 中 → cohort 1 (1 → OR 會變)
-//   - 起點 1 + 左 → cohort 0 (1 → 1 不變、fall through 到 add 模式)
-//   - 起點 OR + 左 → cohort OR (OR → 1 會變)
-//   - 起點 -1 + 右、起點 OR + 中 → cohort 0 (不變、fall through)
+// Cohort 規則：drag 只影響跟 cohort 同態的 chip。computeCohort 由「起點狀態按這個動作
+// 之後是否變動」決定，按法是 tagPick 的（+1 / −1 / OR 是哪顆實體鍵由設定決定）：
+//   - 起點 0 + (+1) → cohort 0 (0 → 1 會變)
+//   - 起點 1 或 OR + (−1) → cohort 同起點 (→ 0 會變)
+//   - 起點 -1 + (+1) → cohort -1 (-1 → 0 會變)
+//   - 起點 1 + OR → cohort 1 (1 → OR 會變)
+//   - 起點 1 + (+1) → cohort 0 (1 → 1 不變、fall through 到 add 模式)
+//   - 起點 OR + (+1) → cohort OR (OR → 1 會變)
+//   - 起點 -1 + (−1)、起點 OR + OR → cohort 0 (不變、fall through)
 //   - 起點空白 → cohort 暫不定 (null)，等第一個 drag 進入的 chip 決定
 //
-// Click semantic（pressed → mouseup，未過 threshold）：直接把這顆鍵套到 initialChip，
+// Click semantic（pressed → mouseup，未過 threshold）：直接把這個動作套到 initialChip，
 // 不走 cohort filter（單一 chip 不需要 group constraint，按法自己會封頂）。
 //
 // Panel 跟游標：聚光燈跟隨集 = {cohort, 起點 tier(startState)} ∪ 已碰過(toggled)。游標進入
@@ -62,7 +62,7 @@ export type DragSelectState =
 export type DragSelectEvent =
   | {
       kind: 'mousedown'
-      button: number // 0 = left, 1 = middle, 2 = right; 其他 button 會被 reducer 忽略
+      mode: Selection // 按下的鍵在設定裡被指派的動作；實體鍵怎麼對應由 caller 決定
       x: number
       y: number
       chip: ChipRef | null
@@ -120,13 +120,6 @@ function decideChip(
   }
 }
 
-function buttonToMode(button: number): Selection | null {
-  if (button === 0) return 'positive'
-  if (button === 1) return 'or'
-  if (button === 2) return 'negative'
-  return null
-}
-
 function distanceSquared(dx: number, dy: number): number {
   return dx * dx + dy * dy
 }
@@ -157,8 +150,7 @@ export function reduce(
 
 function reduceIdle(event: DragSelectEvent): ReduceResult {
   if (event.kind !== 'mousedown') return { state: IDLE, effects: [] }
-  const mode = buttonToMode(event.button)
-  if (!mode) return { state: IDLE, effects: [] }
+  const { mode } = event
   const cohort = event.chip ? computeCohort(event.chip.state, mode) : null
   return {
     state: {

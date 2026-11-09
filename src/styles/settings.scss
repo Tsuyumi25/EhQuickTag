@@ -78,6 +78,15 @@
     }
   }
 
+  // 成組出現的「標籤 + 控制項」：標籤欄寬跟著最長的那個走，標籤長短差很多的語系也對得齊
+  &__field-grid {
+    display: grid;
+    grid-template-columns: max-content max-content;
+    align-items: center;
+    gap: 4px 8px;
+    font-size: var(--eqt-fs-lg);
+  }
+
   &__locale-row {
     display: flex;
     gap: 4px;

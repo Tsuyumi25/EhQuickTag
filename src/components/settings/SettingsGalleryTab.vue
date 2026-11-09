@@ -3,7 +3,7 @@ import { ToggleLeft, UnfoldVertical, MousePointerClick, Info } from '@lucide/vue
 import { t } from '@/composables/useI18n'
 import SettingsTagAppearanceSection from './SettingsTagAppearanceSection.vue'
 import {
-  taggingEnhancerEnabled, galleryDragTrailEnabled, galleryTaglistExpand, galleryTaglistHeight, galleryTaglistZoom, introPanelPrimaryLang, wikiPreludeExpanded,
+  taggingEnhancerEnabled, galleryTaglistExpand, galleryTaglistHeight, galleryTaglistZoom, introPanelPrimaryLang, wikiPreludeExpanded,
   galleryDblClickLeft, galleryDblClickRight, galleryDblClickLeftNewTabActive, galleryDblClickRightNewTabActive,
   INTRO_PANEL_PRIMARY_LANGS,
   GALLERY_DBL_CLICK_ACTIONS, type GalleryDblClickAction,
@@ -30,15 +30,6 @@ const galleryDblClickOptions = [
       <p class="eqt-settings__hint">
         {{ t('settings.taggingEnhancerHint') }}
       </p>
-      <label class="eqt-settings__row">
-        <input
-          type="checkbox"
-          :checked="galleryDragTrailEnabled"
-          :disabled="!taggingEnhancerEnabled"
-          @change="galleryDragTrailEnabled = ($event.target as HTMLInputElement).checked"
-        />
-        <span class="eqt-settings__label">{{ t('settings.dragTrail') }}</span>
-      </label>
     </section>
 
     <SettingsTagAppearanceSection scene="gallery" />

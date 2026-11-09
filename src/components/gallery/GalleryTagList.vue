@@ -236,38 +236,35 @@ const pickedIds = computed<ReadonlySet<string>>(() => {
   return ids
 })
 
-function onPickFromAdd(entry: TagEntry, mode: 'positive' | 'negative'): void {
+function onPickFromAdd(entry: TagEntry, mode: Selection): void {
   // dedup：先看是不是已在原 taglist 或候選；若是直接改原 chip，不重複加進 addedTags
   const tag = allTags.value.find(t => t.nsRaw === entry.fullTag)
 
   if (tag) {
-    // 面板要在任何 click 都刷到當前 tag：即使 selection 沒變（已 positive 再左鍵、
-    // off 上右鍵）使用者仍然是「在看這個 tag」，面板該同步過去
+    // 面板要在任何 click 都刷到當前 tag：即使 selection 沒變（已 positive 再按 +1、
+    // off 上按 −1）使用者仍然是「在看這個 tag」，面板該同步過去
     setPanelTag(tag)
-    // 左鍵：cur ∈ {off, negative, or} → positive；cur = positive → no-op
-    // 右鍵：positive / or → off；cur ∈ {off, negative} → no-op (picker min=0)
+    // +1 / OR：設成那個狀態；−1：positive / or → off，cur ∈ {off, negative} → no-op (picker min=0)
     const cur = selection.value.get(tag.nsRaw)
-    if (mode === 'positive') {
-      if (cur === 'positive') return
-      const next = new Map(selection.value)
-      next.set(tag.nsRaw, 'positive')
-      selection.value = next
-    } else {
+    const next = new Map(selection.value)
+    if (mode === 'negative') {
       if (cur !== 'positive' && cur !== 'or') return
-      const next = new Map(selection.value)
       next.delete(tag.nsRaw)
-      selection.value = next
+    } else {
+      if (cur === mode) return
+      next.set(tag.nsRaw, mode)
     }
+    selection.value = next
     return
   }
 
-  // 全新 entry：只有左鍵 (+1) 才 push 進 addedTags；右鍵 (-1) 對 off 起點 = 0→-1 禁止
-  if (mode !== 'positive') return
+  // 全新 entry：+1 / OR 才 push 進 addedTags；−1 對 off 起點 = 0→-1 禁止
+  if (mode === 'negative') return
 
   const newAdded = candidateTag(entry.fullTag)
   addedTags.value = [...addedTags.value, newAdded]
   const next = new Map(selection.value)
-  next.set(newAdded.nsRaw, 'positive')
+  next.set(newAdded.nsRaw, mode)
   selection.value = next
   setPanelTag(newAdded)
 }

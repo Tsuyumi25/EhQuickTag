@@ -32,7 +32,7 @@ import { loadMyTagsPalette, type MyTagsPalette } from '@/services/mytags/mytagsP
 import { useMyTagsPickLink } from '@/composables/useMyTagsPickLink'
 import { openRule, openRules, openSettings, rulesCollapsed, showRules } from '@/services/appOverlays'
 import {
-  defaultExactMatch, listingDockAlwaysVisible, listingDragTrailEnabled, listingMyTagsColorsEnabled, listingMyTagsMarksEnabled,
+  defaultExactMatch, listingDockAlwaysVisible, listingMyTagsColorsEnabled, listingMyTagsMarksEnabled,
   listingMyTagsScoresEnabled, listingRulesPaused, listingTagSelectEnabled, listingTagsEnabled, nsFormat,
 } from '@/services/store'
 import { useEqtToast } from '@/composables/useEqtToast'
@@ -304,7 +304,6 @@ function chipAt(x: number, y: number): ChipRef | null {
 const { onAreaMouseDown } = useDragSelect({
   chipAt,
   applySelection: selectTag,
-  trail: () => listingDragTrailEnabled.value,
   takeOver: true,
 })
 

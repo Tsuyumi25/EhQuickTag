@@ -10,7 +10,7 @@ import {
   type DragSelectEffect,
   type ChipRef,
 } from './dragSelectMachine'
-import type { TagPick } from '@/services/tagPick'
+import type { Selection, TagPick } from '@/services/tagPick'
 
 const IDLE: DragSelectState = { kind: 'idle' }
 
@@ -74,19 +74,13 @@ describe('reduce: idle', () => {
       .toEqual({ state: IDLE, effects: [] })
   })
 
-  it('ignores mousedown with buttons other than left / middle / right', () => {
-    const r = reduce(IDLE, { kind: 'mousedown', button: 3, x: 0, y: 0, chip: null }, DEFAULT_CONFIG)
-    expect(r.state).toEqual(IDLE)
-    expect(r.effects).toEqual([])
-  })
-
-  it('mousedown(middle) on chip → pressed in or mode', () => {
-    const r = reduce(IDLE, { kind: 'mousedown', button: 1, x: 0, y: 0, chip: chip('a', 0) }, DEFAULT_CONFIG)
+  it('mousedown(OR) on chip → pressed in or mode', () => {
+    const r = reduce(IDLE, { kind: 'mousedown', mode: 'or', x: 0, y: 0, chip: chip('a', 0) }, DEFAULT_CONFIG)
     expect(r.state).toMatchObject({ kind: 'pressed', mode: 'or', cohort: 0 })
   })
 
-  it('mousedown(left) on empty → pressed with cohort=null', () => {
-    const r = reduce(IDLE, { kind: 'mousedown', button: 0, x: 5, y: 5, chip: null }, DEFAULT_CONFIG)
+  it('mousedown(+1) on empty → pressed with cohort=null', () => {
+    const r = reduce(IDLE, { kind: 'mousedown', mode: 'positive', x: 5, y: 5, chip: null }, DEFAULT_CONFIG)
     expect(r.state).toEqual({
       kind: 'pressed',
       mode: 'positive',
@@ -98,9 +92,9 @@ describe('reduce: idle', () => {
     expect(r.effects).toEqual([])
   })
 
-  it('mousedown(right) on chip(1) → pressed with cohort=1', () => {
+  it('mousedown(−1) on chip(1) → pressed with cohort=1', () => {
     const c = chip('a', 1)
-    const r = reduce(IDLE, { kind: 'mousedown', button: 2, x: 0, y: 0, chip: c }, DEFAULT_CONFIG)
+    const r = reduce(IDLE, { kind: 'mousedown', mode: 'negative', x: 0, y: 0, chip: c }, DEFAULT_CONFIG)
     expect(r.state).toMatchObject({ kind: 'pressed', mode: 'negative', cohort: 1 })
   })
 })
@@ -109,7 +103,7 @@ describe('reduce: click semantic (pressed → mouseup without move)', () => {
   it('mousedown on chip + immediate mouseup → applies delta to initial chip', () => {
     const c = chip('a', 0)
     const { allEffects } = runSequence([
-      { kind: 'mousedown', button: 0, x: 0, y: 0, chip: c },
+      { kind: 'mousedown', mode: 'positive', x: 0, y: 0, chip: c },
       { kind: 'mouseup' },
     ])
     expect(allEffects).toEqual([
@@ -120,7 +114,7 @@ describe('reduce: click semantic (pressed → mouseup without move)', () => {
 
   it('mousedown on empty + mouseup → no effects (nothing to click)', () => {
     const { allEffects } = runSequence([
-      { kind: 'mousedown', button: 0, x: 0, y: 0, chip: null },
+      { kind: 'mousedown', mode: 'positive', x: 0, y: 0, chip: null },
       { kind: 'mouseup' },
     ])
     expect(allEffects).toEqual([])
@@ -129,7 +123,7 @@ describe('reduce: click semantic (pressed → mouseup without move)', () => {
   it('move below threshold then mouseup → still click semantic', () => {
     const c = chip('a', 1)
     const { allEffects } = runSequence([
-      { kind: 'mousedown', button: 2, x: 0, y: 0, chip: c },
+      { kind: 'mousedown', mode: 'negative', x: 0, y: 0, chip: c },
       { kind: 'mousemove', x: 1, y: 1, chip: c }, // distance √2 < 3
       { kind: 'mouseup' },
     ])
@@ -144,7 +138,7 @@ describe('reduce: drag past threshold', () => {
   it('initial chip in cohort → applied on threshold cross', () => {
     const c = chip('a', 0)
     const { allEffects } = runSequence([
-      { kind: 'mousedown', button: 0, x: 0, y: 0, chip: c },
+      { kind: 'mousedown', mode: 'positive', x: 0, y: 0, chip: c },
       { kind: 'mousemove', x: 10, y: 0, chip: c },
     ])
     expect(allEffects).toEqual([
@@ -157,7 +151,7 @@ describe('reduce: drag past threshold', () => {
     const start = chip('a', 0) // cohort = 0
     const next = chip('b', -1) // mismatched, should be skipped
     const { allEffects } = runSequence([
-      { kind: 'mousedown', button: 0, x: 0, y: 0, chip: start },
+      { kind: 'mousedown', mode: 'positive', x: 0, y: 0, chip: start },
       { kind: 'mousemove', x: 10, y: 0, chip: next },
     ])
     // initial chip a applied (cohort 0, state 0); next chip b NOT applied (state -1 ≠ cohort 0)
@@ -170,7 +164,7 @@ describe('reduce: drag past threshold', () => {
   it('chip applied at most once per drag (dedupe)', () => {
     const c = chip('a', 0)
     const { allEffects } = runSequence([
-      { kind: 'mousedown', button: 0, x: 0, y: 0, chip: c },
+      { kind: 'mousedown', mode: 'positive', x: 0, y: 0, chip: c },
       { kind: 'mousemove', x: 10, y: 0, chip: c }, // applies a
       { kind: 'mousemove', x: 11, y: 0, chip: c }, // still on a, should dedupe
       { kind: 'mousemove', x: 12, y: 0, chip: c },
@@ -184,7 +178,7 @@ describe('reduce: drag past threshold', () => {
     const start = chip('a', 1)
     const zero = chip('b', 0)
     const { allEffects } = runSequence([
-      { kind: 'mousedown', button: 0, x: 0, y: 0, chip: start },
+      { kind: 'mousedown', mode: 'positive', x: 0, y: 0, chip: start },
       { kind: 'mousemove', x: 10, y: 0, chip: zero },
     ])
     expect(allEffects).toEqual([
@@ -201,7 +195,7 @@ describe('reduce: drag past threshold', () => {
     const c = chip('c', 1) // 同起點 tier(+1) → panel 跟，但不 apply
     const d = chip('d', -1) // 對面 tier → 什麼都不做
     const { allEffects } = runSequence([
-      { kind: 'mousedown', button: 0, x: 0, y: 0, chip: a },
+      { kind: 'mousedown', mode: 'positive', x: 0, y: 0, chip: a },
       { kind: 'mousemove', x: 10, y: 0, chip: a }, // threshold：panel a（起點 tier，不 apply）
       { kind: 'mousemove', x: 20, y: 0, chip: b }, // apply + panel b
       { kind: 'mousemove', x: 30, y: 0, chip: c }, // panel c（同 tier，不 apply）
@@ -221,7 +215,7 @@ describe('reduce: drag past threshold', () => {
     const c3 = chip('c', 1) // 同起點 tier(+1) → panel 跟，不 apply
     const c4 = chip('d', -1) // 對面 tier → skip
     const { allEffects } = runSequence([
-      { kind: 'mousedown', button: 0, x: 0, y: 0, chip: null }, // 空白起點，cohort 暫不定
+      { kind: 'mousedown', mode: 'positive', x: 0, y: 0, chip: null }, // 空白起點，cohort 暫不定
       { kind: 'mousemove', x: 10, y: 0, chip: c1 }, // 過 threshold：定 cohort 0 + startState 1，panel a
       { kind: 'mousemove', x: 20, y: 0, chip: c2 }, // apply + panel b
       { kind: 'mousemove', x: 30, y: 0, chip: c3 }, // panel c（同 tier）
@@ -240,7 +234,7 @@ describe('reduce: drag past threshold', () => {
     const c2 = chip('b', 1) // matches cohort 1 → applies
     const c3 = chip('c', 0) // mismatched cohort, skip
     const { allEffects } = runSequence([
-      { kind: 'mousedown', button: 2, x: 0, y: 0, chip: null }, // empty start
+      { kind: 'mousedown', mode: 'negative', x: 0, y: 0, chip: null }, // empty start
       { kind: 'mousemove', x: 10, y: 0, chip: c1 }, // crosses threshold, sets cohort=1
       { kind: 'mousemove', x: 20, y: 0, chip: c2 },
       { kind: 'mousemove', x: 30, y: 0, chip: c3 },
@@ -253,7 +247,7 @@ describe('reduce: drag past threshold', () => {
     const c = chip('a', 0)
     const c2 = chip('b', 0)
     const { finalState, allEffects } = runSequence([
-      { kind: 'mousedown', button: 0, x: 0, y: 0, chip: c },
+      { kind: 'mousedown', mode: 'positive', x: 0, y: 0, chip: c },
       { kind: 'mousemove', x: 10, y: 0, chip: c },
       { kind: 'mouseup' },
       { kind: 'mousemove', x: 20, y: 0, chip: c2 }, // should be ignored
@@ -270,7 +264,7 @@ describe('reduce: drag past threshold', () => {
     // 靠 toggled 認出它仍是「這次 drag 動過的」，panel 才會跟回去
     const a1 = chip('a', 1)
     const { allEffects } = runSequence([
-      { kind: 'mousedown', button: 0, x: 0, y: 0, chip: a0 },
+      { kind: 'mousedown', mode: 'positive', x: 0, y: 0, chip: a0 },
       { kind: 'mousemove', x: 10, y: 0, chip: a0 }, // threshold：apply + panel a
       { kind: 'mousemove', x: 20, y: 0, chip: b0 }, // apply + panel b
       { kind: 'mousemove', x: 10, y: 0, chip: a1 }, // 回到 a（state 已變 1）：只換 panel
@@ -287,7 +281,7 @@ describe('reduce: drag past threshold', () => {
   it('panel 不重複：同一 chip 連續 mousemove 只 emit 一次 panelTag', () => {
     const c = chip('a', 0)
     const { allEffects } = runSequence([
-      { kind: 'mousedown', button: 0, x: 0, y: 0, chip: c },
+      { kind: 'mousedown', mode: 'positive', x: 0, y: 0, chip: c },
       { kind: 'mousemove', x: 10, y: 0, chip: c },
       { kind: 'mousemove', x: 11, y: 0, chip: c },
       { kind: 'mousemove', x: 12, y: 0, chip: c },
@@ -309,7 +303,7 @@ describe('createDragSelectStore', () => {
     const store = createDragSelectStore()
     const effects = store.dispatch({
       kind: 'mousedown',
-      button: 0,
+      mode: 'positive',
       x: 0,
       y: 0,
       chip: chip('a', 0),
@@ -339,8 +333,8 @@ describe('property: drag invariants', () => {
 
   test.prop([
     fc.array(chipArb, { minLength: 1, maxLength: 5 }),
-    fc.constantFrom(0 as const, 1 as const, 2 as const),
-  ])('每個 chip ID 最多被 apply 一次（單一 drag 內 dedupe）', (chips, button) => {
+    fc.constantFrom<Selection>('positive', 'negative', 'or'),
+  ])('每個 chip ID 最多被 apply 一次（單一 drag 內 dedupe）', (chips, mode) => {
     const moves = Array.from({ length: 20 }, (_, i) => ({
       kind: 'mousemove' as const,
       x: 10 + i * 5,
@@ -348,7 +342,7 @@ describe('property: drag invariants', () => {
       chip: chips[i % chips.length],
     }))
     const { allEffects } = runSequence([
-      { kind: 'mousedown', button, x: 0, y: 0, chip: chips[0] },
+      { kind: 'mousedown', mode, x: 0, y: 0, chip: chips[0] },
       ...moves,
       { kind: 'mouseup' },
     ])
@@ -360,7 +354,7 @@ describe('property: drag invariants', () => {
     'mouseup 之後 state 一定回到 idle',
     (chips) => {
       const { finalState } = runSequence([
-        { kind: 'mousedown', button: 0, x: 0, y: 0, chip: chips[0] },
+        { kind: 'mousedown', mode: 'positive', x: 0, y: 0, chip: chips[0] },
         { kind: 'mousemove', x: 50, y: 50, chip: chips[0] },
         { kind: 'mouseup' },
       ])

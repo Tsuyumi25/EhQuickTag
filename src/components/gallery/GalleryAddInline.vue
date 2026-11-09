@@ -8,6 +8,8 @@ import { t } from '@/composables/useI18n'
 import SuggestionList from '@/components/SuggestionList.vue'
 import NamespaceFilter from '@/components/NamespaceFilter.vue'
 import { TagState } from '@/types'
+import { mouseRoles } from '@/services/store'
+import type { Selection } from '@/services/tagPick'
 
 const toast = useEqtToast()
 
@@ -22,9 +24,8 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  // mode: 左鍵 / Enter = positive (+1)、右鍵 = negative (-1)。對齊 taglist
-  // 「左 +1 / 右 -1」操作模型，picker 額外限制 min=0（禁止 0 → -1）
-  pick: [entry: TagEntry, mode: 'positive' | 'negative']
+  // mode：按下的鍵在設定裡的動作（Enter 算 +1）。picker 額外限制 min=0：−1 只會取消已選的
+  pick: [entry: TagEntry, mode: Selection]
   close: []
 }>()
 
@@ -107,7 +108,7 @@ function entryStateOf(entry: TagEntry): TagState {
   return props.pickedIds.has(entry.fullTag) ? TagState.Include : TagState.Off
 }
 
-function onPick(entry: TagEntry, mode: 'positive' | 'negative' = 'positive'): void {
+function onPick(entry: TagEntry, mode: Selection): void {
   emit('pick', entry, mode)
 }
 
@@ -168,8 +169,9 @@ function onKeydown(e: KeyboardEvent): void {
           :state-of="entryStateOf"
           :ns-list="popupNsList"
           @update:selected-idx="selectedIdx = $event"
-          @pick="onPick($event, 'positive')"
-          @ctxmenu="onPick($event, 'negative')"
+          @pick="onPick($event, mouseRoles.left)"
+          @middle="onPick($event, mouseRoles.middle)"
+          @ctxmenu="onPick($event, mouseRoles.right)"
         />
         <div v-else-if="dbReady" class="eqt-gallery-add-inline__empty">
           {{ t('tagConfig.noResult') }}

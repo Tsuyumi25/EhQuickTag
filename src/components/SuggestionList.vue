@@ -27,12 +27,10 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:selectedIdx': [value: number]
-  // 左鍵：dropdown 模式視為「選中此 entry」；toggle 模式 Exclude → Off，其他一律 → Include
+  // 三個事件對應實體的左鍵、右鍵、中鍵。dropdown 模式只用 pick（選中此 entry）；
+  // toggle 模式由 caller 照滑鼠鍵設定換成 +1 / −1 / OR
   pick: [entry: TagEntry]
-  // 右鍵：toggle 模式用——正數清零、Off 變 Exclude。dropdown 模式 caller
-  // 不掛 listener、預設不擋瀏覽器選單
   ctxmenu: [entry: TagEntry]
-  // 中鍵：toggle 模式直接設成 Or；其他模式不掛 listener
   middle: [entry: TagEntry]
 }>()
 

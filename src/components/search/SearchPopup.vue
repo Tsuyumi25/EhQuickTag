@@ -7,6 +7,7 @@ import { usePopupBehavior } from '@/composables/usePopupBehavior'
 import { parseTerm, serializeEntry } from '@/services/search/searchSyntax'
 import { tokenize, tokenIdentity, buildIdentityIndex, nextTagState, setTagState } from '@/services/search/tagState'
 import type { Selection } from '@/services/tagPick'
+import { mouseRoles } from '@/services/store'
 import { sessionTerms, dismissTerms, recordSubmitAndFlush } from '@/services/search/searchSession'
 import { t } from '@/composables/useI18n'
 import SuggestionList from '@/components/SuggestionList.vue'
@@ -246,9 +247,9 @@ function onKeydown(e: KeyboardEvent): void {
           :state-of="entryStateOf"
           :ns-list="popupNsList"
           @update:selected-idx="selectedIdx = $event"
-          @pick="pressEntry($event, 'positive')"
-          @ctxmenu="pressEntry($event, 'negative')"
-          @middle="pressEntry($event, 'or')"
+          @pick="pressEntry($event, mouseRoles.left)"
+          @middle="pressEntry($event, mouseRoles.middle)"
+          @ctxmenu="pressEntry($event, mouseRoles.right)"
         />
         <div v-else-if="dbReady" class="eqt-search-popup__empty">
           {{ t('tagConfig.noResult') }}

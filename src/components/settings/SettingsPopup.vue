@@ -12,6 +12,7 @@ import {
 import ProfileListItem from './ProfileListItem.vue'
 import ProfileJsonEditor from './ProfileJsonEditor.vue'
 import SettingsGeneralTab from './SettingsGeneralTab.vue'
+import SettingsActionsTab from './SettingsActionsTab.vue'
 import SettingsTagBarTab from './SettingsTagBarTab.vue'
 import SettingsGalleryTab from './SettingsGalleryTab.vue'
 import SettingsListingTab from './SettingsListingTab.vue'
@@ -32,11 +33,12 @@ const dragOptions = {
 
 // --- tabs ---
 
-const tabKeys = ['general', 'tagbar', 'listing', 'gallery', 'mytags', 'data', 'about'] as const
+const tabKeys = ['general', 'actions', 'tagbar', 'listing', 'gallery', 'mytags', 'data', 'about'] as const
 type TabKey = typeof tabKeys[number]
 
 const tabLabelKeys: Record<TabKey, string> = {
   general: 'settings.tabGeneral',
+  actions: 'settings.tabActions',
   tagbar: 'settings.tabTagBar',
   listing: 'settings.tabListing',
   gallery: 'settings.tabGallery',
@@ -239,6 +241,7 @@ function onEditorPurge() {
           <SettingsMyTagsTab v-show="activeTab === 'mytags'" />
           <SettingsDataTab v-show="activeTab === 'data'" />
           <SettingsGeneralTab v-show="activeTab === 'general'" />
+          <SettingsActionsTab v-show="activeTab === 'actions'" />
           <SettingsAboutTab v-show="activeTab === 'about'" />
         </div>
 

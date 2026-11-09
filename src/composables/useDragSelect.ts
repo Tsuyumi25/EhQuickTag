@@ -2,12 +2,12 @@
 //
 // 狀態機本身（含 state ownership）在 services/gallery/dragSelectMachine 的
 // createDragSelectStore，這層只負責：
-//   - DOM mousedown / mousemove / mouseup 翻譯成 reducer event
+//   - DOM mousedown / mousemove / mouseup 翻譯成 reducer event；實體滑鼠鍵照設定換成 +1 / −1 / OR
 //   - 把 store 回傳的 effects 派給 caller 注入的 callback
 //   - 透過 @vueuse/core useEventListener 處理 document-level 監聽的 auto cleanup
 //
 // 兩次 mousemove 之間會補點、每點各 hit-test 一次：瀏覽器的 mousemove 間隔跟著手速放大，
-// 只看事件落點的話，甩得快就會整顆跳過窄 chip。過了門檻之後沿游標畫一條軌跡。
+// 只看事件落點的話，甩得快就會整顆跳過窄 chip。過了門檻之後沿游標畫一條軌跡（全域開關）。
 //
 // caller 注入 chipAt (DOM hit-test) + applySelection / setPanelTag (業務動作)
 import { useEventListener } from '@vueuse/core'
@@ -20,6 +20,10 @@ import {
 import type { Selection } from '@/services/tagPick'
 import { interpolate, type Point } from '@/services/gallery/dragPath'
 import { endTrail, extendTrail, startTrail } from '@/composables/paintTrailCanvas'
+import { dragTrailEnabled, mouseRoles } from '@/services/store'
+import type { MouseButtonName } from '@/services/mouseRoles'
+
+const BUTTON_NAMES: Record<number, MouseButtonName> = { 0: 'left', 1: 'middle', 2: 'right' }
 
 export interface UseDragSelectOptions {
   /** viewport 座標底下的 chip ref，不在 chip 上是 null。補出來的點沒有事件，所以只能吃座標 */
@@ -28,8 +32,6 @@ export interface UseDragSelectOptions {
   applySelection: (id: string, mode: Selection) => void
   /** chip 被選取時觸發 intro panel 顯示 */
   setPanelTag?: (id: string) => void
-  /** 每趟 drag 跨過門檻時問一次要不要畫軌跡；設定中途改了，下一趟生效 */
-  trail: () => boolean
   /** reducer 設定。預設 dragThresholdPx=3 */
   config?: Partial<DragSelectConfig>
   takeOver?: boolean
@@ -51,12 +53,13 @@ export function useDragSelect(opts: UseDragSelectOptions): {
   }
 
   function onAreaMouseDown(e: MouseEvent): void {
-    if (e.button !== 0 && e.button !== 1 && e.button !== 2) return
+    const button = BUTTON_NAMES[e.button]
+    if (!button) return
     // 中鍵在 tag 區裡一律接手，跟左右鍵一樣能從空隙開始拖；按下時先擋掉瀏覽器的自動捲動與貼上
     if (opts.takeOver || e.button === 1) e.preventDefault()
     if (opts.takeOver) e.stopImmediatePropagation()
     lastPoint = { x: e.clientX, y: e.clientY }
-    dispatch({ kind: 'mousedown', button: e.button, x: e.clientX, y: e.clientY, chip: opts.chipAt(e.clientX, e.clientY) })
+    dispatch({ kind: 'mousedown', mode: mouseRoles.value[button], x: e.clientX, y: e.clientY, chip: opts.chipAt(e.clientX, e.clientY) })
   }
 
   useEventListener(document, 'mousemove', (e: MouseEvent) => {
@@ -71,7 +74,7 @@ export function useDragSelect(opts: UseDragSelectOptions): {
       dispatch({ kind: 'mousemove', x: p.x, y: p.y, chip: opts.chipAt(p.x, p.y) })
       const state = store.state()
       // 軌跡從過了門檻才開始畫：沒過門檻的放開是單擊，單擊不該冒出筆跡
-      if (state.kind === 'dragging' && !wasDragging && opts.trail()) startTrail(state.mode, p)
+      if (state.kind === 'dragging' && !wasDragging && dragTrailEnabled.value) startTrail(state.mode, p)
     }
     lastPoint = to
     if (store.state().kind === 'dragging') extendTrail(to)

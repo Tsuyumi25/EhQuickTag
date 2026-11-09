@@ -31,8 +31,8 @@ export interface GalleryTagListGroup {
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import {
-  galleryMyTagsColorsEnabled, galleryMyTagsScoresEnabled, galleryMyTagsMarksEnabled, galleryTaglistZoom, galleryDragTrailEnabled,
-  listingMyTagsColorsEnabled, listingMyTagsScoresEnabled, listingMyTagsMarksEnabled, listingDragTrailEnabled,
+  galleryMyTagsColorsEnabled, galleryMyTagsScoresEnabled, galleryMyTagsMarksEnabled, galleryTaglistZoom,
+  listingMyTagsColorsEnabled, listingMyTagsScoresEnabled, listingMyTagsMarksEnabled,
 } from '@/services/store'
 import { useDragSelect } from '@/composables/useDragSelect'
 import type { ChipRef } from '@/services/gallery/dragSelectMachine'
@@ -87,8 +87,6 @@ const { onAreaMouseDown } = useDragSelect({
   chipAt: chipFromPoint,
   applySelection: (nsRaw, mode) => emit('select', nsRaw, mode),
   setPanelTag: (nsRaw) => emit('inspect', nsRaw),
-  // 列表的 dock 也用這份清單，軌跡跟著列表那邊的開關
-  trail: () => (props.scene === 'gallery' ? galleryDragTrailEnabled : listingDragTrailEnabled).value,
 })
 </script>
 

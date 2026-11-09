@@ -12,7 +12,7 @@ import { tokenize, buildIdentityIndex, getState as _getState, setTagState, nextT
 import type { Selection } from '@/services/tagPick'
 import type { ChipRef } from '@/services/gallery/dragSelectMachine'
 import { useDragSelect } from '@/composables/useDragSelect'
-import { lines, profiles, activeProfileIdx, moveLineToProfile, moveButtonToProfile, buttonLineTextAlign, separatorLineTextAlign, followCurrentSite, tagbarDragTrailEnabled } from '@/services/store'
+import { lines, profiles, activeProfileIdx, moveLineToProfile, moveButtonToProfile, buttonLineTextAlign, separatorLineTextAlign, followCurrentSite } from '@/services/store'
 import { baseDragOptions, EQT_TAGS_GROUP, EQT_LINES_GROUP } from '@/utils/drag'
 import { resolveButtonUrl } from '@/utils/ehUrl'
 import { dismissTerms } from '@/services/search/searchSession'
@@ -429,7 +429,6 @@ const { onAreaMouseDown } = useDragSelect({
     const button = tagButtonAt(li, ti)
     if (button) press(button, mode)
   },
-  trail: () => tagbarDragTrailEnabled.value,
 })
 
 function onLinesMouseDown(event: MouseEvent) {
