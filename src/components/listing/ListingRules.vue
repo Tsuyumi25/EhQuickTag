@@ -19,6 +19,8 @@ import { useDisplayConfig } from '@/composables/useDisplayConfig'
 import { isZhLocale, t } from '@/composables/useI18n'
 import { DEFAULT_NS_ORDER, entryForTag, tagDbVersion } from '@/services/tags/tagDb'
 import { sortByNamespace } from '@/services/listing/tagGroups'
+import { litButtonPicks } from '@/services/listing/searchPicks'
+import { usePageSearch } from '@/composables/usePageSearch'
 import {
   conditionRange, resolveRuleEffects, type GalleryProbe, type RangeCondition, type RuleEffects,
 } from '@/services/listing/galleryRules'
@@ -32,7 +34,7 @@ import { loadMyTagsPalette, type MyTagsPalette } from '@/services/mytags/mytagsP
 import { useMyTagsPickLink } from '@/composables/useMyTagsPickLink'
 import { openRule, openRules, openSettings, rulesCollapsed, showRules } from '@/services/appOverlays'
 import {
-  defaultExactMatch, listingDockAlwaysVisible, listingMyTagsColorsEnabled, listingMyTagsMarksEnabled,
+  defaultExactMatch, lines, listingDockAlwaysVisible, listingMyTagsColorsEnabled, listingMyTagsMarksEnabled,
   listingMyTagsScoresEnabled, listingRulesPaused, listingTagSelectEnabled, listingTagsEnabled, nsFormat,
 } from '@/services/store'
 import { useEqtToast } from '@/composables/useEqtToast'
@@ -142,14 +144,10 @@ watch(selection, (next, previous) => {
 
 const tagTiers = computed(() => new Map(chips.value.map(chip => [chip.name, chip.tier])))
 const DOCK_NS_ORDER: readonly string[] = [...DEFAULT_NS_ORDER, 'uploader']
-const sessionGroups = computed<GalleryTagListGroup[]>(() => {
+function dockGroups(keys: readonly string[]): GalleryTagListGroup[] {
   void tagDbVersion.value
   const groups = new Map<string, GalleryTagListGroup>()
-  for (const term of dockSessionTerms.value) {
-    const parsed = parseTerm(term.positive)
-    // 上傳者在搜尋語法裡是 uploader: 限定詞，沒有 namespace；選取的 key 跟列表上的 chip 一樣寫成 uploader:名稱
-    const full = parsed.qualifier === 'uploader' ? `uploader:${parsed.tag}` : `${parsed.namespace}:${parsed.tag}`
-    const state = selection.value.get(full)
+  for (const full of keys) {
     const entry = entryForTag(full)
     let group = groups.get(entry.ns)
     if (!group) {
@@ -164,9 +162,9 @@ const sessionGroups = computed<GalleryTagListGroup[]>(() => {
     const tier = tagTiers.value.get(full) ?? 'gt'
     group.chips.push({
       tag: { tagid: 0, ns: entry.ns, raw: entry.raw, nsRaw: full, tierClass: tier, voteClass: '' },
-      token: term.positive,
+      token: full,
       display: isZhLocale() ? zhDisplay(entry.name) : entry.raw,
-      selected: state,
+      selected: selection.value.get(full),
       tier,
       iconUrl: entry.iconUrl,
       personalTag: myTagsPalette.value?.[full],
@@ -176,7 +174,32 @@ const sessionGroups = computed<GalleryTagListGroup[]>(() => {
     })
   }
   return sortByNamespace([...groups.values()], group => group.key, DOCK_NS_ORDER)
-})
+}
+
+// tagbar 上亮著的按鈕留在搜尋框裡的標籤，在 dock 裡另成一組「目前搜尋」。每次進頁面都不選，
+// 要的人用那一組的勾選框一次帶進來，再一顆顆調整；帶進來之後就是普通的選取
+const { searchText } = usePageSearch()
+const searchPicks = computed(() => litButtonPicks(lines, searchText.value))
+const searchKeys = computed(() => new Set(searchPicks.value.map(pick => pick.key)))
+const searchGroups = computed(() => dockGroups(searchPicks.value.map(pick => pick.key)))
+const pickedSearchCount = computed(() => searchPicks.value.filter(pick => selection.value.has(pick.key)).length)
+
+function toggleSearchPicks(): void {
+  const next = new Map(selection.value)
+  if (pickedSearchCount.value === searchPicks.value.length) {
+    for (const { key } of searchPicks.value) next.delete(key)
+  } else {
+    for (const { key, selection: state } of searchPicks.value) if (!next.has(key)) next.set(key, state)
+  }
+  selection.value = next
+}
+
+const sessionGroups = computed(() => dockGroups(dockSessionTerms.value.flatMap(term => {
+  const parsed = parseTerm(term.positive)
+  // 上傳者在搜尋語法裡是 uploader: 限定詞，沒有 namespace；選取的 key 跟列表上的 chip 一樣寫成 uploader:名稱
+  const full = parsed.qualifier === 'uploader' ? `uploader:${parsed.tag}` : `${parsed.namespace}:${parsed.tag}`
+  return searchKeys.value.has(full) ? [] : [full]
+})))
 // dock 開不開跟選取分開：選了第一個標籤時打開，取消選取不會收起來，只有關閉會——關閉一律連選取一起清掉。
 // 規則頁開著時 dock 一直在：預覽、返回與關閉都在這裡，沒選標籤也要按得到
 const dockOpen = ref(false)
@@ -482,8 +505,26 @@ onBeforeUnmount(() => {
               <section class="eqt-listing-rules__panel eqt-listing-rules__search-panel">
                 <header class="eqt-listing-rules__header">
                   <strong>{{ t('listingRules.selectedCount', { n: selection.size }) }}</strong>
+                  <label v-if="searchPicks.length" class="eqt-listing-rules__search-picks">
+                    <input
+                      type="checkbox"
+                      :checked="pickedSearchCount === searchPicks.length"
+                      :indeterminate="pickedSearchCount > 0 && pickedSearchCount < searchPicks.length"
+                      @change="toggleSearchPicks"
+                    />
+                    <span>{{ t('listingRules.currentSearch') }}</span>
+                  </label>
                   <button type="button" :aria-label="t('listingRules.close')" @click="closeSearchMenu">×</button>
                 </header>
+                <template v-if="searchPicks.length">
+                  <GalleryTagListRows
+                    :groups="searchGroups"
+                    scene="listing"
+                    @select="selectTag"
+                    @contextmenu.prevent
+                  />
+                  <hr v-if="sessionGroups.length" class="eqt-listing-rules__panel-divider" />
+                </template>
                 <GalleryTagListRows
                   :groups="sessionGroups"
                   scene="listing"

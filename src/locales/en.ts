@@ -2,6 +2,7 @@ export default {
   'listingRules.rules': 'Gallery rules',
   'listingRules.carryToMaterials': 'Add to materials',
   'listingRules.selectedCount': '{n} selected',
+  'listingRules.currentSearch': 'Current search',
   'listingRules.close': 'Close',
   'listingRules.addRule': 'New',
   'listingRules.disabled': 'Disabled',

@@ -2,6 +2,7 @@ export default {
   'listingRules.rules': '圖庫規則',
   'listingRules.carryToMaterials': '帶回素材',
   'listingRules.selectedCount': '已選 {n} 個',
+  'listingRules.currentSearch': '目前搜尋',
   'listingRules.close': '關閉',
   'listingRules.addRule': '新增',
   'listingRules.disabled': '已停用',

@@ -2,6 +2,7 @@ export default {
   'listingRules.rules': 'ギャラリールール',
   'listingRules.carryToMaterials': '素材に追加',
   'listingRules.selectedCount': '{n} 個選択中',
+  'listingRules.currentSearch': '現在の検索',
   'listingRules.close': '閉じる',
   'listingRules.addRule': '追加',
   'listingRules.disabled': '無効',

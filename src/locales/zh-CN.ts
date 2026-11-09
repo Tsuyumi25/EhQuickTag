@@ -2,6 +2,7 @@ export default {
   'listingRules.rules': '图库规则',
   'listingRules.carryToMaterials': '带回素材',
   'listingRules.selectedCount': '已选 {n} 个',
+  'listingRules.currentSearch': '当前搜索',
   'listingRules.close': '关闭',
   'listingRules.addRule': '新建',
   'listingRules.disabled': '已停用',

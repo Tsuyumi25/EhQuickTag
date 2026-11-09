@@ -2,6 +2,7 @@ export default {
   'listingRules.rules': '갤러리 규칙',
   'listingRules.carryToMaterials': '재료에 추가',
   'listingRules.selectedCount': '{n}개 선택됨',
+  'listingRules.currentSearch': '현재 검색',
   'listingRules.close': '닫기',
   'listingRules.addRule': '추가',
   'listingRules.disabled': '비활성화',

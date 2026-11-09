@@ -43,7 +43,7 @@
 // descendant selector / compound 即可 opt-out（例如 cycle-chip 要回到 native
 // 渲染）。EH 站內 bare `input[type="checkbox"]` 也是 (0,1,1)，靠 source order
 // 贏（userscript style 最後注入）。
-:where(#eqt-app, #eqt-bar-anchor, #eqt-mytags-anchor) input[type="checkbox"] {
+:where(#eqt-app, #eqt-bar-anchor, #eqt-mytags-anchor, .eqt-listing-rules__floating) input[type="checkbox"] {
   appearance: none;
   -webkit-appearance: none;
   // 同時蓋掉 EH 全站的 `position: relative; top: 2px` 偏移
@@ -79,6 +79,18 @@
     inset: 0;
     background-color: currentColor;
     mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><path d='M20 6 9 17l-5-5'/></svg>");
+    mask-size: 75% 75%;
+    mask-position: center;
+    mask-repeat: no-repeat;
+  }
+
+  // 部分選取：同一個 mask 手法畫 Lucide Minus
+  &:indeterminate::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-color: currentColor;
+    mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><path d='M5 12h14'/></svg>");
     mask-size: 75% 75%;
     mask-position: center;
     mask-repeat: no-repeat;

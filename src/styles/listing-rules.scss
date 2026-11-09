@@ -271,8 +271,23 @@
   gap: calc(var(--eqt-listing-rules-gap) * 2);
   .eqt-listing-rules__header {
     justify-content: space-between;
+    align-items: center;
     > button { @include btn-ghost; }
   }
+}
+// 標題列中間的「目前搜尋」：勾選框跟著那一組帶進來的數量畫全部／部分／沒有
+.eqt-listing-rules__search-picks {
+  display: flex;
+  align-items: center;
+  gap: var(--eqt-listing-rules-gap);
+  cursor: pointer;
+  user-select: none;
+}
+// 「目前搜尋」那一組跟原本的已選清單之間的分隔線，跟標題列底線同一種
+.eqt-listing-rules__panel-divider {
+  margin: 0;
+  border: 0;
+  border-top: var(--eqt-border-width-thin) solid var(--eqt-divider);
 }
 .eqt-listing-rules__header {
   display: flex;
