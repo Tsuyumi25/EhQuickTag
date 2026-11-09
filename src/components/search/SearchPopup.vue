@@ -13,16 +13,18 @@ import SuggestionList from '@/components/SuggestionList.vue'
 import NamespaceFilter from '@/components/NamespaceFilter.vue'
 import SearchTermRows from '@/components/search/SearchTermRows.vue'
 import SearchControls from '@/components/search/SearchControls.vue'
+import TagIntroPanel from '@/components/TagIntroPanel.vue'
+import { createIntroPanel } from '@/composables/useIntroPanel'
 import { TagState } from '@/types'
 
 // === 心智模型 ===
 //
 // SearchPopup 是「深度編輯 search」的全功能 popup——SearchPanel 提供的功能
-// 這裡都有，外加候選池跟 namespace 篩選：
-//   - 左 sidebar：namespace 篩選按鈕（影響候選池內容）
-//   - 中 上：input + SuggestionList（候選池，每 item 上色顯示當前 search state）
-//   - 中 中：SearchTermRows（當前 search chip）
-//   - 中 下：SearchControls（lang toggle / clear search / submit）
+// 這裡都有，外加候選池、namespace 篩選與標籤說明。由左到右跟圖庫頁的 tagging 同一個排法：
+//   - namespace 篩選按鈕（影響候選池內容）
+//   - input + SuggestionList（候選池，每 item 上色顯示當前 search state）
+//   - SearchTermRows（當前 search chip）+ SearchControls（lang toggle / clear search / submit）
+//   - 標籤說明：最後一個按下或刷過的標籤
 //
 // 這層 toggle 走的 dismissTerms 跟 SearchPanel 內部 chip toggle 是同個 ref，
 // 行為等價（共用 services/searchSession 的 state）。
@@ -60,6 +62,14 @@ const popupNsList = computed(() => selectedNs.value ? [selectedNs.value] : undef
 // 跟其他 popup 同套：onClickOutside + Escape + useScrollLock 一條龍，
 // 避免 SearchPopup 開啟時滾輪穿透到背景 EH 列表
 usePopupBehavior({ popupEl, onClose: () => emit('close') })
+
+// 自己一份說明面板狀態：在圖庫頁打開時，跟頁面 #gd5 那份互不干擾
+const intro = createIntroPanel()
+const { openTag: introTag } = intro
+
+function inspectEntry(entry: TagEntry): void {
+  intro.setPanelTag({ ns: entry.ns, raw: entry.raw, nsRaw: entry.fullTag })
+}
 
 const { dbReady, suggestions } = useTagSuggestions({
   query: () => query.value,
@@ -146,7 +156,7 @@ const BG_DBL_ALLOWED: ReadonlySet<DblClickAction> = new Set<DblClickAction>([
 ])
 
 const INTERACTIVE_SELECTOR =
-  'button, a, input, select, textarea, [contenteditable], .eqt-popup__suggestion, .eqt-search-panel__button'
+  'button, a, input, select, textarea, [contenteditable], .eqt-popup__suggestion, .eqt-search-panel__button, .eqt-intro-panel'
 
 function isInteractive(e: MouseEvent): boolean {
   return !!(e.target as HTMLElement).closest(INTERACTIVE_SELECTOR)
@@ -201,7 +211,9 @@ function onKeydown(e: KeyboardEvent): void {
   } else if (e.key === 'Enter') {
     e.preventDefault()
     const entry = suggestions.value[selectedIdx.value]
-    if (entry) pressEntry(entry, 'positive')
+    if (!entry) return
+    pressEntry(entry, 'positive')
+    inspectEntry(entry)
   }
 }
 </script>
@@ -225,7 +237,7 @@ function onKeydown(e: KeyboardEvent): void {
           {{ t('settings.close') }}
         </button>
       </div>
-      <div class="eqt-search-popup__main">
+      <div class="eqt-search-popup__finder">
         <input
           ref="inputEl"
           v-model="query"
@@ -244,16 +256,20 @@ function onKeydown(e: KeyboardEvent): void {
           :ns-list="popupNsList"
           @update:selected-idx="selectedIdx = $event"
           @select="pressEntry"
+          @inspect="inspectEntry"
         />
         <div v-else-if="dbReady" class="eqt-search-popup__empty">
           {{ t('tagConfig.noResult') }}
         </div>
+      </div>
+      <div class="eqt-search-popup__terms">
         <div class="eqt-search-popup__chips-scroll">
           <SearchTermRows
             class="eqt-search-popup__chips"
             :model-value="modelValue"
             :session-terms="sessionTerms"
             :identity-index="identityIndex"
+            @inspect="intro.setPanelTag"
           />
         </div>
         <SearchControls
@@ -264,6 +280,10 @@ function onKeydown(e: KeyboardEvent): void {
           @search="emit('search', 'search')"
         />
       </div>
+      <div class="eqt-search-popup__intro">
+        <TagIntroPanel :panel="intro" />
+        <p v-if="!introTag" class="eqt-search-popup__intro-hint">{{ t('intro.pickHint') }}</p>
+      </div>
     </div>
   </div>
 </template>
@@ -271,16 +291,18 @@ function onKeydown(e: KeyboardEvent): void {
 <style lang="scss">
 @use '../../styles/buttons' as *;
 
-// fzf 風 popup：左側 namespace 篩選 sidebar，右側 input + 候選池 + 當前搜尋 chip 區
-.eqt-search-popup {
+// 由左到右：namespace 篩選 | 輸入框 + 候選池 | 當前搜尋 chip + 按鈕 | 標籤說明
+// 尺寸要壓過 popup.scss 的 .eqt-popup：同權重時它排在後面，寬高會被它蓋掉
+.eqt-popup.eqt-search-popup {
   // 整個 popup 等比例放大——zoom 比 transform: scale 乾淨，會影響 layout 計算所以
   // overlay 置中跟 click 位置不會錯位
   zoom: 1.15;
-  display: flex;
-  flex-direction: row;
-  width: clamp(30rem, 60vw, 52rem);
-  min-height: auto;
-  max-height: 80vh;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1fr);
+  width: clamp(48rem, 80vw, 100rem);
+  height: 80vh;
+  min-height: 0;
+  max-height: none;
   padding: 10px;
   gap: 10px;
   overflow: hidden;
@@ -288,7 +310,6 @@ function onKeydown(e: KeyboardEvent): void {
 
 .eqt-search-popup__rail {
   display: flex;
-  flex: 0 0 auto;
   flex-direction: column;
   min-height: 0;
 }
@@ -299,17 +320,15 @@ function onKeydown(e: KeyboardEvent): void {
   flex-shrink: 0;
 }
 
-
-// 右側主區：input → SuggestionList → SearchTermRows 垂直排
-//
-// 高度分配：input 跟 SearchTermRows 自然高度，SuggestionList 用 flex: 1 撐滿
-// 剩餘空間（候選池才是視覺主角）。chip 區自然高度避免擠壓候選池
-.eqt-search-popup__main {
-  flex: 1;
+// 每一欄都是撐滿高度的 flex column；捲動交給欄裡那個主要區塊
+.eqt-search-popup__finder,
+.eqt-search-popup__terms,
+.eqt-search-popup__intro {
   display: flex;
   flex-direction: column;
   gap: 8px;
   min-width: 0;
+  min-height: 0;
 }
 
 .eqt-search-popup__input {
@@ -330,23 +349,40 @@ function onKeydown(e: KeyboardEvent): void {
   text-align: center;
 }
 
-// 當前 search chip 區：在候選池下方，自然高度（不擠壓上方候選池）。
 // 外 wrap 負責 scroll、內 chips 只當 grid container——兩者拆開避免 flex item
-// 預設 min-height: auto 讓 max-height 失效造成內部 row 重疊（無 scrollbar）
+// 預設 min-height: auto 讓高度限制失效造成內部 row 重疊（無 scrollbar）
 .eqt-search-popup__chips-scroll {
-  flex-shrink: 0;
+  flex: 1;
   min-height: 0;
-  max-height: 35vh;
   overflow-y: auto;
-  border-top: var(--eqt-border-width) solid var(--eqt-border);
+  border: var(--eqt-border-width) solid var(--eqt-border);
+  border-radius: var(--eqt-radius-sm);
 }
 
 .eqt-search-popup__chips {
   padding: 6px 4px 2px;
 }
 
-// SearchControls 在 chip 區下方，自然高度（不參與 flex 1）
 .eqt-search-popup__controls {
   flex-shrink: 0;
+}
+
+.eqt-search-popup__intro {
+  border: var(--eqt-border-width) solid var(--eqt-border);
+  border-radius: var(--eqt-radius-sm);
+  overflow: hidden;
+
+  > .eqt-intro-panel {
+    flex: 1;
+    min-height: 0;
+  }
+}
+
+.eqt-search-popup__intro-hint {
+  margin: auto;
+  padding: 12px;
+  color: var(--eqt-text-hint);
+  font-size: var(--eqt-fs-md);
+  text-align: center;
 }
 </style>

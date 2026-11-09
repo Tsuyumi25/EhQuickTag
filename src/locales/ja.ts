@@ -501,6 +501,7 @@ export default {
   // Intro panel
   'intro.close': '閉じる',
   'intro.empty': '定義がありません',
+  'intro.pickHint': 'タグを押すと、ここに説明が表示されます',
   'intro.toggleLang': '言語切り替え（中文 / English）',
   'intro.preludeLabel': 'ノート / 警告',
   'intro.togglePrelude': 'ノートを開閉',

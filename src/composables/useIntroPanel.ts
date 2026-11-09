@@ -1,5 +1,5 @@
-import { ref, computed, watch } from 'vue'
-import { findEntryByNsTag, tagDbVersion } from '@/services/tags/tagDb'
+import { ref, computed, watch, effectScope, type ComputedRef, type Ref } from 'vue'
+import { findEntryByNsTag, tagDbVersion, type TagEntry } from '@/services/tags/tagDb'
 import { getTagWiki, tagWikiVersion, rawToSlug, type WikiEntry } from '@/services/tags/tagWiki'
 import { sanitizeIntroHtml, sanitizeImageUrl } from '@/services/tags/introHtml'
 import type { GalleryTag } from '@/composables/useEhGalleryHost'
@@ -8,9 +8,7 @@ import { locale, isZhLocale } from '@/composables/useI18n'
 import { introPanelPrimaryLang, wikiPreludeExpanded as wikiPreludeExpandedSetting } from '@/services/store'
 
 export type DisplayedLang = 'zh' | 'en'
-
-// 全域 singleton：panel 只有一個，多個 chip 共用同一 panel state
-const openTag = ref<GalleryTag | null>(null)
+export type IntroTag = Pick<GalleryTag, 'ns' | 'raw' | 'nsRaw'>
 
 // 'auto' 模式由 locale 決定 primary：中文 locale 預設中文、其他預設英文
 function resolvePrimaryLang(): DisplayedLang {
@@ -19,29 +17,6 @@ function resolvePrimaryLang(): DisplayedLang {
   if (setting === 'en') return 'en'
   return isZhLocale() ? 'zh' : 'en'
 }
-
-const displayedLang = ref<DisplayedLang>(resolvePrimaryLang())
-
-// reset 到 primary 的情境：① 切換新 chip ② 使用者改 introPanelPrimaryLang 設定
-// ③ UI locale 變動。前者是 per-panel session 預設、後兩者是設定改動的即時反映
-// (避免「改了設定看不到效果」的疑慮)
-watch(
-  [openTag, introPanelPrimaryLang, locale],
-  () => {
-    if (openTag.value) displayedLang.value = resolvePrimaryLang()
-  },
-)
-
-// Wiki prelude 展開狀態——同 displayedLang 的 per-panel session pattern：
-// 切 chip / 改設定 / 切 UI locale 都 reset 回 wikiPreludeExpanded 設定值。
-// 使用者點展開只影響當下 panel session
-const preludeExpanded = ref<boolean>(wikiPreludeExpandedSetting.value)
-watch(
-  [openTag, wikiPreludeExpandedSetting, locale],
-  () => {
-    preludeExpanded.value = wikiPreludeExpandedSetting.value
-  },
-)
 
 function translateHtml(html: string, translate: (s: string) => string): string {
   const doc = new DOMParser().parseFromString(`<div>${html}</div>`, 'text/html')
@@ -56,8 +31,50 @@ function translateHtml(html: string, translate: (s: string) => string): string {
   return root.innerHTML
 }
 
-export function useIntroPanel() {
+/** 一份說明面板的狀態：顯示哪個 tag、哪個語言、prelude 展不展開 */
+export interface IntroPanel {
+  openTag: Ref<IntroTag | null>
+  entry: ComputedRef<TagEntry | null>
+  introHtml: ComputedRef<string | null>
+  linksHtml: ComputedRef<string | null>
+  iconUrl: ComputedRef<string | null>
+  wikiEntry: ComputedRef<WikiEntry | null>
+  wikiUrl: ComputedRef<string | null>
+  extraImages: ComputedRef<string[]>
+  displayedLang: Ref<DisplayedLang>
+  preludeExpanded: Ref<boolean>
+  zhDisplay: (name: string) => string
+  toggleLang: () => void
+  togglePrelude: () => void
+  setPanelTag: (tag: IntroTag) => void
+  close: () => void
+}
+
+export function createIntroPanel(): IntroPanel {
   const { zhDisplay } = useDisplayConfig()
+  const openTag = ref<IntroTag | null>(null)
+
+  const displayedLang = ref<DisplayedLang>(resolvePrimaryLang())
+  // reset 到 primary 的情境：① 切換新 chip ② 使用者改 introPanelPrimaryLang 設定
+  // ③ UI locale 變動。前者是 per-panel session 預設、後兩者是設定改動的即時反映
+  // (避免「改了設定看不到效果」的疑慮)
+  watch(
+    [openTag, introPanelPrimaryLang, locale],
+    () => {
+      if (openTag.value) displayedLang.value = resolvePrimaryLang()
+    },
+  )
+
+  // Wiki prelude 展開狀態——同 displayedLang 的 per-panel session pattern：
+  // 切 chip / 改設定 / 切 UI locale 都 reset 回 wikiPreludeExpanded 設定值。
+  // 使用者點展開只影響當下 panel session
+  const preludeExpanded = ref<boolean>(wikiPreludeExpandedSetting.value)
+  watch(
+    [openTag, wikiPreludeExpandedSetting, locale],
+    () => {
+      preludeExpanded.value = wikiPreludeExpandedSetting.value
+    },
+  )
 
   const entry = computed(() => {
     void tagDbVersion.value
@@ -113,8 +130,7 @@ export function useIntroPanel() {
     displayedLang.value = displayedLang.value === 'zh' ? 'en' : 'zh'
   }
 
-  function setPanelTag(tag: GalleryTag): void {
-    if (!document.querySelector('#gd5')) return
+  function setPanelTag(tag: IntroTag): void {
     openTag.value = tag
   }
 
@@ -131,4 +147,20 @@ export function useIntroPanel() {
     displayedLang, toggleLang, setPanelTag, close, zhDisplay,
     preludeExpanded, togglePrelude,
   }
+}
+
+// 圖庫頁的面板 teleport 進 #gd5，整頁只有一個：taglist 與面板元件共用同一份。
+// 放在 detached scope 裡，watcher 不跟著第一個呼叫它的元件一起被收掉
+let galleryPanel: IntroPanel | undefined
+export function useGalleryIntroPanel(): IntroPanel {
+  if (!galleryPanel) {
+    const panel = effectScope(true).run(createIntroPanel)!
+    galleryPanel = {
+      ...panel,
+      setPanelTag: tag => {
+        if (document.querySelector('#gd5')) panel.setPanelTag(tag)
+      },
+    }
+  }
+  return galleryPanel
 }

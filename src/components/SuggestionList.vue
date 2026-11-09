@@ -35,6 +35,8 @@ const emit = defineEmits<{
   pick: [entry: TagEntry]
   // toggle 模式：按下的鍵在設定裡的動作，點一下或刷過都算
   select: [entry: TagEntry, mode: Selection]
+  // toggle 模式：游標正在處理的 entry，跟 tagging list 的說明面板同一個時機
+  inspect: [entry: TagEntry]
 }>()
 
 // state → class 對照表：Off 不列（Off 視同無 state、不上色），所以用 Partial
@@ -61,11 +63,19 @@ function chipAt(x: number, y: number): ChipRef | null {
   return entry && props.stateOf ? { id: entry.fullTag, state: PICK_OF_STATE[props.stateOf(entry)] } : null
 }
 
+function entryOf(fullTag: string): TagEntry | undefined {
+  return props.suggestions.find(e => e.fullTag === fullTag)
+}
+
 const { onAreaMouseDown } = useDragSelect({
   chipAt,
   applySelection: (fullTag, mode) => {
-    const entry = props.suggestions.find(e => e.fullTag === fullTag)
+    const entry = entryOf(fullTag)
     if (entry) emit('select', entry, mode)
+  },
+  setPanelTag: (fullTag) => {
+    const entry = entryOf(fullTag)
+    if (entry) emit('inspect', entry)
   },
 })
 

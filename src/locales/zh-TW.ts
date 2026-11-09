@@ -501,6 +501,7 @@ export default {
   // Intro panel
   'intro.close': '關閉',
   'intro.empty': '沒有定義內容',
+  'intro.pickHint': '按下標籤，這裡會顯示它的說明',
   'intro.toggleLang': '切換語言（中文 / English）',
   'intro.preludeLabel': '提醒 / 警告',
   'intro.togglePrelude': '展開 / 收起提醒',

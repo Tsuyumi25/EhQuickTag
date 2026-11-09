@@ -501,6 +501,7 @@ export default {
   // Intro panel
   'intro.close': '닫기',
   'intro.empty': '정의가 없습니다',
+  'intro.pickHint': '태그를 누르면 여기에 설명이 표시됩니다',
   'intro.toggleLang': '언어 전환 (中文 / English)',
   'intro.preludeLabel': '노트',
   'intro.togglePrelude': '노트 펼치기/접기',

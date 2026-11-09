@@ -22,6 +22,7 @@ import { baseDragOptions, EQT_TAGS_GROUP } from '@/utils/drag'
 import { useBilingualWrap } from '@/composables/useBilingualWrap'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
 import type { TermEntry } from '@/services/search/sessionState'
+import type { IntroTag } from '@/composables/useIntroPanel'
 import { TagState, type TagButton } from '@/types'
 
 const props = defineProps<{
@@ -40,6 +41,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   'drag-start': []
   'drag-end': []
+  // 游標正在處理的 chip，跟 tagging list 的說明面板同一個時機；沒有 namespace 的詞不算標籤、不發
+  inspect: [tag: IntroTag]
 }>()
 
 // MISC_KEY = null：沒 namespace 的 term 落這組。typed null 比字串 sentinel 安全，
@@ -207,6 +210,10 @@ const { onAreaMouseDown } = useDragSelect({
   applySelection: (positive, mode) => {
     const term = termByPositive.value.get(positive)
     if (term) pressTerm(term, mode)
+  },
+  setPanelTag: (positive) => {
+    const { namespace, tag } = parseTerm(positive)
+    if (namespace) emit('inspect', { ns: namespace, raw: tag, nsRaw: `${namespace}:${tag}` })
   },
 })
 

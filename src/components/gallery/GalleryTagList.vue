@@ -25,7 +25,7 @@ import { t, isZhLocale, locale } from '@/composables/useI18n'
 import { batchVote, type VoteState } from '@/services/gallery/galleryVote'
 import { useEqtToast } from '@/composables/useEqtToast'
 import { useEhGalleryHost, parseTaglistRoot, type GalleryTag } from '@/composables/useEhGalleryHost'
-import { useIntroPanel } from '@/composables/useIntroPanel'
+import { useGalleryIntroPanel } from '@/composables/useIntroPanel'
 import { Settings, Search, BookOpen, Tags, TagPlus, ClipboardPaste, ThumbsDown, ThumbsUp, X } from '@lucide/vue'
 import { pickOf, selectionOf, stepPick, prefixOf, type TagPick, type Selection } from '@/services/tagPick'
 import GalleryAddInline from './GalleryAddInline.vue'
@@ -90,7 +90,7 @@ onBeforeUnmount(() => {
 })
 
 const { zhDisplay } = useDisplayConfig()
-const { setPanelTag, close: closePanel } = useIntroPanel()
+const { setPanelTag, close: closePanel } = useGalleryIntroPanel()
 
 const selection = ref<Map<string, Selection>>(new Map())
 

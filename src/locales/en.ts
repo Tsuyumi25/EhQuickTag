@@ -501,6 +501,7 @@ export default {
   // Intro panel
   'intro.close': 'Close',
   'intro.empty': 'No definition available',
+  'intro.pickHint': 'Press a tag to see its description here',
   'intro.toggleLang': 'Switch language (中文 / English)',
   'intro.preludeLabel': 'Notes',
   'intro.togglePrelude': 'Toggle notes',
