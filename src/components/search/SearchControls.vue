@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { BrushCleaning, Search, X } from '@lucide/vue'
 import { searchPanelShowZh as showZh, enableHistory } from '@/services/store'
 import { clearSearch, clearHistory, recordSubmitAndFlush } from '@/services/search/searchSession'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
@@ -54,7 +55,7 @@ async function onSearchClick(): Promise<void> {
         type="button"
         data-testid="clear-history"
         @click="clearHistory"
-      >{{ t('tagbar.clearHistory') }}</button>
+      ><BrushCleaning aria-hidden="true" /><span>{{ t('tagbar.clearHistory') }}</span></button>
     </div>
     <button
       v-if="showAddToSearch"
@@ -70,14 +71,14 @@ async function onSearchClick(): Promise<void> {
         type="button"
         data-testid="clear-search"
         @click="clearSearch"
-      >{{ t('tagbar.clearSearch') }}</button>
+      ><X aria-hidden="true" /><span>{{ t('tagbar.clearSearch') }}</span></button>
       <button
         v-if="showSearch"
         class="eqt-search-controls__text-btn"
         type="button"
         data-testid="search-submit"
         @click="onSearchClick"
-      >{{ t('tagbar.search') }}</button>
+      ><Search aria-hidden="true" /><span>{{ t('tagbar.search') }}</span></button>
     </div>
   </div>
 </template>
@@ -138,12 +139,18 @@ async function onSearchClick(): Promise<void> {
   font-size: 12px;
 }
 
-// 文字按鈕：跟 __add / __lang-toggle 同高，寬度跟著文字 + 水平 padding
+// 文字按鈕：跟 __add / __lang-toggle 同高，寬度跟著圖示 + 文字 + 水平 padding
 .eqt-search-controls__text-btn {
   @include btn-toned;
   height: 36px;
   padding: 0 10px;
   line-height: 1;
   white-space: nowrap;
+
+  > svg {
+    width: var(--eqt-fs-md);
+    height: var(--eqt-fs-md);
+    flex-shrink: 0;
+  }
 }
 </style>
