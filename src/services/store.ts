@@ -1,7 +1,7 @@
 import { reactive, ref, watch, nextTick, type Ref } from 'vue'
 import { cacheGet, cacheSet } from '@/services/gmStorage'
 import { toAbsoluteUrl } from '@/utils/ehUrl'
-import type { Line, Button, ButtonLine, SeparatorLine, TagButton, UrlButton, TagMode, LineTextAlign } from '@/types'
+import type { Line, Button, ButtonLine, SeparatorLine, TagButton, UrlButton, LineTextAlign } from '@/types'
 import { TAG_DB_MIRRORS, type TagDbMirror } from '@/services/tags/tagDb'
 import { TAG_COUNT_MIRRORS, type TagCountMirror } from '@/services/tags/tagCount'
 import { TAG_WIKI_MIRRORS, type TagWikiMirror } from '@/services/tags/tagWiki'
@@ -302,7 +302,7 @@ function serializeAllSettings(): Settings & { locale: Locale | '' } {
 
 // Line definitions without labels — labels are filled by getDefaultLines() based on locale
 type DefaultButtonDef =
-  | { kind: 'tag'; tags: string[]; labelKey: string; disabledModes?: readonly TagMode[] }
+  | { kind: 'tag'; tags: string[]; labelKey: string }
   | { kind: 'url'; url: string; labelKey: string }
 
 type DefaultLineDef =
@@ -329,7 +329,7 @@ const DEFAULT_LINE_DEFS: DefaultLineDef[] = [
       '-l:korean$',
       '-l:speechless$',
       '-l:"text cleaned$"',
-    ], labelKey: 'default.japaneseOnly', disabledModes: ['or', 'exclude'] },
+    ], labelKey: 'default.japaneseOnly' },
     { kind: 'tag', tags: ['l:speechless$'], labelKey: 'default.speechless' },
     { kind: 'tag', tags: ['l:"text cleaned$"'], labelKey: 'default.textCleaned' },
     { kind: 'tag', tags: ['l:translated$'], labelKey: 'default.translated' },
@@ -337,8 +337,8 @@ const DEFAULT_LINE_DEFS: DefaultLineDef[] = [
   { kind: 'buttons', buttons: [
     { kind: 'tag', tags: ['o:"full color$"'], labelKey: 'default.fullColor' },
     { kind: 'tag', tags: ['o:uncensored$'], labelKey: 'default.uncensored' },
-    { kind: 'tag', tags: ['-o:"ai generated$"'], labelKey: 'default.excludeAI', disabledModes: ['or', 'exclude'] },
-    { kind: 'tag', tags: ['-o:"rough translation$"'], labelKey: 'default.excludeRoughTL', disabledModes: ['or', 'exclude'] },
+    { kind: 'tag', tags: ['-o:"ai generated$"'], labelKey: 'default.excludeAI' },
+    { kind: 'tag', tags: ['-o:"rough translation$"'], labelKey: 'default.excludeRoughTL' },
   ] },
   { kind: 'buttons', buttons: [
     { kind: 'url', url: 'https://e-hentai.org/?f_cats=0&f_search=o%3A%22how+to%24%22', labelKey: 'default.howto' },
@@ -363,7 +363,7 @@ export function getDefaultLines(): Line[] {
     return {
       kind: 'buttons',
       buttons: def.buttons.map<Button>(b => b.kind === 'tag'
-        ? { kind: 'tag', tags: b.tags, label: t(b.labelKey), ...(b.disabledModes ? { disabledModes: b.disabledModes } : {}) }
+        ? { kind: 'tag', tags: b.tags, label: t(b.labelKey) }
         : { kind: 'url', url: b.url, label: t(b.labelKey) },
       ),
     }
@@ -395,7 +395,6 @@ function migrateLegacyButton(x: unknown): Button | null {
       tags: splitMultiTagLegacy(o.tag),
       ...(o.label ? { label: o.label } : {}),
       ...(o.color ? { color: o.color } : {}),
-      ...(o.disabledModes ? { disabledModes: o.disabledModes } : {}),
     }
   }
   return null

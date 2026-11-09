@@ -402,7 +402,7 @@ function dispatchTransition(tags: string[], next: TagState): void {
 
 function press(b: TagButton, key: Selection) {
   const current = getState(b)
-  const next = nextTagState(b.tags, b.disabledModes, current, key)
+  const next = nextTagState(b.tags, current, key)
   if (next !== current) dispatchTransition(b.tags, next)
 }
 

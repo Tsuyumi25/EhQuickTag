@@ -1,4 +1,4 @@
-import { TagState, type TagMode } from '@/types'
+import { TagState } from '@/types'
 import { parseTerm, serializeTerm, TERM_RE } from './searchSyntax'
 import { stepPick, type TagPick, type Selection } from '@/services/tagPick'
 
@@ -276,8 +276,6 @@ export function setTagState(text: string, tags: string[], state: TagState): stri
   return result.join(' ')
 }
 
-const MODE_TO_STATE: Record<string, TagState> = { or: TagState.Or, exclude: TagState.Exclude }
-
 /**
  * 哪些 modifier state 對這個按鈕**邏輯上能存在**。
  *
@@ -288,19 +286,12 @@ const MODE_TO_STATE: Record<string, TagState> = { or: TagState.Or, exclude: TagS
  * - negative-single / negative-multi：Or ✗ Exclude ✓
  * - all-or：Or ✗ Exclude ✓
  * - mixed：Or ✗ Exclude ✗
- *
- * disabledModes 提供 user-level 覆蓋。
  */
-export function getEffectiveModifiers(tags: string[], disabledModes?: readonly TagMode[]): TagState[] {
-  const disabled = new Set((disabledModes ?? []).map(m => MODE_TO_STATE[m]))
+export function getEffectiveModifiers(tags: string[]): TagState[] {
   const shape = getButtonShape(tags)
   const result: TagState[] = []
-  if (isStateShapeAllowed(shape, TagState.Or) && !disabled.has(TagState.Or)) {
-    result.push(TagState.Or)
-  }
-  if (isStateShapeAllowed(shape, TagState.Exclude) && !disabled.has(TagState.Exclude)) {
-    result.push(TagState.Exclude)
-  }
+  if (isStateShapeAllowed(shape, TagState.Or)) result.push(TagState.Or)
+  if (isStateShapeAllowed(shape, TagState.Exclude)) result.push(TagState.Exclude)
   return result
 }
 
@@ -319,15 +310,10 @@ const STATE_OF_PICK: Record<TagPick, TagState> = {
 
 /**
  * 搜尋那一側（tagbar、搜尋面板、搜尋 popup）按下一顆鍵之後的狀態：走 tagPick 的按法。
- * 按鈕形狀與 disabledModes 決定缺哪幾個狀態，落點缺格時原地不動（回傳 current）。
+ * 按鈕形狀決定缺哪幾個狀態，落點缺格時原地不動（回傳 current）。
  */
-export function nextTagState(
-  tags: string[],
-  disabledModes: readonly TagMode[] | undefined,
-  current: TagState,
-  press: Selection,
-): TagState {
+export function nextTagState(tags: string[], current: TagState, press: Selection): TagState {
   const allowed = new Set<TagPick>([0, 1])
-  for (const modifier of getEffectiveModifiers(tags, disabledModes)) allowed.add(PICK_OF_STATE[modifier])
+  for (const modifier of getEffectiveModifiers(tags)) allowed.add(PICK_OF_STATE[modifier])
   return STATE_OF_PICK[stepPick(PICK_OF_STATE[current], press, allowed)]
 }

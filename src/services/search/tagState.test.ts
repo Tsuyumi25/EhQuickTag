@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { TagState, type TagMode } from '@/types'
+import { TagState } from '@/types'
 import {
   tokenize,
   normalizeNs,
@@ -23,14 +23,14 @@ import type { Selection } from '@/services/tagPick'
 function splitMultiTag(tag: string): string[] {
   return tag.split(',').map(s => s.trim()).filter(Boolean)
 }
-type LegacyQt = { tag: string; disabledModes?: readonly TagMode[] }
+type LegacyQt = { tag: string }
 
 const getState = (tag: string, tokens: Set<string>) => _getStateArr(splitMultiTag(tag), buildIdentityIndex(tokens))
 const removeTag = (text: string, tag: string) => _removeTagArr(text, splitMultiTag(tag))
 const addTag = (text: string, tag: string, state: TagState) => _addTagArr(text, splitMultiTag(tag), state)
-const getEffectiveModifiers = (qt: LegacyQt) => _getEffectiveModifiersArr(splitMultiTag(qt.tag), qt.disabledModes)
+const getEffectiveModifiers = (qt: LegacyQt) => _getEffectiveModifiersArr(splitMultiTag(qt.tag))
 const nextTagState = (qt: LegacyQt, state: TagState, press: Selection) =>
-  _nextTagStateArr(splitMultiTag(qt.tag), qt.disabledModes, state, press)
+  _nextTagStateArr(splitMultiTag(qt.tag), state, press)
 
 function identityIndex(text: string): Map<string, string | null> {
   return buildIdentityIndex(tokenize(text))
@@ -558,24 +558,6 @@ describe('getEffectiveModifiers — by button shape', () => {
   })
 })
 
-describe('getEffectiveModifiers — disabledModes override', () => {
-  it('respects user-set disabledModes', () => {
-    expect(getEffectiveModifiers({ tag: 'foo$', disabledModes: ['or'] }))
-      .toEqual([TagState.Exclude])
-  })
-
-  it('both disabled by user → empty', () => {
-    expect(getEffectiveModifiers({ tag: 'foo$', disabledModes: ['or', 'exclude'] }))
-      .toEqual([])
-  })
-
-  it('user override on already-shape-disabled state is a no-op', () => {
-    // mixed 本來就 disable Exclude，user 再 disable 也還是 disabled
-    expect(getEffectiveModifiers({ tag: 'foo$, -bar$', disabledModes: ['exclude'] }))
-      .toEqual([])
-  })
-})
-
 // ============================================================
 // nextTagState — 搜尋那一側的按法（左鍵到 Include、右鍵正數清零、中鍵到 Or）
 // ============================================================
@@ -622,17 +604,6 @@ describe('nextTagState', () => {
     it('right and middle never leave Off', () => {
       expect(nextTagState(qt, Off, 'negative')).toBe(Off)
       expect(nextTagState(qt, Off, 'or')).toBe(Off)
-    })
-  })
-
-  describe('user-disabled modes', () => {
-    it('disabled or: middle does nothing', () => {
-      const qt = { tag: 'foo$', disabledModes: ['or'] as const }
-      expect(nextTagState(qt, Off, 'or')).toBe(Off)
-    })
-    it('disabled exclude: right on Off does nothing', () => {
-      const qt = { tag: 'foo$', disabledModes: ['exclude'] as const }
-      expect(nextTagState(qt, Off, 'negative')).toBe(Off)
     })
   })
 })

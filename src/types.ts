@@ -5,8 +5,6 @@ export enum TagState {
   Exclude = 3,
 }
 
-export type TagMode = 'or' | 'exclude'
-
 // --- Button = TagButton | UrlButton | SpacerButton ---
 // 用 discriminated union 表達「tag 按鈕 vs URL 按鈕 vs 空位」xor，取代舊版以
 // `tag === '' && url !== ''` 當 URL discriminant 的 hack。
@@ -16,7 +14,6 @@ export interface TagButton {
   tags: string[]                       // 一個按鈕可對應多個 tag（送出時一起加進搜尋）
   label?: string
   color?: string
-  disabledModes?: readonly TagMode[]   // 使用者關掉的 Or / Exclude：按鈕不會停到這些狀態
 }
 
 export interface UrlButton {

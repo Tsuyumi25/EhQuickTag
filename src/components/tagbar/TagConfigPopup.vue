@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { reactive, ref, watch, onMounted, nextTick, computed } from 'vue'
-import { ExternalLink, ChevronRight, Lock, MousePointerClick, Star } from '@lucide/vue'
+import { ExternalLink, MousePointerClick, Star } from '@lucide/vue'
 import ContentEditable from 'vue-contenteditable'
 import SearchTermEditor from '@/components/SearchTermEditor.vue'
 import { currentTagStyleClass } from '@/composables/useTagStyle'
@@ -8,10 +8,12 @@ import { usePopupBehavior } from '@/composables/usePopupBehavior'
 import { makeRow, type RowState } from '@/composables/useSearchTerm'
 import { readEhSearchSnapshot } from '@/composables/ehSearchSnapshot'
 import { TERM_RE } from '@/services/search/searchSyntax'
-import { TagState, type TagButton, type TagMode } from '@/types'
+import { TagState, type TagButton } from '@/types'
 import { t, isZhLocale } from '@/composables/useI18n'
 import { loadTagDb } from '@/services/tags/tagDb'
-import { getButtonShape, isStateShapeAllowed, getEffectiveModifiers, addTag } from '@/services/search/tagState'
+import { getButtonShape, isStateShapeAllowed, addTag, nextTagState } from '@/services/search/tagState'
+import { mouseRoles } from '@/services/store'
+import type { Selection } from '@/services/tagPick'
 
 const props = defineProps<{
   tag: TagButton
@@ -35,8 +37,6 @@ const effectiveColor = computed(() => color.value ?? props.lineColor)
 // --- rows + active focus ---
 
 const rows = reactive<RowState[]>([])
-const orEnabled = ref(true)
-const excludeEnabled = ref(true)
 const activeRow = ref(-1)
 const dbReady = ref(false)
 const popupEl = ref<HTMLElement | null>(null)
@@ -49,9 +49,6 @@ watch(() => props.tag, (t) => {
   const parts = t.tags ?? []
   rows.splice(0, rows.length, ...parts.map(makeRow))
   if (props.isAdd || !parts.length) rows.push(makeRow(''))
-  const disabled = new Set(t.disabledModes ?? [])
-  orEnabled.value = !disabled.has('or')
-  excludeEnabled.value = !disabled.has('exclude')
 }, { immediate: true })
 
 function useCurrentSearch(): void {
@@ -109,24 +106,15 @@ onMounted(async () => {
 
 // --- save ---
 
-const currentDisabledModes = computed<TagMode[]>(() => {
-  const d: TagMode[] = []
-  if (!orEnabled.value) d.push('or')
-  if (!excludeEnabled.value) d.push('exclude')
-  return d
-})
-
 function onSave(): void {
   const parts = rows.map(r => r.rawText.trim()).filter(Boolean)
   if (!parts.length) return
-  const disabled = currentDisabledModes.value
 
   emit('save', {
     kind: 'tag',
     tags: parts,
     label: label.value.trim() || undefined,
     color: color.value,
-    disabledModes: disabled.length ? disabled : undefined,
   })
 }
 
@@ -139,10 +127,8 @@ const syntaxHelpUrl = computed(() =>
     : 'https://ehwiki.org/wiki/Gallery_Searching',
 )
 
-// --- right-click cycle shape rules ---
-// shape 允許判斷由 tagState.ts 的 isStateShapeAllowed 提供（規則細節跟禁用理由
-// 詳見其 doc comment）。user 還能透過 orEnabled / excludeEnabled 額外手動禁用
-// 一個 shape 允許的態。
+// --- shape rules ---
+// 按鈕能停在哪些狀態由 tagState.ts 的 isStateShapeAllowed 決定（規則細節跟禁用理由詳見其 doc comment）
 
 const currentTags = computed(() => rows.map(r => r.rawText.trim()).filter(Boolean))
 const buttonShape = computed(() => getButtonShape(currentTags.value))
@@ -160,7 +146,7 @@ function shapeLabelFor(shape: typeof buttonShape.value): string {
   return ''
 }
 
-const cycleSkipReason = computed(() => {
+const missingStateReason = computed(() => {
   const shape = buttonShape.value
   if (shape === 'empty') return ''
   const skipped: string[] = []
@@ -168,56 +154,46 @@ const cycleSkipReason = computed(() => {
   if (!excludeShapeAllowed.value) skipped.push('Exclude')
   if (!skipped.length) return ''
 
-  // 文案按死因分類——對症下藥比通用 fallback 準：
-  //   - mixed：兩態都禁用 → cycleSkipReasonMixed
-  //   - all-or：Or 是 no-op token（cycle 卡死 fix）→ allOr-specific
+  // 文案按缺的原因分類——對症下藥比通用 fallback 準：
+  //   - mixed：兩態都沒有 → missingStateReasonMixed
+  //   - all-or：Or 跟 Include 同一個 token → allOr-specific
   //   - negative-*：聯集需要 ~-X，e站不支援 → Or-specific
   //   - positive-multi：補集需要 ~-X，e站不支援 → Exclude-specific
   if (shape === 'mixed') {
-    return t('tagConfig.cycleSkipReasonMixed', { skipped: skipped.join(', ') })
+    return t('tagConfig.missingStateReasonMixed', { skipped: skipped.join(', ') })
   }
   if (shape === 'all-or') {
-    return t('tagConfig.cycleSkipReasonAllOr')
+    return t('tagConfig.missingStateReasonAllOr')
   }
   if (!orShapeAllowed.value) {
-    return t('tagConfig.cycleSkipReasonOr', { shape: shapeLabelFor(shape) })
+    return t('tagConfig.missingStateReasonOr', { shape: shapeLabelFor(shape) })
   }
-  return t('tagConfig.cycleSkipReasonExclude', { shape: shapeLabelFor(shape) })
+  return t('tagConfig.missingStateReasonExclude', { shape: shapeLabelFor(shape) })
 })
 
-// --- simulator: 點擊 cycle 經過 shape 允許的所有 state，預覽 output token ---
+// --- simulator：照設定裡每顆滑鼠鍵的動作按，跟在 tagbar 上按這顆按鈕一樣 ---
 
-// Include 永遠是 cycle 起點 + 使用者實際 effective 的 modifier。直接讀
-// getEffectiveModifiers + 當前 user disabled 設定，做到所見即所得——使用者把
-// Or chip 關掉後 simulator 也立刻跳過 Or。
-const simSequence = computed<TagState[]>(() => [
-  TagState.Include,
-  ...getEffectiveModifiers(currentTags.value, currentDisabledModes.value),
-])
+const simState = ref<TagState>(TagState.Off)
 
-const simState = ref<TagState>(TagState.Include)
-
-// sequence 因 tags 改變後若不再包含當前 state，自動 reset 到第一個
-watch(simSequence, (seq) => {
-  if (!seq.includes(simState.value)) simState.value = seq[0]
-})
-
-function simulateNext(): void {
-  const seq = simSequence.value
-  const idx = seq.indexOf(simState.value)
-  simState.value = seq[(idx + 1) % seq.length]
+function simulate(press: Selection): void {
+  simState.value = nextTagState(currentTags.value, simState.value, press)
 }
 
-const SIM_STATE_NAME: Record<number, string> = {
+// 改了 tags 之後按鈕可能停不了原本的狀態（例如加了負向 tag 就沒有 Or），退回 Off
+watch(buttonShape, () => {
+  if (simState.value === TagState.Or && !orShapeAllowed.value) simState.value = TagState.Off
+  if (simState.value === TagState.Exclude && !excludeShapeAllowed.value) simState.value = TagState.Off
+})
+
+const SIM_STATE_NAME: Record<TagState, string> = {
+  [TagState.Off]: 'Off',
   [TagState.Include]: 'Include',
   [TagState.Or]: 'Or',
   [TagState.Exclude]: 'Exclude',
 }
 
-const simStateName = computed(() => SIM_STATE_NAME[simState.value])
-
 const simOutput = computed(() => {
-  if (!currentTags.value.length) return ''
+  if (!currentTags.value.length || simState.value === TagState.Off) return ''
   return addTag('', currentTags.value, simState.value)
 })
 </script>
@@ -278,18 +254,22 @@ const simOutput = computed(() => {
 
       <hr class="eqt-popup__divider" />
 
-      <!-- click modes: 左鍵永遠 Include (不可關)，右鍵 Or → Exclude cycle -->
-      <!-- 順序：sim → modes → reason（reason 緊跟 modes 解釋 chip 為何禁用） -->
-      <!-- 空 shape：沒 tag 時整區隱藏（cycle / 模擬都還沒能力評估） -->
+      <!-- 空 shape：沒 tag 時整區隱藏（模擬還沒有東西可按） -->
       <div v-if="buttonShape !== 'empty'" class="eqt-popup__field">
         <div class="eqt-cycle-sim">
           <div class="eqt-cycle-sim__row">
-            <button type="button" class="eqt-cycle-sim__btn" @click="simulateNext">
+            <button
+              type="button" class="eqt-cycle-sim__btn"
+              @click="simulate($event.detail === 0 ? 'positive' : mouseRoles.left)"
+              @contextmenu.prevent="simulate(mouseRoles.right)"
+              @mousedown.middle.prevent
+              @auxclick.middle="simulate(mouseRoles.middle)"
+            >
               <MousePointerClick :size="13" />
               <span>{{ t('tagConfig.simulateOutput') }}</span>
             </button>
             <span class="eqt-cycle-sim__label">
-              {{ t('tagConfig.simulateCurrent', { state: simStateName }) }}
+              {{ t('tagConfig.simulateCurrent', { state: SIM_STATE_NAME[simState] }) }}
             </span>
           </div>
           <input
@@ -301,63 +281,7 @@ const simOutput = computed(() => {
           />
         </div>
 
-        <div class="eqt-cycle-modes">
-          <div class="eqt-cycle-group">
-            <span class="eqt-popup__label eqt-cycle-group__label">{{ t('tagConfig.leftClickMode') }}</span>
-            <span class="eqt-cycle-chip eqt-cycle-chip--include">Include</span>
-          </div>
-          <div class="eqt-cycle-group">
-            <span class="eqt-popup__label eqt-cycle-group__label">{{ t('tagConfig.rightClickMode') }}</span>
-            <button
-              type="button"
-              class="eqt-cycle-chip eqt-cycle-chip--or"
-              :class="{
-                'eqt-cycle-chip--shape-disabled': !orShapeAllowed,
-                'eqt-cycle-chip--user-disabled': orShapeAllowed && !orEnabled,
-              }"
-              :disabled="!orShapeAllowed"
-              :title="orShapeAllowed
-                ? (orEnabled ? t('tagConfig.cycleChipClickToDisable') : t('tagConfig.cycleChipClickToEnable'))
-                : t('tagConfig.cycleChipShapeDisabled')"
-              @click="orShapeAllowed && (orEnabled = !orEnabled)"
-            >
-              <Lock v-if="!orShapeAllowed" :size="11" />
-              <input
-                v-else
-                type="checkbox"
-                :checked="orEnabled"
-                tabindex="-1"
-                class="eqt-cycle-chip__check"
-              />
-              <span>Or</span>
-            </button>
-            <ChevronRight :size="14" class="eqt-cycle-arrow" />
-            <button
-              type="button"
-              class="eqt-cycle-chip eqt-cycle-chip--exclude"
-              :class="{
-                'eqt-cycle-chip--shape-disabled': !excludeShapeAllowed,
-                'eqt-cycle-chip--user-disabled': excludeShapeAllowed && !excludeEnabled,
-              }"
-              :disabled="!excludeShapeAllowed"
-              :title="excludeShapeAllowed
-                ? (excludeEnabled ? t('tagConfig.cycleChipClickToDisable') : t('tagConfig.cycleChipClickToEnable'))
-                : t('tagConfig.cycleChipShapeDisabled')"
-              @click="excludeShapeAllowed && (excludeEnabled = !excludeEnabled)"
-            >
-              <Lock v-if="!excludeShapeAllowed" :size="11" />
-              <input
-                v-else
-                type="checkbox"
-                :checked="excludeEnabled"
-                tabindex="-1"
-                class="eqt-cycle-chip__check"
-              />
-              <span>Exclude</span>
-            </button>
-          </div>
-        </div>
-        <p v-if="cycleSkipReason" class="eqt-cycle-reason">{{ cycleSkipReason }}</p>
+        <p v-if="missingStateReason" class="eqt-cycle-reason">{{ missingStateReason }}</p>
       </div>
 
       <div class="eqt-popup__actions">
@@ -391,128 +315,13 @@ const simOutput = computed(() => {
   padding: 6px;
 }
 
-// 點擊模式視覺：左鍵 [Include] / 右鍵 [Or] → [Exclude]
-// chip 三狀態：shape 允許+啟用（實色）、shape 允許+user 關掉（半透明）、
-// shape 禁用（鎖頭+灰色 disabled）
-.eqt-cycle-modes {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 24px;
-  margin-top: 10px;
-}
-
-.eqt-cycle-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-
-  &__label {
-    margin: 0;
-  }
-}
-
-.eqt-cycle-arrow {
-  color: var(--eqt-text-hint);
-  flex-shrink: 0;
-}
-
-.eqt-cycle-chip {
-  --chip-color: var(--eqt-text);
-
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 10px;
-  border: 1px solid var(--eqt-border);
-  border-radius: 6px;
-  background: var(--eqt-bg-btn);
-  color: var(--eqt-text);
-  font-size: 13px;
-  font-family: inherit;
-  line-height: 1.2;
-  cursor: pointer;
-  transition: opacity 0.15s, background 0.15s;
-
-  &:disabled {
-    cursor: not-allowed;
-  }
-
-  // 每 chip type 設自己的 --chip-color；background/border/text 用 color-mix 派生
-  // 對齊 SearchTermEditor explain--tag 的「柔和色 + 透明背景」風格，不刺眼
-  &--include {
-    --chip-color: #059669;
-    background: color-mix(in srgb, var(--chip-color) 10%, transparent);
-    border-color: color-mix(in srgb, var(--chip-color) 40%, transparent);
-    color: var(--chip-color);
-    cursor: default;
-
-    .eqt-dark & {
-      --chip-color: #34d399;
-      background: color-mix(in srgb, var(--chip-color) 15%, transparent);
-    }
-  }
-
-  &--or:not(:disabled):not(.eqt-cycle-chip--user-disabled) {
-    --chip-color: #ca8a04;
-    background: color-mix(in srgb, var(--chip-color) 10%, transparent);
-    border-color: color-mix(in srgb, var(--chip-color) 40%, transparent);
-    color: var(--chip-color);
-
-    .eqt-dark & {
-      --chip-color: #facc15;
-      background: color-mix(in srgb, var(--chip-color) 15%, transparent);
-    }
-  }
-
-  &--exclude:not(:disabled):not(.eqt-cycle-chip--user-disabled) {
-    --chip-color: var(--eqt-status-exclude);
-    background: color-mix(in srgb, var(--chip-color) 14%, transparent);
-    border-color: color-mix(in srgb, var(--chip-color) 50%, transparent);
-    color: var(--chip-color);
-  }
-
-  &--or:not(:disabled):hover,
-  &--exclude:not(:disabled):hover {
-    background: color-mix(in srgb, var(--chip-color) 20%, transparent);
-  }
-
-  // shape 規則禁用：鎖頭 + 灰色背景 + 不可 click
-  &--shape-disabled {
-    opacity: 0.55;
-    color: var(--eqt-text-hint);
-    background: var(--eqt-bg-disabled);
-  }
-
-  // shape 允許但 user 手動關掉：半透明顯示「能用但被你關了」
-  &--user-disabled {
-    opacity: 0.5;
-  }
-
-  // chip 內嵌 checkbox 是視覺指示器（不是 form input），用 native 渲染 +
-  // accent-color 染色比 EH-style mask 更貼合小尺寸 chip 風格。
-  // descendant selector .eqt-cycle-chip .__check (0,2,0) 才能完整 opt-out
-  // theme.scss 的 :where(scope) input[type="checkbox"] (0,1,1) 全域設計。
-  .eqt-cycle-chip__check {
-    appearance: auto;
-    -webkit-appearance: auto;
-    width: 13px;
-    height: 13px;
-    margin: 0;
-    border: none;
-    background: transparent;
-    pointer-events: none;
-    accent-color: var(--chip-color);
-  }
-}
-
 .eqt-cycle-reason {
   margin: 8px 0 0;
   font-size: 12px;
   color: var(--eqt-text-hint);
 }
 
-// 模擬輸出：點 button cycle 經過 shape 允許的所有 state，預覽 token output
+// 模擬輸出：照設定裡的滑鼠鍵動作按這顆按鈕，預覽 token output
 // 兩行排版：第一行 button + 當前態 label；第二行輸出 token（可能很長）
 .eqt-cycle-sim {
   display: flex;

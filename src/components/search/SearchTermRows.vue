@@ -188,7 +188,7 @@ function applyTermState(positive: string, next: TagState): void {
 // editing 時 chip 只負責被拖拽，不再切態——避免「拖之前不小心點到變 Off」
 function pressTerm(term: TermInfo, key: Selection): void {
   if (props.editing) return
-  const next = nextTagState([term.positive], undefined, term.state, key)
+  const next = nextTagState([term.positive], term.state, key)
   if (next !== term.state) applyTermState(term.positive, next)
 }
 

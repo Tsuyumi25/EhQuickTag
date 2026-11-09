@@ -131,7 +131,7 @@ function applyEntryState(entry: TagEntry, next: TagState): void {
 // 跟 SearchTermRows.pressTerm 同一套按法
 function pressEntry(entry: TagEntry, key: Selection): void {
   const cur = entryStateOf(entry)
-  const next = nextTagState([entry.fullTag], undefined, cur, key)
+  const next = nextTagState([entry.fullTag], cur, key)
   if (next !== cur) applyEntryState(entry, next)
 }
 
