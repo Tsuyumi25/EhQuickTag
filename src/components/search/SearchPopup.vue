@@ -5,10 +5,9 @@ import { nsFormat, defaultExactMatch, dblClickLeft, dblClickRight, dblClickLeftN
 import { useTagSuggestions } from '@/composables/useTagSuggestions'
 import { usePopupBehavior } from '@/composables/usePopupBehavior'
 import { parseTerm, serializeEntry } from '@/services/search/searchSyntax'
-import { tokenize, tokenIdentity, buildIdentityIndex, nextTagState, setTagState } from '@/services/search/tagState'
+import { tokenize, tokenIdentity, buildIdentityIndex, nextTagState } from '@/services/search/tagState'
 import type { Selection } from '@/services/tagPick'
-import { mouseRoles } from '@/services/store'
-import { sessionTerms, dismissTerms, recordSubmitAndFlush } from '@/services/search/searchSession'
+import { sessionTerms, dismissTerms, recordSubmitAndFlush, setTermsState } from '@/services/search/searchSession'
 import { t } from '@/composables/useI18n'
 import SuggestionList from '@/components/SuggestionList.vue'
 import NamespaceFilter from '@/components/NamespaceFilter.vue'
@@ -118,14 +117,11 @@ function tokenForEntry(entry: TagEntry): string {
 
 // === toggle 路徑：跟 SearchTermRows / TagBar 同邏輯 ===
 // Off 直接呼 dismissTerms → markEntriesOff + push history + emit update。
-// 其他態走 update:modelValue + setTagState（in-place 替換、保留位置）
+// 其他態走 setTermsState（in-place 替換、保留位置）；筆刷一個事件裡會連改好幾筆，不能拿 prop 算
 function applyEntryState(entry: TagEntry, next: TagState): void {
   const token = tokenForEntry(entry)
-  if (next === TagState.Off) {
-    dismissTerms([token])
-  } else {
-    emit('update:modelValue', setTagState(props.modelValue, [token], next))
-  }
+  if (next === TagState.Off) dismissTerms([token])
+  else setTermsState([token], next)
 }
 
 // 跟 SearchTermRows.pressTerm 同一套按法
@@ -247,9 +243,7 @@ function onKeydown(e: KeyboardEvent): void {
           :state-of="entryStateOf"
           :ns-list="popupNsList"
           @update:selected-idx="selectedIdx = $event"
-          @pick="pressEntry($event, mouseRoles.left)"
-          @middle="pressEntry($event, mouseRoles.middle)"
-          @ctxmenu="pressEntry($event, mouseRoles.right)"
+          @select="pressEntry"
         />
         <div v-else-if="dbReady" class="eqt-search-popup__empty">
           {{ t('tagConfig.noResult') }}

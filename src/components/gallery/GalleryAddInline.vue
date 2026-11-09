@@ -8,7 +8,6 @@ import { t } from '@/composables/useI18n'
 import SuggestionList from '@/components/SuggestionList.vue'
 import NamespaceFilter from '@/components/NamespaceFilter.vue'
 import { TagState } from '@/types'
-import { mouseRoles } from '@/services/store'
 import type { Selection } from '@/services/tagPick'
 
 const toast = useEqtToast()
@@ -169,9 +168,7 @@ function onKeydown(e: KeyboardEvent): void {
           :state-of="entryStateOf"
           :ns-list="popupNsList"
           @update:selected-idx="selectedIdx = $event"
-          @pick="onPick($event, mouseRoles.left)"
-          @middle="onPick($event, mouseRoles.middle)"
-          @ctxmenu="onPick($event, mouseRoles.right)"
+          @select="onPick"
         />
         <div v-else-if="dbReady" class="eqt-gallery-add-inline__empty">
           {{ t('tagConfig.noResult') }}

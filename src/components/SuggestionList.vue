@@ -6,13 +6,17 @@ import { DEFAULT_NS_ORDER, type TagEntry } from '@/services/tags/tagDb'
 import { isZhLocale, locale, t } from '@/composables/useI18n'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
 import { useTextMeasure } from '@/composables/useTextMeasure'
+import { useDragSelect } from '@/composables/useDragSelect'
+import type { ChipRef } from '@/services/gallery/dragSelectMachine'
+import { PICK_OF_STATE } from '@/services/search/tagState'
+import type { Selection } from '@/services/tagPick'
 import { TagState } from '@/types'
 
 const props = defineProps<{
   suggestions: TagEntry[]
   selectedIdx: number
-  // 可選 state lookup function：SearchPopup toggle 模式傳入，控制 chip 上色
-  // （include/or/exclude）。TagAutocomplete dropdown 模式不傳，項目維持中性。
+  // 可選 state lookup function：給了就是 toggle 模式，項目照 state 上色（include/or/exclude），
+  // 滑鼠走跟 tagging list 同一台拖曳狀態機、emit select。TagAutocomplete 這類 dropdown 不傳，只 emit pick。
   //
   // 為什麼是 function 而不是 Map：caller 端要避免「對全部 suggestions iterate
   // 一遍預算 Map」的 O(N) 開銷——function 形式只對 v-for 實際 render 出來的
@@ -27,11 +31,10 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:selectedIdx': [value: number]
-  // 三個事件對應實體的左鍵、右鍵、中鍵。dropdown 模式只用 pick（選中此 entry）；
-  // toggle 模式由 caller 照滑鼠鍵設定換成 +1 / −1 / OR
+  // dropdown 模式：左鍵選中此 entry
   pick: [entry: TagEntry]
-  ctxmenu: [entry: TagEntry]
-  middle: [entry: TagEntry]
+  // toggle 模式：按下的鍵在設定裡的動作，點一下或刷過都算
+  select: [entry: TagEntry, mode: Selection]
 }>()
 
 // state → class 對照表：Off 不列（Off 視同無 state、不上色），所以用 Partial
@@ -47,15 +50,27 @@ function stateClassOf(entry: TagEntry): string | undefined {
   return STATE_CLASS[props.stateOf(entry)]
 }
 
-// mousedown 路徑：接左鍵與中鍵。右鍵 mousedown 在某些平台也會 fire，這裡
-// filter 掉避免雙觸發（contextmenu 那條另外處理）
+// 右鍵 mousedown 在某些平台也會 fire，只接左鍵
 function onItemMousedown(entry: TagEntry, e: MouseEvent): void {
-  if (e.button === 0) emit('pick', entry)
-  else if (e.button === 1) emit('middle', entry)
+  if (!props.stateOf && e.button === 0) emit('pick', entry)
 }
 
-function onItemContextMenu(entry: TagEntry): void {
-  emit('ctxmenu', entry)
+function chipAt(x: number, y: number): ChipRef | null {
+  const el = document.elementFromPoint(x, y)?.closest<HTMLElement>('[data-index]')
+  const entry = el && rowsEl.value?.contains(el) ? props.suggestions[Number(el.dataset.index)] : undefined
+  return entry && props.stateOf ? { id: entry.fullTag, state: PICK_OF_STATE[props.stateOf(entry)] } : null
+}
+
+const { onAreaMouseDown } = useDragSelect({
+  chipAt,
+  applySelection: (fullTag, mode) => {
+    const entry = props.suggestions.find(e => e.fullTag === fullTag)
+    if (entry) emit('select', entry, mode)
+  },
+})
+
+function onRowsMousedown(e: MouseEvent): void {
+  if (props.stateOf) onAreaMouseDown(e)
 }
 
 // 列高隨內容變（長名稱把 fullTag 擠到第二行），實際高度在 render 後量；
@@ -204,7 +219,7 @@ const { zhDisplay } = useDisplayConfig()
     @mouseleave="emit('update:selectedIdx', -1)"
   >
     <div v-if="$slots.leading" ref="leadingEl" class="eqt-suggestion-list__leading"><slot name="leading" /></div>
-    <div ref="rowsEl" class="eqt-suggestion-list__rows" :style="wrapperStyle">
+    <div ref="rowsEl" class="eqt-suggestion-list__rows" :style="wrapperStyle" @mousedown="onRowsMousedown">
       <div
         v-for="{ data: entry, index: si, style } in virtualSuggestions"
         :key="entry.fullTag"
@@ -218,7 +233,7 @@ const { zhDisplay } = useDisplayConfig()
           stateClassOf(entry),
         ]"
         @mousedown.prevent="onItemMousedown(entry, $event)"
-        @contextmenu.prevent="onItemContextMenu(entry)"
+        @contextmenu.prevent
         @mouseenter="onItemMouseenter(si)"
       >
         <span class="eqt-popup__suggestion-ns">{{ t('ns.' + entry.ns) }}：</span>
