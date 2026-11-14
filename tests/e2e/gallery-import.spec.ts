@@ -28,6 +28,7 @@ test('導入標籤按命名空間分列、去重，候選不預先選取且只�
     chip('gtl', 4, 'other:imported only'),
     chip('gtw', 5, 'female:weak import'),
     chip('gt', 6, 'language:translated'),
+    chip('gt', 7, 'other:uncensored'),
     '</td></tr></table></div>',
   ].join('')
   await page.route('https://e-hentai.org/g/1002/bbbbbbbbbb/', (route) => (
@@ -51,6 +52,9 @@ test('導入標籤按命名空間分列、去重，候選不預先選取且只�
   await expect(lead(solid)).toHaveCount(0)
   await expect(tag('other:imported only')).toHaveClass(/eqt-gallery-chip--gtl/)
   await expect(tag('female:weak import')).toHaveClass(/eqt-gallery-chip--gtw/)
+
+  // 描述上傳版本的標籤照樣當候選，但別本的實線佐證不算數，開頭換成問號
+  await expect(lead('other:uncensored')).toHaveClass(/lucide-circle-question-mark/)
 
   const labels = taglist.locator('.eqt-gallery-taglist__label')
   const cells = taglist.locator('.eqt-gallery-taglist__cells')

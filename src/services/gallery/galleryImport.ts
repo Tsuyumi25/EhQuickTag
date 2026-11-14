@@ -31,6 +31,23 @@ export interface ImportedGallery {
   tags: readonly { full: string; tier: TagTier }[]
 }
 
+// 描述這一份上傳、而不是作品本身的 other 標籤：同一部作品的另一本可能就不一樣。
+// 依據 EHWiki Expunging「Different Versions」允許並存的版本差異（修正程度、上色、不同譯者），
+// 加上 Gallery Tagging「Temporary Tags」與刪除理由那幾類（品質、缺頁、浮水印、重複上傳）。
+// 分組照 EhTagTranslation other.md 的「技術 > 修正 / 移除原因 / 語言」
+const VERSION_SPECIFIC: Record<string, true> = {
+  // 修正
+  'other:uncensored': true, 'other:mosaic censorship': true, 'other:full censorship': true,
+  // 上色、改圖
+  'other:full color': true, 'other:redraw': true,
+  // 翻譯品質
+  'other:rough translation': true, 'other:rough grammar': true, 'other:caption': true,
+  // 上傳附加物、缺損、刪除理由
+  'other:extraneous ads': true, 'other:scanmark': true, 'other:watermarked': true, 'other:defaced': true,
+  'other:incomplete': true, 'other:missing cover': true, 'other:out of order': true, 'other:sample': true,
+  'other:already uploaded': true, 'other:replaced': true, 'other:compilation': true, 'other:forbidden content': true,
+}
+
 /**
  * 同一本再導入一次就換掉它先前的貢獻，不會重複算。
  *
@@ -61,9 +78,18 @@ export function bestTier(sources: readonly ImportSource[]): TagTier {
   return best
 }
 
-/** 導入能給這本已有標籤的佐證：別本最穩的那條線是實線、虛線還是點線；沒被導入就沒有 */
-export function evidenceOf(sources: readonly ImportSource[]): 'solid' | 'dashed' | 'dotted' | null {
+export type ImportEvidence = 'solid' | 'dashed' | 'dotted' | 'unknown'
+
+/**
+ * 導入能給這個標籤的佐證：別本最穩的那條線是實線、虛線還是點線；沒被導入就沒有。
+ * pageTier 是這本已經有這個標籤時它的線型：這本已經是實線的，別本再怎麼佐證也不會更穩，不給。
+ * 描述上傳版本的標籤（VERSION_SPECIFIC）別本有沒有都說明不了這本，不論誰的線型都是 unknown，
+ * 這本已經有也照樣標出來，提醒這顆要看這本自己
+ */
+export function evidenceOf(tag: string, sources: readonly ImportSource[], pageTier: TagTier | null = null): ImportEvidence | null {
   if (!sources.length) return null
+  if (VERSION_SPECIFIC[tag]) return 'unknown'
+  if (pageTier === 'gt') return null
   const best = bestTier(sources)
   return best === 'gt' ? 'solid' : best === 'gtl' ? 'dashed' : 'dotted'
 }

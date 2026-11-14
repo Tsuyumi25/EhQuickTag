@@ -42,9 +42,27 @@ describe('withImport', () => {
 
 describe('evidenceOf', () => {
   it('以最穩的那本為準，點線也算一級；沒被導入就沒有佐證', () => {
-    expect(evidenceOf([{ gid: 1, title: '', tier: 'gtw' }, { gid: 2, title: '', tier: 'gt' }])).toBe('solid')
-    expect(evidenceOf([{ gid: 1, title: '', tier: 'gtl' }, { gid: 2, title: '', tier: 'gtw' }])).toBe('dashed')
-    expect(evidenceOf([{ gid: 1, title: '', tier: 'gtw' }])).toBe('dotted')
-    expect(evidenceOf([])).toBeNull()
+    expect(evidenceOf('x:a', [{ gid: 1, title: '', tier: 'gtw' }, { gid: 2, title: '', tier: 'gt' }])).toBe('solid')
+    expect(evidenceOf('x:a', [{ gid: 1, title: '', tier: 'gtl' }, { gid: 2, title: '', tier: 'gtw' }])).toBe('dashed')
+    expect(evidenceOf('x:a', [{ gid: 1, title: '', tier: 'gtw' }])).toBe('dotted')
+    expect(evidenceOf('x:a', [])).toBeNull()
+  })
+
+  it('描述上傳版本的 other 標籤不論別本線型都是 unknown，描述作品內容的照線型算', () => {
+    const solid = [{ gid: 1, title: '', tier: 'gt' as const }]
+    expect(evidenceOf('other:uncensored', solid)).toBe('unknown')
+    expect(evidenceOf('other:rough translation', solid)).toBe('unknown')
+    expect(evidenceOf('other:extraneous ads', solid)).toBe('unknown')
+    expect(evidenceOf('other:story arc', solid)).toBe('solid')
+    expect(evidenceOf('other:uncensored', [])).toBeNull()
+  })
+
+  it('這本已經是實線的不給佐證，虛線、點線照給；描述上傳版本的標籤這本有也照樣是 unknown', () => {
+    const solid = [{ gid: 1, title: '', tier: 'gt' as const }]
+    expect(evidenceOf('x:a', solid, 'gt')).toBeNull()
+    expect(evidenceOf('x:a', solid, 'gtl')).toBe('solid')
+    expect(evidenceOf('x:a', solid, 'gtw')).toBe('solid')
+    expect(evidenceOf('other:uncensored', solid, 'gt')).toBe('unknown')
+    expect(evidenceOf('other:full color', solid, 'gtl')).toBe('unknown')
   })
 })

@@ -1,6 +1,7 @@
 <script lang="ts">
 import type { GalleryTag } from '@/composables/useEhGalleryHost'
 import type { TagTier } from '@/composables/useEhGalleryPreview'
+import type { ImportEvidence } from '@/services/gallery/galleryImport'
 import type { MyTagsPalette } from '@/services/mytags/mytagsPalette'
 import type { Selection } from '@/services/tagPick'
 
@@ -13,8 +14,8 @@ export interface GalleryTagListChip {
   iconUrl?: string
   personalTag?: MyTagsPalette[string]
   candidate: 'added' | 'imported' | null
-  /** 別本提供的佐證；本頁已有的實線標籤省略 */
-  evidence: 'solid' | 'dashed' | 'dotted' | null
+  /** 別本提供的佐證；本頁已有的實線標籤省略，unknown 例外 */
+  evidence: ImportEvidence | null
   /** 開頭記號的 hover 說明：從哪幾本帶進來 */
   sources: string
 }
@@ -38,7 +39,7 @@ import { useDragSelect } from '@/composables/useDragSelect'
 import type { ChipRef } from '@/services/gallery/dragSelectMachine'
 import { pickOf } from '@/services/tagPick'
 import type { VoteState } from '@/services/gallery/galleryVote'
-import { CornerLeftUp, TagPlus, CircleCheck, CircleDashedCheck } from '@lucide/vue'
+import { CornerLeftUp, TagPlus, CircleCheck, CircleDashedCheck, CircleQuestionMark } from '@lucide/vue'
 import { CircleDottedCheck } from './circleDottedCheck'
 import TagChip from '@/components/TagChip.vue'
 
@@ -129,6 +130,7 @@ const { onAreaMouseDown } = useDragSelect({
             <TagPlus v-if="chip.candidate === 'added'" />
             <CircleCheck v-else-if="chip.evidence === 'solid'" :title="chip.sources" />
             <CircleDashedCheck v-else-if="chip.evidence === 'dashed'" :title="chip.sources" />
+            <CircleQuestionMark v-else-if="chip.evidence === 'unknown'" :title="chip.sources" />
             <CircleDottedCheck v-else :title="chip.sources" />
           </template>
         </TagChip>

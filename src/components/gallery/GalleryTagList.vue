@@ -146,17 +146,17 @@ function buildChipView(tag: GalleryTag, isCandidate: boolean): GalleryTagListChi
   )
   const entry = findEntryByNsTag(tag.ns, tag.raw)
   const sources = imports.value.get(tag.nsRaw) ?? []
+  const tier = tierOf(tag.tierClass)
   return {
     tag,
     token,
     display: isZhLocale() && entry ? zhDisplay(entry.name) : tag.raw,
     selected: selection.value.get(tag.nsRaw),
-    tier: tierOf(tag.tierClass),
+    tier,
     iconUrl: entry?.iconUrl,
     personalTag: myTagsPalette.value?.[tag.nsRaw],
     candidate: !isCandidate ? null : imports.value.has(tag.nsRaw) ? 'imported' : 'added',
-    // 這本已經是實線的標籤，別本再怎麼佐證也不會更穩
-    evidence: !isCandidate && tierOf(tag.tierClass) === 'gt' ? null : evidenceOf(sources),
+    evidence: evidenceOf(tag.nsRaw, sources, isCandidate ? null : tier),
     sources: sources.map(s => s.title).join('\n'),
   }
 }
