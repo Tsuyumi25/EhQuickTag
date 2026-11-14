@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import { usePopupBehavior } from '@/composables/usePopupBehavior'
 import { t } from '@/composables/useI18n'
 import { useTagLabel } from '@/composables/useTagLabel'
 import TagChip from '@/components/TagChip.vue'
@@ -30,6 +31,9 @@ const emit = defineEmits<{
 
 const { label } = useTagLabel()
 
+const popupEl = ref<HTMLElement | null>(null)
+usePopupBehavior({ popupEl, onClose: () => emit('close') })
+
 const chips = computed(() => props.detail.tags.map((tag) => {
   const view = label.value(tag.full)
   const at = props.appearance.get(tag.full)
@@ -53,95 +57,97 @@ function url(): string {
 </script>
 
 <template>
-  <section class="eqt-gal">
-    <header class="eqt-gal__head">
-      <button
-        type="button"
-        class="eqt-panel__btn eqt-gal__verdict"
-        :class="{ 'eqt-gal__verdict--block': verdict === 'block' }"
-        @click="emit('setVerdict', verdict === 'block' ? null : 'block')"
-      >{{ t('preview.shouldBlock') }}</button>
-      <button
-        type="button"
-        class="eqt-panel__btn eqt-gal__verdict"
-        :class="{ 'eqt-gal__verdict--keep': verdict === 'keep' }"
-        @click="emit('setVerdict', verdict === 'keep' ? null : 'keep')"
-      >{{ t('preview.shouldKeep') }}</button>
-      <a :href="url()" target="_blank" rel="noopener" class="eqt-panel__btn eqt-gal__open">
-        {{ t('gallery.open') }}
-      </a>
-      <button
-        type="button"
-        class="eqt-panel__btn eqt-gal__close"
-        :aria-label="t('settings.close')"
-        @click="emit('close')"
-      >X</button>
-    </header>
+  <div class="eqt-popup-overlay">
+    <section ref="popupEl" class="eqt-gal">
+      <header class="eqt-gal__head">
+        <button
+          type="button"
+          class="eqt-panel__btn eqt-gal__verdict"
+          :class="{ 'eqt-gal__verdict--block': verdict === 'block' }"
+          @click="emit('setVerdict', verdict === 'block' ? null : 'block')"
+        >{{ t('preview.shouldBlock') }}</button>
+        <button
+          type="button"
+          class="eqt-panel__btn eqt-gal__verdict"
+          :class="{ 'eqt-gal__verdict--keep': verdict === 'keep' }"
+          @click="emit('setVerdict', verdict === 'keep' ? null : 'keep')"
+        >{{ t('preview.shouldKeep') }}</button>
+        <a :href="url()" target="_blank" rel="noopener" class="eqt-panel__btn eqt-gal__open">
+          {{ t('gallery.open') }}
+        </a>
+        <button
+          type="button"
+          class="eqt-panel__btn eqt-gal__close"
+          :aria-label="t('settings.close')"
+          @click="emit('close')"
+        >X</button>
+      </header>
 
-    <div class="eqt-gal__scroll">
-      <div class="eqt-gal__body">
-        <aside class="eqt-gal__side">
-          <!-- 封面和縮圖都是 EH 算好的 background 定位，整段照抄 -->
-          <div class="eqt-gal__cover" :style="detail.coverStyle" />
-          <div class="eqt-gal__titles">
-            <strong>{{ detail.title }}</strong>
-            <p v-if="detail.titleJp" class="eqt-panel__hint">{{ detail.titleJp }}</p>
-          </div>
-          <p class="eqt-panel__hint">
-            {{ detail.category }}<template v-if="detail.uploader"> · {{ detail.uploader }}</template>
-          </p>
-          <p v-if="detail.rating" class="eqt-panel__hint">{{ detail.rating }}</p>
-          <dl class="eqt-gal__facts">
-            <template v-for="f in detail.facts" :key="f.label">
-              <dt>{{ f.label }}</dt><dd>{{ f.value }}</dd>
-            </template>
-          </dl>
-        </aside>
+      <div class="eqt-gal__scroll">
+        <div class="eqt-gal__body">
+          <aside class="eqt-gal__side">
+            <!-- 封面和縮圖都是 EH 算好的 background 定位，整段照抄 -->
+            <div class="eqt-gal__cover" :style="detail.coverStyle" />
+            <div class="eqt-gal__titles">
+              <strong>{{ detail.title }}</strong>
+              <p v-if="detail.titleJp" class="eqt-panel__hint">{{ detail.titleJp }}</p>
+            </div>
+            <p class="eqt-panel__hint">
+              {{ detail.category }}<template v-if="detail.uploader"> · {{ detail.uploader }}</template>
+            </p>
+            <p v-if="detail.rating" class="eqt-panel__hint">{{ detail.rating }}</p>
+            <dl class="eqt-gal__facts">
+              <template v-for="f in detail.facts" :key="f.label">
+                <dt>{{ f.label }}</dt><dd>{{ f.value }}</dd>
+              </template>
+            </dl>
+          </aside>
 
-        <div class="eqt-gal__main">
-          <!-- ⭐ 沿用圖庫頁那套 chip：原生的 gt / gtl / gtw 外框（EH 用它表示這個標籤
-               確不確定），加上翻譯過的名稱。在你清單裡的另外帶權重 -->
-          <div class="eqt-gal__tags">
-            <TagChip
-              v-for="chip in chips"
-              :key="chip.full"
-              :full="chip.full"
-              :display="chip.display"
-              :icon-url="chip.iconUrl"
-              :tier="chip.tier"
-              :colors="chip.colors"
-              :weight="chip.weight"
-              :hidden="chip.hidden"
-              :watch="chip.watch"
-              :show-score="myTagsGalleryScoresEnabled"
-              :show-marks="myTagsGalleryMarksEnabled"
-              :title="chip.full"
-              @pick="emit('pickTag', chip.full)"
-            />
-          </div>
+          <div class="eqt-gal__main">
+            <!-- ⭐ 沿用圖庫頁那套 chip：原生的 gt / gtl / gtw 外框（EH 用它表示這個標籤
+                 確不確定），加上翻譯過的名稱。在你清單裡的另外帶權重 -->
+            <div class="eqt-gal__tags">
+              <TagChip
+                v-for="chip in chips"
+                :key="chip.full"
+                :full="chip.full"
+                :display="chip.display"
+                :icon-url="chip.iconUrl"
+                :tier="chip.tier"
+                :colors="chip.colors"
+                :weight="chip.weight"
+                :hidden="chip.hidden"
+                :watch="chip.watch"
+                :show-score="myTagsGalleryScoresEnabled"
+                :show-marks="myTagsGalleryMarksEnabled"
+                :title="chip.full"
+                @pick="emit('pickTag', chip.full)"
+              />
+            </div>
 
-          <!-- popup 收掉之後，加總和門檻只剩這裡講得到 -->
-          <p v-if="outcome" class="eqt-gal__sum">
-            <span v-if="outcome.hiddenBy.length">
-              {{ t('marked.hiddenBy', { tags: outcome.hiddenBy.join(' · ') }) }}
-            </span>
-            <span v-else>
-              {{ t('preview.sum', { n: outcome.score }) }}
-              <template v-if="threshold !== null"> · {{ t('preview.threshold', { n: threshold }) }}</template>
-            </span>
-          </p>
+            <!-- popup 收掉之後，加總和門檻只剩這裡講得到 -->
+            <p v-if="outcome" class="eqt-gal__sum">
+              <span v-if="outcome.hiddenBy.length">
+                {{ t('marked.hiddenBy', { tags: outcome.hiddenBy.join(' · ') }) }}
+              </span>
+              <span v-else>
+                {{ t('preview.sum', { n: outcome.score }) }}
+                <template v-if="threshold !== null"> · {{ t('preview.threshold', { n: threshold }) }}</template>
+              </span>
+            </p>
 
-          <p v-if="loading" class="eqt-panel__hint">{{ t('gallery.loading') }}</p>
-          <div v-else class="eqt-gal__thumbs">
-            <a
-              v-for="thumb in detail.thumbs"
-              :key="thumb.href"
-              :href="thumb.href" target="_blank" rel="noopener"
-              :title="thumb.label"
-            ><span :style="thumb.style" /></a>
+            <p v-if="loading" class="eqt-panel__hint">{{ t('gallery.loading') }}</p>
+            <div v-else class="eqt-gal__thumbs">
+              <a
+                v-for="thumb in detail.thumbs"
+                :key="thumb.href"
+                :href="thumb.href" target="_blank" rel="noopener"
+                :title="thumb.label"
+              ><span :style="thumb.style" /></a>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
+  </div>
 </template>

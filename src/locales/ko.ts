@@ -553,7 +553,6 @@ export default {
   'panel.helpQueryExample': '예를 들어 {anthology}를 숨김으로 설정하고 {webtoon}에 음수 가중치를 지정합니다. {anthology}를 검색하면 그 숨김 설정은 무시되지만 {webtoon}의 음수 가중치는 계속 합산됩니다. 두 태그를 함께 검색하면 둘 다 제외되고 다른 태그는 평소대로 필터링됩니다.',
   'panel.resizeEditor': '드래그하여 편집 영역 너비 조절: 오른쪽으로 접기, 왼쪽으로 펼치기',
   'panel.resizeTagList': '드래그하여 태그 목록 크기 조절',
-  'panel.resizeGallery': '드래그하여 갤러리 상세 영역 높이 조절',
   'panel.collapseTagList': '태그 목록 접기',
   'panel.expandTagList': '태그 목록을 기본 크기로 펼치기',
   'panel.collapseEditor': '편집 영역 접기',

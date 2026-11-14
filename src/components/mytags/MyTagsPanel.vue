@@ -943,7 +943,7 @@ watch(edits, () => { void flush().catch(reportStorageError) }, { deep: true })
 </script>
 
 <template>
-  <section class="eqt-panel" :inert="!storageReady" :style="{ zoom: myTagsPanelZoom / 100 }">
+  <section class="eqt-panel" :inert="!storageReady" :style="{ zoom: myTagsPanelZoom / 100, '--eqt-panel-zoom': myTagsPanelZoom / 100 }">
     <SplitterGroup
       :direction="narrowLayout ? 'vertical' : 'horizontal'"
       auto-save-id="eqt-mytags-workspace"
@@ -1114,19 +1114,7 @@ watch(edits, () => { void flush().catch(reportStorageError) }, { deep: true })
       <SplitterPanel id="eqt-mytags-main" :min-size="30" :default-size="100 - SIDE_DEFAULT_SIZE" class="eqt-panel__main-panel">
       <SplitterGroup direction="horizontal" auto-save-id="eqt-mytags-editor" :storage="layoutStorage" class="eqt-panel__splitter">
         <SplitterPanel id="eqt-mytags-preview-stack" :min-size="30" :default-size="100 - EDITOR_DEFAULT_SIZE" class="eqt-panel__preview-stack">
-          <SplitterGroup direction="vertical" auto-save-id="eqt-mytags-preview" :storage="layoutStorage" class="eqt-panel__preview-splitter">
-          <SplitterPanel
-            id="eqt-mytags-preview"
-            v-slot="{ isCollapsed }"
-            collapsible
-            :collapsed-size="0"
-            :min-size="0"
-            :default-size="55"
-            class="eqt-panel__preview-panel"
-          >
           <MyTagsPreview
-            :inert="isCollapsed"
-            :aria-hidden="isCollapsed || undefined"
             v-model:marked-only="markedOnly"
             v-model:expunged-only="expungedOnly"
             :expunged-busy="expungedFetcher.busy.value"
@@ -1139,38 +1127,6 @@ watch(edits, () => { void flush().catch(reportStorageError) }, { deep: true })
             @refresh-expunged="refreshPreview(true)"
             @open="openGallery"
           />
-          </SplitterPanel>
-          <SplitterResizeHandle
-            v-if="openedGallery"
-            class="eqt-panel__resize-handle eqt-panel__resize-handle--gallery"
-            :aria-label="t('panel.resizeGallery')"
-            :title="t('panel.resizeGallery')"
-          >
-            <span class="eqt-panel__resize-grip" aria-hidden="true" />
-          </SplitterResizeHandle>
-          <SplitterPanel
-            id="eqt-mytags-gallery"
-            v-if="openedGallery"
-            v-slot="{ isCollapsed }"
-            collapsible
-            :collapsed-size="0"
-            :min-size="0"
-            :default-size="45"
-            class="eqt-panel__gallery-panel"
-          >
-
-          <MyTagsGallery
-            :inert="isCollapsed"
-            :aria-hidden="isCollapsed || undefined"
-            :detail="openedGallery" :outcome="openedOutcome" :appearance="openedAppearance"
-            :verdict="store.verdicts[String(openedGallery.gid)]" :loading="galleryBusy"
-            :threshold="activeThreshold"
-            @close="openedGallery = null"
-            @pick-tag="select"
-            @set-verdict="(v) => openedGallery && setVerdict(openedGallery.gid, v)"
-          />
-          </SplitterPanel>
-          </SplitterGroup>
         </SplitterPanel>
         <div class="eqt-panel__divider">
           <button
@@ -1246,6 +1202,15 @@ watch(edits, () => { void flush().catch(reportStorageError) }, { deep: true })
       v-if="ehTopbarOpen"
       :host="host"
       :style="{ '--eqt-eh-topbar-top': `${topbarBottom / (myTagsPanelZoom / 100)}px` }"
+    />
+    <MyTagsGallery
+      v-if="openedGallery"
+      :detail="openedGallery" :outcome="openedOutcome" :appearance="openedAppearance"
+      :verdict="store.verdicts[String(openedGallery.gid)]" :loading="galleryBusy"
+      :threshold="activeThreshold"
+      @close="openedGallery = null"
+      @pick-tag="select"
+      @set-verdict="(v) => openedGallery && setVerdict(openedGallery.gid, v)"
     />
   </section>
 </template>

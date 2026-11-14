@@ -553,7 +553,6 @@ export default {
   'panel.helpQueryExample': 'For example, set {anthology} to Hide and give {webtoon} a negative weight. When you search for {anthology}, its Hide setting is ignored, while the negative weight of {webtoon} still counts. If you search for both tags, both are exempt, while all other tags continue to apply normally.',
   'panel.resizeEditor': 'Drag to resize the editor; right to collapse, left to expand',
   'panel.resizeTagList': 'Drag to resize the tag list',
-  'panel.resizeGallery': 'Drag to resize gallery details',
   'panel.collapseTagList': 'Collapse tag list',
   'panel.expandTagList': 'Expand tag list to default size',
   'panel.collapseEditor': 'Collapse editor',

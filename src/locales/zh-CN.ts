@@ -553,7 +553,6 @@ export default {
   'panel.helpQueryExample': '例如，把 {anthology} 设为隐藏、{webtoon} 设为负权重。搜索 {anthology} 时，它的隐藏设置会被略过，{webtoon} 的负权重仍会计入；同时搜索两者时，两者都会被豁免，其他标签仍照常过滤。',
   'panel.resizeEditor': '拖动调整编辑区宽度，向右收起、向左展开',
   'panel.resizeTagList': '拖动调整标签列表大小',
-  'panel.resizeGallery': '拖动调整图库详情高度',
   'panel.collapseTagList': '收起标签列表',
   'panel.expandTagList': '以默认大小展开标签列表',
   'panel.collapseEditor': '收起编辑区',

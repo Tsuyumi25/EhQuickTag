@@ -553,7 +553,6 @@ export default {
   'panel.helpQueryExample': '例えば、{anthology} を非表示にし、{webtoon} に負の重みを設定します。{anthology} を検索条件に指定すると、その非表示設定は無視されますが、{webtoon} の負の重みは引き続き加算されます。両方を検索条件に指定すると、どちらも対象外となり、他のタグは通常どおり適用されます。',
   'panel.resizeEditor': 'ドラッグで編集欄の幅を調整。右で折りたたみ、左で展開',
   'panel.resizeTagList': 'ドラッグでタグ一覧のサイズを調整',
-  'panel.resizeGallery': 'ドラッグでギャラリー詳細の高さを調整',
   'panel.collapseTagList': 'タグ一覧を折りたたむ',
   'panel.expandTagList': 'タグ一覧を既定のサイズで展開',
   'panel.collapseEditor': '編集欄を折りたたむ',
