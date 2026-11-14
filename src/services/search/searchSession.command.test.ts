@@ -28,8 +28,9 @@ import {
   clearSearch,
   clearHistory,
   recordSubmitAndFlush,
-  onRestoreHistory,
+  setTermsState,
 } from './searchSession'
+import { TagState } from '@/types'
 
 // === Session test 環境 ===
 //
@@ -177,11 +178,11 @@ describe('單一 command 後 invariant 成立', () => {
     teardownSession()
   })
 
-  test('onRestoreHistory 後 I1/I3/I4 成立', async () => {
+  test('歷史加回搜尋（setTermsState）後 I1/I3/I4 成立', async () => {
     setupSession('foo$')
     clearSearch()         // foo$ 變 off entry + 進 H
     await nextTick()
-    onRestoreHistory('bar$')
+    setTermsState(['bar$'], TagState.Include)
     await nextTick()
     verifyInvariants()
     teardownSession()

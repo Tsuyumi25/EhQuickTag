@@ -10,6 +10,7 @@
 // 只看事件落點的話，甩得快就會整顆跳過窄 chip。過了門檻之後沿游標畫一條軌跡（全域開關）。
 //
 // caller 注入 chipAt (DOM hit-test) + applySelection / setPanelTag (業務動作)
+import { shallowRef, type Ref } from 'vue'
 import { useEventListener } from '@vueuse/core'
 import {
   createDragSelectStore,
@@ -35,21 +36,40 @@ export interface UseDragSelectOptions {
   /** reducer 設定。預設 dragThresholdPx=3 */
   config?: Partial<DragSelectConfig>
   takeOver?: boolean
+  /**
+   * 刷選途中只記下要套的 chip、放開才一起套。給「套用後 chip 會離開原位」的清單用（歷史紀錄
+   * 加回搜尋就從那一列消失）：邊刷邊套的話後面的 chip 會補位滑到游標底下被順手刷到。
+   * 單擊本來就在放開時才套，不受影響
+   */
+  deferApply?: boolean
 }
 
 export function useDragSelect(opts: UseDragSelectOptions): {
   onAreaMouseDown: (e: MouseEvent) => void
+  /** deferApply 時這趟刷到、還沒套的 chip 跟按下的動作，給 caller 畫預覽；沒開 deferApply 恆為空 */
+  pending: Readonly<Ref<ReadonlyMap<string, Selection>>>
 } {
   const dragThresholdPx = opts.config?.dragThresholdPx ?? 3
   const store = createDragSelectStore(() => ({ dragThresholdPx }))
   let lastPoint: Point | null = null
+  const pending = shallowRef<ReadonlyMap<string, Selection>>(new Map())
 
   function dispatch(event: DragSelectEvent): void {
     const effects = store.dispatch(event)
+    const deferring = opts.deferApply && store.state().kind === 'dragging'
     for (const eff of effects) {
-      if (eff.kind === 'apply') opts.applySelection(eff.id, eff.mode)
-      else if (eff.kind === 'panelTag') opts.setPanelTag?.(eff.id)
+      if (eff.kind === 'apply') {
+        if (deferring) pending.value = new Map(pending.value).set(eff.id, eff.mode)
+        else opts.applySelection(eff.id, eff.mode)
+      } else if (eff.kind === 'panelTag') opts.setPanelTag?.(eff.id)
     }
+  }
+
+  function flushPending(): void {
+    const batch = pending.value
+    if (!batch.size) return
+    pending.value = new Map()
+    for (const [id, mode] of batch) opts.applySelection(id, mode)
   }
 
   function onAreaMouseDown(e: MouseEvent): void {
@@ -89,7 +109,8 @@ export function useDragSelect(opts: UseDragSelectOptions): {
     lastPoint = null
     endTrail()
     dispatch({ kind: 'mouseup' })
+    flushPending()
   }, { capture: opts.takeOver })
 
-  return { onAreaMouseDown }
+  return { onAreaMouseDown, pending }
 }

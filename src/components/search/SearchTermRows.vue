@@ -5,6 +5,16 @@
 // 兩個 caller：
 //   - SearchPanel：editing 模式下可拖出 chip → TagBar
 //   - SearchPopup：read-only（editing=false），純當「當前搜尋狀態」的視窗
+import { TagState } from '@/types'
+
+// Off 給 explicit class（即使沒對應 style）：給 e2e / 外部觀察者可正面 assert，
+// 避免 negate 推論在新 state 加入時靜默漏掉。SearchPanel 的歷史 chip 刷選預覽也用這份
+export const TERM_STATE_CLASS: Record<TagState, string> = {
+  [TagState.Include]: 'eqt-search-panel__button--include',
+  [TagState.Or]:      'eqt-search-panel__button--or',
+  [TagState.Exclude]: 'eqt-search-panel__button--exclude',
+  [TagState.Off]:     'eqt-search-panel__button--off',
+}
 </script>
 
 <script setup lang="ts">
@@ -23,7 +33,7 @@ import { useBilingualWrap } from '@/composables/useBilingualWrap'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
 import type { TermEntry } from '@/services/search/sessionState'
 import type { IntroTag } from '@/composables/useIntroPanel'
-import { TagState, type TagButton } from '@/types'
+import type { TagButton } from '@/types'
 
 const props = defineProps<{
   modelValue: string
@@ -68,15 +78,6 @@ interface TermGroup {
   key: string | null
   label: string
   terms: TermInfo[]
-}
-
-// Off 給 explicit class（即使沒對應 style）：給 e2e / 外部觀察者可正面 assert，
-// 避免 negate 推論在新 state 加入時靜默漏掉
-const STATE_CLASS: Record<TagState, string> = {
-  [TagState.Include]: 'eqt-search-panel__button--include',
-  [TagState.Or]:      'eqt-search-panel__button--or',
-  [TagState.Exclude]: 'eqt-search-panel__button--exclude',
-  [TagState.Off]:     'eqt-search-panel__button--off',
 }
 
 const STATE_PREFIX: Record<TagState, Prefix> = {
@@ -271,7 +272,7 @@ function cloneToButton({ literal, cloneLabel }: { literal: string; cloneLabel: s
           <template #item="{ element: term }">
             <button
               class="eqt-search-panel__button"
-              :class="STATE_CLASS[(term as TermInfo).state]"
+              :class="TERM_STATE_CLASS[(term as TermInfo).state]"
               type="button"
               :data-term="(term as TermInfo).positive"
               @click="$event.detail === 0 && pressTerm(term as TermInfo, 'positive')"

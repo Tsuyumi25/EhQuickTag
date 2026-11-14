@@ -138,6 +138,37 @@ test('history 跨 reload 還留在 SearchPanel', async ({ page }) => {
   ).toBeVisible()
 })
 
+// 加回搜尋的歷史 chip 會離開歷史列；邊刷邊套的話後面的 chip 補位滑到游標底下會被順手刷到
+test('刷過的歷史 chip 放開才加回搜尋，沒刷到的留在歷史', async ({ page }) => {
+  await injectUserscript(page)
+  await page.locator('#f_search').fill('artist:e2ea artist:e2eb artist:e2ec')
+  await page.locator('.eqt-search-panel__button').filter({ hasText: 'e2ec' }).first().waitFor()
+  await page.getByTestId('clear-search').click()
+  await page.waitForFunction(() => (localStorage.getItem('eqt-test:eqt-search-history') ?? '').includes('e2ec'))
+  await page.reload()
+  await reinjectUserscript(page)
+
+  const chips = page.locator('.eqt-search-panel [data-history]:visible')
+  await expect(chips).toHaveCount(3)
+  const [first, second, third] = await chips.evaluateAll(els => els.map(e => e.getAttribute('data-history')!))
+  const chip = (positive: string) => page.locator(`.eqt-search-panel [data-history="${positive}"]:visible`)
+  const a = (await chip(first).boundingBox())!
+  const b = (await chip(second).boundingBox())!
+
+  await page.mouse.move(a.x + 4, a.y + a.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 10 })
+  // 還按著：兩顆只換成預覽色、留在原位
+  await expect(chip(first)).toHaveClass(/eqt-search-panel__button--include/)
+  await expect(chip(second)).toHaveClass(/eqt-search-panel__button--include/)
+  await expect(page.locator('#f_search')).toHaveValue('')
+  await page.mouse.up()
+
+  await expect(page.locator('#f_search')).toHaveValue(new RegExp(`${first}.*${second}|${second}.*${first}`))
+  await expect(page.locator('#f_search')).not.toHaveValue(new RegExp(third))
+  await expect(chip(third)).toBeVisible()
+})
+
 // === Tier 1 / ⑥：--eqt-controls-w 鏈完整性（ResizeObserver → emit → CSS var）===
 test('__lines 寬度 = bar 寬 − 2 × line-controls 寬', async ({ page }) => {
   await injectUserscript(page)

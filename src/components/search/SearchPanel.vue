@@ -2,20 +2,23 @@
 import { computed, ref } from 'vue'
 import Draggable from 'vuedraggable'
 import { parseTerm } from '@/services/search/searchSyntax'
-import { tokenize, tokenIdentity } from '@/services/search/tagState'
+import { tokenize, tokenIdentity, nextTagState } from '@/services/search/tagState'
 import { lines, enableHistory } from '@/services/store'
 import { findEntryByNsTag, tagDbVersion } from '@/services/tags/tagDb'
 import { t } from '@/composables/useI18n'
 import { baseDragOptions, EQT_TAGS_GROUP } from '@/utils/drag'
 import {
   sessionTerms, history, sessionIdentitySet,
-  onRestoreHistory, onHistoryChange,
+  setTermsState, onHistoryChange,
 } from '@/services/search/searchSession'
 import { useBilingualWrap } from '@/composables/useBilingualWrap'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
-import SearchTermRows from '@/components/search/SearchTermRows.vue'
+import { useDragSelect } from '@/composables/useDragSelect'
+import type { ChipRef } from '@/services/gallery/dragSelectMachine'
+import type { Selection } from '@/services/tagPick'
+import SearchTermRows, { TERM_STATE_CLASS } from '@/components/search/SearchTermRows.vue'
 import SearchControls from '@/components/search/SearchControls.vue'
-import type { TagButton } from '@/types'
+import { TagState, type TagButton } from '@/types'
 
 const props = defineProps<{
   modelValue: string
@@ -160,10 +163,34 @@ function cloneToButton({ literal, cloneLabel }: { literal: string; cloneLabel: s
   return { kind: 'tag', tags: [literal], label: cloneLabel }
 }
 
-// history chip click = 把 term 加回搜尋，editing 時鎖住、只剩拖拽路徑
-function onHistoryClick(positive: string): void {
+// 歷史 chip 都不在搜尋裡（Off），按法跟搜尋 chip 同一套：哪顆鍵就加回成那顆鍵的狀態。
+// editing 時鎖住、只剩拖拽路徑
+function pressHistory(positive: string, key: Selection): void {
   if (props.editing) return
-  onRestoreHistory(positive)
+  const next = nextTagState([positive], TagState.Off, key)
+  if (next !== TagState.Off) setTermsState([positive], next)
+}
+
+// 加回搜尋的 chip 會離開歷史列，邊刷邊套會讓後面的 chip 補位滑進游標底下，所以放開才套
+function historyChipAt(x: number, y: number): ChipRef | null {
+  const el = document.elementFromPoint(x, y)?.closest<HTMLElement>('[data-history]')
+  return el && historyContainerRef.value?.contains(el) ? { id: el.dataset.history!, state: 0 } : null
+}
+
+const { onAreaMouseDown: onHistoryMouseDown, pending: pendingHistory } = useDragSelect({
+  chipAt: historyChipAt,
+  applySelection: pressHistory,
+  deferApply: true,
+})
+
+function onHistoryCellsMouseDown(event: MouseEvent): void {
+  if (!props.editing) onHistoryMouseDown(event)
+}
+
+function historyClass(positive: string): string {
+  const key = pendingHistory.value.get(positive)
+  const preview = key ? nextTagState([positive], TagState.Off, key) : TagState.Off
+  return preview === TagState.Off ? 'eqt-search-panel__button--ghost' : TERM_STATE_CLASS[preview]
 }
 </script>
 
@@ -187,7 +214,7 @@ function onHistoryClick(positive: string): void {
       class="eqt-search-panel__row"
     >
       <div class="eqt-search-panel__label">{{ t('tagbar.history') }}:</div>
-      <div class="eqt-search-panel__cells">
+      <div class="eqt-search-panel__cells" @mousedown="onHistoryCellsMouseDown" @contextmenu.prevent>
         <Draggable
           v-for="(row, rowIdx) in historyRows"
           :key="rowIdx"
@@ -204,9 +231,11 @@ function onHistoryClick(positive: string): void {
         >
           <template #item="{ element: item }">
             <button
-              class="eqt-search-panel__button eqt-search-panel__button--ghost"
+              class="eqt-search-panel__button"
+              :class="historyClass((item as HistoryTerm).positive)"
               type="button"
-              @click="onHistoryClick((item as HistoryTerm).positive)"
+              :data-history="(item as HistoryTerm).positive"
+              @click="$event.detail === 0 && pressHistory((item as HistoryTerm).positive, 'positive')"
             >{{ (item as HistoryTerm).display }}</button>
           </template>
         </Draggable>

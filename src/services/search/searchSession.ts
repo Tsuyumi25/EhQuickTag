@@ -255,13 +255,6 @@ export async function recordSubmitAndFlush(): Promise<void> {
 }
 
 /**
- * 點 history ghost chip 把該 token 加回搜尋（Include state）。
- */
-export function onRestoreHistory(positive: string): void {
-  setTermsState([positive], TagState.Include)
-}
-
-/**
  * 把幾個身份設成指定 state（Off 走 dismissTerms）。讀寫都走 bindSearchBar 綁的那份 model：
  * 筆刷在同一個事件裡會連續改好幾顆 chip，元件的 modelValue prop 要等下一輪 render 才更新，
  * 拿 prop 算的話後一顆會蓋掉前一顆
