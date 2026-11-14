@@ -340,21 +340,6 @@ function commit(): void {
   &__results {
     flex: 1 1 auto;
     min-height: 0;
-
-    .eqt-popup__suggestion--styled {
-      box-sizing: border-box;
-      min-height: var(--eqt-suggestion-row-height);
-
-      .eqt-popup__suggestion-ns,
-      .eqt-popup__suggestion-tag {
-        color: inherit;
-      }
-
-      &.eqt-popup__suggestion--active {
-        outline: var(--eqt-border-width) solid currentColor;
-        outline-offset: calc(-1 * var(--eqt-border-width));
-      }
-    }
   }
 
   &__empty {

@@ -601,6 +601,8 @@
   color: inherit;
   font: inherit;
   font-size: var(--eqt-fs-sm);
+  font-weight: 700;
+  border: var(--eqt-border-width) solid var(--eqt-border);
   cursor: pointer;
 
   &--static { cursor: default; }
@@ -613,11 +615,6 @@
     white-space: nowrap;
     text-overflow: ellipsis;
   }
-}
-.eqt-taglist__chip,
-.eqt-tag-catalog__results .eqt-popup__suggestion--styled {
-  border: var(--eqt-border-width) solid var(--eqt-border);
-  font-weight: 700;
 }
 
 .eqt-taglist__ns { font-size: var(--eqt-fs-xs); opacity: 0.7; }

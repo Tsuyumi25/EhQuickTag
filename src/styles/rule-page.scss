@@ -654,22 +654,6 @@
       height: var(--eqt-fs-md);
     }
   }
-
-  // 跟 /mytags 標籤目錄同一套：有個人配色的列畫出 chip 的框與粗體，底色與字色走 inline style
-  .eqt-popup__suggestion--styled {
-    box-sizing: border-box;
-    min-height: var(--eqt-suggestion-row-height);
-    border: var(--eqt-border-width) solid var(--eqt-border);
-    font-weight: 700;
-
-    .eqt-popup__suggestion-ns,
-    .eqt-popup__suggestion-tag { color: inherit; }
-
-    &.eqt-popup__suggestion--active {
-      outline: var(--eqt-border-width) solid currentColor;
-      outline-offset: calc(-1 * var(--eqt-border-width));
-    }
-  }
 }
 
 // 群組沿用原本三區的樣子：標題列（IS／IS NOT 與判定模式的切換）加上左側色條的托盤。

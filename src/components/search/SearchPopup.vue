@@ -15,6 +15,8 @@ import SearchTermRows from '@/components/search/SearchTermRows.vue'
 import SearchControls from '@/components/search/SearchControls.vue'
 import TagIntroPanel from '@/components/TagIntroPanel.vue'
 import { createIntroPanel } from '@/composables/useIntroPanel'
+import { useMyTagsPalette } from '@/composables/useMyTagsPalette'
+import { useMyTagsColors } from '@/composables/useMyTagsColors'
 import { TagState } from '@/types'
 
 // === 心智模型 ===
@@ -69,6 +71,14 @@ const { openTag: introTag } = intro
 
 function inspectEntry(entry: TagEntry): void {
   intro.setPanelTag({ ns: entry.ns, raw: entry.raw, nsRaw: entry.fullTag })
+}
+
+// 跟 /mytags 標籤目錄一樣不另設開關：有 My Tags 配色的標籤就照配色畫，搜尋狀態仍是左側色條
+const palette = useMyTagsPalette()
+const chipStyle = useMyTagsColors()
+function styleOf(entry: TagEntry) {
+  const colors = palette.value?.[entry.fullTag]
+  return colors ? chipStyle(colors) : undefined
 }
 
 const { dbReady, suggestions } = useTagSuggestions({
@@ -253,6 +263,7 @@ function onKeydown(e: KeyboardEvent): void {
           :suggestions="suggestions"
           :selected-idx="selectedIdx"
           :state-of="entryStateOf"
+          :style-of="styleOf"
           :ns-list="popupNsList"
           @update:selected-idx="selectedIdx = $event"
           @select="pressEntry"

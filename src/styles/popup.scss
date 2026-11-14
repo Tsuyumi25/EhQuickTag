@@ -260,6 +260,23 @@
     &--exclude {
       box-shadow: inset 3px 0 0 var(--eqt-status-exclude);
     }
+
+    // 有 My Tags 配色的列畫成 chip：框與粗體；底色、字色、框色由 styleOf 的 inline style 給。
+    // inline 底色會蓋掉 hover / active 的底色，active 改用 outline 標出來
+    &--styled {
+      box-sizing: border-box;
+      min-height: var(--eqt-suggestion-row-height);
+      border: var(--eqt-border-width) solid var(--eqt-border);
+      font-weight: 700;
+
+      .eqt-popup__suggestion-ns,
+      .eqt-popup__suggestion-tag { color: inherit; }
+
+      &.eqt-popup__suggestion--active {
+        outline: var(--eqt-border-width) solid currentColor;
+        outline-offset: calc(-1 * var(--eqt-border-width));
+      }
+    }
   }
 
   &__suggestion-ns {
