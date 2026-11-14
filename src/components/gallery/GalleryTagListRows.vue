@@ -104,7 +104,7 @@ const { onAreaMouseDown } = useDragSelect({
       :key="group.key"
       class="eqt-gallery-taglist__row"
     >
-      <div class="eqt-gallery-taglist__label">
+      <div class="eqt-gallery-taglist__label" :class="{ 'eqt-gallery-taglist__label--candidate': group.candidate }">
         <template v-if="group.label">{{ group.label }}:</template>
         <CornerLeftUp v-else-if="group.candidate" class="eqt-gallery-taglist__label-icon" />
       </div>

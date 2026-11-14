@@ -15,6 +15,9 @@
 // galleryTaglistHeight 設定寫的 --eqt-gallery-height 決定。
 $eqt-gallery-height: 330px;
 
+// ns 欄跟 cells 之間的距離。候選列的色帶靠負 margin 跨過這段，兩邊要是同一個值，色帶才不會裂開
+$eqt-gallery-column-gap: 6px;
+
 // 自釘高，不從 #gmid 借 height:100%——那條鏈被外部腳本切斷（如 ExResurrect 設
 // #gmid height:unset）就塌回內容高。
 #eqt-gallery-anchor {
@@ -54,7 +57,7 @@ $eqt-gallery-height: 330px;
   padding: 2px 0 2px 3px;
   display: grid;
   grid-template-columns: minmax(48px, auto) 1fr;
-  column-gap: 6px;
+  column-gap: $eqt-gallery-column-gap;
   align-items: start;
   align-content: start;
 }
@@ -80,6 +83,19 @@ $eqt-gallery-height: 330px;
   color: var(--eqt-text);
 }
 
+// 候選列的色帶從 ns 欄一路鋪到 cells，讀起來是表格裡的一列，不是另外浮著的一塊。
+// 中性底色：綠紅黃已經是選取的包含／排除／OR，帶色相會被讀成整列被選了。
+//   - 負 margin 吃掉 grid 的 column-gap，padding 補回同量，文字位置不變，色帶不斷
+//   - grid 是 align-items: start，label 要 stretch 才跟 cells 一樣高；下緣留 5px 對齊 cells
+//   - 上緣 3px 原生值 + cells 的 4px，ns 名稱 / ↰ 才跟 chip 文字同一行
+.eqt-gallery-taglist__label--candidate {
+  align-self: stretch;
+  margin: 0 (-$eqt-gallery-column-gap) 5px 0;
+  padding: 7px (1px + $eqt-gallery-column-gap) 1px 1px;
+  border-radius: var(--eqt-radius-md) 0 0 var(--eqt-radius-md);
+  background: var(--eqt-bg-stripe);
+}
+
 // 緊接在同 ns 底下的候選列，ns 欄不再寫一次名稱，改用 corner-left-up 指回上一列
 .eqt-gallery-taglist__label-icon {
   width: 1em;
@@ -93,14 +109,14 @@ $eqt-gallery-height: 330px;
   flex-wrap: wrap;
   min-width: 0;
 
-  // 候選列整塊框起來：跟上下的真標籤列一眼就分得開。框用實線，虛線 / 點線留給 chip
-  // 表示可信度；上方 padding 補回 chip 只有下 margin 造成的不對稱
+  // 候選列：色帶的 cells 半段（ns 欄那半段見 __label--candidate）。左邊不留 padding，
+  // 候選 chip 才跟上一列的 chip 左緣對齊；上方 padding 補回 chip 只有下 margin 造成的不對稱
   &--candidate {
-    // 右邊跟操作區一樣留 6px，框的右緣才會跟底下的網址欄、按鈕對齊
+    // 右邊跟操作區一樣留 6px，色帶的右緣才會跟底下的網址欄、按鈕對齊
     margin: 0 6px 5px 0;
-    padding: 4px 2px 0;
-    border: var(--eqt-border-width) solid var(--eqt-border);
-    border-radius: var(--eqt-radius-md);
+    padding: 4px 0 0;
+    border-radius: 0 var(--eqt-radius-md) var(--eqt-radius-md) 0;
+    background: var(--eqt-bg-stripe);
   }
 }
 
