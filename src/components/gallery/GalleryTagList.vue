@@ -223,40 +223,19 @@ function setSelection(nsRaw: string, target: Selection): void {
 }
 
 // === GalleryAddInline picker 對接 ===
-// pickedIds：popup 用來標亮已選 entry（fullTag 比對）。包含原 taglist 跟
-// 候選內已選成 positive 或 or 的條目，這樣 dedup 後使用者看得到「已加過了」
-const pickedIds = computed<ReadonlySet<string>>(() => {
-  const ids = new Set<string>()
-  for (const tag of allTags.value) {
-    const state = selection.value.get(tag.nsRaw)
-    if (state === 'positive' || state === 'or') ids.add(tag.nsRaw)
-  }
-  return ids
-})
-
 function onPickFromAdd(entry: TagEntry, mode: Selection): void {
   // dedup：先看是不是已在原 taglist 或候選；若是直接改原 chip，不重複加進 addedTags
   const tag = allTags.value.find(t => t.nsRaw === entry.fullTag)
 
   if (tag) {
-    // 面板要在任何 click 都刷到當前 tag：即使 selection 沒變（已 positive 再按 +1、
-    // off 上按 −1）使用者仍然是「在看這個 tag」，面板該同步過去
+    // 面板要在任何 click 都刷到當前 tag：即使 selection 沒變（缺格原地不動）
+    // 使用者仍然是「在看這個 tag」，面板該同步過去
     setPanelTag(tag)
-    // +1 / OR：設成那個狀態；−1：positive / or → off，cur ∈ {off, negative} → no-op (picker min=0)
-    const cur = selection.value.get(tag.nsRaw)
-    const next = new Map(selection.value)
-    if (mode === 'negative') {
-      if (cur !== 'positive' && cur !== 'or') return
-      next.delete(tag.nsRaw)
-    } else {
-      if (cur === mode) return
-      next.set(tag.nsRaw, mode)
-    }
-    selection.value = next
+    setSelection(tag.nsRaw, mode)
     return
   }
 
-  // 全新 entry：+1 / OR 才 push 進 addedTags；−1 對 off 起點 = 0→-1 禁止
+  // 全新 entry 會變成候選，候選停不了 -1
   if (mode === 'negative') return
 
   const newAdded = candidateTag(entry.fullTag)
@@ -618,7 +597,7 @@ watch(selection, () => {
 
   <GalleryAddInline
     v-if="showAddPopup"
-    :picked-ids="pickedIds"
+    :selection="selection"
     @pick="onPickFromAdd"
     @close="showAddPopup = false"
   />

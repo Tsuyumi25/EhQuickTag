@@ -301,7 +301,7 @@ export const PICK_OF_STATE: Record<TagState, TagPick> = {
   [TagState.Include]: 1,
   [TagState.Or]:      'or',
 }
-const STATE_OF_PICK: Record<TagPick, TagState> = {
+export const STATE_OF_PICK: Record<TagPick, TagState> = {
   [-1]: TagState.Exclude,
   0:    TagState.Off,
   1:    TagState.Include,

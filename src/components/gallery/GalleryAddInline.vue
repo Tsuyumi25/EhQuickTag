@@ -8,7 +8,8 @@ import { t } from '@/composables/useI18n'
 import SuggestionList from '@/components/SuggestionList.vue'
 import NamespaceFilter from '@/components/NamespaceFilter.vue'
 import { TagState } from '@/types'
-import type { Selection } from '@/services/tagPick'
+import { STATE_OF_PICK } from '@/services/search/tagState'
+import { pickOf, type Selection } from '@/services/tagPick'
 
 const toast = useEqtToast()
 
@@ -19,11 +20,13 @@ const toast = useEqtToast()
 // 涵蓋 #gd1 下半（封面圖下半部）+ #gd3（meta 區），保留 #gd2 title bar 不蓋。
 // 比硬寫尺寸 robust——native responsive 改 width 也跟得上
 const props = defineProps<{
-  pickedIds: ReadonlySet<string>
+  // gallery taglist 的 selection（key = nsRaw，跟 entry.fullTag 同格式）；四種狀態照實顯示，
+  // 按法跟刷選的 cohort 都靠這個認出「是哪顆鍵開的」
+  selection: ReadonlyMap<string, Selection>
 }>()
 
 const emit = defineEmits<{
-  // mode：按下的鍵在設定裡的動作（Enter 算 +1）。picker 額外限制 min=0：−1 只會取消已選的
+  // mode：按下的鍵在設定裡的動作（Enter 算 +1）。落點規則跟 taglist 上點同一顆 chip 一樣
   pick: [entry: TagEntry, mode: Selection]
   close: []
 }>()
@@ -104,7 +107,7 @@ onBeforeUnmount(() => {
 })
 
 function entryStateOf(entry: TagEntry): TagState {
-  return props.pickedIds.has(entry.fullTag) ? TagState.Include : TagState.Off
+  return STATE_OF_PICK[pickOf(props.selection.get(entry.fullTag))]
 }
 
 function onPick(entry: TagEntry, mode: Selection): void {
