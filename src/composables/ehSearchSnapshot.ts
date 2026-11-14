@@ -46,7 +46,7 @@ function readAdvanced(form: HTMLFormElement): EhAdvancedOptions {
 }
 
 export function readEhSearchSnapshot(): EhSearchParams | null {
-  const input = document.querySelector<HTMLInputElement>('#f_search')
+  const input = document.querySelector<HTMLInputElement>('input[name="f_search"]')
   const form = input?.form
   if (!input || !form) return null
 

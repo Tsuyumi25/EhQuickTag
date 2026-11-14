@@ -35,6 +35,21 @@ const SAMPLE_GDATA = JSON.stringify({
   ],
 })
 
+// favorites.php 的搜尋表單照 EH 原樣：輸入框只有 name、沒有 id，表單帶著 favcat 隱藏欄位
+const FAVORITES_URL = 'https://e-hentai.org/favorites.php'
+const FAVORITES_HTML = [
+  '<div style="width:825px; margin:10px auto 5px; text-align:center">',
+  `<form action="${FAVORITES_URL}" method="get">`,
+  '<input type="hidden" name="favcat" value="all" />',
+  '<div style="margin:3px auto 0; position:relative">',
+  '<input type="text" name="f_search" value="" size="90" maxlength="200" placeholder="Search Keywords" />',
+  '<input type="submit" value="Search" />',
+  `<input type="button" value="Clear" onclick="top.location.href='${FAVORITES_URL}'; return false" />`,
+  '</div>',
+  '</form>',
+  '</div>',
+].join('')
+
 // 單一 catch-all 路由：白名單回傳 fixture（HTML、g.css 與三種資料資產）；
 // 未知 document 維持 abort，EH 自身的廣告／圖片等非測試子資源則回空 204。
 // 比起多條 page.route 疊起來（順序 + 副作用都不明顯），用 if/else 集中判斷意圖
@@ -64,6 +79,8 @@ export async function mockEh(page: Page): Promise<void> {
       route.fulfill({ contentType: 'text/html', body: FIXTURE_GALLERY_HTML })
     } else if (url === MYTAGS_URL) {
       route.fulfill({ contentType: 'text/html', body: FIXTURE_MYTAGS_HTML })
+    } else if (url === FAVORITES_URL) {
+      route.fulfill({ contentType: 'text/html', body: FAVORITES_HTML })
     } else if (url.startsWith(`${MYTAGS_URL}?`)) {
       route.fulfill({ contentType: 'text/html', body: FIXTURE_MYTAGS_HTML })
     } else if (url === 'https://e-hentai.org/uconfig.php') {
@@ -203,6 +220,12 @@ export async function injectGalleryUserscript(
 export async function injectMyTagsUserscript(page: Page): Promise<void> {
   await setupEhPage(page)
   await page.goto(MYTAGS_URL)
+  await page.addScriptTag({ path: USERSCRIPT_PATH })
+}
+
+export async function injectFavoritesUserscript(page: Page): Promise<void> {
+  await setupEhPage(page)
+  await page.goto(FAVORITES_URL)
   await page.addScriptTag({ path: USERSCRIPT_PATH })
 }
 

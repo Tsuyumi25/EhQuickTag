@@ -41,6 +41,7 @@ My Tags Enhancer
   - [x] Separator text, line style, position, size, and alignment
   - [x] Inline gaps and springs, drag-resizable with cross-row snapping
   - [x] EH search syntax editor
+  - [x] Also on the Favorites page, searching within the current favorites category
 - [x] Link buttons
   - [x] Build EH search URLs from categories, keywords, and advanced options
   - [x] Fill in the current page's search conditions in one click

@@ -10,7 +10,8 @@ export interface EhFormHost {
 }
 
 function setupEhFormHost(): EhFormHost | null {
-  const input = document.querySelector<HTMLInputElement>('#f_search')
+  // 搜尋頁的輸入框是 id="f_search"；favorites.php 的只有 name="f_search"、沒有 id，用 name 兩邊都認得
+  const input = document.querySelector<HTMLInputElement>('input[name="f_search"]')
   if (!input) return null
 
   const parent = input.parentElement!
