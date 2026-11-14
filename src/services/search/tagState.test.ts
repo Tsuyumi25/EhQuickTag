@@ -559,7 +559,7 @@ describe('getEffectiveModifiers — by button shape', () => {
 })
 
 // ============================================================
-// nextTagState — 搜尋那一側的按法（左鍵到 Include、右鍵正數清零、中鍵到 Or）
+// nextTagState — 搜尋那一側的按法（每顆鍵切到自己的狀態，同一顆鍵再按關回 Off）
 // ============================================================
 
 const { Off, Include, Or, Exclude } = TagState
@@ -568,15 +568,16 @@ describe('nextTagState', () => {
   describe('single positive (full ladder)', () => {
     const qt = { tag: 'foo$' }
     it.each([
-      [Exclude, 'positive', Off],
       [Off, 'positive', Include],
-      [Include, 'positive', Include],
+      [Include, 'positive', Off],
+      [Exclude, 'positive', Include],
       [Or, 'positive', Include],
-      [Include, 'negative', Off],
-      [Or, 'negative', Off],
       [Off, 'negative', Exclude],
-      [Exclude, 'negative', Exclude],
+      [Exclude, 'negative', Off],
+      [Include, 'negative', Exclude],
+      [Or, 'negative', Exclude],
       [Exclude, 'or', Or],
+      [Or, 'or', Off],
     ] as const)('%s + %s → %s', (from, press, to) => {
       expect(nextTagState(qt, from, press)).toBe(to)
     })
@@ -584,8 +585,10 @@ describe('nextTagState', () => {
 
   describe('multi-positive (no Exclude)', () => {
     const qt = { tag: 'foo$, bar$' }
-    it('Off + right stays Off, middle → Or', () => {
+    it('right never moves, Include closes with left, middle → Or', () => {
       expect(nextTagState(qt, Off, 'negative')).toBe(Off)
+      expect(nextTagState(qt, Include, 'negative')).toBe(Include)
+      expect(nextTagState(qt, Include, 'positive')).toBe(Off)
       expect(nextTagState(qt, Off, 'or')).toBe(Or)
     })
   })

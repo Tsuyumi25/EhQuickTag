@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest'
 import { test, fc } from '@fast-check/vitest'
 import {
   reduce,
-  computeCohort,
   createDragSelectStore,
   DEFAULT_CONFIG,
   type DragSelectState,
@@ -31,40 +30,6 @@ function runSequence(events: DragSelectEvent[]): {
   }
   return { finalState: state, allEffects }
 }
-
-describe('computeCohort', () => {
-  // cohort = (startNew === startState) ? 0 : startState，startNew 走 tagPick 的按法
-  it('start 0 + positive → cohort 0 (will move 0 → 1)', () => {
-    expect(computeCohort(0, 'positive')).toBe(0)
-  })
-  it('start 0 + negative → cohort 0 (will move 0 → -1)', () => {
-    expect(computeCohort(0, 'negative')).toBe(0)
-  })
-  it('start 1 + negative → cohort 1 (cancel positives)', () => {
-    expect(computeCohort(1, 'negative')).toBe(1)
-  })
-  it('start -1 + positive → cohort -1 (cancel negatives)', () => {
-    expect(computeCohort(-1, 'positive')).toBe(-1)
-  })
-  it('start 1 + positive → cohort 0 (capped, fall through)', () => {
-    expect(computeCohort(1, 'positive')).toBe(0)
-  })
-  it('start -1 + negative → cohort 0 (capped, fall through)', () => {
-    expect(computeCohort(-1, 'negative')).toBe(0)
-  })
-  it('start or + negative → cohort or (右鍵把 OR 清掉)', () => {
-    expect(computeCohort('or', 'negative')).toBe('or')
-  })
-  it('start 1 + or → cohort 1 (把已選推成 OR)', () => {
-    expect(computeCohort(1, 'or')).toBe(1)
-  })
-  it('start or + positive → cohort or (左鍵把 OR 拉回 include)', () => {
-    expect(computeCohort('or', 'positive')).toBe('or')
-  })
-  it('start or + or → cohort 0 (已是 OR，fall through)', () => {
-    expect(computeCohort('or', 'or')).toBe(0)
-  })
-})
 
 describe('reduce: idle', () => {
   it('ignores non-mousedown events', () => {
@@ -174,59 +139,32 @@ describe('reduce: drag past threshold', () => {
     ])
   })
 
-  it('capped fall-through: start 1 + left → cohort 0 → 起點封頂不 apply，但 panel 跟；0 chip 被 apply', () => {
-    const start = chip('a', 1)
-    const zero = chip('b', 0)
+  it('起點 0 + 左：只激活還沒選的，刷不到已經是 1 的', () => {
+    const start = chip('a', 0)
+    const on = chip('b', 1)
+    const off = chip('c', 0)
     const { allEffects } = runSequence([
       { kind: 'mousedown', mode: 'positive', x: 0, y: 0, chip: start },
-      { kind: 'mousemove', x: 10, y: 0, chip: zero },
+      { kind: 'mousemove', x: 10, y: 0, chip: start },
+      { kind: 'mousemove', x: 20, y: 0, chip: on },
+      { kind: 'mousemove', x: 30, y: 0, chip: off },
     ])
-    expect(allEffects).toEqual([
-      // 起點 a(1) 是 startState tier → panel 跟過去，但封頂（1≠cohort 0）不 apply
-      { kind: 'panelTag', id: 'a' },
-      { kind: 'apply', id: 'b', mode: 'positive' },
-      { kind: 'panelTag', id: 'b' },
-    ])
+    expect(allEffects.flatMap(e => e.kind === 'apply' ? [e.id] : [])).toEqual(['a', 'c'])
   })
 
-  it('panel 跟起點 tier：add 模式(起點 +1 按左)下同 tier 的 chip 也跟、對面 tier 不跟', () => {
-    const a = chip('a', 1) // 起點 +1 → cohort 0（add 模式），startState 1
-    const b = chip('b', 0) // cohort 內 → apply + panel
-    const c = chip('c', 1) // 同起點 tier(+1) → panel 跟，但不 apply
-    const d = chip('d', -1) // 對面 tier → 什麼都不做
+  it('起點 1 + 左：只把 1 關掉，刷不到 0 跟 -1', () => {
+    const start = chip('a', 1)
+    const off = chip('b', 0)
+    const excluded = chip('c', -1)
+    const on = chip('d', 1)
     const { allEffects } = runSequence([
-      { kind: 'mousedown', mode: 'positive', x: 0, y: 0, chip: a },
-      { kind: 'mousemove', x: 10, y: 0, chip: a }, // threshold：panel a（起點 tier，不 apply）
-      { kind: 'mousemove', x: 20, y: 0, chip: b }, // apply + panel b
-      { kind: 'mousemove', x: 30, y: 0, chip: c }, // panel c（同 tier，不 apply）
-      { kind: 'mousemove', x: 40, y: 0, chip: d }, // 對面 tier → skip
+      { kind: 'mousedown', mode: 'positive', x: 0, y: 0, chip: start },
+      { kind: 'mousemove', x: 10, y: 0, chip: start },
+      { kind: 'mousemove', x: 20, y: 0, chip: off },
+      { kind: 'mousemove', x: 30, y: 0, chip: excluded },
+      { kind: 'mousemove', x: 40, y: 0, chip: on },
     ])
-    expect(allEffects).toEqual([
-      { kind: 'panelTag', id: 'a' },
-      { kind: 'apply', id: 'b', mode: 'positive' },
-      { kind: 'panelTag', id: 'b' },
-      { kind: 'panelTag', id: 'c' },
-    ])
-  })
-
-  it('空白起點 fall-through：第一個進入的 chip 定義起點 tier，該 tier 也跟手', () => {
-    const c1 = chip('a', 1) // 空白起手 + 正拖，第一個碰到 +1 → cohort 0(add)，startState 定為 1
-    const c2 = chip('b', 0) // cohort 內 → apply + panel
-    const c3 = chip('c', 1) // 同起點 tier(+1) → panel 跟，不 apply
-    const c4 = chip('d', -1) // 對面 tier → skip
-    const { allEffects } = runSequence([
-      { kind: 'mousedown', mode: 'positive', x: 0, y: 0, chip: null }, // 空白起點，cohort 暫不定
-      { kind: 'mousemove', x: 10, y: 0, chip: c1 }, // 過 threshold：定 cohort 0 + startState 1，panel a
-      { kind: 'mousemove', x: 20, y: 0, chip: c2 }, // apply + panel b
-      { kind: 'mousemove', x: 30, y: 0, chip: c3 }, // panel c（同 tier）
-      { kind: 'mousemove', x: 40, y: 0, chip: c4 }, // 對面 tier → skip
-    ])
-    expect(allEffects).toEqual([
-      { kind: 'panelTag', id: 'a' },
-      { kind: 'apply', id: 'b', mode: 'positive' },
-      { kind: 'panelTag', id: 'b' },
-      { kind: 'panelTag', id: 'c' },
-    ])
+    expect(allEffects.flatMap(e => e.kind === 'apply' ? [e.id] : [])).toEqual(['a', 'd'])
   })
 
   it('deferred cohort: empty start, first encountered chip decides cohort', () => {

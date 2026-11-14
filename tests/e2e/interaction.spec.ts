@@ -1,8 +1,8 @@
 import { test, expect } from '@playwright/test'
 import { injectUserscript, reinjectUserscript } from './helpers'
 
-// === Tier 1 / ①：左鍵 +1 封頂 Include、右鍵把正數清零、#f_search 雙向同步 ===
-test('左鍵 tag button 停在 Include、右鍵清零並同步 #f_search', async ({ page }) => {
+// === Tier 1 / ①：左鍵激活、左鍵關閉，#f_search 雙向同步 ===
+test('左鍵 tag button 開關 Include 並同步 #f_search', async ({ page }) => {
   await injectUserscript(page)
 
   // 預設 profile 第一行第一顆按鈕「中文」對應 l:chinese$
@@ -12,22 +12,19 @@ test('左鍵 tag button 停在 Include、右鍵清零並同步 #f_search', async
 
   await btn.click()
   await expect(btn).toHaveClass(/eqt-tag-bar__btn--include/)
-  await expect(page.locator('#f_search')).toHaveValue(/l:chinese\$/)
-
-  await btn.click()
-  await expect(btn).toHaveClass(/eqt-tag-bar__btn--include/)
   await expect(page.locator('#f_search')).toHaveValue('l:chinese$')
 
-  await btn.click({ button: 'right' })
+  await btn.click()
   await expect(btn).toHaveClass(/eqt-tag-bar__btn--off/)
   await expect(page.locator('#f_search')).toHaveValue('')
 })
 
-// === Tier 1 / ②：右鍵在 Off 變 Exclude、中鍵直接到 Or ===
-test('右鍵 Off → Exclude、中鍵 → Or，跟 token prefix 對齊', async ({ page }) => {
+// === Tier 1 / ②：最後激活的那顆鍵才能關：左鍵後右鍵換成 Exclude、中鍵換成 Or ===
+test('換鍵就換狀態、同一顆鍵才關回 Off，跟 token prefix 對齊', async ({ page }) => {
   await injectUserscript(page)
 
   const btn = page.locator('.eqt-tag-bar__btn').filter({ hasText: /^中文$/ }).first()
+  await btn.click()
   await btn.click({ button: 'right' })
   await expect(btn).toHaveClass(/eqt-tag-bar__btn--exclude/)
   await expect(page.locator('#f_search')).toHaveValue(/-l:chinese\$/)
@@ -36,6 +33,8 @@ test('右鍵 Off → Exclude、中鍵 → Or，跟 token prefix 對齊', async (
   await expect(btn).toHaveClass(/eqt-tag-bar__btn--or/)
   await expect(page.locator('#f_search')).toHaveValue(/~l:chinese\$/)
 
+  await btn.click({ button: 'right' })
+  await expect(btn).toHaveClass(/eqt-tag-bar__btn--exclude/)
   await btn.click({ button: 'right' })
   await expect(btn).toHaveClass(/eqt-tag-bar__btn--off/)
   await expect(page.locator('#f_search')).toHaveValue('')
@@ -579,8 +578,8 @@ test('chip 切 Off 後在原位殘留、不跑到末尾', async ({ page }) => {
   const betaX0 = (await betaChip.boundingBox())!.x
   expect(alphaX0).toBeLessThan(betaX0)
 
-  // 右鍵把 alpha 清零（Off）
-  await alphaChip.click({ button: 'right' })
+  // 左鍵把 alpha 關回 Off
+  await alphaChip.click()
   await expect(alphaChip).toHaveClass(/eqt-search-panel__button--off/)
   await expect(page.locator('#f_search')).toHaveValue(/artist:beta/)
   await expect(page.locator('#f_search')).not.toHaveValue(/artist:alpha/)

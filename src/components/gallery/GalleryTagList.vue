@@ -1,13 +1,11 @@
 <script setup lang="ts">
 // Gallery 詳情頁的 taglist 接管：
 //   - 統一 selection Map<nsRaw, Selection>：tagPick 的按法，positive / negative / or
-//     對應 1 / -1 / 'or'，0 用 undefined 代表。左鍵讓排除回到 0、其他回到 1，右鍵把包含或 OR 清掉、把 0
-//     推成排除，中鍵直接到 OR
+//     對應 1 / -1 / 'or'，0 用 undefined 代表。每顆鍵切到自己的狀態，同一顆鍵再按關回 0
 //   - selection 跟 action 解耦——同一份選擇可以送 search（positive=include /
 //     negative=exclude / or=~）也可以送 vote（positive=+1 / negative=−1；or 不投）
-//   - drag select 走 cohort 模型：drag 只影響跟起點同態的 chip。起點 + 按下的鍵
-//     決定 cohort 跟 transition：起點 0 + 左 = 把 0 推 1、起點 1 + 右 = 把 1 推 0
-//     (cancel)、起點 -1 + 左 = 把 -1 推 0 (cancel)，依此類推
+//   - drag select 走 cohort 模型：drag 只影響跟起點同態的 chip。起點 0 + 左 = 只激活
+//     還沒選的、刷不到已經是 1 的；起點 1 + 左 = 只把 1 關回 0；起點 1 + 右 = 把 1 換成 -1
 //   - 任何選取動作都 setPanelTag(chip.tag)：對 x tag 的任何操作都繼續顯示定義，
 //     直到 selection 全空才 auto close panel
 import { ref, shallowRef, computed, watch, onMounted, onBeforeUnmount } from 'vue'
