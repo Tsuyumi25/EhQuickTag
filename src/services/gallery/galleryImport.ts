@@ -82,14 +82,15 @@ export type ImportEvidence = 'solid' | 'dashed' | 'dotted' | 'unknown'
 
 /**
  * 導入能給這個標籤的佐證：別本最穩的那條線是實線、虛線還是點線；沒被導入就沒有。
- * pageTier 是這本已經有這個標籤時它的線型：這本已經是實線的，別本再怎麼佐證也不會更穩，不給。
- * 描述上傳版本的標籤（VERSION_SPECIFIC）別本有沒有都說明不了這本，不論誰的線型都是 unknown，
- * 這本已經有也照樣標出來，提醒這顆要看這本自己
+ * pageTier 是這本已經有這個標籤時它的線型：這本已經是實線的，別本再怎麼佐證也不會更穩，
+ * 也已經投不了票，任何記號都沒有意義，一律不給。
+ * 描述上傳版本的標籤（VERSION_SPECIFIC）別本有沒有都說明不了這本，不論別本的線型都是 unknown；
+ * 這本是虛線、點線時也照樣標出來，提醒這顆要看這本自己再投
  */
 export function evidenceOf(tag: string, sources: readonly ImportSource[], pageTier: TagTier | null = null): ImportEvidence | null {
   if (!sources.length) return null
-  if (VERSION_SPECIFIC[tag]) return 'unknown'
   if (pageTier === 'gt') return null
+  if (VERSION_SPECIFIC[tag]) return 'unknown'
   const best = bestTier(sources)
   return best === 'gt' ? 'solid' : best === 'gtl' ? 'dashed' : 'dotted'
 }

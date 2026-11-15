@@ -14,7 +14,7 @@ export interface GalleryTagListChip {
   iconUrl?: string
   personalTag?: MyTagsPalette[string]
   candidate: 'added' | 'imported' | null
-  /** 別本提供的佐證；本頁已有的實線標籤省略，unknown 例外 */
+  /** 別本提供的佐證；本頁已有的實線標籤投不了票，一律省略 */
   evidence: ImportEvidence | null
   /** 開頭記號的 hover 說明：從哪幾本帶進來 */
   sources: string

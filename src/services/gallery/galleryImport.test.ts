@@ -57,12 +57,13 @@ describe('evidenceOf', () => {
     expect(evidenceOf('other:uncensored', [])).toBeNull()
   })
 
-  it('這本已經是實線的不給佐證，虛線、點線照給；描述上傳版本的標籤這本有也照樣是 unknown', () => {
+  it('這本已經是實線的不給任何記號，虛線、點線照給；描述上傳版本的標籤這本是虛線、點線時是 unknown', () => {
     const solid = [{ gid: 1, title: '', tier: 'gt' as const }]
     expect(evidenceOf('x:a', solid, 'gt')).toBeNull()
     expect(evidenceOf('x:a', solid, 'gtl')).toBe('solid')
     expect(evidenceOf('x:a', solid, 'gtw')).toBe('solid')
-    expect(evidenceOf('other:uncensored', solid, 'gt')).toBe('unknown')
+    expect(evidenceOf('other:uncensored', solid, 'gt')).toBeNull()
     expect(evidenceOf('other:full color', solid, 'gtl')).toBe('unknown')
+    expect(evidenceOf('other:full color', solid, 'gtw')).toBe('unknown')
   })
 })
