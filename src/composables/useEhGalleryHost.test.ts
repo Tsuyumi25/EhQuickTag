@@ -12,6 +12,9 @@ vi.mock('@/services/store', () => ({
   galleryTaglistHeight: ref(160),
 }))
 
+// host 帶著 /g/ 的投票憑證讀法；'$' 在載入時就碰 document，這裡沒有
+vi.mock('@/utils/pageWindow', () => ({ pageWindow: () => ({}) }))
+
 function galleryPage(present = true) {
   const createElement = () => ({
     id: '',
@@ -33,6 +36,7 @@ function galleryPage(present = true) {
     },
     createElement: created,
   })
+  vi.stubGlobal('location', { origin: 'https://e-hentai.org', pathname: '/g/1000/0a0a0a0a0a/' })
   return { taglist, gd4, created }
 }
 

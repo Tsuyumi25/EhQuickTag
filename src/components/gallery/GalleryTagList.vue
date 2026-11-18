@@ -8,7 +8,7 @@
 //     還沒選的、刷不到已經是 1 的；起點 1 + 左 = 只把 1 關回 0；起點 1 + 右 = 把 1 換成 -1
 //   - 任何選取動作都 setPanelTag(chip.tag)：對 x tag 的任何操作都繼續顯示定義，
 //     直到 selection 全空才 auto close panel
-import { ref, shallowRef, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, shallowRef, computed, watch, onMounted, onBeforeUnmount, inject } from 'vue'
 import { GM } from '$'
 import { serializeEntry } from '@/services/search/searchSyntax'
 import { findEntryByNsTag, DEFAULT_NS_ORDER, tagDbVersion } from '@/services/tags/tagDb'
@@ -17,12 +17,12 @@ import { loadMyTagsPalette, type MyTagsPalette } from '@/services/mytags/mytagsP
 import { useMyTagsPickLink } from '@/composables/useMyTagsPickLink'
 import { bestTier, evidenceOf, parseGalleryUrl, withImport, type Imports } from '@/services/gallery/galleryImport'
 import { fetchGallery } from '@/composables/useEhGalleryPreview'
-import { openSettings } from '@/services/appOverlays'
+import { openSettings, GALLERY_SETTINGS_TAB } from '@/services/appOverlays'
 import { useDisplayConfig } from '@/composables/useDisplayConfig'
 import { t, isZhLocale, locale } from '@/composables/useI18n'
 import { batchVote, type VoteState } from '@/services/gallery/galleryVote'
 import { useEqtToast } from '@/composables/useEqtToast'
-import { useEhGalleryHost, parseTaglistRoot, type GalleryTag } from '@/composables/useEhGalleryHost'
+import { useGalleryHost, parseTaglistRoot, type GalleryTag } from '@/composables/useEhGalleryHost'
 import { useGalleryIntroPanel } from '@/composables/useIntroPanel'
 import { Settings, Search, BookOpen, Tags, TagPlus, ClipboardPaste, ThumbsDown, ThumbsUp, X } from '@lucide/vue'
 import { pickOf, selectionOf, stepPick, prefixOf, type TagPick, type Selection } from '@/services/tagPick'
@@ -33,7 +33,8 @@ import type { TagEntry } from '@/services/tags/tagDb'
 
 type TagTier = 'gt' | 'gtl' | 'gtw'
 
-const host = useEhGalleryHost()!
+const host = useGalleryHost()
+const settingsTab = inject(GALLERY_SETTINGS_TAB, 'gallery')
 
 const toast = useEqtToast()
 
@@ -377,7 +378,7 @@ function onSearchCurrent(): void {
 const myTagsPick = useMyTagsPickLink(selectedTerms, () => toast.error(t('gallery.myTagsOpenFailed')))
 const myTagsHref = computed(() => selectedTerms().length ? myTagsPick.href.value : galleryMyTagsUrl.href)
 
-const galleryRef = parseGalleryUrl(location.href)
+const galleryRef = parseGalleryUrl(host.galleryUrl)
 const galleryMyTagsUrl = new URL('/mytags', location.origin)
 if (galleryRef) {
   galleryMyTagsUrl.hash = new URLSearchParams({
@@ -441,7 +442,7 @@ async function onSendBatchVotes(): Promise<void> {
 }
 
 async function dispatchBatch(tags: GalleryTag[], voteValue: 1 | -1): Promise<boolean> {
-  const response = await batchVote(tags, voteValue)
+  const response = await batchVote(host.voteContext(), tags, voteValue)
   if (response.tagpaneHtml) {
     host.taglistEl.innerHTML = response.tagpaneHtml
   } else if (response.error) {
@@ -571,7 +572,7 @@ watch(selection, () => {
       type="button"
       class="eqt-gallery-actions__btn eqt-gallery-actions__btn--settings"
       :title="t('settings.title')"
-      @click="openSettings('gallery')"
+      @click="openSettings(settingsTab)"
     >
       <Settings :size="14" />
       <span>{{ t('settings.title') }}</span>

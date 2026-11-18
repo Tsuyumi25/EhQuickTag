@@ -3,10 +3,11 @@
 //
 // 跟 useEhFormHost 同樣只負責 DOM 邊界，回 handle 給呼叫端接
 
-import { onMounted, watch } from 'vue'
+import { inject, onMounted, watch, type InjectionKey } from 'vue'
 import { galleryTaglistExpand, galleryTaglistHeight } from '@/services/store'
 import { createPageContext } from '@/composables/createPageContext'
 import { createAnchor } from '@/utils/createAnchor'
+import { nativeVoteContext, type VoteContext } from '@/services/gallery/galleryVote'
 
 export interface GalleryTag {
   /** e站內部 tag id（譬如 98020）——voteUp/voteDown 走 native window function 需要 */
@@ -47,6 +48,17 @@ export interface EhGalleryHost {
    *   - 我們自家 vote 回 server 的 tagpane 也統一寫進來，靠 observer 同步狀態
    */
   taglistEl: HTMLElement
+  /** 這本圖庫的 /g/ 網址；My Tags 連結、從剪貼簿匯入時認自己用 */
+  galleryUrl: string
+  /** 投票要的 apiuid / apikey / gid / token；沒登入或拿不到時是 null */
+  voteContext: () => VoteContext | null
+}
+
+/** 不在 /g/ 頁上的標籤區（閱讀器裡的圖庫面板）由掛載它的元件提供 host */
+export const GALLERY_HOST: InjectionKey<EhGalleryHost> = Symbol('galleryHost')
+
+export function useGalleryHost(): EhGalleryHost {
+  return inject(GALLERY_HOST, null) ?? useEhGalleryHost()!
 }
 
 // 從 `toggle_tagmenu(98020,'female:gyaru',this)` 抓 tagid 跟 nsRaw。
@@ -85,9 +97,17 @@ export function parseTaglistRoot(root: Element): GalleryTag[] {
   return tags
 }
 
-function setupEhGalleryHost(): EhGalleryHost | null {
-  const tagList = document.querySelector<HTMLElement>('#taglist')
-  const gd4 = document.querySelector<HTMLElement>('#gd4')
+/**
+ * 在一塊 /g/ 形狀的 DOM 上接管標籤區：/g/ 頁本身，或閱讀器裡塞進來的那份 .gm。
+ * 需要在元件 setup 或 effect scope 裡呼叫（watch / onMounted）
+ */
+export function createGalleryHost(
+  root: ParentNode,
+  galleryUrl: string,
+  voteContext: () => VoteContext | null,
+): EhGalleryHost | null {
+  const tagList = root.querySelector<HTMLElement>('#taglist')
+  const gd4 = root.querySelector<HTMLElement>('#gd4')
   if (!tagList || !gd4) return null
 
   const tags = parseTaglistRoot(tagList)
@@ -118,7 +138,11 @@ function setupEhGalleryHost(): EhGalleryHost | null {
   watch([galleryTaglistExpand, galleryTaglistHeight], applyGalleryLayout)
   onMounted(applyGalleryLayout)
 
-  return { tags, anchor, taglistEl: tagList }
+  return { tags, anchor, taglistEl: tagList, galleryUrl, voteContext }
+}
+
+function setupEhGalleryHost(): EhGalleryHost | null {
+  return createGalleryHost(document, location.origin + location.pathname, nativeVoteContext)
 }
 
 export const useEhGalleryHost = createPageContext(setupEhGalleryHost)

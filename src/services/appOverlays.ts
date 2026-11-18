@@ -1,4 +1,4 @@
-import { nextTick, ref } from 'vue'
+import { nextTick, ref, type InjectionKey } from 'vue'
 import { conditionsFromTerms, type MaterialCondition } from '@/services/listing/galleryRules'
 
 export const showSettings = ref(false)
@@ -30,6 +30,9 @@ export function openSettings(tab: string | null = null): void {
   initialSettingsTab.value = tab
   showSettings.value = true
 }
+
+/** 圖庫標籤區的設定按鈕落到哪一頁。/g/ 上沒人提供，維持 'gallery'；閱讀器裡接手的那份提供 'reader' */
+export const GALLERY_SETTINGS_TAB: InjectionKey<string> = Symbol('gallerySettingsTab')
 
 // EVR 的整合文件（docs/integration.md）寫明的 hook。先關掉我們的設定頁：它靠 onClickOutside 判斷關閉，
 // EVR 的面板蓋上來之後，第一下點進 EVR 就會把它在背後關掉；等它卸載了再請 EVR 打開

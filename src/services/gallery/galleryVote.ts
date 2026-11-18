@@ -15,7 +15,7 @@ export interface VoteOutcome {
   promise: Promise<VoteServerResponse>
 }
 
-interface VoteContext {
+export interface VoteContext {
   apiuid: number
   apikey: string
   gid: number
@@ -27,7 +27,8 @@ interface NativePageGlobals {
   apikey?: string
 }
 
-function getVoteContext(): VoteContext | null {
+/** /g/ 頁的投票憑證：gid / token 在網址上，apiuid / apikey 是頁面全域變數 */
+export function nativeVoteContext(): VoteContext | null {
   const m = location.pathname.match(/^\/g\/(\d+)\/([a-f0-9]+)\/?$/)
   if (!m) return null
 
@@ -42,6 +43,12 @@ function getVoteContext(): VoteContext | null {
   }
 }
 
+function galleryApiEndpoint(): string {
+  return location.hostname === 'exhentai.org'
+    ? 'https://s.exhentai.org/api.php'
+    : 'https://api.e-hentai.org/api.php'
+}
+
 interface RawApiResponse {
   error?: string
   tagpane?: string
@@ -49,17 +56,13 @@ interface RawApiResponse {
   redirect?: string
 }
 
-async function callApiVote(tagsField: string, vote: 1 | -1): Promise<VoteServerResponse> {
-  const ctx = getVoteContext()
+async function callApiVote(ctx: VoteContext | null, tagsField: string, vote: 1 | -1): Promise<VoteServerResponse> {
   if (!ctx) {
     return { error: 'vote context unavailable (apiuid/apikey/url mismatch)' }
   }
-  const apiHost = location.hostname === 'exhentai.org'
-    ? 's.exhentai.org'
-    : 'api.e-hentai.org'
   let res: Response
   try {
-    res = await fetch(`https://${apiHost}/api.php`, {
+    res = await fetch(galleryApiEndpoint(), {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -110,15 +113,15 @@ function computeAction(button: 'up' | 'down', current: VoteState): VoteAction {
   return { postValue: -1, newState: 'down' }
 }
 
-export function vote(tag: GalleryTag, button: 'up' | 'down', current: VoteState): VoteOutcome {
+export function vote(ctx: VoteContext | null, tag: GalleryTag, button: 'up' | 'down', current: VoteState): VoteOutcome {
   const { postValue, newState } = computeAction(button, current)
   return {
     optimistic: newState,
-    promise: callApiVote(tag.nsRaw, postValue),
+    promise: callApiVote(ctx, tag.nsRaw, postValue),
   }
 }
 
-export function batchVote(tags: GalleryTag[], voteValue: 1 | -1): Promise<VoteServerResponse> {
+export function batchVote(ctx: VoteContext | null, tags: GalleryTag[], voteValue: 1 | -1): Promise<VoteServerResponse> {
   const tagsField = tags.map(t => t.nsRaw).join(',')
-  return callApiVote(tagsField, voteValue)
+  return callApiVote(ctx, tagsField, voteValue)
 }

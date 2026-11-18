@@ -10,15 +10,12 @@ import NamespaceFilter from '@/components/NamespaceFilter.vue'
 import { TagState } from '@/types'
 import { STATE_OF_PICK } from '@/services/search/tagState'
 import { pickOf, type Selection } from '@/services/tagPick'
+import { useGalleryLayout } from '@/composables/useGalleryLayout'
 
 const toast = useEqtToast()
 
-// Gallery 「新增」picker 的 inline 變體：Teleport 到 .gm（gallery 外層容器），
-// absolute 覆蓋視覺左欄。座標 mount 時量 native rect：
-//   - left：#gd1 的左邊
-//   - top / right / bottom：#gd3 的上 / 右 / 下
-// 涵蓋 #gd1 下半（封面圖下半部）+ #gd3（meta 區），保留 #gd2 title bar 不蓋。
-// 比硬寫尺寸 robust——native responsive 改 width 也跟得上
+// Gallery 「新增」picker 的 inline 變體：Teleport 進圖庫外框，absolute 蓋住左欄。
+// 蓋哪裡由 useGalleryLayout 決定：/g/ 上是封面下半到 meta 區，閱讀器面板自己給
 const props = defineProps<{
   // gallery taglist 的 selection（key = nsRaw，跟 entry.fullTag 同格式）；四種狀態照實顯示，
   // 按法跟刷選的 cohort 都靠這個認出「是哪顆鍵開的」
@@ -41,26 +38,12 @@ const selectedNs = ref<string | null>(null)
 const popupNsList = computed(() => selectedNs.value ? [selectedNs.value] : undefined)
 
 
+const layout = useGalleryLayout()
 const panelRect = ref({ left: 0, top: 0, width: 0, height: 0 })
 
-// panel 對外圍 native 元素的 margin：左 / 上 / 下 各 6px，右側貼齊 #gd3.right
-// 不留 margin（右側就是 #gd4 chips 區、視覺上不需要再隔開）
-const PANEL_MARGIN = 6
-
 function recomputePanelRect(): void {
-  const gd1 = document.getElementById('gd1')
-  const gd3 = document.getElementById('gd3')
-  const gm = document.querySelector('.gm')
-  if (!gd1 || !gd3 || !gm) return
-  const r1 = gd1.getBoundingClientRect()
-  const r3 = gd3.getBoundingClientRect()
-  const rGm = gm.getBoundingClientRect()
-  panelRect.value = {
-    left: r1.left - rGm.left + PANEL_MARGIN,
-    top: r3.top - rGm.top + PANEL_MARGIN,
-    width: r3.right - r1.left - PANEL_MARGIN,
-    height: r3.bottom - r3.top - 2 * PANEL_MARGIN,
-  }
+  const rect = layout.addRect()
+  if (rect) panelRect.value = rect
 }
 
 useEventListener(window, 'resize', recomputePanelRect)
@@ -130,7 +113,7 @@ function onKeydown(e: KeyboardEvent): void {
 </script>
 
 <template>
-  <Teleport to=".gm">
+  <Teleport :to="layout.addTarget">
     <div
       ref="panelEl"
       class="eqt-gallery-add-inline"

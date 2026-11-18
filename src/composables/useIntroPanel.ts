@@ -149,16 +149,23 @@ export function createIntroPanel(): IntroPanel {
   }
 }
 
-// 圖庫頁的面板 teleport 進 #gd5，整頁只有一個：taglist 與面板元件共用同一份。
+// 圖庫頁的面板 teleport 進標籤區旁的側欄（/g/ 是 #gd5），整頁只有一個：taglist 與面板元件共用同一份。
 // 放在 detached scope 裡，watcher 不跟著第一個呼叫它的元件一起被收掉
 let galleryPanel: IntroPanel | undefined
+let galleryIntroTarget: string | null = null
+
+/** 面板元件掛上時登記自己 teleport 去哪；側欄不在頁面上時點 chip 不開面板 */
+export function setGalleryIntroTarget(target: string | null): void {
+  galleryIntroTarget = target
+}
+
 export function useGalleryIntroPanel(): IntroPanel {
   if (!galleryPanel) {
     const panel = effectScope(true).run(createIntroPanel)!
     galleryPanel = {
       ...panel,
       setPanelTag: tag => {
-        if (document.querySelector('#gd5')) panel.setPanelTag(tag)
+        if (document.querySelector(galleryIntroTarget ?? '#gd5')) panel.setPanelTag(tag)
       },
     }
   }
