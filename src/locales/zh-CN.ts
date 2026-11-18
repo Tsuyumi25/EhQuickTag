@@ -514,6 +514,23 @@ export default {
   'settings.introPanelPrimaryLangZh': '中文',
   'settings.introPanelPrimaryLangEn': 'English',
 
+  // Reader settings tab
+  'settings.tabReader': '阅读器',
+  'settings.sectionReaderToggles': '功能开关',
+  'settings.readerEnhancer': '启用阅读器强化',
+  'settings.readerEnhancerHint': '在阅读器里打标签。',
+  'settings.readerPanelOpacity': '不透明度',
+  'settings.sectionReaderPanel': '图库信息面板',
+  'settings.readerPanelPosition': '位置',
+  'settings.readerPanelPositionHint': '在多页查看器右上角点标签图标打开的面板，出现在画面的哪里。',
+  'settings.readerPanelPositionTop': '上',
+  'settings.readerPanelPositionMiddle': '中',
+  'settings.readerPanelPositionBottom': '下',
+
+  // Multi-Page Viewer
+  'reader.showGallery': '浮出图库信息',
+  'reader.hideGallery': '收起图库信息',
+
   // My Tags panel
   'bars.threshold': '软过滤阈值',
   'bars.grabbing': '抓取中⋯',

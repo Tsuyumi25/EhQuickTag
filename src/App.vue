@@ -9,6 +9,7 @@ import { useGalleryRuleStore } from '@/composables/useGalleryRuleStore'
 import SettingsPopup from '@/components/settings/SettingsPopup.vue'
 import SearchPopup from '@/components/search/SearchPopup.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import MpvGalleryOverlay from '@/components/reader/MpvGalleryOverlay.vue'
 import { useEhFormHost } from '@/composables/useEhFormHost'
 import { useEhGalleryHost } from '@/composables/useEhGalleryHost'
 import { useEhMyTagsHost } from '@/composables/useEhMyTagsHost'
@@ -19,6 +20,7 @@ import { refreshMyTagsPalette } from '@/services/mytags/mytagsPalette'
 import { useEqtToast } from '@/composables/useEqtToast'
 import { t } from '@/composables/useI18n'
 import { evrInstalled } from '@/utils/evr'
+import { mpvGalleryUrl } from '@/services/reader/mpvGallery'
 
 useGalleryRuleStore()
 const formHost = useEhFormHost()
@@ -26,6 +28,7 @@ const galleryHost = taggingEnhancerEnabled.value ? useEhGalleryHost() : null
 const myTagsHost = myTagsEnhancerEnabled.value ? useEhMyTagsHost() : null
 const pageSearch = usePageSearch()
 const toast = useEqtToast()
+const mpvGallery = mpvGalleryUrl(location)
 
 onMounted(() => {
   if (location.pathname !== '/mytags' || myTagsHost) return
@@ -63,4 +66,5 @@ onMounted(() => {
   />
 
   <ConfirmDialog />
+  <MpvGalleryOverlay v-if="mpvGallery" :gallery-url="mpvGallery" />
 </template>

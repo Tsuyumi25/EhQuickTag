@@ -63,6 +63,7 @@ My Tags Enhancer
   - [x] Open selected gallery tags in My Tags for inspection and editing
   - [x] Import candidates from other galleries, with solid/dashed/dotted check icons indicating source evidence on candidates and existing tags
   - [x] Gallery Tagging Wiki shortcut
+  - [x] Tag from the Multi-Page Viewer: a button in its icon column floats the gallery's info box over the pages
 - [x] My Tags Enhancer
   - [x] Preview filtering on gallery samples in real time, adjusting weights and thresholds before applying
   - [x] Mark galleries as “block” or “keep” to tune rules to your preferences

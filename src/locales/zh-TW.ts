@@ -514,6 +514,23 @@ export default {
   'settings.introPanelPrimaryLangZh': '中文',
   'settings.introPanelPrimaryLangEn': 'English',
 
+  // Reader settings tab
+  'settings.tabReader': '閱讀器',
+  'settings.sectionReaderToggles': '功能開關',
+  'settings.readerEnhancer': '啟用閱讀器強化',
+  'settings.readerEnhancerHint': '在閱讀器裡打標籤。',
+  'settings.readerPanelOpacity': '不透明度',
+  'settings.sectionReaderPanel': '圖庫資訊面板',
+  'settings.readerPanelPosition': '位置',
+  'settings.readerPanelPositionHint': '在多頁檢視器右上角點標籤圖示打開的面板，出現在畫面的哪裡。',
+  'settings.readerPanelPositionTop': '上',
+  'settings.readerPanelPositionMiddle': '中',
+  'settings.readerPanelPositionBottom': '下',
+
+  // Multi-Page Viewer
+  'reader.showGallery': '浮出圖庫資訊',
+  'reader.hideGallery': '收起圖庫資訊',
+
   // My Tags panel
   'bars.threshold': '軟過濾閾值',
   'bars.grabbing': '抓取中⋯',

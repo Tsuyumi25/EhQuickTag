@@ -514,6 +514,23 @@ export default {
   'settings.introPanelPrimaryLangZh': '中文',
   'settings.introPanelPrimaryLangEn': 'English',
 
+  // Reader settings tab
+  'settings.tabReader': 'Reader',
+  'settings.sectionReaderToggles': 'Features',
+  'settings.readerEnhancer': 'Enable Reader Enhancer',
+  'settings.readerEnhancerHint': 'Tag galleries from inside the reader.',
+  'settings.readerPanelOpacity': 'Opacity',
+  'settings.sectionReaderPanel': 'Gallery Info Panel',
+  'settings.readerPanelPosition': 'Position',
+  'settings.readerPanelPositionHint': 'Where the panel opened from the tag icon at the top right of the Multi-Page Viewer appears on screen.',
+  'settings.readerPanelPositionTop': 'Top',
+  'settings.readerPanelPositionMiddle': 'Middle',
+  'settings.readerPanelPositionBottom': 'Bottom',
+
+  // Multi-Page Viewer
+  'reader.showGallery': 'Show gallery info',
+  'reader.hideGallery': 'Hide gallery info',
+
   // My Tags panel
   'bars.threshold': 'Soft filter threshold',
   'bars.grabbing': 'Fetching…',

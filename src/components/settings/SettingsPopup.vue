@@ -19,6 +19,7 @@ import SettingsListingTab from './SettingsListingTab.vue'
 import SettingsMyTagsTab from './SettingsMyTagsTab.vue'
 import SettingsDataTab from './SettingsDataTab.vue'
 import SettingsAboutTab from './SettingsAboutTab.vue'
+import SettingsReaderTab from './SettingsReaderTab.vue'
 import { askConfirm } from '@/services/confirmDialog'
 
 const emit = defineEmits<{
@@ -33,7 +34,7 @@ const dragOptions = {
 
 // --- tabs ---
 
-const tabKeys = ['general', 'actions', 'tagbar', 'listing', 'gallery', 'mytags', 'data', 'about'] as const
+const tabKeys = ['general', 'actions', 'tagbar', 'listing', 'gallery', 'reader', 'mytags', 'data', 'about'] as const
 type TabKey = typeof tabKeys[number]
 
 const tabLabelKeys: Record<TabKey, string> = {
@@ -42,6 +43,7 @@ const tabLabelKeys: Record<TabKey, string> = {
   tagbar: 'settings.tabTagBar',
   listing: 'settings.tabListing',
   gallery: 'settings.tabGallery',
+  reader: 'settings.tabReader',
   mytags: 'settings.tabMyTags',
   data: 'settings.tabData',
   about: 'settings.tabAbout',
@@ -238,6 +240,7 @@ function onEditorPurge() {
           <SettingsTagBarTab v-show="activeTab === 'tagbar'" />
           <SettingsListingTab v-show="activeTab === 'listing'" />
           <SettingsGalleryTab v-show="activeTab === 'gallery'" />
+          <SettingsReaderTab v-show="activeTab === 'reader'" />
           <SettingsMyTagsTab v-show="activeTab === 'mytags'" />
           <SettingsDataTab v-show="activeTab === 'data'" />
           <SettingsGeneralTab v-show="activeTab === 'general'" />

@@ -514,6 +514,23 @@ export default {
   'settings.introPanelPrimaryLangZh': '中文',
   'settings.introPanelPrimaryLangEn': 'English',
 
+  // Reader settings tab
+  'settings.tabReader': '뷰어',
+  'settings.sectionReaderToggles': '기능',
+  'settings.readerEnhancer': '뷰어 강화 사용',
+  'settings.readerEnhancerHint': '뷰어 안에서 태그를 달 수 있습니다.',
+  'settings.readerPanelOpacity': '불투명도',
+  'settings.sectionReaderPanel': '갤러리 정보 패널',
+  'settings.readerPanelPosition': '위치',
+  'settings.readerPanelPositionHint': '멀티 페이지 뷰어 오른쪽 위의 태그 아이콘으로 여는 패널을 화면 어디에 표시할지 정합니다.',
+  'settings.readerPanelPositionTop': '위',
+  'settings.readerPanelPositionMiddle': '가운데',
+  'settings.readerPanelPositionBottom': '아래',
+
+  // Multi-Page Viewer
+  'reader.showGallery': '갤러리 정보 보기',
+  'reader.hideGallery': '갤러리 정보 숨기기',
+
   // My Tags panel
   'bars.threshold': '소프트 필터 임계값',
   'bars.grabbing': '가져오는 중⋯',

@@ -514,6 +514,23 @@ export default {
   'settings.introPanelPrimaryLangZh': '中文',
   'settings.introPanelPrimaryLangEn': 'English',
 
+  // Reader settings tab
+  'settings.tabReader': 'ビューア',
+  'settings.sectionReaderToggles': '機能',
+  'settings.readerEnhancer': 'ビューア強化を有効にする',
+  'settings.readerEnhancerHint': 'ビューアの中でタグ付けできます。',
+  'settings.readerPanelOpacity': '不透明度',
+  'settings.sectionReaderPanel': 'ギャラリー情報パネル',
+  'settings.readerPanelPosition': '位置',
+  'settings.readerPanelPositionHint': 'マルチページビューアの右上にあるタグアイコンから開くパネルを、画面のどこに表示するか。',
+  'settings.readerPanelPositionTop': '上',
+  'settings.readerPanelPositionMiddle': '中央',
+  'settings.readerPanelPositionBottom': '下',
+
+  // Multi-Page Viewer
+  'reader.showGallery': 'ギャラリー情報を表示',
+  'reader.hideGallery': 'ギャラリー情報を隠す',
+
   // My Tags panel
   'bars.threshold': 'ソフトフィルタ閾値',
   'bars.grabbing': '取得中⋯',

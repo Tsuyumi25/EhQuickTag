@@ -62,6 +62,13 @@ export const INTRO_PANEL_PRIMARY_LANGS = [
 ] as const
 export type IntroPanelPrimaryLang = typeof INTRO_PANEL_PRIMARY_LANGS[number]['id']
 
+export const READER_PANEL_POSITIONS = [
+  { id: 'top',    labelKey: 'settings.readerPanelPositionTop' },
+  { id: 'middle', labelKey: 'settings.readerPanelPositionMiddle' },
+  { id: 'bottom', labelKey: 'settings.readerPanelPositionBottom' },
+] as const
+export type ReaderPanelPosition = typeof READER_PANEL_POSITIONS[number]['id']
+
 const SELECTIONS: readonly Selection[] = ['positive', 'negative', 'or']
 
 // Gallery taglist 專屬 dblclick action。跟 tagbar 的 DblClickAction 分開——tagbar
@@ -152,6 +159,12 @@ const INITIAL_SETTINGS = {
   // panel 標題列 toggle 切換、選擇只在當下 panel session 有效，下次點 chip 又
   // 回 primary。'auto' = locale 推 (中文 locale → zh, 其他 → en)
   introPanelPrimaryLang: 'auto' as IntroPanelPrimaryLang,
+  // 閱讀器（MPV）強化：右上角按鈕浮出圖庫資訊面板，在閱讀器裡打標籤
+  readerEnhancerEnabled: true,
+  // 閱讀器（MPV）裡浮出的圖庫資訊面板貼在畫面上、中、下哪裡
+  readerPanelPosition: 'top' as ReaderPanelPosition,
+  // 面板露出時的不透明度 (%)
+  readerPanelOpacity: 85,
   // Gallery taglist 專屬雙擊動作。跟 tagbar 的 dblClickLeft/Right 分開持久化——
   // gallery 是不同 UI context，使用者可能想在兩邊配不同 shortcut
   galleryDblClickLeft: 'searchNewTab' as GalleryDblClickAction,
@@ -237,6 +250,9 @@ export const galleryDblClickRight = refs.galleryDblClickRight
 export const galleryDblClickLeftNewTabActive  = refs.galleryDblClickLeftNewTabActive
 export const galleryDblClickRightNewTabActive = refs.galleryDblClickRightNewTabActive
 export const wikiPreludeExpanded = refs.wikiPreludeExpanded
+export const readerEnhancerEnabled = refs.readerEnhancerEnabled
+export const readerPanelPosition = refs.readerPanelPosition
+export const readerPanelOpacity = refs.readerPanelOpacity
 export const mouseRoles = refs.mouseRoles
 export const dragTrailEnabled = refs.dragTrailEnabled
 export const followCurrentSite  = refs.followCurrentSite
@@ -273,6 +289,8 @@ const SETTING_VALIDATORS: Partial<{ [K in SettingKey]: (v: unknown) => boolean }
   searchPanelLangMode:    v => SEARCH_PANEL_LANG_MODES.some(m => m.id === v),
   convertToTraditional:   v => CONVERT_TO_TRADITIONAL_MODES.some(m => m.id === v),
   introPanelPrimaryLang:  v => INTRO_PANEL_PRIMARY_LANGS.some(m => m.id === v),
+  readerPanelPosition:    v => READER_PANEL_POSITIONS.some(m => m.id === v),
+  readerPanelOpacity:     v => typeof v === 'number' && Number.isFinite(v) && v >= 30 && v <= 100,
   galleryDblClickLeft:    v => GALLERY_DBL_CLICK_ACTIONS.some(a => a.id === v),
   galleryDblClickRight:   v => GALLERY_DBL_CLICK_ACTIONS.some(a => a.id === v),
   galleryTaglistZoom:     v => typeof v === 'number' && Number.isFinite(v) && v >= 50 && v <= 200,
