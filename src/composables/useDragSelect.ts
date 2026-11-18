@@ -112,5 +112,12 @@ export function useDragSelect(opts: UseDragSelectOptions): {
     flushPending()
   }, { capture: opts.takeOver })
 
+  // 按在既有的文字選取上（容器之間的換行也算，畫面上看不出來），瀏覽器不發 selectstart，
+  // 直接把那段選取當成拖曳來源，之後的 mousemove / mouseup 全被原生拖放吃掉。
+  // 擋這兩個事件，mousedown 的焦點移動照舊
+  useEventListener(document, ['selectstart', 'dragstart'], (e: Event) => {
+    if (!store.isIdle()) e.preventDefault()
+  }, { capture: true })
+
   return { onAreaMouseDown, pending }
 }

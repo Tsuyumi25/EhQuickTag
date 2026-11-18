@@ -169,6 +169,26 @@ test('刷過的歷史 chip 放開才加回搜尋，沒刷到的留在歷史', as
   await expect(chip(third)).toBeVisible()
 })
 
+test('頁面上的文字選取蓋住 tag 列時，從分隔線開始刷選照樣刷得到 tag', async ({ page }) => {
+  await injectUserscript(page)
+
+  const separator = (await page.locator('.eqt-tag-bar__line--separator').first().boundingBox())!
+  const target = page
+    .locator('.eqt-tag-bar__line-wrap:has(.eqt-tag-bar__line--separator) + .eqt-tag-bar__line-wrap .eqt-tag-bar__btn')
+    .first()
+  const t = (await target.boundingBox())!
+  await expect(target).toHaveClass(/eqt-tag-bar__btn--off/)
+
+  await page.evaluate(() => getSelection()!.selectAllChildren(document.body))
+  await page.mouse.move(separator.x + separator.width - 10, separator.y + separator.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(t.x + t.width / 2, separator.y + separator.height / 2, { steps: 10 })
+  await page.mouse.move(t.x + t.width / 2, t.y + t.height / 2, { steps: 5 })
+  await page.mouse.up()
+
+  await expect(target).toHaveClass(/eqt-tag-bar__btn--include/)
+})
+
 // === Tier 1 / ⑥：--eqt-controls-w 鏈完整性（ResizeObserver → emit → CSS var）===
 test('__lines 寬度 = bar 寬 − 2 × line-controls 寬', async ({ page }) => {
   await injectUserscript(page)
