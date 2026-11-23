@@ -14,7 +14,7 @@ import { canWrite, setUserTag } from '@/services/mytags/mytagsApi'
 import type { TagState } from '@/services/mytags/mytagsEdits'
 import { colorUsage } from '@/services/mytags/mytagsColors'
 import { MYTAGS_COLOR_USAGE } from '@/composables/useMyTagsColors'
-import { askConfirm } from '@/services/confirmDialog'
+import { askConfirm, confirmRequest } from '@/services/confirmDialog'
 
 // 圖庫頁的 My Tags 編輯列，開著時頂替動作列的位置。
 // 標籤不在這裡挑：taglist 在這個模式下是單選，點哪顆就編輯哪顆；手打名字也會回報給外層。
@@ -34,12 +34,12 @@ type NewTagSubmission = NewTagInput & { tagSet: string }
 
 const toast = useEqtToast()
 useEventListener(document, 'keydown', (e: KeyboardEvent) => {
-  if (e.key === 'Escape') emit('close')
+  // 確認框開著時 Esc 是在回答它；色盤用掉的 Esc 會先標記 defaultPrevented
+  if (e.key !== 'Escape' || e.defaultPrevented || confirmRequest.value) return
+  emit('close')
 })
 
-// stale：寫入之後本地這份跟 EH 對不上了（例如搬過去之後抓不回目標組），
-// 繼續用會把已經存在的標籤當成新的，只能整份重抓
-const status = ref<'loading' | 'ready' | 'signed-out' | 'failed' | 'stale'>('loading')
+const status = ref<'loading' | 'ready' | 'signed-out' | 'failed'>('loading')
 const sets = shallowRef<TagSetSnapshot[]>([])
 const defaultSet = ref('')
 // 任何一份 /mytags 的表單都送得到任何一組，抓第一次就留著重複用
@@ -194,7 +194,9 @@ function move(target: string): Promise<void> {
     if (next.some((x) => x.id === r.id)) { toast.error(t('panel.massFailed')); return }
     const got = await fetchTagSet(target)
     if (!got) {
-      status.value = 'stale'
+      // 搬過去了卻讀不回目標組：本地少了這一列，繼續用會把它當成新的再加一次，
+      // palette 也還停在搬之前。整份重抓，失敗就停在 failed、草稿鎖住
+      await load()
       return
     }
     absorb(target, got.rows)
@@ -237,16 +239,16 @@ function remove(): Promise<void> {
   >
     <template #head>
       <div class="eqt-gallery-mytags__head">
-        <span class="eqt-gallery-mytags__title"><Tags :size="14" />My Tags</span>
+        <span class="eqt-gallery-mytags__title"><Tags :size="14" />{{ t('gallery.myTags') }}</span>
         <span v-if="status === 'loading'" class="eqt-gallery-mytags__note" role="status">
           {{ t('gallery.myTagsLoading') }}
         </span>
         <span v-else-if="status === 'signed-out'" class="eqt-gallery-mytags__note" role="status">
           {{ t('gallery.myTagsSignedOut') }}
         </span>
-        <template v-else-if="status === 'failed' || status === 'stale'">
+        <template v-else-if="status === 'failed'">
           <span class="eqt-gallery-mytags__note eqt-gallery-mytags__note--alert" role="alert">
-            {{ t(status === 'failed' ? 'gallery.myTagsLoadFailed' : 'gallery.myTagsStale') }}
+            {{ t('gallery.myTagsLoadFailed') }}
           </span>
           <button type="button" class="eqt-gallery-mytags__reload eqt-panel__btn" @click="load">
             {{ t('gallery.myTagsReload') }}

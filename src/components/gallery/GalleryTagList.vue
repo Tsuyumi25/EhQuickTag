@@ -592,7 +592,7 @@ watch(selection, () => {
         @click="enterMyTags"
       >
         <Tags :size="14" />
-        <span>My Tags</span>
+        <span>{{ t('gallery.myTags') }}</span>
       </button>
       <a
         v-if="myTagsHref"

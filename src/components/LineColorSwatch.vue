@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useEventListener } from '@vueuse/core'
 import { Palette, X } from '@lucide/vue'
 import AnchoredPopover from '@/components/AnchoredPopover.vue'
 import ColorPicker from '@/components/ColorPicker.vue'
@@ -26,6 +27,14 @@ function clearColor() {
   emit('update:modelValue', undefined)
   open.value = false
 }
+
+// Esc 先收這個浮層並標記用掉，外面在 document 上聽 Esc 的圖庫頁 My Tags 模式看到
+// defaultPrevented 就不會跟著整個關掉。capture 才排得到它前面
+useEventListener(document, 'keydown', (e: KeyboardEvent) => {
+  if (!open.value || e.key !== 'Escape') return
+  e.preventDefault()
+  open.value = false
+}, { capture: true })
 
 /** 標籤列表很長時 title 只列前幾個，tooltip 才不會蓋掉半個畫面 */
 const PRESET_TITLE_TAGS = 8

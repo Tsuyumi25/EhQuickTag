@@ -97,6 +97,14 @@ test('My Tags 模式把動作列翻成編輯列：單選左鍵、設定留著、
   expect(posts[0].body.get('tagweight_0')).toBe('0')
   await expect(chips.nth(2)).toHaveClass(/eqt-gallery-chip--mytags-colored/)
 
+  // Esc 先收色盤，模式留著；再按一次才離開
+  await panel.locator('.eqt-taglist__color-swatch').click()
+  const popover = page.locator('.eqt-line-color__popup')
+  await expect(popover).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(popover).toHaveCount(0)
+  await expect(panel).toBeVisible()
+
   await page.keyboard.press('Escape')
   await expect(panel).toHaveCount(0)
   await expect(votes).toHaveText(['1', '1'])
