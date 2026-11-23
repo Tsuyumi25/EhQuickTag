@@ -16,8 +16,8 @@ import { colorUsage } from '@/services/mytags/mytagsColors'
 import { MYTAGS_COLOR_USAGE } from '@/composables/useMyTagsColors'
 import { askConfirm, confirmRequest } from '@/services/confirmDialog'
 
-// 圖庫頁的 My Tags 編輯列，開著時頂替動作列的位置。
-// 標籤不在這裡挑：taglist 在這個模式下是單選，點哪顆就編輯哪顆；手打名字也會回報給外層。
+// 不用進 /mytags 就能新增或修改一個 My Tags 標籤的編輯列：圖庫頁翻動作列、列表頁翻 dock 時用。
+// 標籤不在這裡挑：使用端把標籤區切成單選，點或刷到哪顆就編輯哪顆；手打名字也會回報給使用端。
 
 const props = defineProps<{
   /** 正在編輯的標籤（nsRaw）；空字串代表還沒選 */
@@ -220,7 +220,7 @@ function remove(): Promise<void> {
 
 <template>
   <MyTagsDraft
-    class="eqt-gallery-mytags"
+    class="eqt-mytags-quick"
     row
     :disabled="status !== 'ready'"
     :full="full"
@@ -238,26 +238,26 @@ function remove(): Promise<void> {
     @remove="remove"
   >
     <template #head>
-      <div class="eqt-gallery-mytags__head">
-        <span class="eqt-gallery-mytags__title"><Tags :size="14" />{{ t('gallery.myTags') }}</span>
-        <span v-if="status === 'loading'" class="eqt-gallery-mytags__note" role="status">
+      <div class="eqt-mytags-quick__head">
+        <span class="eqt-mytags-quick__title"><Tags :size="14" />{{ t('gallery.myTags') }}</span>
+        <span v-if="status === 'loading'" class="eqt-mytags-quick__note" role="status">
           {{ t('gallery.myTagsLoading') }}
         </span>
-        <span v-else-if="status === 'signed-out'" class="eqt-gallery-mytags__note" role="status">
+        <span v-else-if="status === 'signed-out'" class="eqt-mytags-quick__note" role="status">
           {{ t('gallery.myTagsSignedOut') }}
         </span>
         <template v-else-if="status === 'failed'">
-          <span class="eqt-gallery-mytags__note eqt-gallery-mytags__note--alert" role="alert">
+          <span class="eqt-mytags-quick__note eqt-mytags-quick__note--alert" role="alert">
             {{ t('gallery.myTagsLoadFailed') }}
           </span>
-          <button type="button" class="eqt-gallery-mytags__reload eqt-panel__btn" @click="load">
+          <button type="button" class="eqt-mytags-quick__reload eqt-panel__btn" @click="load">
             {{ t('gallery.myTagsReload') }}
           </button>
         </template>
-        <span v-else-if="!full" class="eqt-gallery-mytags__note">{{ t('gallery.myTagsPickHint') }}</span>
+        <span v-else-if="!full" class="eqt-mytags-quick__note">{{ t('gallery.myTagsPickHint') }}</span>
         <button
           type="button"
-          class="eqt-gallery-mytags__close"
+          class="eqt-mytags-quick__close"
           :title="t('settings.close')"
           @click="emit('close')"
         >×</button>
@@ -266,7 +266,7 @@ function remove(): Promise<void> {
     <button
       v-if="dirty"
       type="button"
-      class="eqt-gallery-mytags__save eqt-panel__btn eqt-panel__btn--primary"
+      class="eqt-mytags-quick__save eqt-panel__btn eqt-panel__btn--primary"
       :disabled="busy"
       @click="save"
     >{{ busy ? t('panel.working') : t('gallery.myTagsSave') }}</button>
@@ -274,10 +274,8 @@ function remove(): Promise<void> {
 </template>
 
 <style lang="scss">
-// 根節點就是 MyTagsDraft 的那一格：外框、底色都用它的，這裡只管它在動作列位置上的擺法
-.eqt-gallery-mytags {
-  // 跟 .eqt-gallery-actions 同一個外距，翻面前後的位置對得上
-  margin: 6px 6px 0 0;
+// 根節點就是 MyTagsDraft 的那一格：外框、底色都用它的；放在哪、留多少外距由使用端決定
+.eqt-mytags-quick {
   color: var(--eqt-text);
   text-align: left;
   font-size: var(--eqt-fs-md);

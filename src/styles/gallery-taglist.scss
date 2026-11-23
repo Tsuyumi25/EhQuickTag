@@ -342,6 +342,11 @@ $eqt-gallery-column-gap: 6px;
   }
 }
 
+// My Tags 模式頂替動作列的那一條：跟 .eqt-gallery-actions 同一個外距，翻面前後的位置對得上
+.eqt-gallery-mytags {
+  margin: 6px 6px 0 0;
+}
+
 .eqt-gallery-actions__status {
   display: inline-flex;
   align-items: center;

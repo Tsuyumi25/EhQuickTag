@@ -27,7 +27,7 @@ import { useGalleryIntroPanel } from '@/composables/useIntroPanel'
 import { Settings, Search, BookOpen, Tags, TagPlus, ClipboardPaste, ThumbsDown, ThumbsUp, X, ExternalLink } from '@lucide/vue'
 import { pickOf, selectionOf, stepPick, prefixOf, type TagPick, type Selection } from '@/services/tagPick'
 import GalleryAddInline from './GalleryAddInline.vue'
-import GalleryMyTagsInline from './GalleryMyTagsInline.vue'
+import MyTagsQuickEditor from '@/components/mytags/MyTagsQuickEditor.vue'
 import GalleryIntroPanel from './GalleryIntroPanel.vue'
 import GalleryTagListRows, { type GalleryTagListChip, type GalleryTagListGroup } from './GalleryTagListRows.vue'
 import type { TagEntry } from '@/services/tags/tagDb'
@@ -520,8 +520,9 @@ watch(selection, () => {
   />
 
   <!-- My Tags 模式時動作列翻成編輯列：同一個位置、同一個時間只做一件事 -->
-  <GalleryMyTagsInline
+  <MyTagsQuickEditor
     v-if="myTagsMode"
+    class="eqt-gallery-mytags"
     :tag="myTagsTarget"
     @update:tag="pickMyTagsTarget"
     @palette="myTagsPalette = $event"

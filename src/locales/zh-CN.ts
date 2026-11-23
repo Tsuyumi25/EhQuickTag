@@ -435,7 +435,6 @@ export default {
   'gallery.tagDbLoadFailed': '标签数据库加载失败，请稍后再试或检查网络。',
   'gallery.openInMyTags': '到 My Tags 查看',
   'gallery.myTagsAll': 'All',
-  'gallery.myTagsN': 'My Tags ({n})',
   'panel.gallerySourceInvalid': '图库链接需要有效的 eqt_gid 与 eqt_token。',
   'gallery.myTagsOpenFailed': '无法打开 My Tags，已保留当前选取。',
   'panel.pickMissing': '选取快照不存在或已清理，请回来源页重新保存选取。',

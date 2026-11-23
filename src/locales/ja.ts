@@ -435,7 +435,6 @@ export default {
   'gallery.tagDbLoadFailed': 'タグ DB の読み込みに失敗しました。後でリトライするかネットワークをご確認ください。',
   'gallery.openInMyTags': 'My Tags で表示',
   'gallery.myTagsAll': 'All',
-  'gallery.myTagsN': 'My Tags ({n})',
   'panel.gallerySourceInvalid': 'ギャラリーのリンクには有効な eqt_gid と eqt_token が必要です。',
   'gallery.myTagsOpenFailed': 'My Tags を開けませんでした。現在の選択は保持されています。',
   'panel.pickMissing': '選択スナップショットが存在しないか、削除されています。元のページで選択を保存し直してください。',

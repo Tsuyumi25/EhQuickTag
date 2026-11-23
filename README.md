@@ -72,6 +72,7 @@ My Tags Enhancer
 - [x] Gallery List Enhancer (needs [Eh View Refined](https://github.com/Tsuyumi25/EhViewRefined))
   - [x] Every tag on listing pages, with My Tags colors and scores
   - [x] Left-click includes, right-click excludes, drag selects several; the Dock gathers the selection to search, open in My Tags, or add to a gallery rule
+  - [x] Add, watch, or edit My Tags from the Dock: it flips into a small, non-blocking My Tags editor, and the tag you left-click or sweep onto becomes the one being edited
   - [x] Gallery rules match by tags, categories, uploaders, stars and pages, built visually from AND / OR groups or written as an expression
   - [x] Rule actions: colors, fade, blur, mosaic, strikethrough and text styles on a gallery's card, cover or title; a title prefix; or hiding the gallery
   - [x] Live preview on the listing while editing rules

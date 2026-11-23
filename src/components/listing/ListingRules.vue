@@ -2,9 +2,10 @@
 // 列表頁：選標籤送規則頁，並把規則頁存下來的圖庫規則套回真實圖庫外觀。
 import { computed, h, onBeforeUnmount, onMounted, ref, render, shallowRef, watch, watchEffect } from 'vue'
 import { useFloating, autoUpdate, flip, offset, shift } from '@floating-ui/vue'
-import { Ban, ChevronDown, Eye, Funnel, ListChecks, Search, Settings, Shapes, Tags, UserRound, X } from '@lucide/vue'
+import { Ban, ChevronDown, ExternalLink, Eye, Funnel, ListChecks, Search, Settings, Shapes, Tags, UserRound, X } from '@lucide/vue'
 import TagChip from '@/components/TagChip.vue'
 import GalleryTagListRows, { type GalleryTagListGroup } from '@/components/gallery/GalleryTagListRows.vue'
+import MyTagsQuickEditor from '@/components/mytags/MyTagsQuickEditor.vue'
 import { useDragSelect } from '@/composables/useDragSelect'
 import type { ChipRef } from '@/services/gallery/dragSelectMachine'
 import { useListingRuleHost, type ListingChip } from '@/composables/useListingRuleHost'
@@ -73,6 +74,10 @@ const dock = shallowRef<HTMLElement | null>(null)
 const searchPanel = ref<HTMLElement | null>(null)
 const selection = ref(new Map<string, Selection>())
 const dockSessionTerms = ref<TermEntry[]>([])
+// My Tags 模式：dock 翻成 My Tags 編輯列，列表上的標籤改成單選，點或刷到哪顆就編輯哪顆。
+// 原本的選取（連同搜尋選單裡的歷史詞）先收起來、離開時原樣還回去
+const myTagsMode = ref(false)
+const myTagsTarget = ref('')
 
 const { floatingStyles: searchFloatingStyles } = useFloating(dock, searchPanel, {
   placement: 'top',
@@ -207,14 +212,17 @@ watch(() => selection.value.size, (size, before) => {
   if (size > 0 && before === 0) dockOpen.value = true
 })
 // 規則頁的 dock 是規則介面的一部分，不受列表的標籤選取設定影響
-const dockVisible = computed(() => showRules.value
+const dockVisible = computed(() => showRules.value || myTagsMode.value
   || (items.value.length > 0 && tagSelectEnabled.value && (dockOpen.value || listingDockAlwaysVisible.value)))
 function closeDock() {
+  leaveMyTags()
   clearSelection()
   dockOpen.value = false
 }
-// 規則頁不論從哪裡關（dock 上的關閉、規則頁右上角、Esc），都跟 dock 的關閉同一件事
+// 規則頁不論從哪裡關（dock 上的關閉、規則頁右上角、Esc），都跟 dock 的關閉同一件事。
+// 從圖庫上的規則名稱直接開規則頁時，dock 要讓給規則介面，My Tags 模式先收掉
 watch(showRules, (open, wasOpen) => {
+  if (open) leaveMyTags()
   if (wasOpen && !open) closeDock()
 })
 watch(dockVisible, visible => {
@@ -293,6 +301,7 @@ watch(rulesError, key => {
   if (key) toast.error(t(key))
 })
 
+let lastTouched = ''
 function selectTag(tag: string, press: Selection) {
   const current = selection.value.get(tag)
   const state = selectionOf(stepPick(pickOf(current), press))
@@ -304,8 +313,40 @@ function selectTag(tag: string, press: Selection) {
     next.delete(tag)
   } else {
     next.set(tag, state)
+    lastTouched = tag
   }
   selection.value = next
+}
+
+let stashed: { selection: Map<string, Selection>; terms: TermEntry[] } | null = null
+
+/** 換編輯對象；選取跟著只剩它。手打的名字這一頁沒有就不亮任何一顆 */
+function pickMyTagsTarget(tag: string) {
+  myTagsTarget.value = tag
+  selection.value = chipsByName.value.has(tag) ? new Map([[tag, 'positive']]) : new Map()
+}
+
+function enterMyTags() {
+  closeSearchMenu()
+  stashed = { selection: selection.value, terms: dockSessionTerms.value }
+  myTagsMode.value = true
+  // 最後碰到的那顆還選著才沿用；選取都清掉了，代表上一個意圖已經結束
+  pickMyTagsTarget(selection.value.has(lastTouched) ? lastTouched : '')
+}
+
+function leaveMyTags() {
+  if (!myTagsMode.value) return
+  myTagsMode.value = false
+  if (!stashed) return
+  selection.value = stashed.selection
+  // 選取一換，searchDraft 的 watch 會同步改寫歷史詞；要等它跑完再蓋回去
+  dockSessionTerms.value = stashed.terms
+  stashed = null
+}
+
+function pressTag(tag: string, press: Selection) {
+  if (myTagsMode.value) pickMyTagsTarget(tag)
+  else selectTag(tag, press)
 }
 
 const chipByElement = computed(() => new Map(chips.value.map(chip => [chip.element, chip])))
@@ -326,8 +367,9 @@ function chipAt(x: number, y: number): ChipRef | null {
 
 const { onAreaMouseDown } = useDragSelect({
   chipAt,
-  applySelection: selectTag,
+  applySelection: pressTag,
   takeOver: true,
+  single: () => myTagsMode.value,
 })
 
 function ownsTagArea(target: EventTarget | null): boolean {
@@ -362,7 +404,7 @@ function captureTagEvent(event: MouseEvent) {
     return
   }
   if (event.type === 'click' && event.detail === 0 && chip) {
-    selectTag(chip.name, 'positive')
+    pressTag(chip.name, 'positive')
   }
   event.preventDefault()
   event.stopImmediatePropagation()
@@ -473,7 +515,16 @@ onBeforeUnmount(() => {
 
   <Teleport to="body">
     <aside v-if="dockVisible" ref="dock" class="eqt-listing-rules__floating" translate="no">
-      <div class="eqt-listing-rules__dock">
+      <!-- My Tags 模式時 dock 整條翻成編輯列，跟圖庫頁翻動作列同一件事；關掉就翻回原本的 dock -->
+      <MyTagsQuickEditor
+        v-if="myTagsMode"
+        class="eqt-listing-rules__mytags-editor"
+        :tag="myTagsTarget"
+        @update:tag="pickMyTagsTarget"
+        @palette="myTagsPalette = $event"
+        @close="leaveMyTags"
+      />
+      <div v-else class="eqt-listing-rules__dock">
         <div class="eqt-listing-rules__dock-tools">
           <template v-if="!showRules">
             <button type="button" class="eqt-listing-rules__settings" @click="openSettings('listing')"><Settings aria-hidden="true" />{{ t('settings.title') }}</button>
@@ -559,12 +610,15 @@ onBeforeUnmount(() => {
           <template v-else>
             <button type="button" class="eqt-listing-rules__rules-toggle" @click="openRulesEditor"><Funnel aria-hidden="true" />{{ t('listingRules.rules') }}</button>
             <span class="eqt-listing-rules__separator" aria-hidden="true" />
+            <button type="button" class="eqt-listing-rules__mytags" :title="t('gallery.myTagsPanel')" @click="enterMyTags">
+              <Tags aria-hidden="true" />{{ t('gallery.myTags') }}
+            </button>
             <a
-              v-if="myTagsHref" class="eqt-listing-rules__mytags" :href="myTagsHref" target="_blank" rel="noopener" :title="t('gallery.openInMyTags')"
+              v-if="myTagsHref" class="eqt-listing-rules__mytags-open" :href="myTagsHref" target="_blank" rel="noopener" :title="t('gallery.openInMyTags')"
               @pointerdown="myTagsPick.persist" @keydown.enter="myTagsPick.persist" @click="clearAfterOpen" @auxclick="clearAfterOpen"
-            ><Tags aria-hidden="true" />{{ t('gallery.myTagsN', { n: selection.size }) }}</a>
-            <button v-else type="button" class="eqt-listing-rules__mytags" :title="t('gallery.openInMyTags')" disabled>
-              <Tags aria-hidden="true" />{{ t('gallery.myTagsN', { n: selection.size }) }}
+            ><ExternalLink aria-hidden="true" />{{ selection.size }}</a>
+            <button v-else type="button" class="eqt-listing-rules__mytags-open" :title="t('gallery.openInMyTags')" disabled>
+              <ExternalLink aria-hidden="true" />{{ selection.size }}
             </button>
             <span class="eqt-listing-rules__separator" aria-hidden="true" />
             <a v-if="searchHref" class="eqt-listing-rules__search" :href="searchHref" target="_blank" rel="noopener noreferrer"><Search aria-hidden="true" />{{ t('tagbar.search') }}</a>

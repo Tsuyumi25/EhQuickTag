@@ -42,6 +42,11 @@ export interface UseDragSelectOptions {
    * 單擊本來就在放開時才套，不受影響
    */
   deferApply?: boolean
+  /**
+   * 單選：只認左鍵，游標底下換到哪顆就對它 applySelection(id, 'positive') 一次，放開停在最後一顆。
+   * 不走 cohort 狀態機也不補點——只有最後一顆有意義，甩太快跳過的本來就不該被選到
+   */
+  single?: () => boolean
 }
 
 export function useDragSelect(opts: UseDragSelectOptions): {
@@ -53,6 +58,14 @@ export function useDragSelect(opts: UseDragSelectOptions): {
   const store = createDragSelectStore(() => ({ dragThresholdPx }))
   let lastPoint: Point | null = null
   const pending = shallowRef<ReadonlyMap<string, Selection>>(new Map())
+  let scrub: { from: Point; trailing: boolean; last: string | null } | null = null
+
+  function scrubTo(x: number, y: number): void {
+    const chip = opts.chipAt(x, y)
+    if (!scrub || !chip || chip.id === scrub.last) return
+    scrub.last = chip.id
+    opts.applySelection(chip.id, 'positive')
+  }
 
   function dispatch(event: DragSelectEvent): void {
     const effects = store.dispatch(event)
@@ -78,17 +91,34 @@ export function useDragSelect(opts: UseDragSelectOptions): {
     // 中鍵在 tag 區裡一律接手，跟左右鍵一樣能從空隙開始拖；按下時先擋掉瀏覽器的自動捲動與貼上
     if (opts.takeOver || e.button === 1) e.preventDefault()
     if (opts.takeOver) e.stopImmediatePropagation()
+    if (opts.single?.()) {
+      if (e.button !== 0) return
+      scrub = { from: { x: e.clientX, y: e.clientY }, trailing: false, last: null }
+      scrubTo(e.clientX, e.clientY)
+      return
+    }
     lastPoint = { x: e.clientX, y: e.clientY }
     dispatch({ kind: 'mousedown', mode: mouseRoles.value[button], x: e.clientX, y: e.clientY, chip: opts.chipAt(e.clientX, e.clientY) })
   }
 
   useEventListener(document, 'mousemove', (e: MouseEvent) => {
-    if (store.isIdle()) return
+    if (store.isIdle() && !scrub) return
     if (opts.takeOver) {
       e.preventDefault()
       e.stopImmediatePropagation()
     }
     const to = { x: e.clientX, y: e.clientY }
+    if (scrub) {
+      // 軌跡照多選的規矩：過了同一個門檻才起筆，單擊不冒筆跡
+      if (!scrub.trailing && dragTrailEnabled.value
+        && Math.hypot(to.x - scrub.from.x, to.y - scrub.from.y) >= dragThresholdPx) {
+        scrub.trailing = true
+        startTrail('positive', to)
+      }
+      if (scrub.trailing) extendTrail(to)
+      scrubTo(to.x, to.y)
+      return
+    }
     for (const p of interpolate(lastPoint ?? to, to)) {
       const wasDragging = store.state().kind === 'dragging'
       dispatch({ kind: 'mousemove', x: p.x, y: p.y, chip: opts.chipAt(p.x, p.y) })
@@ -101,10 +131,15 @@ export function useDragSelect(opts: UseDragSelectOptions): {
   }, { capture: opts.takeOver })
 
   useEventListener(document, 'mouseup', (e: MouseEvent) => {
-    if (store.isIdle()) return
+    if (store.isIdle() && !scrub) return
     if (opts.takeOver) {
       e.preventDefault()
       e.stopImmediatePropagation()
+    }
+    if (scrub) {
+      if (scrub.trailing) endTrail()
+      scrub = null
+      return
     }
     lastPoint = null
     endTrail()
@@ -116,7 +151,7 @@ export function useDragSelect(opts: UseDragSelectOptions): {
   // 直接把那段選取當成拖曳來源，之後的 mousemove / mouseup 全被原生拖放吃掉。
   // 擋這兩個事件，mousedown 的焦點移動照舊
   useEventListener(document, ['selectstart', 'dragstart'], (e: Event) => {
-    if (!store.isIdle()) e.preventDefault()
+    if (!store.isIdle() || scrub) e.preventDefault()
   }, { capture: true })
 
   return { onAreaMouseDown, pending }

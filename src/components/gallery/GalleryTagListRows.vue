@@ -31,14 +31,12 @@ export interface GalleryTagListGroup {
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useEventListener } from '@vueuse/core'
 import {
-  dragTrailEnabled, galleryMyTagsColorsEnabled, galleryMyTagsScoresEnabled, galleryMyTagsMarksEnabled, galleryTaglistZoom,
+  galleryMyTagsColorsEnabled, galleryMyTagsScoresEnabled, galleryMyTagsMarksEnabled, galleryTaglistZoom,
   listingMyTagsColorsEnabled, listingMyTagsScoresEnabled, listingMyTagsMarksEnabled,
 } from '@/services/store'
 import { useDragSelect } from '@/composables/useDragSelect'
-import { endTrail, extendTrail, startTrail } from '@/composables/paintTrailCanvas'
-import { DEFAULT_CONFIG, type ChipRef } from '@/services/gallery/dragSelectMachine'
+import type { ChipRef } from '@/services/gallery/dragSelectMachine'
 import { pickOf } from '@/services/tagPick'
 import type { VoteState } from '@/services/gallery/galleryVote'
 import { CornerLeftUp, TagPlus, CircleCheck, CircleDashedCheck, CircleQuestionMark } from '@lucide/vue'
@@ -88,55 +86,12 @@ function chipFromPoint(x: number, y: number): ChipRef | null {
   return { id: nsRaw, state: pickOf(selectionByNsRaw.value.get(nsRaw)) }
 }
 
-const { onAreaMouseDown: onDragMouseDown } = useDragSelect({
+const { onAreaMouseDown } = useDragSelect({
   chipAt: chipFromPoint,
   applySelection: (nsRaw, mode) => emit('select', nsRaw, mode),
   setPanelTag: (nsRaw) => emit('inspect', nsRaw),
+  single: () => !!props.single,
 })
-
-// 單選的刷選：游標底下是哪顆就換成哪顆，放開時停在最後一顆。只有最後一顆有意義，
-// 所以不必像多選那樣補點，甩太快跳過的 chip 本來就不該被選到。
-// 軌跡照多選的規矩：過了同一個門檻才起筆，單擊不冒筆跡
-let scrubFrom: { x: number; y: number } | null = null
-let trailing = false
-let scrubbed: string | null = null
-
-function scrubTo(x: number, y: number): void {
-  const chip = chipFromPoint(x, y)
-  if (!chip || chip.id === scrubbed) return
-  scrubbed = chip.id
-  emit('select', chip.id, 'positive')
-}
-
-function onAreaMouseDown(e: MouseEvent): void {
-  if (!props.single) { onDragMouseDown(e); return }
-  if (e.button !== 0) return
-  scrubFrom = { x: e.clientX, y: e.clientY }
-  trailing = false
-  scrubbed = null
-  scrubTo(e.clientX, e.clientY)
-}
-
-useEventListener(document, 'mousemove', (e: MouseEvent) => {
-  if (!scrubFrom) return
-  const to = { x: e.clientX, y: e.clientY }
-  if (!trailing && dragTrailEnabled.value
-    && Math.hypot(to.x - scrubFrom.x, to.y - scrubFrom.y) >= DEFAULT_CONFIG.dragThresholdPx) {
-    trailing = true
-    startTrail('positive', to)
-  }
-  if (trailing) extendTrail(to)
-  scrubTo(to.x, to.y)
-})
-useEventListener(document, 'mouseup', () => {
-  if (!scrubFrom) return
-  scrubFrom = null
-  if (trailing) endTrail()
-})
-// 跟多選刷選同一個理由：按在既有的文字選取上時，原生拖放會吃掉之後的 mousemove
-useEventListener(document, ['selectstart', 'dragstart'], (e: Event) => {
-  if (scrubFrom) e.preventDefault()
-}, { capture: true })
 </script>
 
 <template>

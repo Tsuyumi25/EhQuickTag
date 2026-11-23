@@ -435,7 +435,6 @@ export default {
   'gallery.tagDbLoadFailed': 'Failed to load tag database. Please retry later or check your network.',
   'gallery.openInMyTags': 'View in My Tags',
   'gallery.myTagsAll': 'All',
-  'gallery.myTagsN': 'My Tags ({n})',
   'panel.gallerySourceInvalid': 'This gallery link requires a valid eqt_gid and eqt_token.',
   'gallery.myTagsOpenFailed': 'Could not open My Tags. Your selection has been kept.',
   'panel.pickMissing': 'This selection snapshot is unavailable or has expired. Save the selection again on the source page.',

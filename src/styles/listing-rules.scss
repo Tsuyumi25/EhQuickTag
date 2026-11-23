@@ -3,6 +3,8 @@
 :root {
   --eqt-listing-rules-gap: var(--eqt-gallery-chip-content-gap);
   --eqt-listing-rules-panel-width: calc(var(--eqt-row-h) * 18);
+  // My Tags 編輯列排成兩行剛好的寬度：名字、顏色、旗標、權重一行，標籤集與按鈕一行
+  --eqt-listing-rules-editor-width: calc(var(--eqt-row-h) * 26);
   --eqt-listing-rules-dock-height: calc(var(--eqt-row-h) * 3);
   // 視窗底部到 dock 頂端再留一段間距：dock 離底的距離 + 框線 + 內距 + 按鈕高。
   // 規則頁的底邊停在這裡，dock 才不會蓋住它；改 dock 的間距或按鈕高時要一起對
@@ -189,6 +191,16 @@
     border: none;
   }
   .eqt-listing-rules__preview[aria-pressed='true'] { background: var(--eqt-bg-active); }
+}
+// dock 翻成 My Tags 編輯列：外框照 dock 畫，蓋過編輯列自己的淡框與條紋底
+.eqt-listing-rules__floating > .eqt-listing-rules__mytags-editor {
+  width: var(--eqt-listing-rules-editor-width);
+  max-width: 100%;
+  padding: var(--eqt-listing-rules-gap);
+  background: var(--eqt-bg);
+  border: var(--eqt-border-width) solid var(--eqt-border);
+  border-radius: calc(var(--eqt-radius-md) * 2);
+  box-shadow: var(--eqt-shadow-popover);
 }
 // 預覽與規則兩種字疊在同一格，按鈕寬度取寬的那個：切換時 dock 上其他按鈕不會跟著挪
 .eqt-listing-rules__preview-labels {
