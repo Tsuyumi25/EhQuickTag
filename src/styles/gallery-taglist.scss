@@ -312,8 +312,34 @@ $eqt-gallery-column-gap: 6px;
   &--import { grid-area: import; }
   &--wiki { grid-area: wiki; }
   &--clear { grid-area: clear; }
-  &--mytags { grid-area: mytags; }
   &--settings { grid-area: settings; }
+}
+
+// My Tags 一格切兩半：左邊把動作列翻成 My Tags 編輯列，右邊帶著選取開 /mytags
+.eqt-gallery-actions__split {
+  @include btn-split-group;
+  grid-area: mytags;
+  min-width: 0;
+  background: var(--eqt-bg-btn);
+}
+
+.eqt-gallery-actions__split-btn {
+  @include btn-split-item;
+  gap: 4px;
+  padding: 4px 8px;
+  color: var(--eqt-text);
+  font-size: var(--eqt-fs-md);
+  text-decoration: none;
+
+  &--panel {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 }
 
 .eqt-gallery-actions__status {

@@ -179,7 +179,7 @@ const INITIAL_SETTINGS = {
   wikiPreludeExpanded: false,
   // 標籤介面（tagbar、搜尋欄、圖庫、列表）裡三顆滑鼠鍵各自負責的動作，三顆不重複
   mouseRoles: { left: 'positive', middle: 'or', right: 'negative' } as MouseRoles,
-  // 拖曳多選時沿游標畫一條會淡掉的軌跡，所有標籤介面共用一個開關
+  // 拖曳選取時沿游標畫一條會淡掉的軌跡，所有標籤介面共用一個開關（My Tags 的單選刷選也算）
   dragTrailEnabled: true,
   followCurrentSite: true,
   // 列表頁把原生標籤換成插件的 chip（My Tags 顏色、分數、關注／屏蔽標記）；關掉就留原生標籤，

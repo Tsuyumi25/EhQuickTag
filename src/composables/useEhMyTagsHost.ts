@@ -193,6 +193,8 @@ export interface TagSetIndex {
   /** 標籤集在下拉選單裡的順序 */
   order: string[]
   current: TagSetSnapshot
+  /** 這份文件的新增表單；送去哪一組由 URL 決定，見 submitNewTag */
+  form: HTMLFormElement
 }
 
 /** `'signed-out'` 代表沒有登入、根本沒有 My Tags；null 代表抓失敗 */
@@ -203,8 +205,61 @@ export async function fetchTagSetIndex(): Promise<TagSetIndex | 'signed-out' | n
   const current = doc.querySelector<HTMLOptionElement>('#tagset_outer option[selected]')?.value
     ?? options[0]?.value ?? '1'
   const set = parseTagSetSnapshot(doc, current)
-  if (!set) return null
-  return { order: options.length ? options.map((o) => o.value) : [current], current: set }
+  const form = doc.querySelector<HTMLFormElement>('#usertag_form')
+  if (!set || !form) return null
+  return { order: options.length ? options.map((o) => o.value) : [current], current: set, form }
+}
+
+/**
+ * 照原生表單新增一個標籤到 `tagSet`，不刷新。`form` 可以是當前頁的，也可以是 fetch
+ * 回來那份文件裡的——目標組看 URL 上的 `?tagset=`，表單裡其他組的列不影響這次新增。
+ * 回傳那一組的最新標籤列，null 代表沒送成功；送成功不代表 EH 收下了，要從回傳的列確認。
+ */
+export async function submitNewTag(
+  form: HTMLFormElement,
+  tagSet: string,
+  input: NewTagInput,
+): Promise<MyTagRow[] | null> {
+  const doc = form.ownerDocument
+  const name = el<HTMLInputElement>(doc, 'tagname_new')
+  const action = el<HTMLInputElement>(doc, 'usertag_action')
+  if (!name || !action) return null
+  name.value = input.full
+  const w = el<HTMLInputElement>(doc, 'tagweight_0')
+  if (w) w.value = String(input.weight)
+  const c = el<HTMLInputElement>(doc, 'tagcolor_0')
+  if (c) c.value = input.color
+  const h = el<HTMLInputElement>(doc, 'taghide_0')
+  if (h) h.checked = input.hidden
+  const t = el<HTMLInputElement>(doc, 'tagwatch_0')
+  if (t) t.checked = input.watch
+  action.value = 'add'
+  // 新增列各欄位的 name 屬於 EH 的黑箱：照原生表單序列化，送出的欄位就跟
+  // form.submit() 一模一樣，差別只在由我們讀回應、而不是讓瀏覽器換頁
+  const fields = [...new FormData(form)].flatMap(([k, v]): [string, string][] =>
+    typeof v === 'string' ? [[k, v]] : [])
+  const res = await postForm(tagSet, fields)
+  return res ? parseTagSetSnapshot(res, tagSet)?.rows ?? null : null
+}
+
+/**
+ * 刪除（`target` 是 `0`）或搬移到 `target`。`tagSet` 是這批 tagid 所屬的組。
+ * 回傳來源組的完整標籤列，null 代表回應無效；仍在列內的 id 就是沒處理到的。
+ */
+export async function submitMassAction(
+  ids: number[],
+  target: string,
+  tagSet: string,
+): Promise<MyTagRow[] | null> {
+  if (!ids.length) return null
+  const doc = await postMassAction(tagSet, ids, target)
+  if (!doc) return null
+  // 缺少標籤集結構的回應不能當成空集合，否則呼叫端會誤認所有來源標籤都已移除。
+  const snapshot = parseTagSetSnapshot(doc, tagSet)
+  if (!snapshot) return null
+  const shown = doc.querySelector<HTMLOptionElement>('#tagset_outer option[selected]')?.value
+  if (shown !== undefined && shown !== tagSet) return null
+  return snapshot.rows
 }
 
 /** `change_tagset` 的規則：第一組不帶參數 */
@@ -259,22 +314,6 @@ function setupEhMyTagsHost(): EhMyTagsHost | null {
   if (pageBox) pageBox.after(anchor)
   else form.after(anchor)
 
-  // 缺少標籤集結構的回應不能當成空集合，否則呼叫端會誤認所有來源標籤都已移除。
-  async function massAction(
-    ids: number[],
-    target: string,
-    tagSet: string,
-  ): Promise<MyTagRow[] | null> {
-    if (!ids.length) return null
-    const doc = await postMassAction(tagSet, ids, target)
-    if (!doc) return null
-    const snapshot = parseTagSetSnapshot(doc, tagSet)
-    if (!snapshot) return null
-    const shown = doc.querySelector<HTMLOptionElement>('#tagset_outer option[selected]')?.value
-    if (shown !== undefined && shown !== tagSet) return null
-    return snapshot.rows
-  }
-
   return {
     anchor,
     currentSet,
@@ -304,30 +343,9 @@ function setupEhMyTagsHost(): EhMyTagsHost | null {
 
     switchSet(value) { location.href = tagSetUrl(value) },
 
-    async createTag(tagSet, input) {
-      const name = el<HTMLInputElement>(document, 'tagname_new')
-      const action = el<HTMLInputElement>(document, 'usertag_action')
-      if (!name || !action) return null
-      name.value = input.full
-      const w = el<HTMLInputElement>(document, 'tagweight_0')
-      if (w) w.value = String(input.weight)
-      const c = el<HTMLInputElement>(document, 'tagcolor_0')
-      if (c) c.value = input.color
-      const h = el<HTMLInputElement>(document, 'taghide_0')
-      if (h) h.checked = input.hidden
-      const t = el<HTMLInputElement>(document, 'tagwatch_0')
-      if (t) t.checked = input.watch
-      action.value = 'add'
-      // 新增列各欄位的 name 屬於 EH 的黑箱：照原生表單序列化，送出的欄位就跟
-      // form.submit() 一模一樣，差別只在由我們讀回應、而不是讓瀏覽器換頁
-      const fields = [...new FormData(form)].flatMap(([k, v]): [string, string][] =>
-        typeof v === 'string' ? [[k, v]] : [])
-      const doc = await postForm(tagSet, fields)
-      return doc ? parseTagSetSnapshot(doc, tagSet)?.rows ?? null : null
-    },
-
-    deleteTags(ids, tagSet) { return massAction(ids, '0', tagSet) },   // 0 = Delete Selected
-    moveTags(ids, targetSet, tagSet) { return massAction(ids, targetSet, tagSet) },
+    createTag(tagSet, input) { return submitNewTag(form, tagSet, input) },
+    deleteTags(ids, tagSet) { return submitMassAction(ids, '0', tagSet) },   // 0 = Delete Selected
+    moveTags(ids, targetSet, tagSet) { return submitMassAction(ids, targetSet, tagSet) },
 
 
     onChange(fn) {

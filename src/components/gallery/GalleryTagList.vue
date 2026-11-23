@@ -24,9 +24,10 @@ import { batchVote, type VoteState } from '@/services/gallery/galleryVote'
 import { useEqtToast } from '@/composables/useEqtToast'
 import { useGalleryHost, parseTaglistRoot, type GalleryTag } from '@/composables/useEhGalleryHost'
 import { useGalleryIntroPanel } from '@/composables/useIntroPanel'
-import { Settings, Search, BookOpen, Tags, TagPlus, ClipboardPaste, ThumbsDown, ThumbsUp, X } from '@lucide/vue'
+import { Settings, Search, BookOpen, Tags, TagPlus, ClipboardPaste, ThumbsDown, ThumbsUp, X, ExternalLink } from '@lucide/vue'
 import { pickOf, selectionOf, stepPick, prefixOf, type TagPick, type Selection } from '@/services/tagPick'
 import GalleryAddInline from './GalleryAddInline.vue'
+import GalleryMyTagsInline from './GalleryMyTagsInline.vue'
 import GalleryIntroPanel from './GalleryIntroPanel.vue'
 import GalleryTagListRows, { type GalleryTagListChip, type GalleryTagListGroup } from './GalleryTagListRows.vue'
 import type { TagEntry } from '@/services/tags/tagDb'
@@ -100,6 +101,46 @@ const selection = ref<Map<string, Selection>>(new Map())
 // 在語意上無關、vote 為本位）
 const addedTags = ref<GalleryTag[]>([])
 const showAddPopup = ref(false)
+
+// 進 My Tags 模式時拿來決定先編輯哪一顆
+const lastTouched = ref('')
+function spotlight(tag: GalleryTag): void {
+  setPanelTag(tag)
+  lastTouched.value = tag.nsRaw
+}
+
+// My Tags 模式：動作列翻成 My Tags 編輯列，taglist 改成單選，左鍵點到或刷到哪顆就編輯哪顆。
+// 原本的多選先收起來、離開時原樣還回去——進來改個標籤，不該弄丟正準備投票或搜尋的那一批
+const myTagsMode = ref(false)
+const myTagsTarget = ref('')
+let stashedSelection = new Map<string, Selection>()
+
+/** 換編輯對象；選取跟著只剩它。手打的名字不在 taglist 上就不亮任何一顆 */
+function pickMyTagsTarget(nsRaw: string): void {
+  myTagsTarget.value = nsRaw
+  const tag = allTags.value.find(t => t.nsRaw === nsRaw)
+  selection.value = tag ? new Map([[nsRaw, 'positive']]) : new Map()
+  if (tag) spotlight(tag)
+}
+
+function enterMyTags(): void {
+  showAddPopup.value = false
+  stashedSelection = selection.value
+  myTagsMode.value = true
+  // 最後碰到的那顆還選著才沿用；選取都清掉了，代表上一個意圖已經結束
+  pickMyTagsTarget(selection.value.has(lastTouched.value) ? lastTouched.value : '')
+}
+
+function leaveMyTags(): void {
+  myTagsMode.value = false
+  selection.value = stashedSelection
+  stashedSelection = new Map()
+}
+
+function onRowSelect(nsRaw: string, mode: Selection): void {
+  if (myTagsMode.value) pickMyTagsTarget(nsRaw)
+  else setSelection(nsRaw, mode)
+}
 
 // 導入不替使用者選任何一顆。這本已經有的標籤不重複列出，改在 chip 開頭掛佐證記號：
 // 別本是實線 / 虛線，就是這個標籤在別處站得住腳的程度；這本已經是實線的就不必了
@@ -231,7 +272,7 @@ function onPickFromAdd(entry: TagEntry, mode: Selection): void {
   if (tag) {
     // 面板要在任何 click 都刷到當前 tag：即使 selection 沒變（缺格原地不動）
     // 使用者仍然是「在看這個 tag」，面板該同步過去
-    setPanelTag(tag)
+    spotlight(tag)
     setSelection(tag.nsRaw, mode)
     return
   }
@@ -244,7 +285,7 @@ function onPickFromAdd(entry: TagEntry, mode: Selection): void {
   const next = new Map(selection.value)
   next.set(newAdded.nsRaw, mode)
   selection.value = next
-  setPanelTag(newAdded)
+  spotlight(newAdded)
 }
 
 const CLIPBOARD_ECHO_LIMIT = 80
@@ -279,7 +320,7 @@ async function importFromClipboard(): Promise<void> {
 
 function setPanelTagById(nsRaw: string): void {
   const tag = allTags.value.find(t => t.nsRaw === nsRaw)
-  if (tag) setPanelTag(tag)
+  if (tag) spotlight(tag)
 }
 
 // Gallery Tagging guide：中文 locale 走 /Chinese 分頁、韓文走 /Korean、其他走英文 root
@@ -324,6 +365,8 @@ function onTaglistContextMenu(e: MouseEvent): void {
 }
 
 function execGalleryDblClickAction(action: GalleryDblClickAction, newTabActive: boolean): void {
+  // My Tags 模式的選取只是「正在編輯哪一顆」，拿去搜尋或投票都不是使用者要的
+  if (myTagsMode.value) return
   switch (action) {
     case 'none': return
     case 'search': onSearchCurrent(); return
@@ -469,16 +512,25 @@ watch(selection, () => {
     :groups="groups"
     scene="gallery"
     :user-votes="userVotes"
-    @select="setSelection"
+    :single="myTagsMode"
+    @select="onRowSelect"
     @inspect="setPanelTagById"
     @dblclick="onTaglistDblClick"
     @contextmenu="onTaglistContextMenu"
   />
 
+  <!-- My Tags 模式時動作列翻成編輯列：同一個位置、同一個時間只做一件事 -->
+  <GalleryMyTagsInline
+    v-if="myTagsMode"
+    :tag="myTagsTarget"
+    @update:tag="pickMyTagsTarget"
+    @palette="myTagsPalette = $event"
+    @close="leaveMyTags"
+  />
   <!-- Action 區：search 左跨 2 列、vote 右跨 2 列（兩個大方塊，物理距離把誤觸代價較高的
        vote 跟 search 隔開），中間夾 add / 導入 / wiki 與 clear / My Tags / settings。
        導入讀剪貼簿裡的圖庫網址 -->
-  <div class="eqt-gallery-actions">
+  <div v-else class="eqt-gallery-actions">
     <a
       v-if="searchHref"
       class="eqt-gallery-actions__btn eqt-gallery-actions__btn--search"
@@ -531,31 +583,43 @@ watch(selection, () => {
       <span>{{ t('gallery.clearSelection') }}</span>
     </button>
 
-    <a
-      v-if="myTagsHref"
-      class="eqt-gallery-actions__btn eqt-gallery-actions__btn--mytags"
-      :href="myTagsHref"
-      target="_blank"
-      rel="noopener"
-      :title="t('gallery.openInMyTags')"
-      @pointerdown="myTagsPick.persist"
-      @keydown.enter="myTagsPick.persist"
-      @click="clearAfterOpen"
-      @auxclick="clearAfterOpen"
-    >
-      <Tags :size="14" />
-      <span>{{ t('gallery.myTagsN', { n: selectedCount || t('gallery.myTagsAll') }) }}</span>
-    </a>
-    <button
-      v-else
-      type="button"
-      class="eqt-gallery-actions__btn eqt-gallery-actions__btn--mytags"
-      :title="t('gallery.openInMyTags')"
-      disabled
-    >
-      <Tags :size="14" />
-      <span>{{ t('gallery.myTagsN', { n: selectedCount }) }}</span>
-    </button>
+    <!-- My Tags 一格兩用：左邊在封面位開編輯區，右邊照舊帶著選取開 /mytags -->
+    <div class="eqt-gallery-actions__split">
+      <button
+        type="button"
+        class="eqt-gallery-actions__split-btn eqt-gallery-actions__split-btn--panel"
+        :title="t('gallery.myTagsPanel')"
+        @click="enterMyTags"
+      >
+        <Tags :size="14" />
+        <span>My Tags</span>
+      </button>
+      <a
+        v-if="myTagsHref"
+        class="eqt-gallery-actions__split-btn eqt-gallery-actions__split-btn--open"
+        :href="myTagsHref"
+        target="_blank"
+        rel="noopener"
+        :title="t('gallery.openInMyTags')"
+        @pointerdown="myTagsPick.persist"
+        @keydown.enter="myTagsPick.persist"
+        @click="clearAfterOpen"
+        @auxclick="clearAfterOpen"
+      >
+        <ExternalLink :size="14" />
+        <span>{{ selectedCount || t('gallery.myTagsAll') }}</span>
+      </a>
+      <button
+        v-else
+        type="button"
+        class="eqt-gallery-actions__split-btn eqt-gallery-actions__split-btn--open"
+        :title="t('gallery.openInMyTags')"
+        disabled
+      >
+        <ExternalLink :size="14" />
+        <span>{{ selectedCount }}</span>
+      </button>
+    </div>
 
     <a
       class="eqt-gallery-actions__btn eqt-gallery-actions__btn--wiki"

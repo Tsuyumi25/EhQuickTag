@@ -61,6 +61,7 @@ My Tags Enhancer
   - [x] Inline add-tag picker
   - [x] Display My Tags personal colors and scores on gallery tags
   - [x] Open selected gallery tags in My Tags for inspection and editing
+  - [x] Add, watch, or edit My Tags right on the gallery page: the action bar flips into a My Tags editor, and the tag you left-click or sweep onto becomes the one being edited
   - [x] Import candidates from other galleries, with solid/dashed/dotted check icons indicating source evidence on candidates and existing tags
   - [x] Gallery Tagging Wiki shortcut
   - [x] Tag from the Multi-Page Viewer: a button in its icon column floats the gallery's info box over the pages

@@ -15,7 +15,7 @@ test('圖庫選中標籤存成獨立快照，以短 ID fragment 打開 My Tags',
 
   // 新分頁不在 page 的 mock 範圍裡，攔在 context 上免得它真的連到 EH
   await page.context().route(/\/mytags$/, (route) => route.fulfill({ contentType: 'text/html', body: '' }))
-  const link = page.locator('.eqt-gallery-actions__btn--mytags')
+  const link = page.locator('.eqt-gallery-actions__split-btn--open')
   await expect(link).toHaveAttribute('href', /\/mytags#eqt_hash=[A-Za-z0-9_-]{12}$/)
   const popup = page.waitForEvent('popup')
   await link.click()
@@ -59,13 +59,13 @@ test('帶 eqt_hash 開 My Tags 時「選中」篩選預設打開，既有與新�
   const results = page.locator('.eqt-tag-catalog__results .eqt-popup__suggestion')
   await expect(results).toHaveCount(2)
 
-  const create = page.locator('.eqt-tag-catalog__create')
+  const create = page.locator('.eqt-tag-draft__create')
   await results.filter({ hasText: 'unlisted pick' }).click()
-  await expect(page.locator('.eqt-tag-catalog__name')).toHaveValue('other:unlisted pick')
+  await expect(page.locator('.eqt-tag-draft__name')).toHaveValue('other:unlisted pick')
   await expect(create).toHaveText('新增標籤')
 
   await results.nth(0).click()
-  await expect(page.locator('.eqt-tag-catalog__name')).toHaveValue('male:positive-sample')
+  await expect(page.locator('.eqt-tag-draft__name')).toHaveValue('male:positive-sample')
   await expect(create).toHaveText('移動標籤')
 
   await page.locator('.eqt-tag-catalog .eqt-namespace-filter__button').nth(1).click()

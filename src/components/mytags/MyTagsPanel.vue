@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, provide, watch } from 'vue'
 import { useElementBounding, useMediaQuery } from '@vueuse/core'
 import { ArrowLeftFromLine, ArrowRightFromLine, ExternalLink, Settings } from '@lucide/vue'
 import { SplitterGroup, SplitterPanel, SplitterResizeHandle } from 'reka-ui'
@@ -46,8 +46,8 @@ import { serializeEntry } from '@/services/search/searchSyntax'
 import { myTagsPanelZoom, myTagsLayouts, nsFormat } from '@/services/store'
 import { openSettings } from '@/services/appOverlays'
 import { askConfirm } from '@/services/confirmDialog'
-import { tagColors, type TagColors } from '@/services/mytags/mytagsColors'
-import { useMyTagsColors } from '@/composables/useMyTagsColors'
+import { colorUsage, tagColors, type TagColors } from '@/services/mytags/mytagsColors'
+import { MYTAGS_COLOR_USAGE, useMyTagsColors } from '@/composables/useMyTagsColors'
 import { buildMyTagsPalette, saveMyTagsPalette } from '@/services/mytags/mytagsPalette'
 import { useMyTagsSource } from '@/composables/useMyTagsSource'
 import type { TagEntry } from '@/services/tags/tagDb'
@@ -218,6 +218,9 @@ const editPlan = computed(() => planTagChanges(rows.value, edits.value, bulkDraf
 function view(row: MyTagRow): TagState {
   return effective(row, editPlan.value.edits)
 }
+
+// 草稿裡剛改的顏色也算，換到下一個標籤時就能直接沿用
+provide(MYTAGS_COLOR_USAGE, computed(() => colorUsage(rows.value.map((r) => ({ full: r.full, color: view(r).color })))))
 
 const catalogRow = computed(() => rowMap.value.get(catalogTag.value) ?? null)
 const catalogState = computed<TagState>(() => {

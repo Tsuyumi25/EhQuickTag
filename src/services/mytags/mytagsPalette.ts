@@ -61,7 +61,17 @@ export async function saveMyTagsPalette(palette: MyTagsPalette): Promise<void> {
   await cacheSet(KEY, JSON.stringify({ schema: SCHEMA, tags: palette }))
 }
 
-async function fetchAllTagSets(): Promise<TagSetSnapshot[] | null> {
+export interface MyTagsSnapshot {
+  /** 選單順序 */
+  sets: TagSetSnapshot[]
+  /** /mytags 預設打開的那一組 */
+  current: string
+  /** 任何一份 /mytags 的新增表單都送得到任何一組，見 submitNewTag */
+  form: HTMLFormElement
+}
+
+/** null 代表未登入；抓不到或少抓到一組就 reject，不拿缺一組的資料當完整的 */
+export async function fetchAllTagSets(): Promise<MyTagsSnapshot | null> {
   const index = await fetchTagSetIndex()
   if (index === 'signed-out') return null
   if (!index) throw new Error('mytags-unreachable')
@@ -72,14 +82,18 @@ async function fetchAllTagSets(): Promise<TagSetSnapshot[] | null> {
 
   const byValue = new Map<string, TagSetSnapshot>([[index.current.value, index.current]])
   for (const set of rest) if (set) byValue.set(set.value, set)
-  return index.order.flatMap((value) => byValue.get(value) ?? [])
+  return {
+    sets: index.order.flatMap((value) => byValue.get(value) ?? []),
+    current: index.current.value,
+    form: index.form,
+  }
 }
 
 /** null 代表未登入：沒有 My Tags 可抓，也不算失敗 */
 export async function refreshMyTagsPalette(): Promise<MyTagsPalette | null> {
-  const sets = await fetchAllTagSets()
-  if (!sets) return null
-  const palette = buildMyTagsPalette(sets)
+  const snapshot = await fetchAllTagSets()
+  if (!snapshot) return null
+  const palette = buildMyTagsPalette(snapshot.sets)
   await saveMyTagsPalette(palette)
   return palette
 }

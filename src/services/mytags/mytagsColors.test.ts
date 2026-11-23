@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { normalizeTagColor, tagChipStyle, tagColors, type TagColorInput } from '@/services/mytags/mytagsColors'
+import { colorUsage, normalizeTagColor, tagChipStyle, tagColors, type TagColorInput } from '@/services/mytags/mytagsColors'
 
 const base = { color: '', setColor: '', weight: 10, hidden: false }
 
@@ -97,5 +97,21 @@ describe('normalizeTagColor · 文字輸入', () => {
   it('半成品與非 hex 字元保持未完成狀態', () => {
     expect(normalizeTagColor('#123')).toBeNull()
     expect(normalizeTagColor('#GGGGGG')).toBeNull()
+  })
+})
+
+describe('colorUsage', () => {
+  it('大小寫與 # 的寫法不同算同一色，沒設色的略過，用得多的在前、同數照色號', () => {
+    expect(colorUsage([
+      { full: 'female:a', color: '#cc0000' },
+      { full: 'male:b', color: '' },
+      { full: 'parody:c', color: '00CC00' },
+      { full: 'female:d', color: '#CC0000' },
+      { full: 'other:e', color: '#0000cc' },
+    ])).toEqual([
+      { color: '#CC0000', count: 2, tags: ['female:a', 'female:d'] },
+      { color: '#0000CC', count: 1, tags: ['other:e'] },
+      { color: '#00CC00', count: 1, tags: ['parody:c'] },
+    ])
   })
 })

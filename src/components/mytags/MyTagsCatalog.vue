@@ -5,9 +5,8 @@ import { useTagSuggestions } from '@/composables/useTagSuggestions'
 import { t } from '@/composables/useI18n'
 import SuggestionList from '@/components/SuggestionList.vue'
 import NamespaceFilter from '@/components/NamespaceFilter.vue'
-import MyTagsTagBody from '@/components/mytags/MyTagsTagBody.vue'
-import { TAGSET_CAPACITY, type NewTagInput, type TagSetRef } from '@/composables/useEhMyTagsHost'
-import { normalizeTagColor } from '@/services/mytags/mytagsColors'
+import MyTagsDraft from '@/components/mytags/MyTagsDraft.vue'
+import type { NewTagInput, TagSetRef } from '@/composables/useEhMyTagsHost'
 import type { TagState } from '@/services/mytags/mytagsEdits'
 import type { TagImpact } from '@/services/mytags/mytagsScore'
 
@@ -41,10 +40,6 @@ const emit = defineEmits<{
 }>()
 
 const query = ref('')
-const name = ref(props.full)
-watch(() => props.full, (full) => {
-  if (name.value.trim() !== full) name.value = full
-})
 const selectedIdx = ref(0)
 const fallbackEntries = shallowRef<TagEntry[]>([])
 const selectedNs = ref<string | null>(null)
@@ -106,107 +101,30 @@ function onSearchKeydown(event: KeyboardEvent): void {
     pick(entry)
   }
 }
-
-const selectedSet = computed(() => props.sets.find((set) => set.value === props.targetSet))
-const existing = computed(() => props.sourceSet !== null)
-const setFull = computed(() => (selectedSet.value?.used ?? 0) >= TAGSET_CAPACITY)
-const normalizedColor = computed(() => normalizeTagColor(props.state.color))
-const colorInvalid = computed(() => normalizedColor.value === null)
-const canCreate = computed(() => (
-  !existing.value
-  && !!props.full
-  && !setFull.value
-  && !colorInvalid.value
-  && !props.busy
-))
-const canMove = computed(() => (
-  existing.value
-  && props.targetSet !== props.sourceSet
-  && !setFull.value
-  && !props.busy
-))
-
-function commit(): void {
-  if (existing.value) {
-    if (canMove.value) emit('move', props.targetSet)
-    return
-  }
-  if (!canCreate.value || normalizedColor.value === null) return
-  emit('create', {
-    full: props.full,
-    tagSet: props.targetSet,
-    ...props.state,
-    color: normalizedColor.value,
-  })
-}
 </script>
 
 <template>
   <section class="eqt-tag-catalog eqt-taglist">
-    <div
-      class="eqt-tag-catalog__draft"
-      :class="{ 'eqt-tag-catalog__draft--previewed': previewed }"
-    >
-      <MyTagsTagBody
-        :full="full"
-        :state="state"
-        :set-color="setColors[sourceSet ?? targetSet] ?? ''"
-        :impact="impact"
-        show-impact
-        @patch="emit('patch', $event)"
-      >
-        <template #tag>
-          <input
-            v-model="name"
-            class="eqt-taglist__input eqt-tag-catalog__name"
-            type="text"
-            :aria-label="t('manage.newTag')"
-            :placeholder="t('manage.newTag')"
-            autocomplete="off"
-            spellcheck="false"
-            @input="emit('update:full', name.trim())"
-            @focus="emit('preview')"
-            @keydown.enter.prevent="!$event.isComposing && full && emit('confirm')"
-          >
-        </template>
-      </MyTagsTagBody>
-
-      <div class="eqt-tag-catalog__create-row">
-        <select
-          class="eqt-panel__setpick"
-          :value="targetSet"
-          :aria-label="t(existing ? 'manage.moveTarget' : 'manage.targetSet')"
-          @change="emit('update:targetSet', ($event.target as HTMLSelectElement).value)"
-        >
-          <option
-            v-for="set in sets"
-            :key="set.value"
-            :value="set.value"
-            :disabled="(set.used ?? 0) >= TAGSET_CAPACITY && set.value !== sourceSet"
-          >{{ set.name }} · {{ set.used ?? '?' }}/{{ TAGSET_CAPACITY }}</option>
-        </select>
-        <button
-          type="button"
-          class="eqt-tag-catalog__create eqt-panel__btn eqt-panel__btn--primary"
-          :disabled="existing ? !canMove : !canCreate"
-          @click="commit"
-        >{{ busy ? t('panel.working') : t(existing ? 'manage.moveTag' : 'taglist.addTag') }}</button>
-        <button
-          v-if="existing"
-          type="button"
-          class="eqt-tag-catalog__delete eqt-panel__btn eqt-panel__btn--primary"
-          :disabled="busy"
-          @click="emit('remove')"
-        >{{ t('panel.labelDelete') }}</button>
-      </div>
-
-      <p v-if="full && setFull && targetSet !== sourceSet" class="eqt-tag-catalog__error">
-        {{ t('manage.setFull') }}
-      </p>
-      <p v-else-if="full && !existing && colorInvalid" class="eqt-tag-catalog__error">
-        {{ t('manage.colorInvalid') }}
-      </p>
-    </div>
+    <MyTagsDraft
+      :full="full"
+      :state="state"
+      :target-set="targetSet"
+      :source-set="sourceSet"
+      :sets="sets"
+      :set-colors="setColors"
+      :busy="busy"
+      :impact="impact"
+      show-impact
+      :previewed="previewed"
+      @update:target-set="emit('update:targetSet', $event)"
+      @update:full="emit('update:full', $event)"
+      @patch="emit('patch', $event)"
+      @create="emit('create', $event)"
+      @move="emit('move', $event)"
+      @remove="emit('remove')"
+      @preview="emit('preview')"
+      @confirm="emit('confirm')"
+    />
 
     <div class="eqt-tag-catalog__browser">
       <NamespaceFilter
@@ -253,55 +171,6 @@ function commit(): void {
   gap: calc(var(--eqt-checkbox-size) / 3);
   min-width: 0;
   min-height: 0;
-
-  &__draft {
-    display: flex;
-    flex: 0 0 auto;
-    flex-direction: column;
-    gap: calc(var(--eqt-checkbox-size) / 4);
-    padding: calc(var(--eqt-checkbox-size) / 3);
-    border: var(--eqt-border-width) solid var(--eqt-divider);
-    border-radius: var(--eqt-radius-md);
-    background: var(--eqt-bg-stripe);
-
-    &--previewed {
-      background: var(--eqt-bg-active);
-    }
-  }
-
-  &__name {
-    flex: 1;
-    min-width: 0;
-  }
-
-
-  &__create-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-auto-flow: column;
-    gap: calc(var(--eqt-checkbox-size) / 4);
-    align-items: stretch;
-
-    > .eqt-panel__setpick {
-      width: 100%;
-      height: calc(var(--eqt-checkbox-size) + var(--eqt-border-width) * 2);
-      box-sizing: border-box;
-    }
-  }
-
-  &__create,
-  &__delete {
-    height: calc(var(--eqt-checkbox-size) + var(--eqt-border-width) * 2);
-    padding: 0 calc(var(--eqt-checkbox-size) / 3);
-    font-size: var(--eqt-fs-xs);
-    box-sizing: border-box;
-  }
-
-  &__error {
-    margin: 0;
-    color: var(--eqt-danger);
-    font-size: var(--eqt-fs-xs);
-  }
 
   &__browser {
     display: flex;

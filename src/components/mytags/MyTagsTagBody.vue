@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, inject } from 'vue'
 import EqtNumberField from '@/components/EqtNumberField.vue'
 import LineColorSwatch from '@/components/LineColorSwatch.vue'
 import { t } from '@/composables/useI18n'
 import { useTagLabel } from '@/composables/useTagLabel'
 import type { TagState } from '@/services/mytags/mytagsEdits'
 import { normalizeTagColor, tagColors } from '@/services/mytags/mytagsColors'
-import { useMyTagsColors } from '@/composables/useMyTagsColors'
+import { MYTAGS_COLOR_USAGE, useMyTagsColors } from '@/composables/useMyTagsColors'
 import type { TagImpact } from '@/services/mytags/mytagsScore'
 
 const props = withDefaults(defineProps<{
@@ -29,6 +29,7 @@ const emit = defineEmits<{
 
 const { label } = useTagLabel()
 const tagChipStyle = useMyTagsColors()
+const colorUsage = inject(MYTAGS_COLOR_USAGE, null)
 
 const chipStyle = computed(() => tagChipStyle(tagColors({
   color: props.state.color,
@@ -86,6 +87,7 @@ function impactTitle(): string {
           class="eqt-taglist__color-swatch"
           :model-value="state.color || undefined"
           :alpha="false"
+          :presets="colorUsage ?? undefined"
           :style="{ '--eqt-tag-color-preview': chipStyle.background, '--eqt-tag-color-border': chipStyle.borderColor }"
           :title="t('panel.colorHint')"
           @update:model-value="onColor"

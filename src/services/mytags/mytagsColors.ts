@@ -33,6 +33,34 @@ export function normalizeTagColor(input: string): string | null {
   return `#${hex.toUpperCase()}`
 }
 
+export interface ColorUsage {
+  /** normalizeTagColor 的格式 */
+  color: string
+  count: number
+  /** 用這個顏色的標籤，照輸入順序 */
+  tags: string[]
+}
+
+/**
+ * 標籤自己設過的顏色，用得多的在前。大小寫不同的色號算同一個——EH 存的是使用者
+ * 當初打的字，同一個顏色可能有兩種寫法。沒設色（繼承標籤集）的不算
+ */
+export function colorUsage(rows: readonly { full: string; color: string }[]): ColorUsage[] {
+  const byColor = new Map<string, ColorUsage>()
+  for (const { full, color } of rows) {
+    const normalized = normalizeTagColor(color)
+    if (!normalized) continue
+    const usage = byColor.get(normalized)
+    if (usage) {
+      usage.count++
+      usage.tags.push(full)
+    } else {
+      byColor.set(normalized, { color: normalized, count: 1, tags: [full] })
+    }
+  }
+  return [...byColor.values()].sort((a, b) => b.count - a.count || a.color.localeCompare(b.color))
+}
+
 function clampByte(n: number): string {
   return Math.min(255, Math.max(0, n)).toString(16).padStart(2, '0')
 }
