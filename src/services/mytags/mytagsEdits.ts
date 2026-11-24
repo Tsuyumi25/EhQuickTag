@@ -62,13 +62,15 @@ function difference(saved: TagState, want: TagState): TagPatch | null {
   return Object.keys(patch).length ? patch : null
 }
 
+/** 一顆標籤疊上新的修改，只留下跟已存狀態不一樣的欄位；全部改回原值就是 null */
+export function restage(saved: TagState, patch: TagPatch | undefined, change: TagPatch): TagPatch | null {
+  return difference(saved, applyTagPatch({ ...saved, ...patch }, change))
+}
+
 /** 記下使用者改過的欄位 */
 export function stage(edits: EditMap, row: MyTagRow, change: TagPatch): EditMap {
-  const saved = stateOf(row)
-  const want = applyTagPatch({ ...saved, ...edits[row.id] }, change)
-
   const next = { ...edits }
-  const patch = difference(saved, want)
+  const patch = restage(stateOf(row), edits[row.id], change)
   const destination = edits[row.id]?.destination
   if (destination) next[row.id] = { ...patch, destination }
   else if (patch) next[row.id] = patch

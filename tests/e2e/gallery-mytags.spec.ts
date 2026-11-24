@@ -111,10 +111,10 @@ test('My Tags 模式把動作列翻成編輯列：單選左鍵、設定留著、
   // 已經在清單上的標籤也一樣
   await hide.check()
   await expect(watch).not.toBeChecked()
-  await expect(panel.locator('.eqt-mytags-quick__save')).toBeVisible()
+  await expect(panel.locator('.eqt-mytags-editor__save')).toBeVisible()
   await watch.check()
   await expect(hide).not.toBeChecked()
-  await expect(panel.locator('.eqt-mytags-quick__save')).toHaveCount(0)
+  await expect(panel.locator('.eqt-mytags-editor__save')).toHaveCount(0)
 
   // Esc 先收色盤，模式留著；再按一次才離開
   await panel.locator('.eqt-taglist__color-swatch').click()

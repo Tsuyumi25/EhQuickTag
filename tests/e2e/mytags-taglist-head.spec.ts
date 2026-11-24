@@ -108,6 +108,7 @@ test('色票背景與外框分別沿用 chip 的配色', async ({ page }) => {
   })
   await row.locator('.eqt-taglist__chip').click()
   const draft = page.locator('.eqt-tag-draft')
+  await row.locator('.eqt-taglist__color').fill('#FF3333')
   await draft.locator('.eqt-taglist__color').fill('#FF3333')
   const chip = row.locator('.eqt-taglist__chip')
   await expect(chip).toHaveCSS('background-image', 'radial-gradient(rgb(223, 19, 19), rgb(255, 51, 51))')
@@ -123,13 +124,13 @@ test('色票背景與外框分別沿用 chip 的配色', async ({ page }) => {
   }
 })
 
-test('色盤左邊列出已在用的顏色，草稿裡剛改的也算，點一下就沿用', async ({ page }) => {
+test('色盤左邊列出已在用的顏色，清單裡還沒套用的也算，點一下就沿用', async ({ page }) => {
   const row = page.locator('.eqt-taglist__row').filter({
     has: page.locator('.eqt-taglist__chip[title="male:positive-sample"]'),
   })
   await row.locator('.eqt-taglist__chip').click()
   const draft = page.locator('.eqt-tag-draft')
-  await draft.locator('.eqt-taglist__color').fill('#FF3333')
+  await row.locator('.eqt-taglist__color').fill('#FF3333')
 
   await page.locator('.eqt-tag-draft__name').fill('other:fresh-sample')
   await expect(draft.locator('.eqt-tag-draft__create')).toHaveText('新增標籤')
@@ -292,11 +293,12 @@ test('編輯區可拖曳收合並保留草稿與預覽', async ({ page }) => {
   await expect(initialDraft.locator('.eqt-number-field__input')).toHaveValue('40')
   await expect(initialDraft.locator('.eqt-taglist__color')).toHaveValue('#00cc00')
   await expect(initialDraft.locator('.eqt-taglist__flag input').nth(0)).toBeChecked()
-  await initialDraft.locator('.eqt-taglist__color').fill('#EEEEEE')
-  const chipBorder = await positiveRow.locator('.eqt-taglist__chip').evaluate((element) =>
+  const rowBorder = await positiveRow.locator('.eqt-taglist__color-swatch').evaluate((element) =>
     getComputedStyle(element).borderTopColor)
-  await expect(initialDraft.locator('.eqt-taglist__color-swatch')).toHaveCSS('border-top-color', chipBorder)
-  await expect(positiveRow.locator('.eqt-taglist__color-swatch')).toHaveCSS('border-top-color', chipBorder)
+  await initialDraft.locator('.eqt-taglist__color').fill('#EEEEEE')
+  // 編輯區的修改留在自己手上，清單那一列照舊
+  await expect(initialDraft.locator('.eqt-taglist__color-swatch')).toHaveCSS('border-top-color', 'rgb(238, 238, 238)')
+  await expect(positiveRow.locator('.eqt-taglist__color-swatch')).toHaveCSS('border-top-color', rowBorder)
   await expect(initialDraft.locator('.eqt-taglist__color-swatch')).toHaveCSS('background-image', 'radial-gradient(rgb(238, 238, 238), rgb(206, 206, 206))')
   await initialDraft.locator('.eqt-taglist__color').fill('#00cc00')
   const moveButton = initialDraft.locator('.eqt-tag-draft__create')
@@ -512,12 +514,13 @@ test('Catalog 搜尋結果與左欄解析成同一個既有標籤實體', async 
   await expect(catalog.locator('.eqt-tag-draft__create')).toHaveText('移動標籤')
   await expect(catalog.locator('.eqt-tag-draft__error')).toHaveCount(0)
 
+  // 編輯區手上的修改跟清單的待套用各管各的
   await catalog.locator('.eqt-number-field__input').fill('-25')
   await catalog.locator('.eqt-number-field__input').press('Enter')
-  await expect(listRow.locator('.eqt-number-field__input')).toHaveValue('-25')
+  await expect(listRow.locator('.eqt-number-field__input')).toHaveValue('-20')
   await listRow.locator('.eqt-number-field__input').fill('-30')
   await listRow.locator('.eqt-number-field__input').press('Enter')
-  await expect(catalog.locator('.eqt-number-field__input')).toHaveValue('-30')
+  await expect(catalog.locator('.eqt-number-field__input')).toHaveValue('-25')
 
   await catalog.locator('.eqt-taglist__color').fill('#EEEEEE')
   await expect(candidate).toHaveCSS('background-image', 'radial-gradient(rgb(238, 238, 238), rgb(206, 206, 206))')
@@ -971,7 +974,7 @@ test('攤開的圖庫跟 gallery 頁一樣顯示權重 0', async ({ page }) => {
   await expect(weight).toHaveText('0')
 })
 
-test('編輯區移動後，這顆的欄位草稿跟著搬到新的那一列', async ({ page }) => {
+test('編輯區移動後，手上還沒存的欄位跟著這顆走，清單不多出待套用', async ({ page }) => {
   const fixture = readFileSync(new URL('../fixtures/eh-mytags.html', import.meta.url), 'utf-8')
   const block = /\n\s*<div id="usertag_2">[\s\S]*?<\/div>/
   const withoutPositive = fixture.replace(block, '')
@@ -1003,9 +1006,44 @@ test('編輯區移動後，這顆的欄位草稿跟著搬到新的那一列', as
   await catalog.locator('.eqt-tag-draft__create').click()
 
   await expect(catalog.locator('select')).toHaveValue('2')
-  await expect(row()).toHaveClass(/eqt-taglist__row--dirty/)
-  await expect(row().locator('.eqt-number-field__input')).toHaveValue('41')
   await expect(catalog.locator('.eqt-number-field__input')).toHaveValue('41')
+  await expect(catalog.locator('.eqt-mytags-editor__save')).toBeVisible()
+  await expect(row()).not.toHaveClass(/eqt-taglist__row--dirty/)
+  await expect(row().locator('.eqt-number-field__input')).toHaveValue('40')
+})
+
+test('編輯區按儲存直接寫回 EH、不經 dock；還沒存之前預覽就照它算', async ({ page }) => {
+  await page.evaluate(() => {
+    Object.assign(window, { apiuid: 1, apikey: 'test-key', api_url: `${location.origin}/api.php` })
+  })
+  const requests: Record<string, unknown>[] = []
+  await page.route('https://e-hentai.org/api.php', async (route) => {
+    requests.push(route.request().postDataJSON())
+    await route.fulfill({ json: {} })
+  })
+  const row = page.locator('.eqt-taglist__row').filter({
+    has: page.locator('.eqt-taglist__chip[title="male:positive-sample"]'),
+  })
+  const editor = page.locator('.eqt-tag-draft')
+  const left = page.locator('.eqt-preview__col--left .eqt-preview__tile')
+  const right = page.locator('.eqt-preview__col--right .eqt-preview__tile')
+  const apply = page.locator('.eqt-panel__dock .eqt-panel__btn--primary')
+  await row.locator('.eqt-taglist__chip').click()
+  await expect(right).not.toHaveCount(0)
+  const total = await left.count() + await right.count()
+
+  await editor.locator('.eqt-number-field__input').fill('-99')
+  await editor.locator('.eqt-number-field__input').press('Enter')
+  await expect(right).toHaveCount(0)
+  await expect(left).toHaveCount(total)
+  await expect(apply).toBeDisabled()
+  await expect(row).not.toHaveClass(/eqt-taglist__row--dirty/)
+
+  await editor.locator('.eqt-mytags-editor__save').click()
+  await expect(editor.locator('.eqt-mytags-editor__save')).toHaveCount(0)
+  expect(requests).toEqual([expect.objectContaining({ method: 'setusertag', tagid: 2, tagweight: '-99' })])
+  await expect(row.locator('.eqt-number-field__input')).toHaveValue('-99')
+  await expect(left).toHaveCount(total)
 })
 
 test('編輯區的刪除在頁面內確認後立即送出，保留或 Esc 則不送', async ({ page }) => {

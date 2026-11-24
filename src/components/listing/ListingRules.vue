@@ -5,7 +5,8 @@ import { useFloating, autoUpdate, flip, offset, shift } from '@floating-ui/vue'
 import { Ban, ChevronDown, ExternalLink, Eye, Funnel, ListChecks, Search, Settings, Shapes, Tags, UserRound, X } from '@lucide/vue'
 import TagChip from '@/components/TagChip.vue'
 import GalleryTagListRows, { type GalleryTagListGroup } from '@/components/gallery/GalleryTagListRows.vue'
-import MyTagsQuickEditor from '@/components/mytags/MyTagsQuickEditor.vue'
+import MyTagsEditor from '@/components/mytags/MyTagsEditor.vue'
+import { useFetchedMyTagsHost } from '@/composables/useFetchedMyTagsHost'
 import { useDragSelect } from '@/composables/useDragSelect'
 import type { ChipRef } from '@/services/gallery/dragSelectMachine'
 import { useListingRuleHost, type ListingChip } from '@/composables/useListingRuleHost'
@@ -49,6 +50,7 @@ const tagSelectEnabled = computed(() => listingTagsEnabled.value && listingTagSe
 const { zhDisplay } = useDisplayConfig()
 const toast = useEqtToast()
 const myTagsPalette = shallowRef<MyTagsPalette | null>(null)
+const myTagsEditorHost = useFetchedMyTagsHost((palette) => { myTagsPalette.value = palette })
 let paletteLoading = false
 watch(() => items.value.length > 0, async available => {
   if (!available || myTagsPalette.value || paletteLoading) return
@@ -520,12 +522,13 @@ onBeforeUnmount(() => {
   <Teleport to="body">
     <aside v-if="dockVisible" ref="dock" class="eqt-listing-rules__floating" translate="no">
       <!-- My Tags 模式時 dock 整條翻成編輯列，跟圖庫頁翻動作列同一件事；關掉就翻回原本的 dock -->
-      <MyTagsQuickEditor
+      <MyTagsEditor
         v-if="myTagsMode"
         class="eqt-listing-rules__mytags-editor"
+        row
         :tag="myTagsTarget"
+        :host="myTagsEditorHost"
         @update:tag="pickMyTagsTarget"
-        @palette="myTagsPalette = $event"
         @close="leaveMyTags"
       />
       <div v-else class="eqt-listing-rules__dock">

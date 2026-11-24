@@ -94,8 +94,8 @@ test('dock 的 My Tags 翻成編輯列：列表標籤單選、新增後上色、
   const weight = editor.locator('.eqt-number-field__input')
   await weight.fill('5')
   await weight.press('Enter')
-  await editor.locator('.eqt-mytags-quick__save').click()
-  await expect(editor.locator('.eqt-mytags-quick__save')).toHaveCount(0)
+  await editor.locator('.eqt-mytags-editor__save').click()
+  await expect(editor.locator('.eqt-mytags-editor__save')).toHaveCount(0)
   expect(writes).toEqual([expect.objectContaining({
     method: 'setusertag', apiuid: 4242, apikey: '0a1b2c3d', tagid: 99, tagweight: '5',
   })])

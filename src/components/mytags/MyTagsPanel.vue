@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, provide, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, provide, reactive, shallowRef, watch } from 'vue'
 import { useElementBounding, useMediaQuery } from '@vueuse/core'
 import { ArrowLeftFromLine, ArrowRightFromLine, ExternalLink, Settings } from '@lucide/vue'
 import { SplitterGroup, SplitterPanel, SplitterResizeHandle } from 'reka-ui'
@@ -7,6 +7,7 @@ import { isZhLocale, t } from '@/composables/useI18n'
 import { useEqtToast } from '@/composables/useEqtToast'
 import MyTagsTagList from '@/components/mytags/MyTagsTagList.vue'
 import MyTagsCatalog from '@/components/mytags/MyTagsCatalog.vue'
+import MyTagsEditor from '@/components/mytags/MyTagsEditor.vue'
 import MyTagsPreview from '@/components/mytags/MyTagsPreview.vue'
 import MyTagsGallery from '@/components/mytags/MyTagsGallery.vue'
 import MyTagsEhTopbar from '@/components/mytags/MyTagsEhTopbar.vue'
@@ -15,7 +16,7 @@ import AnchoredPopover from '@/components/AnchoredPopover.vue'
 import { fetchGallery, type GalleryDetail } from '@/composables/useEhGalleryPreview'
 import {
   useEhMyTagsHost, fetchTagSet, fetchThresholds,
-  type MyTagRow, type NewTagInput, type TagSetSnapshot,
+  type MyTagRow, type TagSetSnapshot,
 } from '@/composables/useEhMyTagsHost'
 import { fetchListing } from '@/composables/useEhSearchListing'
 import { useMyTagsSampleFetcher } from '@/composables/useMyTagsSampleFetcher'
@@ -32,7 +33,7 @@ import {
   sampleClearVersion,
 } from '@/services/mytags/mytagsSampleStore'
 import {
-  stage, effective, unstage, markMovingEdits, reconcileMovedEdits, acknowledgeWrite, applyTagPatch, newTagDraft,
+  stage, effective, unstage, markMovingEdits, reconcileMovedEdits, acknowledgeWrite,
   type EditMap, type TagState,
 } from '@/services/mytags/mytagsEdits'
 import { emptyBulkDraft, planTagChanges } from '@/services/mytags/mytagsBulk'
@@ -51,6 +52,7 @@ import { MYTAGS_COLOR_USAGE, useMyTagsColors } from '@/composables/useMyTagsColo
 import { buildMyTagsPalette, saveMyTagsPalette } from '@/services/mytags/mytagsPalette'
 import { useMyTagsSource } from '@/composables/useMyTagsSource'
 import type { TagEntry } from '@/services/tags/tagDb'
+import { addedRow, type MyTagsEditorHost, type MyTagsWish, type NewTagSubmission } from '@/services/mytags/mytagsEditorHost'
 
 const host = useEhMyTagsHost()!
 const tagChipStyle = useMyTagsColors()
@@ -66,8 +68,6 @@ const layoutStorage = {
 const MAX_FETCH = 6
 const SIDE_DEFAULT_SIZE = 28
 const EDITOR_DEFAULT_SIZE = 45
-type PreviewTarget = { kind: 'saved' | 'draft'; full: string } | null
-type NewTagSubmission = NewTagInput & { tagSet: string }
 
 const liveRows = ref<MyTagRow[]>(host.readRows())
 const otherSets = ref<TagSetSnapshot[]>([])
@@ -107,10 +107,8 @@ const narrowLayout = useMediaQuery('(max-width: 900px)')
 const sidePanel = ref<InstanceType<typeof SplitterPanel> | null>(null)
 const editorPanel = ref<InstanceType<typeof SplitterPanel> | null>(null)
 const catalogTag = ref('')
-const previewTarget = ref<PreviewTarget>(null)
-const draft = ref(newTagDraft(host.currentSet))
-const moveTarget = ref(host.currentSet)
-const createBusy = ref(false)
+const previewTarget = ref<string | null>(null)
+const editorWish = shallowRef<MyTagsWish | null>(null)
 
 const filterThreshold = ref<number | null>(null)
 /** EH 上現在的門檻。跟 filterThreshold 不一樣就代表這格也還沒送出去 */
@@ -207,33 +205,13 @@ function view(row: MyTagRow): TagState {
   return effective(row, editPlan.value.edits)
 }
 
-// 草稿裡剛改的顏色也算，換到下一個標籤時就能直接沿用
-provide(MYTAGS_COLOR_USAGE, computed(() => colorUsage(rows.value.map((r) => ({ full: r.full, color: view(r).color })))))
+const colorRows = computed(() => rows.value.map((r) => ({ full: r.full, color: view(r).color })))
+// 清單裡還沒套用的顏色也算，換到下一個標籤時就能直接沿用
+provide(MYTAGS_COLOR_USAGE, computed(() => colorUsage(colorRows.value)))
 
-const catalogRow = computed(() => rowMap.value.get(catalogTag.value) ?? null)
-const catalogState = computed<TagState>(() => {
-  const row = catalogRow.value
-  return row ? view(row) : draft.value
-})
-const catalogSet = computed(() => catalogRow.value?.tagSet ?? draft.value.tagSet)
-
-const selectedSaved = computed(() => previewTarget.value?.kind === 'saved'
-  ? previewTarget.value.full
-  : null)
-
-const selectedTagStyle = computed(() => {
-  const full = selectedSaved.value
-  if (!full) return null
-  const row = rowMap.value.get(full)
-  if (!row) return null
-  const state = view(row)
-  return tagChipStyle(tagColors({
-    color: state.color,
-    setColor: setColors.value[row.tagSet] ?? '',
-    weight: state.weight,
-    hidden: state.hidden,
-  }))
-})
+const selectedSaved = computed(() => (
+  previewTarget.value && rowMap.value.has(previewTarget.value) ? previewTarget.value : null
+))
 
 function sameFacts(a: TagFacts | null, b: TagFacts | null): boolean {
   return a === b || (!!a && !!b
@@ -244,6 +222,7 @@ const scoringRows = computed(() => enabledTagRows([
   ...otherSets.value,
   { enabled: host.enabled, rows: liveRows.value },
 ]))
+const scoringIds = computed(() => new Set(scoringRows.value.map((row) => row.id)))
 
 // ⭐ 顏色不參與計分，但它跟權重擠在同一份 edits 裡。拖色盤每一格都會換掉 editPlan，
 // 讓預覽、影響分佈把所有樣本 × 標籤重算一遍——樣本一多，色盤就卡。所以計分只讀這份
@@ -266,46 +245,29 @@ function factsOf(tag: string): TagFacts | null {
   return scoringFacts.value.get(tag) ?? null
 }
 
-const catalogFacts = computed<TagFacts | null>((previous) => {
-  if (catalogRow.value?.tagSet === host.currentSet && !host.enabled) {
-    return factsOf(catalogRow.value.full)
-  }
-  const next = catalogRow.value && editPlan.value.deletedIds.has(catalogRow.value.id)
-    ? null
-    : {
-        weight: catalogState.value.weight,
-        hidden: catalogState.value.hidden,
-        watch: catalogState.value.watch,
-      }
-  return previous !== undefined && sameFacts(previous, next) ? previous : next
+// 預覽每一顆依序看：編輯單元手上的修改 → 清單的待套用 → EH 現況。單元手上只有一顆，
+// 隨時能改能撤，蓋過清單那份也隨時看得回來。顏色一樣不進這份，理由同上
+const wishFacts = computed<{ full: string; facts: TagFacts } | null>((previous) => {
+  const wish = editorWish.value
+  if (!wish) return null
+  const row = rowMap.value.get(wish.full)
+  if (row && !scoringIds.value.has(row.id)) return null
+  const facts = { weight: wish.state.weight, hidden: wish.state.hidden, watch: wish.state.watch }
+  return previous?.full === wish.full && sameFacts(previous.facts, facts) ? previous : { full: wish.full, facts }
 })
 
-function catalogFactsOf(tag: string): TagFacts | null {
-  return catalogTag.value === tag ? catalogFacts.value : factsOf(tag)
+function previewFactsOf(tag: string): TagFacts | null {
+  const wish = wishFacts.value
+  return wish?.full === tag ? wish.facts : factsOf(tag)
 }
-
-const catalogTagStyle = computed(() => {
-  const current = catalogState.value
-  return tagChipStyle(tagColors({
-    color: current.color,
-    setColor: setColors.value[catalogSet.value] ?? '',
-    weight: current.weight,
-    hidden: current.hidden,
-  }))
-})
 
 type TagAppearance = { colors: TagColors; weight: number; hidden: boolean; watch: boolean }
 
-/** 攤開的圖庫上那排 chip 的外觀。取編輯中的狀態，不讀已存檔的 palette——改了顏色、
- *  還沒送出去也要當場看得到 */
-function appearanceOf(tag: string): TagAppearance | null {
-  const row = rowMap.value.get(tag)
-  if (!row || editPlan.value.deletedIds.has(row.id)) return null
-  const state = view(row)
+function appearance(state: TagState, tagSet: string): TagAppearance {
   return {
     colors: tagColors({
       color: state.color,
-      setColor: setColors.value[row.tagSet] ?? '',
+      setColor: setColors.value[tagSet] ?? '',
       weight: state.weight,
       hidden: state.hidden,
     }),
@@ -315,28 +277,18 @@ function appearanceOf(tag: string): TagAppearance | null {
   }
 }
 
-function candidateStyle(entry: TagEntry) {
-  const appearance = appearanceOf(entry.fullTag)
-  return appearance ? tagChipStyle(appearance.colors) : undefined
+/** chip 的外觀跟計分同一個順序，不讀已存檔的 palette——改了顏色、還沒送出去也要當場看得到 */
+function appearanceOf(tag: string): TagAppearance | null {
+  const wish = editorWish.value
+  if (wish?.full === tag) return appearance(wish.state, wish.tagSet)
+  const row = rowMap.value.get(tag)
+  if (!row || editPlan.value.deletedIds.has(row.id)) return null
+  return appearance(view(row), row.tagSet)
 }
 
-function catalogAppearanceOf(tag: string): TagAppearance | null {
-  if (catalogTag.value === tag) {
-    if (catalogRow.value && editPlan.value.deletedIds.has(catalogRow.value.id)) return null
-    const current = catalogState.value
-    return {
-      colors: tagColors({
-        color: current.color,
-        setColor: setColors.value[catalogSet.value] ?? '',
-        weight: current.weight,
-        hidden: current.hidden,
-      }),
-      weight: current.weight,
-      hidden: current.hidden,
-      watch: current.watch,
-    }
-  }
-  return appearanceOf(tag)
+function candidateStyle(entry: TagEntry) {
+  const at = appearanceOf(entry.fullTag)
+  return at ? tagChipStyle(at.colors) : undefined
 }
 
 
@@ -353,7 +305,7 @@ const allItems = computed<PreviewItem[]>(() => {
   if (th === null) return []
   return Object.values(store.value.galleries).map((gallery) => ({
     gallery,
-    outcome: outcomeOf(gallery.tags, factsOf, th),
+    outcome: outcomeOf(gallery.tags, previewFactsOf, th),
   }))
 })
 
@@ -361,14 +313,13 @@ const previewItems = computed<PreviewItem[]>(() => {
   const target = previewTarget.value
   const threshold = activeThreshold.value
   if (threshold === null) return []
-  const factSource = target?.kind === 'draft' ? catalogFactsOf : factsOf
   return Object.values(store.value.galleries)
     .filter((gallery) => !markedOnly.value || !!store.value.verdicts[String(gallery.gid)])
     .filter((gallery) => !expungedOnly.value || gallery.expunged === true)
-    .filter((gallery) => !target || gallery.tags.includes(target.full))
+    .filter((gallery) => !target || gallery.tags.includes(target))
     .map((gallery) => ({
       gallery,
-      outcome: outcomeOf(gallery.tags, factSource, threshold),
+      outcome: outcomeOf(gallery.tags, previewFactsOf, threshold),
     }))
 })
 
@@ -388,7 +339,7 @@ const catalogItems = computed<PreviewItem[]>(() => {
     .filter((gallery) => !expungedOnly.value || gallery.expunged === true)
     .map((gallery) => ({
       gallery,
-      outcome: outcomeOf(gallery.tags, catalogFactsOf, threshold),
+      outcome: outcomeOf(gallery.tags, previewFactsOf, threshold),
     }))
 })
 
@@ -398,9 +349,10 @@ const catalogImpact = computed<TagImpact>(() => ({
   right: catalogItems.value.filter((item) => item.outcome.side === 'right').length,
 }))
 
-const previewSelectedStyle = computed(() => previewTarget.value?.kind === 'draft'
-  ? catalogTagStyle.value
-  : selectedTagStyle.value)
+const previewSelectedStyle = computed(() => {
+  const at = previewTarget.value ? appearanceOf(previewTarget.value) : null
+  return at ? tagChipStyle(at.colors) : null
+})
 
 /** 每個標籤在目前樣本裡的去向分佈 */
 const impact = computed<Map<string, TagImpact>>(() => {
@@ -683,7 +635,7 @@ async function grabTag(tag: string, expunged = false): Promise<void> {
 }
 
 async function refreshPreview(expunged = false): Promise<void> {
-  const tag = previewTarget.value?.full
+  const tag = previewTarget.value
   if (!tag) { toast.info(t('panel.pickTagFirst')); return }
   await grabTag(tag, expunged)
 }
@@ -714,14 +666,13 @@ async function openGallery(g: SampleGallery): Promise<void> {
 const openedOutcome = computed(() =>
   previewItems.value.find((item) => item.gallery.gid === openedGallery.value?.gid)?.outcome ?? null)
 
-/** 跟計分同一份來源：目標是還沒建立的標籤時，草稿那格也要算進去 */
+/** 跟計分同一份來源 */
 const openedAppearance = computed(() => {
   const out = new Map<string, TagAppearance>()
   const detail = openedGallery.value
   if (!detail) return out
-  const source = previewTarget.value?.kind === 'draft' ? catalogAppearanceOf : appearanceOf
   for (const tag of detail.tags) {
-    const at = source(tag.full)
+    const at = appearanceOf(tag.full)
     if (at) out.set(tag.full, at)
   }
   return out
@@ -729,20 +680,13 @@ const openedAppearance = computed(() => {
 
 function select(tag: string): void {
   catalogTag.value = tag
-  const row = rowMap.value.get(tag)
-  if (row) moveTarget.value = row.tagSet
-  const current = previewTarget.value
-  previewTarget.value = current?.kind === 'saved' && current.full === tag
-    ? null
-    : { kind: 'saved', full: tag }
+  previewTarget.value = previewTarget.value === tag ? null : tag
   openedGallery.value = null
   if (previewTarget.value && !currentFetcher.hasFetched(tag)) void grabTag(tag)
 }
 
 function setCatalogFull(full: string): void {
   catalogTag.value = full
-  const row = rowMap.value.get(full)
-  if (row) moveTarget.value = row.tagSet
   previewCatalog()
 }
 
@@ -752,38 +696,8 @@ function pickCandidate(entry: TagEntry): void {
 }
 
 function previewCatalog(): void {
-  const full = catalogTag.value
-  previewTarget.value = full
-    ? { kind: catalogRow.value ? 'saved' : 'draft', full }
-    : null
+  previewTarget.value = catalogTag.value || null
   openedGallery.value = null
-}
-
-function patchCatalog(change: Partial<TagState>): void {
-  const row = catalogRow.value
-  if (row) {
-    patch(row, change)
-    return
-  }
-  draft.value = applyTagPatch(draft.value, change)
-}
-
-function setCatalogTarget(value: string): void {
-  if (catalogRow.value) moveTarget.value = value
-  else draft.value = { ...draft.value, tagSet: value }
-}
-
-function moveCatalogTag(target: string): void {
-  const row = catalogRow.value
-  if (!row || target === row.tagSet) return
-  massNow([row], target)
-}
-
-async function deleteCatalogTag(): Promise<void> {
-  const row = catalogRow.value
-  if (!row || writeBusy.value) return
-  if (!await askConfirm(t('panel.deleteConfirmOne', { tag: row.full }), t('panel.labelDelete'))) return
-  massNow([row], '0')
 }
 
 function clearPreviewTarget(): void {
@@ -795,50 +709,61 @@ function toggleEhTopbar(): void {
   ehTopbarOpen.value = !ehTopbarOpen.value
 }
 
-async function createNewTag(current: NewTagSubmission): Promise<void> {
-  if (createBusy.value) return
-  createBusy.value = true
+async function saveTag(row: MyTagRow, state: TagState): Promise<boolean> {
+  if (writeBusy.value) return false
+  const credentials = pageCredentials()
+  if (!credentials) { toast.error(t('panel.noCredentials')); return false }
+  writeBusy.value = t('panel.working')
   try {
-    // 認「回應裡多出來的那一列」要跟同一組送出前的列比：EH 可能把輸入的名稱正規化，
-    // 不能比對名稱；沒啟用的組沒讀進來，先抓一次
-    const before = loadedRows(current.tagSet) ?? (await fetchTagSet(current.tagSet))?.rows
-    if (!before) {
-      toast.error(t('panel.createFailed'))
-      return
-    }
-    const known = new Set(before.map((row) => row.id))
-    const next = await host.createTag(current.tagSet, current)
-    if (!next) {
-      toast.error(t('panel.createFailed'))
-      return
-    }
-    absorb(current.tagSet, next)
+    const res = await setUserTag({ id: row.id, ...state }, credentials)
+    if (!res.ok) { toast.error(t('panel.applyFailed', { tag: row.full, error: res.error })); return false }
+    acceptWrite(row.id, state)
     publishPalette()
-    const added = next.find((row) => !known.has(row.id))
-    if (!added) {
-      toast.error(t('panel.createRejected'))
-      return
-    }
-    draft.value = newTagDraft(host.currentSet)
-    const wasPreviewed = previewTarget.value?.full === catalogTag.value
-    if (rowMap.value.get(added.full)?.id !== added.id) {
-      // 沒啟用的組不在清單裡，編輯區留著也改不到它
-      const name = host.tagSets.find((set) => set.value === added.tagSet)?.name ?? added.tagSet
-      toast.success(t('panel.createdInDisabledSet', { set: name }))
-      catalogTag.value = ''
-      if (wasPreviewed) clearPreviewTarget()
-      return
-    }
-    catalogTag.value = added.full
-    moveTarget.value = added.tagSet
-    if (wasPreviewed) previewCatalog()
-  } catch (error) {
-    console.error('createTag failed', error)
-    toast.error(t('panel.createFailed'))
+    return true
   } finally {
-    createBusy.value = false
+    writeBusy.value = ''
   }
 }
+
+async function createTag(submission: NewTagSubmission): Promise<MyTagRow | null> {
+  // 認「回應裡多出來的那一列」要跟同一組送出前的列比：EH 可能把輸入的名稱正規化，
+  // 不能比對名稱；沒啟用的組沒讀進來，先抓一次
+  const before = loadedRows(submission.tagSet) ?? (await fetchTagSet(submission.tagSet))?.rows
+  if (!before) { toast.error(t('panel.createFailed')); return null }
+  const next = await host.createTag(submission.tagSet, submission)
+  if (!next) { toast.error(t('panel.createFailed')); return null }
+  absorb(submission.tagSet, next)
+  publishPalette()
+  const added = addedRow(before, next)
+  if (!added) { toast.error(t('panel.createRejected')); return null }
+  const wasPreviewed = previewTarget.value === catalogTag.value
+  if (rowMap.value.get(added.full)?.id !== added.id) {
+    // 沒啟用的組不在清單裡，編輯區留著也改不到它
+    const name = host.tagSets.find((set) => set.value === added.tagSet)?.name ?? added.tagSet
+    toast.success(t('panel.createdInDisabledSet', { set: name }))
+    catalogTag.value = ''
+    if (wasPreviewed) clearPreviewTarget()
+    return null
+  }
+  if (wasPreviewed) previewTarget.value = added.full
+  return added
+}
+
+const editorHost: MyTagsEditorHost = reactive({
+  status: 'ready' as const,
+  busy: computed(() => !!writeBusy.value),
+  sets: tagSets,
+  setColors,
+  defaultSet: computed(() => host.currentSet),
+  colorRows,
+  rowOf: (full: string) => rowMap.value.get(full) ?? null,
+  // 現況就是這一頁本身，沒有另外要讀的
+  load: () => {},
+  save: saveTag,
+  create: createTag,
+  move: (row: MyTagRow, target: string) => massNow([row], target),
+  remove: (row: MyTagRow) => massNow([row], '0'),
+})
 
 // ---- 封面預載：當前和接下來的先進快取，往下捲就不用等網路 ----
 
@@ -1109,7 +1034,7 @@ watch(edits, () => { void flush().catch(reportStorageError) }, { deep: true })
             :expunged-busy="expungedFetcher.busy.value"
             :left="previewLeftItems" :right="previewRightItems"
             :verdicts="store.verdicts"
-            :selected="previewTarget?.full ?? null" :selected-style="previewSelectedStyle"
+            :selected="previewTarget" :selected-style="previewSelectedStyle"
             :refresh-busy="currentFetcher.busy.value" :threshold="activeThreshold"
             :opened-gid="openedGallery?.gid ?? null"
             @clear-tag="clearPreviewTarget" @refresh="refreshPreview" @set-verdict="setVerdict"
@@ -1162,27 +1087,21 @@ watch(edits, () => { void flush().catch(reportStorageError) }, { deep: true })
             id="eqt-tag-catalog"
             :inert="isCollapsed"
             :aria-hidden="isCollapsed || undefined"
-            :full="catalogTag"
-            :state="catalogState"
-            :target-set="catalogRow ? moveTarget : draft.tagSet"
-            :source-set="catalogRow?.tagSet ?? null"
-            :sets="tagSets"
-            :impact="catalogImpact"
-            :set-colors="setColors"
             :style-of="candidateStyle"
-            :busy="createBusy || !!writeBusy"
-            :previewed="!!catalogTag && previewTarget?.full === catalogTag"
             :picked="pickedTags"
-            @update:target-set="setCatalogTarget"
-            @update:full="setCatalogFull"
-            @patch="patchCatalog"
             @pick="pickCandidate"
-            @preview="previewCatalog"
-            @confirm="refreshPreview"
-            @move="moveCatalogTag"
-            @remove="deleteCatalogTag"
-            @create="createNewTag"
-          />
+          >
+            <MyTagsEditor
+              :tag="catalogTag"
+              :host="editorHost"
+              :impact="catalogImpact"
+              :previewed="!!catalogTag && previewTarget === catalogTag"
+              @update:tag="setCatalogFull"
+              @preview="previewCatalog"
+              @confirm="refreshPreview"
+              @wish="editorWish = $event"
+            />
+          </MyTagsCatalog>
         </SplitterPanel>
       </SplitterGroup>
       </SplitterPanel>

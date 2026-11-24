@@ -27,7 +27,8 @@ import { useGalleryIntroPanel } from '@/composables/useIntroPanel'
 import { Settings, Search, BookOpen, Tags, TagPlus, ClipboardPaste, ThumbsDown, ThumbsUp, X, ExternalLink } from '@lucide/vue'
 import { pickOf, selectionOf, stepPick, prefixOf, type TagPick, type Selection } from '@/services/tagPick'
 import GalleryAddInline from './GalleryAddInline.vue'
-import MyTagsQuickEditor from '@/components/mytags/MyTagsQuickEditor.vue'
+import MyTagsEditor from '@/components/mytags/MyTagsEditor.vue'
+import { useFetchedMyTagsHost } from '@/composables/useFetchedMyTagsHost'
 import GalleryIntroPanel from './GalleryIntroPanel.vue'
 import GalleryTagListRows, { type GalleryTagListChip, type GalleryTagListGroup } from './GalleryTagListRows.vue'
 import type { TagEntry } from '@/services/tags/tagDb'
@@ -47,6 +48,7 @@ onMounted(async () => {
     toast.error(t('gallery.myTagsColorsFailed'))
   }
 })
+const myTagsEditorHost = useFetchedMyTagsHost((palette) => { myTagsPalette.value = palette })
 
 const currentTags = ref<GalleryTag[]>([...host.tags])
 const userVotes = ref<Record<string, VoteState>>({})
@@ -520,12 +522,13 @@ watch(selection, () => {
   />
 
   <!-- My Tags 模式時動作列翻成編輯列：同一個位置、同一個時間只做一件事 -->
-  <MyTagsQuickEditor
+  <MyTagsEditor
     v-if="myTagsMode"
     class="eqt-gallery-mytags"
+    row
     :tag="myTagsTarget"
+    :host="myTagsEditorHost"
     @update:tag="pickMyTagsTarget"
-    @palette="myTagsPalette = $event"
     @close="leaveMyTags"
   />
   <!-- Action 區：search 左跨 2 列、vote 右跨 2 列（兩個大方塊，物理距離把誤觸代價較高的

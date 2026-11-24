@@ -5,38 +5,17 @@ import { useTagSuggestions } from '@/composables/useTagSuggestions'
 import { t } from '@/composables/useI18n'
 import SuggestionList from '@/components/SuggestionList.vue'
 import NamespaceFilter from '@/components/NamespaceFilter.vue'
-import MyTagsDraft from '@/components/mytags/MyTagsDraft.vue'
-import type { NewTagInput, TagSetRef } from '@/composables/useEhMyTagsHost'
-import type { TagState } from '@/services/mytags/mytagsEdits'
-import type { TagImpact } from '@/services/mytags/mytagsScore'
 
-type NewTagSubmission = NewTagInput & { tagSet: string }
+// 編輯單元放在 slot 裡；這裡只負責從字典和圖庫帶來的標籤裡挑一顆交給它
 
 const props = defineProps<{
-  full: string
-  state: TagState
-  targetSet: string
-  sourceSet: string | null
-  sets: TagSetRef[]
-  impact: TagImpact
-  setColors: Record<string, string>
   styleOf: (entry: TagEntry) => CSSProperties | undefined
-  busy: boolean
-  previewed: boolean
   /** 從圖庫頁帶過來的標籤；有的話「選中」篩選一開始就打開 */
   picked: string[]
 }>()
 
 const emit = defineEmits<{
-  'update:targetSet': [value: string]
-  'update:full': [value: string]
-  patch: [change: Partial<TagState>]
   pick: [entry: TagEntry]
-  create: [submission: NewTagSubmission]
-  move: [target: string]
-  remove: []
-  preview: []
-  confirm: []
 }>()
 
 const query = ref('')
@@ -105,26 +84,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
 
 <template>
   <section class="eqt-tag-catalog eqt-taglist">
-    <MyTagsDraft
-      :full="full"
-      :state="state"
-      :target-set="targetSet"
-      :source-set="sourceSet"
-      :sets="sets"
-      :set-colors="setColors"
-      :busy="busy"
-      :impact="impact"
-      show-impact
-      :previewed="previewed"
-      @update:target-set="emit('update:targetSet', $event)"
-      @update:full="emit('update:full', $event)"
-      @patch="emit('patch', $event)"
-      @create="emit('create', $event)"
-      @move="emit('move', $event)"
-      @remove="emit('remove')"
-      @preview="emit('preview')"
-      @confirm="emit('confirm')"
-    />
+    <slot />
 
     <div class="eqt-tag-catalog__browser">
       <NamespaceFilter
