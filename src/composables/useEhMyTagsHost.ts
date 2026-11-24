@@ -34,6 +34,11 @@ export interface TagSetRef {
   used: number | null
 }
 
+/** 標籤集選單共用的寫法：「名稱 (已用/容量)」，還不知道用了幾格就只寫名稱 */
+export function tagSetLabel(set: Pick<TagSetRef, 'name' | 'used'>): string {
+  return set.used === null ? set.name : `${set.name} (${set.used}/${TAGSET_CAPACITY})`
+}
+
 export interface TagSetSnapshot {
   value: string
   name: string

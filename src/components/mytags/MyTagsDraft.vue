@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { t } from '@/composables/useI18n'
 import MyTagsTagBody from '@/components/mytags/MyTagsTagBody.vue'
-import { TAGSET_CAPACITY, type NewTagInput, type TagSetRef } from '@/composables/useEhMyTagsHost'
+import { TAGSET_CAPACITY, tagSetLabel, type NewTagInput, type TagSetRef } from '@/composables/useEhMyTagsHost'
 import { normalizeTagColor } from '@/services/mytags/mytagsColors'
 import type { TagState } from '@/services/mytags/mytagsEdits'
 import type { TagImpact } from '@/services/mytags/mytagsScore'
@@ -131,7 +131,7 @@ function commit(): void {
           :key="set.value"
           :value="set.value"
           :disabled="(set.used ?? 0) >= TAGSET_CAPACITY && set.value !== sourceSet"
-        >{{ set.name }} · {{ set.used ?? '?' }}/{{ TAGSET_CAPACITY }}</option>
+        >{{ tagSetLabel(set) }}</option>
       </select>
       <button
         type="button"

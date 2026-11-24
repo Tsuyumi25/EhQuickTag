@@ -2,7 +2,7 @@
 import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import MyTagsTagBody from '@/components/mytags/MyTagsTagBody.vue'
 import { t } from '@/composables/useI18n'
-import { TAGSET_CAPACITY, type MyTagRow, type TagSetRef } from '@/composables/useEhMyTagsHost'
+import { tagSetLabel, type MyTagRow, type TagSetRef } from '@/composables/useEhMyTagsHost'
 import type { EditMap, TagPatch, TagState } from '@/services/mytags/mytagsEdits'
 import { effective } from '@/services/mytags/mytagsEdits'
 import { emptyBulkDraft, type BulkDraft } from '@/services/mytags/mytagsBulk'
@@ -231,9 +231,9 @@ watch(
             ...filter, set: ($event.target as HTMLSelectElement).value,
           })"
         >
-          <option value="all">{{ t('taglist.allSets') }}（{{ totalCount }}）</option>
+          <option value="all">{{ t('taglist.allSets') }} ({{ totalCount }})</option>
           <option v-for="s in sets" :key="s.value" :value="s.value">
-            {{ s.name }}{{ s.used !== null ? `（${s.used}/${TAGSET_CAPACITY}）` : '' }}
+            {{ tagSetLabel(s) }}
           </option>
         </select>
       </div>
@@ -344,7 +344,7 @@ watch(
         >
           <option value="">{{ t('taglist.moveTo') }}</option>
           <option v-for="s in sets.filter((x) => x.value !== currentSet)" :key="s.value" :value="s.value">
-            {{ s.name }}
+            {{ tagSetLabel(s) }}
           </option>
         </select>
       </div>
