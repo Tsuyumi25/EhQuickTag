@@ -780,10 +780,10 @@ test('新增草稿會送到指定 tag set 並保留設定', async ({ page }) => 
 
   expect(form.get('usertag_action')).toBe('add')
   expect(form.get('tagname_new')).toBe('female:sample tag')
-  expect(form.get('tagweight_0')).toBe('25')
-  expect(form.get('tagcolor_0')).toBe('#123ABC')
-  expect(form.get('tagwatch_0')).toBe('on')
-  expect(form.has('taghide_0')).toBe(false)
+  expect(form.get('tagweight_new')).toBe('25')
+  expect(form.get('tagcolor_new')).toBe('#123ABC')
+  expect(form.get('tagwatch_new')).toBe('on')
+  expect(form.has('taghide_new')).toBe(false)
 })
 
 test('新增標籤不刷新頁面，EH 收下的新列直接出現在清單並成為編輯對象', async ({ page }) => {
@@ -873,7 +873,7 @@ test('名稱 input 可新增候選清單外的 tag，送出前保留完整名稱
   const form = new URLSearchParams((await requestPromise).postData() ?? '')
   expect(form.get('usertag_action')).toBe('add')
   expect(form.get('tagname_new')).toBe('parody:unlisted tag')
-  expect(form.get('tagweight_0')).toBe('25')
+  expect(form.get('tagweight_new')).toBe('25')
 })
 
 test('名稱 input 在既有 tag 與草稿間切換，focus 接管預覽且輸入不寫回 EH', async ({ page }) => {

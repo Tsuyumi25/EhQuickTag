@@ -229,22 +229,24 @@ export async function submitNewTag(
   tagSet: string,
   input: NewTagInput,
 ): Promise<MyTagRow[] | null> {
-  const doc = form.ownerDocument
-  const name = el<HTMLInputElement>(doc, 'tagname_new')
-  const action = el<HTMLInputElement>(doc, 'usertag_action')
+  // 新增列的欄位照 name 找：真實 /mytags 上它們叫 tagname_new / tagweight_new / tagcolor_new /
+  // taghide_new / tagwatch_new，既有標籤那幾列的同類欄位沒有 name，FormData 不會把它們帶上
+  const field = (name: string) => form.querySelector<HTMLInputElement>(`[name="${name}"]`)
+  const name = field('tagname_new')
+  const action = field('usertag_action')
   if (!name || !action) return null
   name.value = input.full
-  const w = el<HTMLInputElement>(doc, 'tagweight_0')
+  const w = field('tagweight_new')
   if (w) w.value = String(input.weight)
-  const c = el<HTMLInputElement>(doc, 'tagcolor_0')
+  const c = field('tagcolor_new')
   if (c) c.value = input.color
-  const h = el<HTMLInputElement>(doc, 'taghide_0')
+  const h = field('taghide_new')
   if (h) h.checked = input.hidden
-  const t = el<HTMLInputElement>(doc, 'tagwatch_0')
+  const t = field('tagwatch_new')
   if (t) t.checked = input.watch
   action.value = 'add'
-  // 新增列各欄位的 name 屬於 EH 的黑箱：照原生表單序列化，送出的欄位就跟
-  // form.submit() 一模一樣，差別只在由我們讀回應、而不是讓瀏覽器換頁
+  // 其餘欄位照原生表單序列化，送出的內容就跟 form.submit() 一樣，差別只在由我們讀回應、
+  // 而不是讓瀏覽器換頁
   const fields = [...new FormData(form)].flatMap(([k, v]): [string, string][] =>
     typeof v === 'string' ? [[k, v]] : [])
   const res = await postForm(tagSet, fields)

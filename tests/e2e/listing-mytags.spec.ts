@@ -39,7 +39,7 @@ test('dock 的 My Tags 翻成編輯列：列表標籤單選、新增後上色、
     const row = [
       '<div id="usertag_99">',
       `<span id="tagpreview_99" title="${body.get('tagname_new')}"></span>`,
-      `<input id="tagweight_99" type="text" value="${body.get('tagweight_0')}">`,
+      `<input id="tagweight_99" type="text" value="${body.get('tagweight_new')}">`,
       '<input id="tagcolor_99" type="text" value="#123456">',
       '<input id="tagwatch_99" type="checkbox"><input id="taghide_99" type="checkbox">',
       '</div>',

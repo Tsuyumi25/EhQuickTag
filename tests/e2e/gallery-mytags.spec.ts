@@ -19,9 +19,9 @@ test('My Tags 模式把動作列翻成編輯列：單選左鍵、設定留著、
     const row = [
       '<div id="usertag_99">',
       `<span id="tagpreview_99" title="${body.get('tagname_new')}"></span>`,
-      `<input id="tagweight_99" type="text" value="${body.get('tagweight_0')}">`,
+      `<input id="tagweight_99" type="text" value="${body.get('tagweight_new')}">`,
       '<input id="tagcolor_99" type="text" value="">',
-      `<input id="tagwatch_99" type="checkbox"${body.has('tagwatch_0') ? ' checked' : ''}>`,
+      `<input id="tagwatch_99" type="checkbox"${body.has('tagwatch_new') ? ' checked' : ''}>`,
       '<input id="taghide_99" type="checkbox">',
       '</div>',
     ].join('')
@@ -93,8 +93,8 @@ test('My Tags 模式把動作列翻成編輯列：單選左鍵、設定留著、
   expect(new URL(posts[0].url).searchParams.get('tagset')).toBe('2')
   expect(posts[0].body.get('usertag_action')).toBe('add')
   expect(posts[0].body.get('tagname_new')).toBe(third)
-  expect(posts[0].body.get('tagwatch_0')).toBe('on')
-  expect(posts[0].body.get('tagweight_0')).toBe('0')
+  expect(posts[0].body.get('tagwatch_new')).toBe('on')
+  expect(posts[0].body.get('tagweight_new')).toBe('0')
   await expect(chips.nth(2)).toHaveClass(/eqt-gallery-chip--mytags-colored/)
 
   // Esc 先收色盤，模式留著；再按一次才離開
