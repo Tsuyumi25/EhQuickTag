@@ -35,6 +35,24 @@ export function effective(row: MyTagRow, edits: EditMap): TagState {
   }
 }
 
+/**
+ * 把修改疊到一份狀態上，已存在的標籤和還沒新增的草稿都走這裡。
+ *
+ * watch 和 hidden 互斥——EH 自己的 onchange 就會互相取消，我們照做，避免
+ * 產生原生頁面表達不出的狀態。
+ */
+export function applyTagPatch<T extends TagState>(state: T, change: TagPatch): T {
+  const next = { ...state, ...change }
+  if (change.hidden === true) next.watch = false
+  if (change.watch === true) next.hidden = false
+  return next
+}
+
+/** 新增草稿。EH 原生新增欄預設 10；只想加關注、隱藏或顏色的標籤會順手多出 +10 分，所以從 0 起 */
+export function newTagDraft(tagSet: string): TagState & { tagSet: string } {
+  return { tagSet, weight: 0, color: '', watch: false, hidden: false }
+}
+
 function difference(saved: TagState, want: TagState): TagPatch | null {
   const patch: TagPatch = {}
   if (want.weight !== saved.weight) patch.weight = want.weight
@@ -44,17 +62,10 @@ function difference(saved: TagState, want: TagState): TagPatch | null {
   return Object.keys(patch).length ? patch : null
 }
 
-/**
- * 記下使用者改過的欄位。
- *
- * watch 和 hidden 互斥——EH 自己的 onchange 就會互相取消，我們照做，避免面板
- * 產生原生頁面表達不出的狀態。
- */
+/** 記下使用者改過的欄位 */
 export function stage(edits: EditMap, row: MyTagRow, change: TagPatch): EditMap {
   const saved = stateOf(row)
-  const want: TagState = { ...saved, ...edits[row.id], ...change }
-  if (change.hidden === true) want.watch = false
-  if (change.watch === true) want.hidden = false
+  const want = applyTagPatch({ ...saved, ...edits[row.id] }, change)
 
   const next = { ...edits }
   const patch = difference(saved, want)

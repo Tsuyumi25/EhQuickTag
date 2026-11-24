@@ -11,7 +11,7 @@ import { useEqtToast } from '@/composables/useEqtToast'
 import { t } from '@/composables/useI18n'
 import { buildMyTagsPalette, fetchAllTagSets, saveMyTagsPalette, type MyTagsPalette } from '@/services/mytags/mytagsPalette'
 import { pageCredentials, setUserTag, type ApiCredentials } from '@/services/mytags/mytagsApi'
-import type { TagState } from '@/services/mytags/mytagsEdits'
+import { applyTagPatch, effective, newTagDraft, stage, type EditMap, type TagState } from '@/services/mytags/mytagsEdits'
 import { colorUsage } from '@/services/mytags/mytagsColors'
 import { MYTAGS_COLOR_USAGE } from '@/composables/useMyTagsColors'
 import { askConfirm, confirmRequest } from '@/services/confirmDialog'
@@ -72,20 +72,10 @@ onMounted(load)
 
 const full = computed(() => props.tag)
 
-function emptyDraft(): TagState & { tagSet: string } {
-  return {
-    tagSet: defaultSet.value,
-    // 跟 /mytags 的新增草稿同一個理由：EH 原生預設 10，只想關注的標籤會順手多 10 分
-    weight: 0,
-    color: '',
-    watch: false,
-    hidden: false,
-  }
-}
-const draft = ref(emptyDraft())
+const draft = ref(newTagDraft(''))
 
 // 換一顆標籤就是一份新草稿：上一顆勾的隱藏、設的負權重不該不知不覺跟著加到下一顆
-watch(full, () => { draft.value = emptyDraft() })
+watch(full, () => { draft.value = newTagDraft(defaultSet.value) })
 
 // 同一個標籤可能放在好幾組；計分只認啟用的組，所以先找啟用的
 const row = computed<MyTagRow | null>(() => {
@@ -99,24 +89,16 @@ const row = computed<MyTagRow | null>(() => {
 })
 
 // 既有標籤的未存修改；換到別的標籤就作廢
-const edits = ref<Partial<TagState>>({})
+const edits = ref<EditMap>({})
 const moveTarget = ref('')
 watch(() => row.value?.id, () => {
   edits.value = {}
   moveTarget.value = row.value?.tagSet ?? ''
 }, { immediate: true })
 
-const state = computed<TagState>(() => {
-  const r = row.value
-  if (!r) return draft.value
-  return { weight: r.weight, color: r.color, watch: r.watch, hidden: r.hidden, ...edits.value }
-})
+const state = computed<TagState>(() => (row.value ? effective(row.value, edits.value) : draft.value))
 
-const dirty = computed(() => {
-  const r = row.value
-  if (!r) return false
-  return (Object.keys(edits.value) as (keyof TagState)[]).some((key) => edits.value[key] !== r[key])
-})
+const dirty = computed(() => !!row.value && edits.value[row.value.id] !== undefined)
 
 const setRefs = computed<TagSetRef[]>(() => sets.value.map((set) => ({
   value: set.value,
@@ -128,8 +110,8 @@ const setRefs = computed<TagSetRef[]>(() => sets.value.map((set) => ({
 const setColors = computed(() => Object.fromEntries(sets.value.map((set) => [set.value, set.defaultColor])))
 
 function patch(change: Partial<TagState>): void {
-  if (row.value) edits.value = { ...edits.value, ...change }
-  else draft.value = { ...draft.value, ...change }
+  if (row.value) edits.value = stage(edits.value, row.value, change)
+  else draft.value = applyTagPatch(draft.value, change)
 }
 
 function setTarget(value: string): void {

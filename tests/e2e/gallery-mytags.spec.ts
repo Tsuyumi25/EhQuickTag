@@ -85,6 +85,13 @@ test('My Tags 模式把動作列翻成編輯列：單選左鍵、設定留著、
   await expect(watch).not.toBeChecked()
   await watch.check()
 
+  // 關注與隱藏互斥，跟 EH 原生的 /mytags 一樣
+  const hide = panel.locator('.eqt-taglist__flag input').nth(1)
+  await hide.check()
+  await expect(watch).not.toBeChecked()
+  await watch.check()
+  await expect(hide).not.toBeChecked()
+
   // 抓回來的標籤集名稱本來就帶著「(4)」，選單只該剩一組括號。fixture 對 ?tagset=2 回的是同一頁，只看第一組
   await expect(panel.locator('select option[value="1"]')).toHaveText('Default (4/100)')
   await panel.locator('select').selectOption('2')
@@ -100,6 +107,14 @@ test('My Tags 模式把動作列翻成編輯列：單選左鍵、設定留著、
   expect(posts[0].body.get('tagwatch_new')).toBe('on')
   expect(posts[0].body.get('tagweight_new')).toBe('0')
   await expect(chips.nth(2)).toHaveClass(/eqt-gallery-chip--mytags-colored/)
+
+  // 已經在清單上的標籤也一樣
+  await hide.check()
+  await expect(watch).not.toBeChecked()
+  await expect(panel.locator('.eqt-mytags-quick__save')).toBeVisible()
+  await watch.check()
+  await expect(hide).not.toBeChecked()
+  await expect(panel.locator('.eqt-mytags-quick__save')).toHaveCount(0)
 
   // Esc 先收色盤，模式留著；再按一次才離開
   await panel.locator('.eqt-taglist__color-swatch').click()

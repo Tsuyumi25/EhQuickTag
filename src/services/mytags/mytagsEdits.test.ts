@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import type { MyTagRow } from '@/composables/useEhMyTagsHost'
 import {
-  acknowledgeWrite, markMovingEdits, reconcileMovedEdits, effective, stage, stageMany, unstage,
+  acknowledgeWrite, applyTagPatch, markMovingEdits, newTagDraft, reconcileMovedEdits, effective, stage, stageMany, unstage,
   type EditMap,
 } from '@/services/mytags/mytagsEdits'
 
@@ -58,6 +58,19 @@ describe('stage', () => {
       hidden: false,
       watch: true,
     })
+  })
+})
+
+describe('applyTagPatch', () => {
+  it('還沒新增的草稿也維持 watch 與 hidden 互斥', () => {
+    const watching = applyTagPatch(newTagDraft('2'), { watch: true })
+    expect(applyTagPatch(watching, { hidden: true })).toEqual({ ...newTagDraft('2'), hidden: true })
+    expect(applyTagPatch({ ...watching, watch: false, hidden: true }, { watch: true })).toEqual(watching)
+  })
+
+  it('關掉其中一個旗標不會動到另一個', () => {
+    const draft = { ...newTagDraft('2'), watch: true }
+    expect(applyTagPatch(draft, { hidden: false })).toEqual(draft)
   })
 })
 

@@ -32,7 +32,7 @@ import {
   sampleClearVersion,
 } from '@/services/mytags/mytagsSampleStore'
 import {
-  stage, effective, unstage, markMovingEdits, reconcileMovedEdits, acknowledgeWrite,
+  stage, effective, unstage, markMovingEdits, reconcileMovedEdits, acknowledgeWrite, applyTagPatch, newTagDraft,
   type EditMap, type TagState,
 } from '@/services/mytags/mytagsEdits'
 import { emptyBulkDraft, planTagChanges } from '@/services/mytags/mytagsBulk'
@@ -67,19 +67,7 @@ const MAX_FETCH = 6
 const SIDE_DEFAULT_SIZE = 28
 const EDITOR_DEFAULT_SIZE = 45
 type PreviewTarget = { kind: 'saved' | 'draft'; full: string } | null
-type NewTagDraft = Omit<NewTagInput, 'full'> & { tagSet: string }
 type NewTagSubmission = NewTagInput & { tagSet: string }
-
-function emptyDraft(): NewTagDraft {
-  return {
-    tagSet: host.currentSet,
-    // EH 原生新增欄預設 10；只想加關注、隱藏或顏色的標籤會順手多出 +10 分，所以從 0 起
-    weight: 0,
-    color: '',
-    watch: false,
-    hidden: false,
-  }
-}
 
 const liveRows = ref<MyTagRow[]>(host.readRows())
 const otherSets = ref<TagSetSnapshot[]>([])
@@ -120,7 +108,7 @@ const sidePanel = ref<InstanceType<typeof SplitterPanel> | null>(null)
 const editorPanel = ref<InstanceType<typeof SplitterPanel> | null>(null)
 const catalogTag = ref('')
 const previewTarget = ref<PreviewTarget>(null)
-const draft = ref<NewTagDraft>(emptyDraft())
+const draft = ref(newTagDraft(host.currentSet))
 const moveTarget = ref(host.currentSet)
 const createBusy = ref(false)
 
@@ -777,10 +765,7 @@ function patchCatalog(change: Partial<TagState>): void {
     patch(row, change)
     return
   }
-  const next = { ...draft.value, ...change }
-  if (change.watch) next.hidden = false
-  if (change.hidden) next.watch = false
-  draft.value = next
+  draft.value = applyTagPatch(draft.value, change)
 }
 
 function setCatalogTarget(value: string): void {
@@ -834,7 +819,7 @@ async function createNewTag(current: NewTagSubmission): Promise<void> {
       toast.error(t('panel.createRejected'))
       return
     }
-    draft.value = emptyDraft()
+    draft.value = newTagDraft(host.currentSet)
     const wasPreviewed = previewTarget.value?.full === catalogTag.value
     if (rowMap.value.get(added.full)?.id !== added.id) {
       // 沒啟用的組不在清單裡，編輯區留著也改不到它
