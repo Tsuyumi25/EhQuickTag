@@ -4,6 +4,7 @@ import {
   fetchTagSet, fetchTagSetIndex,
   type MyTagRow, type TagSetSnapshot,
 } from '@/composables/useEhMyTagsHost'
+import type { ApiCredentials } from '@/services/mytags/mytagsApi'
 import { pageWindow } from '@/utils/pageWindow'
 
 type MyTagsPaletteEntry = TagColors & Pick<MyTagRow, 'weight' | 'hidden' | 'watch'>
@@ -68,6 +69,8 @@ export interface MyTagsSnapshot {
   current: string
   /** 任何一份 /mytags 的新增表單都送得到任何一組，見 submitNewTag */
   form: HTMLFormElement
+  /** 那份 /mytags 裡的 API 憑證，見 parseCredentials */
+  credentials: ApiCredentials | null
 }
 
 /** null 代表未登入；抓不到或少抓到一組就 reject，不拿缺一組的資料當完整的 */
@@ -86,6 +89,7 @@ export async function fetchAllTagSets(): Promise<MyTagsSnapshot | null> {
     sets: index.order.flatMap((value) => byValue.get(value) ?? []),
     current: index.current.value,
     form: index.form,
+    credentials: index.credentials,
   }
 }
 

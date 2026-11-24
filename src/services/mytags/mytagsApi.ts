@@ -4,9 +4,17 @@
 // 把鎖放掉——一次失敗之後，這一整頁的存檔就全部靜默失效，只能重整。
 // 自己發請求就沒有這個問題，而且順序和錯誤都在我們手上。
 //
-// 憑證跟 galleryVote 同一個來源：原生頁面的全域變數。
+// 憑證跟 galleryVote 同一種：原生頁面的全域變數。列表頁沒有這組變數，改從抓回來的
+// /mytags 文件裡的 inline script 讀同一組值。
 
 import { pageWindow } from '@/utils/pageWindow'
+
+export interface ApiCredentials {
+  apiuid: number
+  apikey: string
+  /** 頁面有給就用頁面的，沒給照站別猜 */
+  apiUrl?: string
+}
 
 interface NativePageGlobals {
   apiuid?: number
@@ -26,32 +34,42 @@ export type WriteResult =
   | { ok: true }
   | { ok: false; error: string }
 
-function endpoint(w: NativePageGlobals): string {
-  if (typeof w.api_url === 'string' && w.api_url) return w.api_url
+/** 未登入時 apiuid 是 -1：那組值寫不了任何東西，當作沒有 */
+function usable(apiuid: number, apikey: string, apiUrl?: string): ApiCredentials | null {
+  return apiuid > 0 && apikey ? { apiuid, apikey, apiUrl: apiUrl || undefined } : null
+}
+
+export function pageCredentials(): ApiCredentials | null {
+  const w = pageWindow<NativePageGlobals>()
+  if (typeof w.apiuid !== 'number' || typeof w.apikey !== 'string') return null
+  return usable(w.apiuid, w.apikey, typeof w.api_url === 'string' ? w.api_url : undefined)
+}
+
+/** 從 EH 頁面的 inline script 原文讀出它設的憑證（DOMParser 文件不會執行 script，只能自己讀） */
+export function parseCredentials(scripts: string): ApiCredentials | null {
+  const apiuid = /\bapiuid\s*=\s*(-?\d+)/.exec(scripts)?.[1]
+  const apikey = /\bapikey\s*=\s*["']([0-9a-f]+)["']/i.exec(scripts)?.[1]
+  if (apiuid === undefined || apikey === undefined) return null
+  return usable(Number(apiuid), apikey, /\bapi_url\s*=\s*["']([^"']+)["']/.exec(scripts)?.[1])
+}
+
+function endpoint(credentials: ApiCredentials): string {
+  if (credentials.apiUrl) return credentials.apiUrl
   return location.hostname === 'exhentai.org'
     ? 'https://s.exhentai.org/api.php'
     : 'https://api.e-hentai.org/api.php'
 }
 
-export function canWrite(): boolean {
-  const w = pageWindow<NativePageGlobals>()
-  return typeof w.apiuid === 'number' && typeof w.apikey === 'string'
-}
-
-export async function setUserTag(tag: TagWrite): Promise<WriteResult> {
-  const w = pageWindow<NativePageGlobals>()
-  if (typeof w.apiuid !== 'number' || typeof w.apikey !== 'string') {
-    return { ok: false, error: 'no-credentials' }
-  }
+export async function setUserTag(tag: TagWrite, credentials: ApiCredentials): Promise<WriteResult> {
   try {
-    const res = await fetch(endpoint(w), {
+    const res = await fetch(endpoint(credentials), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
       body: JSON.stringify({
         method: 'setusertag',
-        apiuid: w.apiuid,
-        apikey: w.apikey,
+        apiuid: credentials.apiuid,
+        apikey: credentials.apikey,
         tagid: tag.id,
         tagwatch: tag.watch ? 1 : 0,
         taghide: tag.hidden ? 1 : 0,

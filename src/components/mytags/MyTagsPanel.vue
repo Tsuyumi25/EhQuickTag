@@ -40,7 +40,7 @@ import {
   createEditStore, emptyFilter,
   type TagFilter,
 } from '@/services/mytags/mytagsEditStore'
-import { setUserTag, canWrite } from '@/services/mytags/mytagsApi'
+import { setUserTag, pageCredentials } from '@/services/mytags/mytagsApi'
 import { patchConfig } from '@/services/ehConfig'
 import { serializeEntry } from '@/services/search/searchSyntax'
 import { myTagsPanelZoom, myTagsLayouts, nsFormat } from '@/services/store'
@@ -493,7 +493,8 @@ function reportStorageError(error: unknown): void {
 async function apply(): Promise<void> {
   if (writeBusy.value || !pendingTotal.value) return
   const todo = editPlan.value.changes
-  if (todo.some(change => change.write) && !canWrite()) {
+  const credentials = pageCredentials()
+  if (todo.some(change => change.write) && !credentials) {
     toast.error(t('panel.noCredentials')); return
   }
   const deletes = todo.filter(change => change.remove)
@@ -504,9 +505,9 @@ async function apply(): Promise<void> {
   writeBusy.value = t('panel.working')
   try {
     for (const [i, change] of todo.entries()) {
-      if (!change.write) continue
+      if (!change.write || !credentials) continue
       writeBusy.value = t('panel.applying', { i: i + 1, n: todo.length })
-      const res = await setUserTag({ id: change.row.id, ...change.state })
+      const res = await setUserTag({ id: change.row.id, ...change.state }, credentials)
       if (!res.ok) {
         toast.error(t('panel.applyFailed', { tag: change.row.full, error: res.error }))
         failed = true

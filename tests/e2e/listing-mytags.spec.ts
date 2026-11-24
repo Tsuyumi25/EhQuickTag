@@ -7,7 +7,7 @@ import { injectUserscript } from './helpers'
 const MYTAGS_HTML = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), '../fixtures/eh-mytags.html'), 'utf-8')
 const TAGS = ['male:positive-sample', 'other:fresh-sample', 'female:negative-sample']
 
-test('dock 的 My Tags 翻成編輯列：列表標籤單選、新增後上色，離開時還回原本的選取', async ({ page }) => {
+test('dock 的 My Tags 翻成編輯列：列表標籤單選、新增後上色、改既有標籤，離開時還回原本的選取', async ({ page }) => {
   await page.addInitScript((tags) => {
     // 列表強化只在 EhViewRefined 在場時掛上；標籤 chip 也只認它畫出來的 [data-evr-tag]
     document.addEventListener('DOMContentLoaded', () => {
@@ -27,10 +27,13 @@ test('dock 的 My Tags 翻成編輯列：列表標籤單選、新增後上色，
   }, TAGS)
   await injectUserscript(page)
 
+  // 列表頁沒有 apiuid / apikey 全域變數：憑證只能從抓回來的 /mytags 的 inline script 讀
+  const credentials = '<script>var apiuid = 4242;\nvar apikey = "0a1b2c3d";\nvar api_url = "https://e-hentai.org/api.php";</script>'
+  const withCredentials = (html: string) => html.replace('</head>', `${credentials}</head>`)
   const posts: URLSearchParams[] = []
   await page.route(/\/mytags(\?.*)?$/, (route) => {
     const request = route.request()
-    if (request.method() !== 'POST') return route.fallback()
+    if (request.method() !== 'POST') return route.fulfill({ contentType: 'text/html', body: withCredentials(MYTAGS_HTML) })
     const body = new URLSearchParams(request.postData() ?? '')
     posts.push(body)
     const row = [
@@ -41,7 +44,13 @@ test('dock 的 My Tags 翻成編輯列：列表標籤單選、新增後上色，
       '<input id="tagwatch_99" type="checkbox"><input id="taghide_99" type="checkbox">',
       '</div>',
     ].join('')
-    return route.fulfill({ contentType: 'text/html', body: MYTAGS_HTML.replace(/(<div id="usertag_4">[\s\S]*?<\/div>)/, `$1${row}`) })
+    const html = MYTAGS_HTML.replace(/(<div id="usertag_4">[\s\S]*?<\/div>)/, `$1${row}`)
+    return route.fulfill({ contentType: 'text/html', body: withCredentials(html) })
+  })
+  const writes: Record<string, unknown>[] = []
+  await page.route('https://e-hentai.org/api.php', (route) => {
+    writes.push(route.request().postDataJSON() as Record<string, unknown>)
+    return route.fulfill({ contentType: 'application/json', body: '{}' })
   })
 
   const chip = (tag: string) => page.locator(`.eqt-listing-chip[data-evr-tag="${tag}"]`).first()
@@ -80,6 +89,16 @@ test('dock 的 My Tags 翻成編輯列：列表標籤單選、新增後上色，
   await expect(create).toHaveText('移動標籤')
   expect(posts.map(body => body.get('tagname_new'))).toEqual([TAGS[1]])
   await expect(chip(TAGS[1])).toHaveClass(/eqt-listing-chip--mytags-colored/)
+
+  // 加完就是既有標籤：改權重之後存回去，走 setusertag，憑證來自 /mytags 文件
+  const weight = editor.locator('.eqt-number-field__input')
+  await weight.fill('5')
+  await weight.press('Enter')
+  await editor.locator('.eqt-mytags-quick__save').click()
+  await expect(editor.locator('.eqt-mytags-quick__save')).toHaveCount(0)
+  expect(writes).toEqual([expect.objectContaining({
+    method: 'setusertag', apiuid: 4242, apikey: '0a1b2c3d', tagid: 99, tagweight: '5',
+  })])
 
   await page.keyboard.press('Escape')
   await expect(editor).toHaveCount(0)

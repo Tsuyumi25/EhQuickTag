@@ -7,7 +7,7 @@
 // ⭐ 遮蔽原生 UI 之後，原生輸入框就沒有人會去動了——它們的值等同「已存值」。
 // 使用者的編輯住在我們自己的 pending 裡，兩者比對就知道有什麼還沒套用。
 
-import { postForm, postMassAction } from '@/services/mytags/mytagsApi'
+import { parseCredentials, postForm, postMassAction, type ApiCredentials } from '@/services/mytags/mytagsApi'
 import { createPageContext } from '@/composables/createPageContext'
 import { createAnchor } from '@/utils/createAnchor'
 
@@ -195,6 +195,8 @@ export interface TagSetIndex {
   current: TagSetSnapshot
   /** 這份文件的新增表單；送去哪一組由 URL 決定，見 submitNewTag */
   form: HTMLFormElement
+  /** 這份文件 inline script 裡的 API 憑證；沒有全域變數可讀的頁面（列表頁）靠它寫回 */
+  credentials: ApiCredentials | null
 }
 
 /** `'signed-out'` 代表沒有登入、根本沒有 My Tags；null 代表抓失敗 */
@@ -207,7 +209,14 @@ export async function fetchTagSetIndex(): Promise<TagSetIndex | 'signed-out' | n
   const set = parseTagSetSnapshot(doc, current)
   const form = doc.querySelector<HTMLFormElement>('#usertag_form')
   if (!set || !form) return null
-  return { order: options.length ? options.map((o) => o.value) : [current], current: set, form }
+  return {
+    order: options.length ? options.map((o) => o.value) : [current],
+    current: set,
+    form,
+    credentials: parseCredentials(
+      [...doc.querySelectorAll('script:not([src])')].map((s) => s.textContent ?? '').join('\n'),
+    ),
+  }
 }
 
 /**

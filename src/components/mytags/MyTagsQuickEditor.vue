@@ -10,7 +10,7 @@ import {
 import { useEqtToast } from '@/composables/useEqtToast'
 import { t } from '@/composables/useI18n'
 import { buildMyTagsPalette, fetchAllTagSets, saveMyTagsPalette, type MyTagsPalette } from '@/services/mytags/mytagsPalette'
-import { canWrite, setUserTag } from '@/services/mytags/mytagsApi'
+import { pageCredentials, setUserTag, type ApiCredentials } from '@/services/mytags/mytagsApi'
 import type { TagState } from '@/services/mytags/mytagsEdits'
 import { colorUsage } from '@/services/mytags/mytagsColors'
 import { MYTAGS_COLOR_USAGE } from '@/composables/useMyTagsColors'
@@ -44,6 +44,8 @@ const sets = shallowRef<TagSetSnapshot[]>([])
 const defaultSet = ref('')
 // 任何一份 /mytags 的表單都送得到任何一組，抓第一次就留著重複用
 let form: HTMLFormElement | null = null
+// 圖庫頁有全域變數可讀；列表頁沒有，用抓回來那份 /mytags 裡的
+let credentials: ApiCredentials | null = null
 provide(MYTAGS_COLOR_USAGE, computed(() => colorUsage(sets.value.flatMap((set) => set.rows))))
 
 async function load(): Promise<void> {
@@ -54,6 +56,7 @@ async function load(): Promise<void> {
     sets.value = snapshot.sets
     defaultSet.value = snapshot.current
     form = snapshot.form
+    credentials = pageCredentials() ?? snapshot.credentials
     if (!sets.value.some((set) => set.value === draft.value.tagSet)) {
       draft.value = { ...draft.value, tagSet: snapshot.current }
     }
@@ -174,9 +177,9 @@ function save(): Promise<void> {
   return run(async () => {
     const r = row.value
     if (!r || !dirty.value) return
-    if (!canWrite()) { toast.error(t('panel.noCredentials')); return }
+    if (!credentials) { toast.error(t('panel.noCredentials')); return }
     const next = { ...r, ...state.value }
-    const res = await setUserTag(next)
+    const res = await setUserTag(next, credentials)
     if (!res.ok) { toast.error(t('gallery.myTagsSaveFailed', { tag: r.full, error: res.error })); return }
     absorb(r.tagSet, sets.value.find((set) => set.value === r.tagSet)!.rows.map((x) => (x.id === r.id ? next : x)))
     edits.value = {}
