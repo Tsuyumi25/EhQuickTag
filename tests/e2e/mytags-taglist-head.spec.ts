@@ -34,8 +34,9 @@ const SAVED_ROWS = /\n {8}<div id="usertag_1">[\s\S]*?(?=\n {6}<\/div>\n {4}<\/f
 
 function secondSetPage(fixture: string, rows: TagRowHtml[]): string {
   return fixture
-    .replace('<option value="1" selected>Default</option>', '<option value="1">Default</option>')
-    .replace('<option value="2">Second set</option>', '<option value="2" selected>Second set</option>')
+    .replace('<option value="1" selected>Default (4)</option>', '<option value="1">Default (4)</option>')
+    // 標籤集選單排在前面，第一個「Second set (7)」是它的；剩下那個才是 #usertag_target 的
+    .replace('<option value="2">Second set (7)</option>', '<option value="2" selected>Second set (7)</option>')
     .replace('<option value="2">Second set (7)</option>', '<option value="1">Default (4)</option>')
     .replace(SAVED_ROWS, `\n${rows.map(tagRowHtml).join('\n')}`)
 }

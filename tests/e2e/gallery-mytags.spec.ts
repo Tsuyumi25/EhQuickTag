@@ -83,6 +83,8 @@ test('My Tags 模式把動作列翻成編輯列：單選左鍵、設定留著、
   await expect(name).toHaveValue(third)
   await expect(watch).toBeChecked()
 
+  // 抓回來的標籤集名稱本來就帶著「(4)」，選單只該剩一組括號。fixture 對 ?tagset=2 回的是同一頁，只看第一組
+  await expect(panel.locator('select option[value="1"]')).toHaveText('Default (4/100)')
   await panel.locator('select').selectOption('2')
   const create = panel.locator('.eqt-tag-draft__create')
   await expect(create).toHaveText('新增標籤')

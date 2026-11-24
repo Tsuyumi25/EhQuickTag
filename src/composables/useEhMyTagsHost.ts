@@ -93,7 +93,7 @@ export interface NewTagInput {
   color: string
 }
 
-/** #usertag_target 的選項文字長成「名稱 (34)」 */
+/** 標籤集選單的選項文字長成「名稱 (34)」：#usertag_target 跟 #tagset_outer 都是 */
 const SET_USED = /\((\d+)\)\s*$/
 
 function el<T extends HTMLElement>(root: Document, id: string): T | null {
@@ -181,7 +181,7 @@ export function parseTagSetSnapshot(doc: Document, value: string): TagSetSnapsho
   const sel = doc.querySelector<HTMLOptionElement>('#tagset_outer option[selected]')
   return {
     value,
-    name: sel?.textContent?.trim() ?? value,
+    name: sel?.textContent?.replace(SET_USED, '').trim() ?? value,
     enabled: doc.querySelector<HTMLInputElement>('#tagset_enable')?.checked ?? true,
     defaultColor: doc.querySelector<HTMLInputElement>('#tagcolor')?.value ?? '',
     rows: parseTagRows(doc, value),
