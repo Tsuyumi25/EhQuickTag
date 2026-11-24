@@ -77,11 +77,13 @@ test('My Tags 模式把動作列翻成編輯列：單選左鍵、設定留著、
   await expect(selected).toHaveCount(1)
   await expect(trail).toHaveCount(1)
 
+  // 換一顆標籤就是乾淨的草稿：上一顆勾的關注不會跟過來
   const watch = panel.locator('.eqt-taglist__flag input').first()
   await watch.check()
   await body(2).click()
   await expect(name).toHaveValue(third)
-  await expect(watch).toBeChecked()
+  await expect(watch).not.toBeChecked()
+  await watch.check()
 
   // 抓回來的標籤集名稱本來就帶著「(4)」，選單只該剩一組括號。fixture 對 ?tagset=2 回的是同一頁，只看第一組
   await expect(panel.locator('select option[value="1"]')).toHaveText('Default (4/100)')

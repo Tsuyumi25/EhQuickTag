@@ -72,15 +72,20 @@ onMounted(load)
 
 const full = computed(() => props.tag)
 
-// 新標籤的設定換標籤時留著：同一個意圖（例如一路關注幾個作者）只要設一次
-const draft = ref<TagState & { tagSet: string }>({
-  tagSet: '',
-  // 跟 /mytags 的新增草稿同一個理由：EH 原生預設 10，只想關注的標籤會順手多 10 分
-  weight: 0,
-  color: '',
-  watch: false,
-  hidden: false,
-})
+function emptyDraft(): TagState & { tagSet: string } {
+  return {
+    tagSet: defaultSet.value,
+    // 跟 /mytags 的新增草稿同一個理由：EH 原生預設 10，只想關注的標籤會順手多 10 分
+    weight: 0,
+    color: '',
+    watch: false,
+    hidden: false,
+  }
+}
+const draft = ref(emptyDraft())
+
+// 換一顆標籤就是一份新草稿：上一顆勾的隱藏、設的負權重不該不知不覺跟著加到下一顆
+watch(full, () => { draft.value = emptyDraft() })
 
 // 同一個標籤可能放在好幾組；計分只認啟用的組，所以先找啟用的
 const row = computed<MyTagRow | null>(() => {
