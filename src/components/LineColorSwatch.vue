@@ -6,6 +6,7 @@ import AnchoredPopover from '@/components/AnchoredPopover.vue'
 import ColorPicker from '@/components/ColorPicker.vue'
 import { t } from '@/composables/useI18n'
 import type { ColorUsage } from '@/services/mytags/mytagsColors'
+import { confirmRequest } from '@/services/confirmDialog'
 
 const props = withDefaults(defineProps<{
   modelValue: string | undefined
@@ -29,9 +30,9 @@ function clearColor() {
 }
 
 // Esc 先收這個浮層並標記用掉，外面在 document 上聽 Esc 的圖庫頁 My Tags 模式看到
-// defaultPrevented 就不會跟著整個關掉。capture 才排得到它前面
+// defaultPrevented 就不會跟著整個關掉。capture 才排得到它前面；確認框開著時 Esc 是在回答它，不搶
 useEventListener(document, 'keydown', (e: KeyboardEvent) => {
-  if (!open.value || e.key !== 'Escape') return
+  if (!open.value || e.key !== 'Escape' || confirmRequest.value) return
   e.preventDefault()
   open.value = false
 }, { capture: true })

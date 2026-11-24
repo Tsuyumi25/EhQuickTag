@@ -325,6 +325,10 @@ function pickMyTagsTarget(tag: string) {
   myTagsTarget.value = tag
   selection.value = chipsByName.value.has(tag) ? new Map([[tag, 'positive']]) : new Map()
 }
+// 列表會一路接下一頁：手打的名字當時這一頁沒有，之後長出來了就補亮
+watch(() => myTagsMode.value && chipsByName.value.has(myTagsTarget.value), (present) => {
+  if (present) pickMyTagsTarget(myTagsTarget.value)
+})
 
 function enterMyTags() {
   closeSearchMenu()

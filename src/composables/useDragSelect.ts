@@ -102,6 +102,11 @@ export function useDragSelect(opts: UseDragSelectOptions): {
   }
 
   useEventListener(document, 'mousemove', (e: MouseEvent) => {
+    // 刷到一半單選模式就收掉了（Esc / ×）：這一趟作廢，不然接下來的移動會照一般多選套上去
+    if (scrub && !opts.single?.()) {
+      if (scrub.trailing) endTrail()
+      scrub = null
+    }
     if (store.isIdle() && !scrub) return
     if (opts.takeOver) {
       e.preventDefault()

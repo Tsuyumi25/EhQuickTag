@@ -109,4 +109,16 @@ test('My Tags 模式把動作列翻成編輯列：單選左鍵、設定留著、
   await expect(panel).toHaveCount(0)
   await expect(votes).toHaveText(['1', '1'])
   await expect(chips.nth(1)).toHaveClass(/eqt-gallery-chip--selected-negative/)
+
+  // 刷到一半按 Esc 離開：這一趟作廢，後面的移動不會變成一般多選
+  await page.locator('.eqt-gallery-actions__split-btn--panel').click()
+  const start = await center(3)
+  const end = await center(5)
+  await page.mouse.move(start.x, start.y)
+  await page.mouse.down()
+  await page.keyboard.press('Escape')
+  await expect(panel).toHaveCount(0)
+  await page.mouse.move(end.x, end.y, { steps: 8 })
+  await page.mouse.up()
+  await expect(votes).toHaveText(['1', '1'])
 })
