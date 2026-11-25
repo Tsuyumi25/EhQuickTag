@@ -164,6 +164,8 @@
   --eqt-bg-active: #ddd8c8;
   --eqt-bg-btn: #edeada;
   --eqt-bg-btn-hover: #e2dfcf;
+  // btn-toned 的 hover。淺色的按鈕底跟外層幾乎同色，疊一層半透明正好是稍深一點
+  --eqt-btn-toned-hover: var(--eqt-bg-hover);
   --eqt-bg-disabled: #e8e6da;
   --eqt-text: #5c0d12;
   --eqt-text-hint: #8a8271;
@@ -214,6 +216,8 @@
   --eqt-bg-active: #5e636c;
   --eqt-bg-btn: #34353b;
   --eqt-bg-btn-hover: #3e3f45;
+  // dark 的按鈕底比外層深，疊半透明白會透出外層、比平常還淺，看起來像按鈕消失；改用按鈕自己的下一階
+  --eqt-btn-toned-hover: var(--eqt-bg-btn-hover);
   --eqt-bg-disabled: #2b2c31;
   --eqt-text: #ddd;
   --eqt-text-hint: #b0b0b0;

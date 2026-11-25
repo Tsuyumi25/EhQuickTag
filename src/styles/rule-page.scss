@@ -529,11 +529,14 @@
   cursor: pointer;
   transition: var(--eqt-transition-base);
 
-  &:hover,
-  &:focus-visible {
-    outline: none;
-    background: var(--eqt-bg-hover);
-  }
+  &:focus-visible { outline: none; }
+
+  // EH 的 g.css／x.css 用 !important 給 select:enabled:hover/focus 換底色：選完選項焦點還留著，
+  // 這一段字就一直亮著。只有同樣帶 !important、而且選擇器比它具體才壓得過
+  &:enabled:focus { background-color: transparent !important; }
+
+  &:enabled:hover,
+  &:enabled:focus-visible { background-color: var(--eqt-bg-hover) !important; }
 
   // 下拉本體透明時，Chromium 的選單會拿預設白底配上 dark 的淺色字
   > option {
