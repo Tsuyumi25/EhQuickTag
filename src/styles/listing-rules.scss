@@ -11,6 +11,12 @@
   --eqt-listing-rules-dock-clearance: calc(
     var(--eqt-listing-rules-gap) * 4 + var(--eqt-border-width) * 2 + var(--eqt-listing-rules-gap) * 2 + var(--eqt-row-h)
   );
+  --eqt-listing-rules-dock-bg: var(--eqt-bg);
+}
+
+// exhentai 的頁面底色就是 #34353b（= dark 的 --eqt-bg-elevated），dock 跟著用它才不像浮著一塊灰板
+:root.eqt-dark {
+  --eqt-listing-rules-dock-bg: var(--eqt-bg-elevated);
 }
 
 .eqt-listing-rules,
@@ -157,7 +163,7 @@
   width: 100%;
   min-width: 0;
   padding: var(--eqt-listing-rules-gap);
-  background: var(--eqt-bg);
+  background: var(--eqt-listing-rules-dock-bg);
   border: var(--eqt-border-width) solid var(--eqt-border);
   border-radius: calc(var(--eqt-radius-md) * 2);
   box-shadow: var(--eqt-shadow-popover);
@@ -167,6 +173,9 @@
   .eqt-listing-rules__selection-count {
     @include btn-toned;
     border: none;
+    // 淺色的按鈕底跟 dock 底幾乎同色，看起來是平的；暗色的按鈕底比 dock 深一截，會變成一塊塊方塊。
+    // 透明讓兩邊都是平的，hover 與展開中的底色照舊
+    background: transparent;
     flex-shrink: 0;
     height: var(--eqt-row-h);
     gap: var(--eqt-listing-rules-gap);
@@ -197,7 +206,7 @@
   width: var(--eqt-listing-rules-editor-width);
   max-width: 100%;
   padding: var(--eqt-listing-rules-gap);
-  background: var(--eqt-bg);
+  background: var(--eqt-listing-rules-dock-bg);
   border: var(--eqt-border-width) solid var(--eqt-border);
   border-radius: calc(var(--eqt-radius-md) * 2);
   box-shadow: var(--eqt-shadow-popover);
@@ -232,11 +241,12 @@
   width: 100%;
   min-width: 0;
 }
+// dark 的 --eqt-divider 跟 --eqt-bg 同色，dock 與面板的分隔線一律用 --eqt-border 才看得見
 .eqt-listing-rules__separator {
   flex: 0 0 var(--eqt-border-width-thin);
   width: var(--eqt-border-width-thin);
   height: var(--eqt-row-h);
-  background: var(--eqt-divider);
+  background: var(--eqt-border);
 }
 .eqt-listing-rules__search-menu {
   min-width: 0;
@@ -299,14 +309,14 @@
 .eqt-listing-rules__panel-divider {
   margin: 0;
   border: 0;
-  border-top: var(--eqt-border-width-thin) solid var(--eqt-divider);
+  border-top: var(--eqt-border-width-thin) solid var(--eqt-border);
 }
 .eqt-listing-rules__header {
   display: flex;
   align-items: start;
   gap: calc(var(--eqt-listing-rules-gap) * 2);
   padding-bottom: calc(var(--eqt-listing-rules-gap) * 2);
-  border-bottom: var(--eqt-border-width-thin) solid var(--eqt-divider);
+  border-bottom: var(--eqt-border-width-thin) solid var(--eqt-border);
   > div { flex: 1; min-width: 0; overflow-wrap: anywhere; }
   small { display: block; }
   a { color: var(--eqt-text); white-space: nowrap; }
