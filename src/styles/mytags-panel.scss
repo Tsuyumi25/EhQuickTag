@@ -1077,15 +1077,21 @@
   dd { margin: 0; }
 }
 
+// 底色就是判斷狀態，滑過去換色會像是狀態變了；要壓過 .eqt-panel__btn 的 hover，選擇器權重得跟它一樣
 .eqt-gal__verdict {
   justify-content: center;
 
-  &--block {
+  &,
+  &:hover:not(:disabled) { background: var(--eqt-bg-btn); }
+
+  &--block,
+  &--block:hover:not(:disabled) {
     background: var(--eqt-danger);
     color: var(--eqt-text-on-color);
   }
 
-  &--keep {
+  &--keep,
+  &--keep:hover:not(:disabled) {
     background: var(--eqt-green);
     color: var(--eqt-text-on-color);
   }
