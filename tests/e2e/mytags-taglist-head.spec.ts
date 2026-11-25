@@ -199,20 +199,40 @@ test('E站頂部欄借入現場 #nb 與 #lb，插件控制與工作區維持原�
   await expect(page.locator('body > #lb')).toHaveCount(1)
 })
 
-test('關注與隱藏 toggle 取聯集', async ({ page }) => {
-  const toggles = page.locator('.eqt-taglist__flag-filter')
+test('狀態選單只顯示關注或只顯示隱藏', async ({ page }) => {
+  const status = page.locator('.eqt-taglist__statuspick')
 
-  await toggles.nth(0).click()
+  await status.selectOption('watch')
   await expect.poll(() => visibleTags(page)).toEqual(['male:positive-sample'])
 
-  await toggles.nth(1).click()
-  await expect.poll(() => visibleTags(page)).toEqual([
-    'parody:hidden-sample',
-    'male:positive-sample',
-  ])
-
-  await toggles.nth(0).click()
+  await status.selectOption('hidden')
   await expect.poll(() => visibleTags(page)).toEqual(['parody:hidden-sample'])
+
+  await status.selectOption('all')
+  await expect.poll(() => visibleTags(page)).toHaveLength(4)
+})
+
+test('狀態選單依權重正負與有無自訂顏色篩選，隱藏的不算進權重', async ({ page }) => {
+  const status = page.locator('.eqt-taglist__statuspick')
+
+  // 隱藏的那顆權重是 -5，但不進加總，不該出現在權重 < 0
+  await status.selectOption('negative')
+  await expect.poll(() => visibleTags(page)).toEqual(['female:negative-sample'])
+
+  await status.selectOption('positive')
+  await expect.poll(() => visibleTags(page)).toEqual(['character:plain-sample', 'male:positive-sample'])
+
+  await status.selectOption('uncolored')
+  await expect.poll(() => visibleTags(page)).toEqual(['parody:hidden-sample'])
+
+  await status.selectOption('all')
+  const plain = page.locator('.eqt-taglist__row').filter({
+    has: page.locator('.eqt-taglist__chip[title="character:plain-sample"]'),
+  })
+  await plain.locator('.eqt-number-field__input').fill('0')
+  await plain.locator('.eqt-number-field__input').press('Enter')
+  await status.selectOption('zero')
+  await expect.poll(() => visibleTags(page)).toEqual(['character:plain-sample'])
 })
 
 test('排序選單切換負權重、正權重與有效顏色順序', async ({ page }) => {

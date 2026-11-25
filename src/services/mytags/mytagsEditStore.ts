@@ -7,17 +7,15 @@ const EDIT_PREFIX = 'eqt_mytags_edit'
 const LEGACY_KEY = 'eqt_mytags_edits'
 const LEGACY_SCHEMA = 1
 
-/** 清單的篩選與排序條件。旗標篩選同時啟用時取聯集。 */
+/** 清單的篩選與排序條件 */
 export interface TagFilter {
   set: string
-  watch: boolean
-  hidden: boolean
   sort: 'negative' | 'positive' | 'color'
-  status: 'all' | 'weighted' | 'pending'
+  status: 'all' | 'watch' | 'hidden' | 'negative' | 'zero' | 'positive' | 'uncolored' | 'pending'
 }
 
 export function emptyFilter(): TagFilter {
-  return { set: 'all', watch: false, hidden: false, sort: 'negative', status: 'all' }
+  return { set: 'all', sort: 'negative', status: 'all' }
 }
 
 function isPatch(value: unknown): value is PendingEdit {

@@ -83,8 +83,6 @@ function reorder(): void {
 watch(
   () => [
     props.filter.set,
-    props.filter.watch,
-    props.filter.hidden,
     props.filter.sort,
     props.filter.status,
     props.rows.length,
@@ -97,13 +95,17 @@ const visible = computed(() => {
   const at = order.value
   return props.rows.filter((row) => {
     const v = view(row)
-    const flagFilterOn = props.filter.watch || props.filter.hidden
-    const matchesFlag = (props.filter.watch && v.watch) || (props.filter.hidden && v.hidden)
-    if (flagFilterOn && !matchesFlag) return false
-    // EH 的預設權重是 10，所以「非預設」是指使用者真的動過的那些
-    if (props.filter.status === 'weighted' && v.weight === 10) return false
-    if (props.filter.status === 'pending' && !dirty(row)) return false
-    return true
+    switch (props.filter.status) {
+      case 'watch': return v.watch
+      case 'hidden': return v.hidden
+      // 隱藏的標籤權重不進加總，算進哪一邊都會誤導
+      case 'negative': return !v.hidden && v.weight < 0
+      case 'zero': return !v.hidden && v.weight === 0
+      case 'positive': return !v.hidden && v.weight > 0
+      case 'uncolored': return v.color === ''
+      case 'pending': return dirty(row)
+      default: return true
+    }
   // 沒排到的（剛載進來的）沉到最後，下一次重排就會歸位
   }).sort((a, b) => (at.get(a.id) ?? Infinity) - (at.get(b.id) ?? Infinity))
 })
@@ -204,7 +206,7 @@ onBeforeUnmount(() => ro?.disconnect())
 
 // 換篩選或排序之後留在原本的捲動位置多半會落在清單之外，直接回頂
 watch(
-  () => [props.filter.set, props.filter.watch, props.filter.hidden, props.filter.sort, props.filter.status],
+  () => [props.filter.set, props.filter.sort, props.filter.status],
   () => {
     scrollTop.value = 0
     if (scroller.value) scroller.value.scrollTop = 0
@@ -238,20 +240,6 @@ watch(
         </select>
       </div>
       <div class="eqt-taglist__head-filters">
-        <button
-          type="button"
-          class="eqt-taglist__flag-filter"
-          :class="{ 'eqt-taglist__flag-filter--on': filter.watch }"
-          :aria-pressed="filter.watch"
-          @click="emit('update:filter', { ...filter, watch: !filter.watch })"
-        >{{ t('taglist.filterWatch') }}</button>
-        <button
-          type="button"
-          class="eqt-taglist__flag-filter"
-          :class="{ 'eqt-taglist__flag-filter--on': filter.hidden }"
-          :aria-pressed="filter.hidden"
-          @click="emit('update:filter', { ...filter, hidden: !filter.hidden })"
-        >{{ t('taglist.filterHidden') }}</button>
         <select
           class="eqt-taglist__sortpick"
           :value="filter.sort"
@@ -272,7 +260,12 @@ watch(
           })"
         >
           <option value="all">{{ t('taglist.statusAll') }}</option>
-          <option value="weighted">{{ t('taglist.statusWeighted') }}</option>
+          <option value="watch">{{ t('taglist.statusWatch') }}</option>
+          <option value="hidden">{{ t('taglist.statusHidden') }}</option>
+          <option value="negative">{{ t('taglist.statusNegative') }}</option>
+          <option value="zero">{{ t('taglist.statusZero') }}</option>
+          <option value="positive">{{ t('taglist.statusPositive') }}</option>
+          <option value="uncolored">{{ t('taglist.statusUncolored') }}</option>
           <option value="pending">{{ t('taglist.statusPending') }}</option>
         </select>
       </div>
