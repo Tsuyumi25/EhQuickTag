@@ -187,6 +187,8 @@
   --eqt-danger: #8c3333;
   --eqt-danger-hover: #743030;
   --eqt-danger-bg-hover: rgba(140, 51, 51, 0.15);
+  // 紅色的字。--eqt-danger 是給色塊用的，dark 的 #4f535b 底上拿它當字只有 1.03:1，等於看不見
+  --eqt-danger-text: #8c3333;
 
   // 實色 button 上的前景色（白字）。跟 --eqt-green / --eqt-danger 配對用
   --eqt-text-on-color: #fff;
@@ -237,6 +239,8 @@
   --eqt-danger: #8c3333;
   --eqt-danger-hover: #743030;
   --eqt-danger-bg-hover: rgba(140, 51, 51, 0.15);
+  // 在 #4f535b 上 4.57:1、#34353b 上 7.24:1，小字也讀得到
+  --eqt-danger-text: #ffb4b4;
 
   --eqt-text-on-color: #fff;
 }

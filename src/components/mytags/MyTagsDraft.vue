@@ -230,7 +230,7 @@ function commit(): void {
 
   &__error {
     margin: 0;
-    color: var(--eqt-danger);
+    color: var(--eqt-danger-text);
     font-size: var(--eqt-fs-xs);
   }
 }

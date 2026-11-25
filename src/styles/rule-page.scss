@@ -91,7 +91,7 @@
   border-inline-start: var(--eqt-rule-page-tone-width) solid var(--eqt-danger);
   border-radius: var(--eqt-radius-sm);
   background: var(--eqt-danger-bg-hover);
-  color: var(--eqt-danger);
+  color: var(--eqt-danger-text);
 }
 
 // ---- 兩側卡片：左欄規則清單、右欄素材與標籤 ----
@@ -359,7 +359,7 @@
   }
 
   .eqt-rule-page__group:not(.eqt-rule-page__group--root) > &:not(:has(> .eqt-rule-page__item, > .eqt-popup__suggestion))::before {
-    color: var(--eqt-danger);
+    color: var(--eqt-danger-text);
   }
 
   // 從候選清單拖進來的是一整列，在托盤裡縮成 chip 大小、只留名稱
@@ -441,7 +441,7 @@
     height: var(--eqt-fs-md);
   }
 
-  &:hover { color: var(--eqt-danger); }
+  &:hover { color: var(--eqt-danger-text); }
 }
 
 // 數值條件讀起來是一句話（★ 不低於 4.5）：框只留 chip 外面這一層，裡面的下拉與數字欄都不畫框
@@ -650,7 +650,7 @@
     height: var(--eqt-fs-lg);
     color: var(--eqt-text-hint);
 
-    &:hover:not(:disabled) { color: var(--eqt-danger); }
+    &:hover:not(:disabled) { color: var(--eqt-danger-text); }
 
     > svg {
       width: var(--eqt-fs-md);
@@ -826,7 +826,7 @@
   gap: calc(var(--eqt-rule-page-gap) * 1.5);
   height: var(--eqt-rule-page-control-h);
   padding: 0 calc(var(--eqt-rule-page-gap) * 2.5);
-  color: var(--eqt-danger);
+  color: var(--eqt-danger-text);
 
   &[aria-pressed='true'] {
     border-color: var(--eqt-danger);
@@ -1049,7 +1049,7 @@
 
 .eqt-rule-page__preview-note {
   margin: 0;
-  color: var(--eqt-danger);
+  color: var(--eqt-danger-text);
   font-size: var(--eqt-fs-sm);
 }
 
@@ -1182,7 +1182,7 @@
 
 .eqt-rule-page__source-error {
   margin: 0;
-  color: var(--eqt-danger);
+  color: var(--eqt-danger-text);
 }
 
 // ---- 摘要 ----
@@ -1265,7 +1265,7 @@
   font-size: var(--eqt-fs-sm);
 }
 
-.eqt-rule-page__digest-note--never { color: var(--eqt-danger); }
+.eqt-rule-page__digest-note--never { color: var(--eqt-danger-text); }
 
 .eqt-rule-page__digest-range {
   display: inline-flex;

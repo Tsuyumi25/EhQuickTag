@@ -112,7 +112,7 @@ const emit = defineEmits<{
     // 必須加 :not(:disabled) 才不會輸 btn-ghost / 上面 hover 的 (0,3,0) 特異性，
     // 否則 purge 紅色被 var(--eqt-text) 蓋掉
     &--purge:hover:not(:disabled) {
-      color: var(--eqt-danger);
+      color: var(--eqt-danger-text);
     }
   }
 }

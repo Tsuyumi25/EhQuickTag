@@ -230,7 +230,7 @@ function remove(): Promise<void> {
     text-overflow: ellipsis;
     white-space: nowrap;
 
-    &--alert { color: var(--eqt-danger); }
+    &--alert { color: var(--eqt-danger-text); }
   }
 
   &__reload { flex: none; }

@@ -730,7 +730,7 @@
 }
 
 .eqt-taglist__bulk-delete {
-  color: var(--eqt-danger);
+  color: var(--eqt-danger-text);
 
   &[aria-pressed='true'] {
     border-color: var(--eqt-status-include);

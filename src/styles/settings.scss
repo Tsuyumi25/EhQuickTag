@@ -139,7 +139,7 @@
       &:hover { color: inherit; }
     }
 
-    &--warn { color: var(--eqt-danger); }
+    &--warn { color: var(--eqt-danger-text); }
   }
 
   // 只拿來整組停用裡面的控制項；display: contents 讓 section 照樣直接排在分頁的 flex 欄裡

@@ -295,7 +295,7 @@
     flex-shrink: 0;
 
     &:hover:not(:disabled) {
-      color: var(--eqt-danger);
+      color: var(--eqt-danger-text);
     }
   }
 
@@ -610,7 +610,7 @@
 
     &:hover:not(:disabled) {
       background: var(--eqt-danger-bg-hover);
-      color: var(--eqt-danger);
+      color: var(--eqt-danger-text);
     }
 
     &:disabled {

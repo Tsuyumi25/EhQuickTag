@@ -151,7 +151,7 @@ watch(menuEl, (el) => {
     cursor: pointer;
 
     &--danger {
-      color: var(--eqt-danger);
+      color: var(--eqt-danger-text);
 
       &:hover:not(:disabled) {
         background: var(--eqt-danger-bg-hover);
