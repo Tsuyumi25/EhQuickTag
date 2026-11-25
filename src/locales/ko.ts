@@ -528,7 +528,7 @@ export default {
   'settings.tabReader': '뷰어',
   'settings.sectionReaderToggles': '기능',
   'settings.readerEnhancer': '뷰어 강화 사용',
-  'settings.readerEnhancerHint': '뷰어 안에서 태그를 달 수 있습니다.',
+  'settings.readerEnhancerHint': '/mpv/ 뷰어 안에서 태그를 달 수 있습니다.',
   'settings.readerPanelOpacity': '불투명도',
   'settings.sectionReaderPanel': '갤러리 정보 패널',
   'settings.readerPanelPosition': '위치',

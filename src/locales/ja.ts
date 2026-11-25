@@ -528,7 +528,7 @@ export default {
   'settings.tabReader': 'ビューア',
   'settings.sectionReaderToggles': '機能',
   'settings.readerEnhancer': 'ビューア強化を有効にする',
-  'settings.readerEnhancerHint': 'ビューアの中でタグ付けできます。',
+  'settings.readerEnhancerHint': '/mpv/ ビューアの中でタグ付けできます。',
   'settings.readerPanelOpacity': '不透明度',
   'settings.sectionReaderPanel': 'ギャラリー情報パネル',
   'settings.readerPanelPosition': '位置',

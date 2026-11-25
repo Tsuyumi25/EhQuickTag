@@ -528,7 +528,7 @@ export default {
   'settings.tabReader': 'Reader',
   'settings.sectionReaderToggles': 'Features',
   'settings.readerEnhancer': 'Enable Reader Enhancer',
-  'settings.readerEnhancerHint': 'Tag galleries from inside the reader.',
+  'settings.readerEnhancerHint': 'Tag galleries from inside the /mpv/ reader.',
   'settings.readerPanelOpacity': 'Opacity',
   'settings.sectionReaderPanel': 'Gallery Info Panel',
   'settings.readerPanelPosition': 'Position',

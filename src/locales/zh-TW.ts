@@ -528,7 +528,7 @@ export default {
   'settings.tabReader': '閱讀器',
   'settings.sectionReaderToggles': '功能開關',
   'settings.readerEnhancer': '啟用閱讀器強化',
-  'settings.readerEnhancerHint': '在閱讀器裡打標籤。',
+  'settings.readerEnhancerHint': '在 /mpv/ 閱讀器裡打標籤。',
   'settings.readerPanelOpacity': '不透明度',
   'settings.sectionReaderPanel': '圖庫資訊面板',
   'settings.readerPanelPosition': '位置',
