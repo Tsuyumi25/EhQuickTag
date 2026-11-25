@@ -6,8 +6,6 @@ import { renderToString } from 'vue/server-renderer'
 import { useEhGalleryHost } from '@/composables/useEhGalleryHost'
 
 vi.mock('@/services/store', () => ({
-  fontFamily: ref(''),
-  fontWeight: ref(''),
   galleryTaglistExpand: ref(false),
   galleryTaglistHeight: ref(160),
 }))

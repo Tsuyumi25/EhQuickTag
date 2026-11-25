@@ -4,6 +4,7 @@ import App from '@/App.vue'
 import { loadStore, startAutoSave, tagDbMirror, tagDbTtlDays, tagCountMirror, tagCountTtlDays, tagWikiMirror, tagWikiTtlDays } from '@/services/store'
 import { loadSessionHistory } from '@/services/search/searchSession'
 import { createAnchor } from '@/utils/createAnchor'
+import { bindFontVariables } from '@/utils/fontVariables'
 import { loadTagDb } from '@/services/tags/tagDb'
 import { loadTagCount } from '@/services/tags/tagCount'
 import { loadTagWiki, WikiSchemaMismatchError } from '@/services/tags/tagWiki'
@@ -35,7 +36,10 @@ import '@/styles/toast-overrides.scss'
   document.body.append(toastContainer)
 
   const anchorScope = effectScope()
-  const appContainer = anchorScope.run(() => createAnchor('eqt-app'))!
+  const appContainer = anchorScope.run(() => {
+    bindFontVariables(document.documentElement)
+    return createAnchor('eqt-app')
+  })!
   document.body.append(appContainer)
 
   const app = createApp(App)

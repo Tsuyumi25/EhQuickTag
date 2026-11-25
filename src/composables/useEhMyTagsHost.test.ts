@@ -1,11 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createSSRApp, defineComponent, h, ref } from 'vue'
+import { createSSRApp, defineComponent, h } from 'vue'
 // 沒有 jsdom，靠 SSR renderer 取得真正的 appContext，重現 root 接管、後代取用的路徑
 import { renderToString } from 'vue/server-renderer'
 import { tagSetUrl, useEhMyTagsHost } from '@/composables/useEhMyTagsHost'
 import { postMassAction } from '@/services/mytags/mytagsApi'
 
-vi.mock('@/services/store', () => ({ fontFamily: ref(''), fontWeight: ref('') }))
 vi.mock('@/services/mytags/mytagsApi', () => ({ postForm: vi.fn(), postMassAction: vi.fn() }))
 
 function myTagsPage() {

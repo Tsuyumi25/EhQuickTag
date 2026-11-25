@@ -1,8 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { effectScope, nextTick, ref, type EffectScope } from 'vue'
+import { effectScope, nextTick, type EffectScope } from 'vue'
 import { useEhFormHost } from '@/composables/useEhFormHost'
 
-vi.mock('@/services/store', () => ({ fontFamily: ref(''), fontWeight: ref('') }))
 
 const scopes: EffectScope[] = []
 
