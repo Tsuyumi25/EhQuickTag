@@ -612,6 +612,7 @@ export default {
   'taglist.sortNegative': '按負權重',
   'taglist.sortPositive': '按正權重',
   'taglist.sortColor': '按顏色排序',
+  'taglist.sortSet': '按標籤集排序',
   'taglist.statusAll': '全部狀態',
   'taglist.statusNegative': '權重 < 0',
   'taglist.statusZero': '權重 = 0',

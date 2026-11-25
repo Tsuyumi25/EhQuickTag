@@ -454,6 +454,51 @@
 // 撐出總高度，讓捲軸的長度跟真實筆數對得上
 .eqt-taglist__spacer { position: relative; }
 
+// 按組排序時插在每組前面的標題。高度由 JS 的 HEAD_H 決定，這裡同樣不設 height
+.eqt-taglist__group {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  box-sizing: border-box;
+  padding: 0 4px 3px;
+  border-bottom: var(--eqt-border-width) solid var(--eqt-divider);
+  color: var(--eqt-text-hint);
+  font-size: var(--eqt-fs-xs);
+  font-weight: 700;
+
+  // 黏頂那一份蓋在列上面，底色要不透明；側欄自己是 bg 上疊一層 stripe，照樣疊出同一個顏色
+  &--stuck {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: linear-gradient(var(--eqt-bg-stripe), var(--eqt-bg-stripe)), var(--eqt-bg);
+  }
+}
+
+.eqt-taglist__group-swatch {
+  flex: 0 0 auto;
+  width: calc(var(--eqt-checkbox-size) / 2);
+  height: calc(var(--eqt-checkbox-size) / 2);
+  box-sizing: border-box;
+  border: var(--eqt-border-width) solid var(--eqt-border);
+  border-radius: var(--eqt-radius-sm);
+}
+
+.eqt-taglist__group-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.eqt-taglist__group-count {
+  margin-left: auto;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
 // 一個標籤佔三行：標籤自己一行（長名字才放得下）、旗標與權重、去向分佈
 // ⚠️ 高度由 JS 的 ROW_H 決定（inline style），這裡不要再設 height
 .eqt-taglist__row {

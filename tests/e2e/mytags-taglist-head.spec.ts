@@ -262,6 +262,22 @@ test('排序選單切換負權重、正權重與有效顏色順序', async ({ pa
   ])
 })
 
+test('按標籤集排序時照組的順序分段，每段前面有組名與筆數', async ({ page }) => {
+  await mockMassMove(page, [])
+  await page.locator('.eqt-taglist__sortpick').selectOption('set')
+  await expect.poll(() => visibleTags(page)).toEqual([
+    'female:negative-sample',
+    'parody:hidden-sample',
+    'character:plain-sample',
+    'male:positive-sample',
+    'artist:second-set-only',
+  ])
+  const heads = page.locator('.eqt-taglist__spacer .eqt-taglist__group')
+  await expect(heads.locator('.eqt-taglist__group-name')).toHaveText(['Default', 'Second set'])
+  await expect(heads.locator('.eqt-taglist__group-count')).toHaveText(['4', '1'])
+  await expect(page.locator('.eqt-taglist__group--stuck .eqt-taglist__group-name')).toHaveText('Default')
+})
+
 
 test('編輯區可拖曳收合並保留草稿與預覽', async ({ page }) => {
   const search = page.locator('.eqt-tag-catalog__search-input')

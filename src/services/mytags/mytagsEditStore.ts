@@ -10,7 +10,7 @@ const LEGACY_SCHEMA = 1
 /** 清單的篩選與排序條件 */
 export interface TagFilter {
   set: string
-  sort: 'negative' | 'positive' | 'color'
+  sort: 'negative' | 'positive' | 'color' | 'set'
   status: 'all' | 'watch' | 'hidden' | 'negative' | 'zero' | 'positive' | 'uncolored' | 'pending'
 }
 

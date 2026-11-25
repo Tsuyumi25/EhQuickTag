@@ -612,6 +612,7 @@ export default {
   'taglist.sortNegative': '負の重み順',
   'taglist.sortPositive': '正の重み順',
   'taglist.sortColor': '色順',
+  'taglist.sortSet': 'タグセット順',
   'taglist.statusAll': 'すべての状態',
   'taglist.statusNegative': '重み < 0',
   'taglist.statusZero': '重み = 0',

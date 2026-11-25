@@ -8,6 +8,7 @@ import { effective } from '@/services/mytags/mytagsEdits'
 import { emptyBulkDraft, type BulkDraft } from '@/services/mytags/mytagsBulk'
 import type { TagImpact } from '@/services/mytags/mytagsScore'
 import type { TagFilter } from '@/services/mytags/mytagsEditStore'
+import { itemsWithin, layoutList, stickyHead } from '@/services/mytags/tagListLayout'
 
 const props = defineProps<{
   rows: MyTagRow[]
@@ -32,10 +33,11 @@ const emit = defineEmits<{
 }>()
 
 /**
- * 每一列的高度。JS 和 CSS 只有這一個來源——虛擬捲動要靠它換算位置，對不上就會
- * 抖動或空一塊。三行：標籤 / 旗標與權重 / 比率條。
+ * 每一列與分組標題的高度。JS 和 CSS 只有這一個來源——虛擬捲動要靠它換算位置，對不上就會
+ * 抖動或空一塊。一列三行：標籤 / 旗標與權重 / 比率條。
  */
 const ROW_H = 84
+const HEAD_H = 28
 /** 上下各多畫幾列，快速捲動時才不會看到空白 */
 const OVERSCAN = 4
 
@@ -63,6 +65,10 @@ const order = ref(new Map<number, number>())
 function compareRows(a: MyTagRow, b: MyTagRow): number {
   const av = view(a)
   const bv = view(b)
+  if (props.filter.sort === 'set') {
+    return setOrder(a.tagSet) - setOrder(b.tagSet)
+      || av.weight - bv.weight || a.full.localeCompare(b.full)
+  }
   if (props.filter.sort === 'positive') {
     return bv.weight - av.weight || a.full.localeCompare(b.full)
   }
@@ -74,6 +80,16 @@ function compareRows(a: MyTagRow, b: MyTagRow): number {
     return ac.localeCompare(bc) || a.full.localeCompare(b.full)
   }
   return av.weight - bv.weight || a.full.localeCompare(b.full)
+}
+
+/** 照 EH 上標籤集的順序；不認得的組排最後 */
+function setOrder(tagSet: string): number {
+  const at = props.sets.findIndex((set) => set.value === tagSet)
+  return at < 0 ? Infinity : at
+}
+
+function setName(tagSet: string): string {
+  return props.sets.find((set) => set.value === tagSet)?.name ?? tagSet
 }
 
 function reorder(): void {
@@ -178,18 +194,28 @@ function pickMove(tagSet: string): void {
   stageDraft({ action: tagSet ? { kind: 'move', tagSet } : null })
 }
 
+const layout = computed(() => layoutList(
+  visible.value,
+  { row: ROW_H, head: HEAD_H },
+  props.filter.sort === 'set' ? (row) => row.tagSet : undefined,
+))
+
+const stuck = computed(() => stickyHead(layout.value.heads, scrollTop.value))
+
 /**
  * 只畫看得到的那幾列。
  *
  * ⚠️ 一列有七個表單控制項（含原生的 `<input type="color">`），一百多列就是近千個。
  * 卡頓的來源是控制項數量，不是資料量。
  */
-const window_ = computed(() => {
-  const total = visible.value.length
-  const start = Math.max(0, Math.floor(scrollTop.value / ROW_H) - OVERSCAN)
-  const count = Math.ceil(viewport.value / ROW_H) + OVERSCAN * 2
-  return { start, rows: visible.value.slice(start, start + count), total }
-})
+const window_ = computed(() => ({
+  items: itemsWithin(
+    layout.value.items,
+    scrollTop.value - OVERSCAN * ROW_H,
+    scrollTop.value + viewport.value + OVERSCAN * ROW_H,
+  ),
+  total: layout.value.total,
+}))
 
 function onScroll(e: Event): void {
   scrollTop.value = (e.target as HTMLElement).scrollTop
@@ -251,6 +277,7 @@ watch(
           <option value="negative">{{ t('taglist.sortNegative') }}</option>
           <option value="positive">{{ t('taglist.sortPositive') }}</option>
           <option value="color">{{ t('taglist.sortColor') }}</option>
+          <option value="set">{{ t('taglist.sortSet') }}</option>
         </select>
         <select
           class="eqt-taglist__statuspick"
@@ -272,37 +299,58 @@ watch(
     </div>
 
     <div ref="scroller" class="eqt-taglist__rows" @scroll.passive="onScroll">
+      <!-- 負的 margin-bottom 抵掉自己的高度，底下的清單位置不受影響 -->
+      <div
+        v-if="stuck"
+        class="eqt-taglist__group eqt-taglist__group--stuck"
+        aria-hidden="true"
+        :style="{ height: `${HEAD_H}px`, marginBottom: `-${HEAD_H}px`, transform: `translateY(${stuck.offset}px)` }"
+      >
+        <span class="eqt-taglist__group-swatch" :style="{ background: setColors[stuck.head.group] || undefined }" />
+        <span class="eqt-taglist__group-name">{{ setName(stuck.head.group) }}</span>
+        <span class="eqt-taglist__group-count">{{ stuck.head.count }}</span>
+      </div>
       <p v-if="!visible.length" class="eqt-panel__hint">{{ t('taglist.empty') }}</p>
 
-      <div v-else class="eqt-taglist__spacer" :style="{ height: `${window_.total * ROW_H}px` }">
+      <div v-else class="eqt-taglist__spacer" :style="{ height: `${window_.total}px` }">
+      <template v-for="item in window_.items" :key="item.kind === 'head' ? `set:${item.group}` : item.row.id">
+      <div
+        v-if="item.kind === 'head'"
+        class="eqt-taglist__group"
+        :style="{ top: `${item.top}px`, height: `${HEAD_H}px` }"
+      >
+        <span class="eqt-taglist__group-swatch" :style="{ background: setColors[item.group] || undefined }" />
+        <span class="eqt-taglist__group-name">{{ setName(item.group) }}</span>
+        <span class="eqt-taglist__group-count">{{ item.count }}</span>
+      </div>
       <article
-        v-for="(row, i) in window_.rows"
-        :key="row.id"
+        v-else
         class="eqt-taglist__row"
-        :style="{ top: `${(window_.start + i) * ROW_H}px`, height: `${ROW_H}px` }"
+        :style="{ top: `${item.top}px`, height: `${ROW_H}px` }"
         :class="{
-          'eqt-taglist__row--on': selected === row.full,
-          'eqt-taglist__row--dirty': dirty(row),
+          'eqt-taglist__row--on': selected === item.row.full,
+          'eqt-taglist__row--dirty': dirty(item.row),
         }"
       >
         <label class="eqt-taglist__check">
           <input
-            type="checkbox" :checked="pickedIds.has(row.id)" :disabled="busy"
-            @change="togglePick(row, ($event.target as HTMLInputElement).checked)"
+            type="checkbox" :checked="pickedIds.has(item.row.id)" :disabled="busy"
+            @change="togglePick(item.row, ($event.target as HTMLInputElement).checked)"
           >
         </label>
 
         <MyTagsTagBody
-          :full="row.full"
-          :state="view(row)"
-          :set-color="setColors[row.tagSet] ?? ''"
-          :impact="impact.get(row.full)"
+          :full="item.row.full"
+          :state="view(item.row)"
+          :set-color="setColors[item.row.tagSet] ?? ''"
+          :impact="impact.get(item.row.full)"
           selectable
           show-impact
-          @select="emit('select', row.full)"
-          @patch="emit('patch', row, $event)"
+          @select="emit('select', item.row.full)"
+          @patch="emit('patch', item.row, $event)"
         />
       </article>
+      </template>
       </div>
     </div>
 

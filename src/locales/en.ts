@@ -612,6 +612,7 @@ export default {
   'taglist.sortNegative': 'By negative weight',
   'taglist.sortPositive': 'By positive weight',
   'taglist.sortColor': 'By color',
+  'taglist.sortSet': 'By tag set',
   'taglist.statusAll': 'All states',
   'taglist.statusNegative': 'Weight < 0',
   'taglist.statusZero': 'Weight = 0',

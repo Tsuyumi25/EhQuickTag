@@ -612,6 +612,7 @@ export default {
   'taglist.sortNegative': '음수 가중치순',
   'taglist.sortPositive': '양수 가중치순',
   'taglist.sortColor': '색상순',
+  'taglist.sortSet': '태그 세트순',
   'taglist.statusAll': '모든 상태',
   'taglist.statusNegative': '가중치 < 0',
   'taglist.statusZero': '가중치 = 0',
