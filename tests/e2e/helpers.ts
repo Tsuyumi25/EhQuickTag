@@ -172,6 +172,9 @@ function gmShimCode(): string {
       return id
     }
     window.GM_unregisterMenuCommand = (id) => { window.__eqtMenuCommands.delete(id) }
+    // 圖庫規則掛載時就要訂閱跨分頁的值變動；缺了這個，規則讀不進來，列表上什麼都不會套用
+    window.GM_addValueChangeListener = () => 0
+    window.GM_removeValueChangeListener = () => {}
     window.GM = {
       openInTab: (url) => { window.open(url, '_blank') },
       getValue: async (key, def) => {

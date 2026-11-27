@@ -276,6 +276,21 @@ function hideWhy() {
   whyAnchor.value = null
   whyLabel.value = null
 }
+// 點規則名稱會打開規則頁，關掉時規則頁把焦點還給這顆（RulePage 的 opener）。那一下是歸還焦點、
+// 不是使用者移過來，不浮說明；之後滑鼠移進來或用 Tab 移過來照常
+let returningFocusTo: HTMLElement | null = null
+function pickLabel(ruleId: number) {
+  returningFocusTo = whyAnchor.value
+  hideWhy()
+  openRule(ruleId)
+}
+function focusLabel(event: FocusEvent, label: ShownLabel) {
+  if (event.currentTarget === returningFocusTo) {
+    returningFocusTo = null
+    return
+  }
+  showWhy(event, label)
+}
 // 命中的條件用規則頁摘要那一套 chip 畫，跟規則頁、列表上的標籤是同一種樣子
 const whyTerms = computed<DigestTerm[]>(() => {
   const evidence = whyLabel.value?.evidence
@@ -497,8 +512,8 @@ onBeforeUnmount(() => {
       v-for="label in target.labels" :key="label.ruleId"
       class="eqt-listing-rules__label" :class="{ 'eqt-listing-rules__label--toned': label.tone }"
       :full="label.text" :display="label.text" :show-score="false" :show-marks="false" :style="toneStyle(label.tone)"
-      @pick="openRule(label.ruleId)"
-      @mouseenter="showWhy($event, label)" @mouseleave="hideWhy" @focusin="showWhy($event, label)" @focusout="hideWhy"
+      @pick="pickLabel(label.ruleId)"
+      @mouseenter="showWhy($event, label)" @mouseleave="hideWhy" @focusin="focusLabel($event, label)" @focusout="hideWhy"
     ><template #lead><Funnel aria-hidden="true" /></template></TagChip>
   </Teleport>
 
