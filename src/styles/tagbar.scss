@@ -815,13 +815,15 @@
         gap: 4px;
       }
 
-      // editing 時 bg 填成 border 色——border 跟 bg 同色變實心填充，
-      // 從外圍快速一瞄就能看出當前在編輯模式（不用先讀「完成 / 編輯」文字）。
-      // hover 也維持同色，否則 hover overlay 會把實心填充蓋掉、看起來像
-      // 退出了 editing 狀態
+      // editing 時換成跟 popup「儲存」同一套的綠色實心：從外圍一瞄就知道在編輯模式，
+      // 也看得出按它是收尾。hover 要列進來維持同色，否則 toned 的 hover overlay
+      // 會把實心填充蓋掉，看起來像退出了 editing 狀態
       &.is-active,
       &.is-active:hover {
-        background: var(--eqt-border);
+        border-color: var(--eqt-green-hover);
+        background: var(--eqt-green);
+        color: var(--eqt-text-on-color);
+        font-weight: bold;
       }
     }
   }
