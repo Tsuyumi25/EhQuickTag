@@ -55,6 +55,17 @@ document, which is where most of the non-obvious constraints come from:
   locales (en / ja / ko / zh-CN / zh-TW) and **a new key must be added to
   all five** — a missing one fails silently at runtime, not at build time.
 
+## Hints
+
+- Do not write hint text — no `eqt-settings__hint` paragraph, no explanatory
+  line under a control — unless the user asks for a hint in that specific
+  place.
+- Make the label readable enough to stand on its own. A hint that restates
+  a self-explanatory label is bad taste.
+- Long explanations never sit next to a control. When a feature genuinely
+  needs explaining, give it a separate help entry, like the 說明 button in
+  the My Tags panel (`panel.help`).
+
 ## Styles
 
 - BEM: `eqt-<block>__<element>--<modifier>`.

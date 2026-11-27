@@ -105,9 +105,6 @@ const previewLines = computed(() => getDefaultLines())
         />
         <span class="eqt-settings__label">{{ t('settings.defaultExactMatch') }}</span>
       </label>
-      <p class="eqt-settings__hint">
-        {{ t('settings.defaultExactMatchHint') }}
-      </p>
     </section>
 
     <section class="eqt-settings__section">
@@ -174,9 +171,6 @@ const previewLines = computed(() => getDefaultLines())
         />
         <span class="eqt-settings__label">{{ t('settings.useAccentOnInclude') }}</span>
       </label>
-      <p class="eqt-settings__hint">
-        {{ t('settings.useAccentOnIncludeHint') }}
-      </p>
     </section>
 
     <section class="eqt-settings__section">

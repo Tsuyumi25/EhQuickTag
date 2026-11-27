@@ -37,9 +37,6 @@ const previewLines = computed(() => getDefaultLines())
           @click="setLocale(opt.value)"
         >{{ opt.label }}</button>
       </div>
-      <p class="eqt-settings__hint">
-        {{ t('settings.languageHint') }}
-      </p>
     </section>
 
     <section class="eqt-settings__section">
@@ -54,9 +51,6 @@ const previewLines = computed(() => getDefaultLines())
           @click="convertToTraditional = m.id"
         >{{ t(m.labelKey) }}</button>
       </div>
-      <p class="eqt-settings__hint">
-        {{ t('settings.convertToTraditionalHint') }}
-      </p>
     </section>
 
     <section class="eqt-settings__section">

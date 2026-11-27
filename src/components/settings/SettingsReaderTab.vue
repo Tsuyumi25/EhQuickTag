@@ -37,7 +37,6 @@ import {
           >{{ t(p.labelKey) }}</button>
         </div>
       </div>
-      <p class="eqt-settings__hint">{{ t('settings.readerPanelPositionHint') }}</p>
       <div class="eqt-settings__field-row">
         <label class="eqt-settings__field-label">{{ t('settings.readerPanelOpacity') }}</label>
         <input

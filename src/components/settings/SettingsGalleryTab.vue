@@ -59,16 +59,6 @@ const galleryDblClickOptions = [
         />
         <span class="eqt-settings__label">{{ t('settings.galleryTaglistExpand') }}</span>
       </label>
-      <p class="eqt-settings__hint">
-        {{ t('settings.galleryTaglistHeightTipBefore')
-        }}<a
-          href="https://e-hentai.org/g/760051/e601ae7b84/"
-          target="_blank"
-          rel="noopener noreferrer"
-        >{{ t('settings.galleryTaglistHeightTipLink') }}</a>{{
-          t('settings.galleryTaglistHeightTipAfter')
-        }}
-      </p>
       <div class="eqt-settings__field-row">
         <label class="eqt-settings__field-label">{{ t('settings.galleryTaglistZoom') }}</label>
         <input
@@ -146,9 +136,6 @@ const galleryDblClickOptions = [
           >{{ t(m.labelKey) }}</button>
         </div>
       </div>
-      <p class="eqt-settings__hint">
-        {{ t('settings.introPanelPrimaryLangHint') }}
-      </p>
 
       <label class="eqt-settings__row">
         <input
@@ -159,9 +146,6 @@ const galleryDblClickOptions = [
         />
         <span class="eqt-settings__label">{{ t('settings.wikiPreludeExpanded') }}</span>
       </label>
-      <p class="eqt-settings__hint">
-        {{ t('settings.wikiPreludeExpandedHint') }}
-      </p>
     </section>
   </div>
 </template>

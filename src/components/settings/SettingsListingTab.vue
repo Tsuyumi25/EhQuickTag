@@ -41,7 +41,6 @@ const evrInstall = () => t('settings.listingEvrInstall').split(/(\{evr\})/)
           />
           <span class="eqt-settings__label">{{ t('settings.listingTagSelect') }}</span>
         </label>
-        <p class="eqt-settings__hint">{{ t('settings.listingTagSelectHint') }}</p>
         <label class="eqt-settings__row eqt-settings__row--sub">
           <input
             type="checkbox" :checked="listingDockAlwaysVisible" :disabled="!listingTagsEnabled || !listingTagSelectEnabled"
@@ -55,7 +54,6 @@ const evrInstall = () => t('settings.listingEvrInstall').split(/(\{evr\})/)
 
       <section class="eqt-settings__section">
         <h4 class="eqt-settings__subtitle"><Rows3 :size="14" /> {{ t('settings.sectionListingTagLayout') }}</h4>
-        <p class="eqt-settings__hint">{{ t('settings.listingTagLayoutHint') }}</p>
         <button type="button" class="eqt-settings__evr-settings" @click="openEvrSettings">
           <Settings :size="14" aria-hidden="true" />{{ t('settings.listingOpenEvrSettings') }}
         </button>
