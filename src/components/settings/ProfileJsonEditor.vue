@@ -37,6 +37,15 @@ const editorPreview = computed<Line[] | null>(() => {
   } catch { return null }
 })
 
+type EditorView = 'preview' | 'json'
+const EDITOR_VIEWS: readonly { id: EditorView, labelKey: string }[] = [
+  { id: 'preview', labelKey: 'settings.editorViewPreview' },
+  { id: 'json', labelKey: 'settings.editorViewJson' },
+]
+
+// 損壞的資料解析不出 Line[]，沒有預覽可看，只開 JSON
+const view = ref<EditorView>(props.mode !== 'corrupted' && editorPreview.value ? 'preview' : 'json')
+
 function onEditorSave() {
   if (props.mode !== 'normal') return
   try {
@@ -68,6 +77,19 @@ function onEditorExport() {
     <div class="eqt-json-editor__header">
       <h4 class="eqt-json-editor__title">{{ name }}</h4>
       <div class="eqt-json-editor__toolbar">
+        <div v-if="mode !== 'corrupted'" class="eqt-json-editor__views" role="tablist">
+          <button
+            v-for="v in EDITOR_VIEWS"
+            :key="v.id"
+            type="button"
+            role="tab"
+            class="eqt-json-editor__view"
+            :class="{ 'eqt-json-editor__view--active': view === v.id }"
+            :aria-selected="view === v.id"
+            :disabled="v.id === 'preview' && !editorPreview"
+            @click="view = v.id"
+          >{{ t(v.labelKey) }}</button>
+        </div>
         <button class="eqt-json-editor__tool-btn" type="button" :title="editorCopied ? t('settings.editorCopied') : t('settings.editorCopy')" @click="onEditorCopy">
           <Check v-if="editorCopied" :size="14" />
           <Copy v-else :size="14" />
@@ -79,7 +101,7 @@ function onEditorExport() {
     </div>
 
     <div
-      v-if="editorPreview"
+      v-if="view === 'preview' && editorPreview"
       class="eqt-settings__font-preview eqt-json-editor__preview"
       :class="currentTagStyleClass"
     >
@@ -100,15 +122,17 @@ function onEditorExport() {
       </template>
     </div>
 
-    <textarea
-      v-model="editorText"
-      class="eqt-json-editor__textarea"
-      spellcheck="false"
-      autocomplete="off"
-      :readonly="mode !== 'normal'"
-    />
+    <template v-else>
+      <textarea
+        v-model="editorText"
+        class="eqt-json-editor__textarea"
+        spellcheck="false"
+        autocomplete="off"
+        :readonly="mode !== 'normal'"
+      />
 
-    <p v-if="editorError" class="eqt-json-editor__error">{{ t('settings.editorJsonError', { message: editorError }) }}</p>
+      <p v-if="editorError" class="eqt-json-editor__error">{{ t('settings.editorJsonError', { message: editorError }) }}</p>
+    </template>
 
     <div v-if="mode === 'corrupted'" class="eqt-popup__actions">
       <p v-if="corruptedReason" class="eqt-json-editor__corrupted-reason">{{ t('settings.corruptedReason', { reason: corruptedReason }) }}</p>
@@ -149,6 +173,20 @@ function onEditorExport() {
     gap: 4px;
   }
 
+  &__views {
+    @include btn-split-group;
+    margin-right: 4px;
+  }
+
+  &__view {
+    @include btn-split-item;
+
+    &--active {
+      background: var(--eqt-bg-active);
+      color: var(--eqt-text);
+    }
+  }
+
   &__tool-btn {
     @include btn-filled;
     width: 28px;
@@ -159,8 +197,9 @@ function onEditorExport() {
   }
 
   &__preview {
-    margin-bottom: 8px;
-    flex-shrink: 0;
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
     background: var(--eqt-bg);
   }
 

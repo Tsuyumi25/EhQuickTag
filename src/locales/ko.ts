@@ -297,6 +297,8 @@ export default {
   'settings.editorCopied': '복사됨',
   'settings.editorCopy': '복사',
   'settings.editorExport': '파일 내보내기',
+  'settings.editorViewPreview': '미리보기',
+  'settings.editorViewJson': 'JSON',
   'settings.editorJsonError': 'JSON 형식 오류: {message}',
   'settings.editorInvalidShape': '데이터 형식이 현재 버전과 호환되지 않습니다',
   'settings.restoreProfile': '프로필 복원',

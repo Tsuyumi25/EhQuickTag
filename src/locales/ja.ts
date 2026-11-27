@@ -297,6 +297,8 @@ export default {
   'settings.editorCopied': 'コピーしました',
   'settings.editorCopy': 'コピー',
   'settings.editorExport': 'ファイルをエクスポート',
+  'settings.editorViewPreview': 'プレビュー',
+  'settings.editorViewJson': 'JSON',
   'settings.editorJsonError': 'JSON 形式エラー：{message}',
   'settings.editorInvalidShape': 'データ形式が現在のバージョンと互換性がありません',
   'settings.restoreProfile': 'プロファイルを復元',

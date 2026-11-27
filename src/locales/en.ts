@@ -297,6 +297,8 @@ export default {
   'settings.editorCopied': 'Copied',
   'settings.editorCopy': 'Copy',
   'settings.editorExport': 'Export file',
+  'settings.editorViewPreview': 'Preview',
+  'settings.editorViewJson': 'JSON',
   'settings.editorJsonError': 'JSON format error: {message}',
   'settings.editorInvalidShape': 'Data shape incompatible with current version',
   'settings.restoreProfile': 'Restore profile',

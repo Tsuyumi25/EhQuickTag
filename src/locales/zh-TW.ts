@@ -297,6 +297,8 @@ export default {
   'settings.editorCopied': '已複製',
   'settings.editorCopy': '複製',
   'settings.editorExport': '匯出檔案',
+  'settings.editorViewPreview': '預覽',
+  'settings.editorViewJson': 'JSON',
   'settings.editorJsonError': 'JSON 格式錯誤：{message}',
   'settings.editorInvalidShape': '資料格式與當前版本不相容',
   'settings.restoreProfile': '恢復標籤組',
