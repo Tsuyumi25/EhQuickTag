@@ -127,11 +127,20 @@ const virtualizer = useVirtualizer(computed(() => {
     // 預設量法把列高四捨五入成整數，但列在文件流裡的實際高度帶小數（26.19px 這類），
     // 往下累積幾十列就差出好幾 px，鍵盤捲到的項目底部會被切掉；這裡回報原值。
     //
+    // 小數高度只能有一個來源。Vue 每次 patch 都會重呼叫 function ref，這條路徑若每次都
+    // 重量 rect，量到的值會跟 ResizeObserver 的 borderBoxSize 差在小數點後幾位：rect
+    // 除 currentCSSZoom 有浮點誤差，Firefox 的 rect 高度還會隨列的位置差 1/60 px。每差
+    // 一次就 resizeItem → 捲動修正 → 重 render → 再量一次。Firefox 長清單捲到深處時，
+    // 這個迴圈在同一輪 flush 裡停不下來，直到分頁記憶體耗盡。所以 ref 只負責第一次量，
+    // 之後只認 ResizeObserver 回報的實際尺寸變化。
+    //
     // RuleMaterialPanel 拖曳時 Sortable 會把列本身搬進條件區、原位放一個複本，
     // 列在那邊縮成 chip，量到的高度不屬於清單；沿用快取，免得清單在拖曳中跳動
     measureElement: (el: Element, entry: ResizeObserverEntry | undefined, instance: Virtualizer<HTMLElement, Element>) => {
-      if (rowsEl.value?.contains(el)) return entry?.borderBoxSize[0]?.blockSize ?? layoutPx(el, el.getBoundingClientRect().height)
-      return instance.itemSizeCache.get(instance.options.getItemKey(instance.indexFromElement(el))) ?? EST_ITEM_HEIGHT
+      const cached = instance.itemSizeCache.get(instance.options.getItemKey(instance.indexFromElement(el)))
+      if (!rowsEl.value?.contains(el)) return cached ?? EST_ITEM_HEIGHT
+      if (entry) return entry.borderBoxSize[0]?.blockSize ?? layoutPx(el, el.getBoundingClientRect().height)
+      return cached ?? layoutPx(el, el.getBoundingClientRect().height)
     },
   }
 }))
