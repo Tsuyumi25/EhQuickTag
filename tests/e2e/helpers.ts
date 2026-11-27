@@ -13,6 +13,8 @@ const FIXTURE_TAGDB = readFileSync(resolve(__dirname, '../fixtures/eh-tag-db.jso
 const FIXTURE_TAG_WIKI_GZ = gzipSync(JSON.stringify({ version: 3, entries: {} }))
 const FIXTURE_TAG_COUNT_GZ = gzipSync('tag_name,len\n')
 const USERSCRIPT_PATH = resolve(__dirname, '../../dist/eh-quick-tag.user.js')
+// 正式環境由 manager 照 @require 先載入 Vue；測試照同樣順序先放 node_modules 裡同一版的 runtime
+const VUE_RUNTIME_PATH = resolve(__dirname, '../../node_modules/vue/dist/vue.runtime.global.prod.js')
 
 // gallery 詳情頁 fixture 的真實 URL（真實抓取，pathname 需對得上 route 白名單）
 const GALLERY_URL = 'https://e-hentai.org/g/757/483b65e703/'
@@ -180,6 +182,11 @@ function gmShimCode(): string {
 // goto 之前的共用前置：GM shim + EH mock route。addInitScript 必須在 goto 之前掛，
 // shim 才會出現在 userscript 之前。list / gallery 兩個入口共用這一步，改 shim 或
 // route 註冊只需動這裡一處。
+async function addUserscript(page: Page): Promise<void> {
+  await page.addScriptTag({ path: VUE_RUNTIME_PATH })
+  await page.addScriptTag({ path: USERSCRIPT_PATH })
+}
+
 async function setupEhPage(page: Page): Promise<void> {
   await page.addInitScript(gmShimCode())
   await mockEh(page)
@@ -200,7 +207,7 @@ export async function injectUserscript(page: Page, initialSearch?: string): Prom
       if (inp) inp.value = q
     }, initialSearch)
   }
-  await page.addScriptTag({ path: USERSCRIPT_PATH })
+  await addUserscript(page)
 }
 
 // gallery 詳情頁版本：goto 到 gallery fixture 再注入 userscript。
@@ -213,25 +220,25 @@ export async function injectGalleryUserscript(
   await setupEhPage(page)
   await page.goto(GALLERY_URL)
   if (opts.externalCss) await page.addStyleTag({ content: opts.externalCss })
-  await page.addScriptTag({ path: USERSCRIPT_PATH })
+  await addUserscript(page)
 }
 
 // /mytags 版本：fixture 保留 EH 原生 forms，讓 host adapter 走完整接管路徑。
 export async function injectMyTagsUserscript(page: Page): Promise<void> {
   await setupEhPage(page)
   await page.goto(MYTAGS_URL)
-  await page.addScriptTag({ path: USERSCRIPT_PATH })
+  await addUserscript(page)
 }
 
 export async function injectFavoritesUserscript(page: Page): Promise<void> {
   await setupEhPage(page)
   await page.goto(FAVORITES_URL)
-  await page.addScriptTag({ path: USERSCRIPT_PATH })
+  await addUserscript(page)
 }
 
 // reload 後的重新注入：addInitScript / route 已掛在 context、跨 navigation 持續，
 // 只需要再灌一次 userscript bundle。reload 測試（如 history 持久化）用這個避免重複
 // 設定 route 觸發 'route already registered' warning
 export async function reinjectUserscript(page: Page): Promise<void> {
-  await page.addScriptTag({ path: USERSCRIPT_PATH })
+  await addUserscript(page)
 }

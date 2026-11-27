@@ -1,10 +1,16 @@
 import { fileURLToPath, URL } from 'url'
 import { readFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 
 import { configDefaults, defineConfig } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
 import monkey from 'vite-plugin-monkey'
 import pkg from './package.json'
+
+const VUE_RUNTIME = 'dist/vue.runtime.global.prod.js'
+const vueRuntimeSha256 = createHash('sha256')
+  .update(readFileSync(new URL(`./node_modules/vue/${VUE_RUNTIME}`, import.meta.url)))
+  .digest('hex')
 
 export default defineConfig(({ command }) => ({
   define: {
@@ -68,6 +74,12 @@ export default defineConfig(({ command }) => ({
       },
       build: {
         metaFileName: true,
+        // Vue 改由 @require 載入，為的是 Greasy Fork 單一腳本 2 MB 的上限。版本照 node_modules 裡裝的那一版
+        // 釘進網址，SRI 由本機那份算出，manager 載到的跟建置時用的是同一份；模板都在建置時編譯好了，
+        // 只要不含編譯器的 runtime 版
+        externalGlobals: {
+          vue: ['Vue', (version: string) => `https://cdn.jsdelivr.net/npm/vue@${version}/${VUE_RUNTIME}#sha256=${vueRuntimeSha256}`],
+        },
       },
     }),
   ],
