@@ -1,6 +1,6 @@
 import { ref } from 'vue'
-import { GM } from '$'
-import { hasGMXHR, cacheGet, cacheSet } from '@/services/gmStorage'
+import { fetchGzText } from '@/services/tags/fetchGzText'
+import { cacheGet, cacheSet } from '@/services/gmStorage'
 
 // 資料源：URenko/e-hentai-db nightly SQLite，本 repo GHA 每週跑 distinct-root
 // group by。比 mokurin000 上游 CSV 對齊 EH search 真實 count（後者用 raw
@@ -53,7 +53,7 @@ export async function loadTagCount(opts: LoadTagCountOptions = {}): Promise<void
   }
 
   const url = TAG_COUNT_MIRRORS[opts.mirror ?? 'jsdelivr'].url
-  const csv = await fetchAndDecompress(url)
+  const csv = await fetchGzText(url)
   counts = parseCsv(csv)
   await cacheSet(CACHE_KEY, JSON.stringify(Object.fromEntries(counts)))
   await cacheSet(CACHE_TS_KEY, String(Date.now()))
@@ -66,32 +66,6 @@ export async function refreshTagCount(opts: LoadTagCountOptions = {}): Promise<v
   await loadTagCount(opts)
 }
 
-// 用 DecompressionStream 解 gzip——現代瀏覽器原生支援，不引第三方 lib
-async function fetchAndDecompress(url: string): Promise<string> {
-  const gz = await fetchGz(url)
-  const stream = new Response(gz).body!.pipeThrough(new DecompressionStream('gzip'))
-  return new Response(stream).text()
-}
-
-async function fetchGz(url: string): Promise<ArrayBuffer> {
-  if (hasGMXHR) {
-    return new Promise((resolve, reject) => {
-      GM.xmlHttpRequest({
-        method: 'GET',
-        url,
-        responseType: 'arraybuffer',
-        onload: (res) => {
-          if (res.status === 200) resolve(res.response as ArrayBuffer)
-          else reject(new Error(`HTTP ${res.status}`))
-        },
-        onerror: (err) => reject(new Error(`Network error: ${JSON.stringify(err)}`)),
-      })
-    })
-  }
-  const res = await fetch(url)
-  if (!res.ok) throw new Error(`HTTP ${res.status}`)
-  return res.arrayBuffer()
-}
 
 function parseCsv(csv: string): Map<string, number> {
   const result = new Map<string, number>()

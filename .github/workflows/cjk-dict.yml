@@ -1,0 +1,55 @@
+name: CJK Dict Update
+
+on:
+  schedule:
+    - cron: '0 6 1 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: data-branch-publish
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout source (main)
+        uses: actions/checkout@v4
+
+      - name: Checkout data branch (separate worktree)
+        uses: actions/checkout@v4
+        with:
+          ref: data
+          path: data-branch
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Generate cjk-dict.json.gz
+        run: |
+          set -euo pipefail
+          mkdir -p data-branch/cjk-dict
+          npx -y tsx scripts/gen-cjk-dict.ts data-branch/cjk-dict/cjk-dict.json.gz
+
+      - name: Publish to data branch (cjk-dict/)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          cd data-branch
+          git config user.email "actions@github.com"
+          git config user.name "GitHub Actions"
+          # 第一次產生時檔案還沒被追蹤，git diff 看不到；先 add 再比 index
+          git add cjk-dict/
+          if git diff --cached --quiet -- cjk-dict/; then
+            echo "no change, skip commit"
+            exit 0
+          fi
+          git commit -m "cjk-dict snapshot $(date -u +%Y-%m-%d)"
+          git push origin data

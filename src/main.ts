@@ -1,13 +1,14 @@
 import { createApp, effectScope } from 'vue'
 import Toast, { POSITION } from 'vue-toastification'
 import App from '@/App.vue'
-import { loadStore, startAutoSave, tagDbMirror, tagDbTtlDays, tagCountMirror, tagCountTtlDays, tagWikiMirror, tagWikiTtlDays } from '@/services/store'
+import { loadStore, startAutoSave, tagDbMirror, tagDbTtlDays, tagCountMirror, tagCountTtlDays, tagWikiMirror, tagWikiTtlDays, cjkDictMirror, cjkDictTtlDays } from '@/services/store'
 import { loadSessionHistory } from '@/services/search/searchSession'
 import { createAnchor } from '@/utils/createAnchor'
 import { bindFontVariables } from '@/utils/fontVariables'
 import { loadTagDb } from '@/services/tags/tagDb'
 import { loadTagCount } from '@/services/tags/tagCount'
 import { loadTagWiki, WikiSchemaMismatchError } from '@/services/tags/tagWiki'
+import { loadCjkDict } from '@/services/tags/cjkDict'
 import { useEqtToast } from '@/composables/useEqtToast'
 import { t } from '@/composables/useI18n'
 import { registerMenuCommands } from '@/services/menuCommands'
@@ -57,6 +58,8 @@ import '@/styles/toast-overrides.scss'
   const toast = useEqtToast()
   loadTagDb({ mirror: tagDbMirror.value, ttlDays: tagDbTtlDays.value })
   loadTagCount({ mirror: tagCountMirror.value, ttlDays: tagCountTtlDays.value })
+  loadCjkDict({ mirror: cjkDictMirror.value, ttlDays: cjkDictTtlDays.value })
+    .catch((e) => console.error('[cjkDict] load failed:', e))
   loadTagWiki({ mirror: tagWikiMirror.value, ttlDays: tagWikiTtlDays.value })
     .catch((e) => {
       // 初次載入時失敗——schema 錯 (CDN 遲滯) 用專屬提示引導切 mirror；其他錯默默

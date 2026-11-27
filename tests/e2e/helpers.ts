@@ -12,6 +12,13 @@ const FIXTURE_CSS = readFileSync(resolve(__dirname, '../fixtures/eh-g.css'), 'ut
 const FIXTURE_TAGDB = readFileSync(resolve(__dirname, '../fixtures/eh-tag-db.json'), 'utf-8')
 const FIXTURE_TAG_WIKI_GZ = gzipSync(JSON.stringify({ version: 3, entries: {} }))
 const FIXTURE_TAG_COUNT_GZ = gzipSync('tag_name,len\n')
+// 只放幾個字，夠驗證「繁簡互通有接上」；正式資料由 data 分支提供
+const FIXTURE_CJK_DICT_GZ = gzipSync(JSON.stringify({
+  version: 1,
+  cn2jp: {},
+  t2s: { 單: '单', 範: '范', 標: '标', 籤: '签' },
+  s2t: { 单: '單', 范: '範', 标: '標', 签: '籤' },
+}))
 const USERSCRIPT_PATH = resolve(__dirname, '../../dist/eh-quick-tag.user.js')
 // 正式環境由 manager 照 @require 先載入 Vue；測試照同樣順序先放 node_modules 裡同一版的 runtime
 const VUE_RUNTIME_PATH = resolve(__dirname, '../../node_modules/vue/dist/vue.runtime.global.prod.js')
@@ -65,6 +72,7 @@ const CSS_URL_RE = /^https:\/\/e-hentai\.org\/z\/\d+\/g\.css$/
 const TAGDB_URL_RE = /^https:\/\/(cdn|fastly|gcore)\.jsdelivr\.net\/.*\/db\.html\.json$|^https:\/\/raw\.githubusercontent\.com\/.*\/db\.html\.json$/
 const TAG_WIKI_URL_RE = /\/tag-wiki\/wiki\.json\.gz$/
 const TAG_COUNT_URL_RE = /\/tag-count\/tagname_count\.csv\.gz$/
+const CJK_DICT_URL_RE = /\/cjk-dict\/cjk-dict\.json\.gz$/
 const EHG_INDEX_URL_RE = /^https:\/\/e-hentai\.org\/z\/\d+\/ehg_index\.c\.js$/
 const SAMPLE_GALLERY_URL_RE = /^https:\/\/e-hentai\.org\/g\/(?:1001\/aaaaaaaaaa|1002\/bbbbbbbbbb)\/$/
 
@@ -116,6 +124,12 @@ export async function mockEh(page: Page): Promise<void> {
         contentType: 'application/gzip',
         headers: { 'access-control-allow-origin': '*' },
         body: FIXTURE_TAG_WIKI_GZ,
+      })
+    } else if (CJK_DICT_URL_RE.test(url)) {
+      route.fulfill({
+        contentType: 'application/gzip',
+        headers: { 'access-control-allow-origin': '*' },
+        body: FIXTURE_CJK_DICT_GZ,
       })
     } else if (TAG_COUNT_URL_RE.test(url)) {
       route.fulfill({

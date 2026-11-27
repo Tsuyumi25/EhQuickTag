@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { RotateCcw, Database, ChartColumn, BookOpen, Archive, Download, Upload } from '@lucide/vue'
+import { RotateCcw, Database, ChartColumn, BookOpen, Languages, Archive, Download, Upload } from '@lucide/vue'
 import { t } from '@/composables/useI18n'
 import { useEqtToast } from '@/composables/useEqtToast'
 import { refreshTagDb, TAG_DB_MIRRORS, type TagDbMirror } from '@/services/tags/tagDb'
 import { refreshTagCount, TAG_COUNT_MIRRORS, type TagCountMirror } from '@/services/tags/tagCount'
 import { refreshTagWiki, TAG_WIKI_MIRRORS, WikiSchemaMismatchError, type TagWikiMirror } from '@/services/tags/tagWiki'
+import { refreshCjkDict, CJK_DICT_MIRRORS, type CjkDictMirror } from '@/services/tags/cjkDict'
 import {
   tagDbMirror, tagDbTtlDays, tagCountMirror, tagCountTtlDays,
-  tagWikiMirror, tagWikiTtlDays,
+  tagWikiMirror, tagWikiTtlDays, cjkDictMirror, cjkDictTtlDays,
 } from '@/services/store'
 import { BackupError, decodeBackup, exportBackup, restoreBackup } from '@/services/backup'
 import { askConfirm } from '@/services/confirmDialog'
@@ -19,12 +20,14 @@ const toast = useEqtToast()
 const mirrorOptions = Object.entries(TAG_DB_MIRRORS).map(([k, v]) => ({ value: k as TagDbMirror, label: v.label }))
 const tagCountMirrorOptions = Object.entries(TAG_COUNT_MIRRORS).map(([k, v]) => ({ value: k as TagCountMirror, label: v.label }))
 const tagWikiMirrorOptions = Object.entries(TAG_WIKI_MIRRORS).map(([k, v]) => ({ value: k as TagWikiMirror, label: v.label }))
+const cjkDictMirrorOptions = Object.entries(CJK_DICT_MIRRORS).map(([k, v]) => ({ value: k as CjkDictMirror, label: v.label }))
 
 // 各 section 第二行顯示的來源網址：跟著選中的 mirror 連動，唯讀給使用者
 // 核對實際抓哪裡
 const tagDbUrl = computed(() => TAG_DB_MIRRORS[tagDbMirror.value].url)
 const tagCountUrl = computed(() => TAG_COUNT_MIRRORS[tagCountMirror.value].url)
 const tagWikiUrl = computed(() => TAG_WIKI_MIRRORS[tagWikiMirror.value].url)
+const cjkDictUrl = computed(() => CJK_DICT_MIRRORS[cjkDictMirror.value].url)
 
 const refreshing = ref(false)
 async function onRefreshTagDb() {
@@ -71,6 +74,20 @@ async function onRefreshTagWiki() {
     console.error('refreshTagWiki failed', e)
   } finally {
     refreshingTagWiki.value = false
+  }
+}
+
+const refreshingCjkDict = ref(false)
+async function onRefreshCjkDict() {
+  refreshingCjkDict.value = true
+  try {
+    await refreshCjkDict({ mirror: cjkDictMirror.value, ttlDays: cjkDictTtlDays.value })
+    toast.success(t('settings.cjkDictRefreshSuccess'))
+  } catch (e) {
+    toast.error(t('settings.cjkDictRefreshFailed'))
+    console.error('refreshCjkDict failed', e)
+  } finally {
+    refreshingCjkDict.value = false
   }
 }
 
@@ -176,6 +193,22 @@ async function onImportFile(event: Event) {
       </div>
       <div class="eqt-settings__row">
         <input class="eqt-settings__text-input eqt-settings__text-input--full" :value="tagWikiUrl" readonly />
+      </div>
+    </section>
+
+    <section class="eqt-settings__section">
+      <h4 class="eqt-settings__subtitle"><Languages :size="14" /> {{ t('settings.cjkDictSection') }}</h4>
+      <div class="eqt-settings__row">
+        <select class="eqt-settings__select" v-model="cjkDictMirror" :title="t('settings.cjkDictMirror')">
+          <option v-for="opt in cjkDictMirrorOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+        </select>
+        <input class="eqt-settings__input eqt-settings__input--short" type="number" min="1" max="90" v-model.number="cjkDictTtlDays" :title="t('settings.cjkDictTtlDays')" />
+        <button class="eqt-settings__data-btn" type="button" :disabled="refreshingCjkDict" @click="onRefreshCjkDict">
+          <RotateCcw :size="12" /> {{ refreshingCjkDict ? t('settings.cjkDictRefreshing') : t('settings.cjkDictRefresh') }}
+        </button>
+      </div>
+      <div class="eqt-settings__row">
+        <input class="eqt-settings__text-input eqt-settings__text-input--full" :value="cjkDictUrl" readonly />
       </div>
     </section>
   </div>

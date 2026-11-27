@@ -1,6 +1,6 @@
 import { ref } from 'vue'
-import { GM } from '$'
-import { hasGMXHR, cacheGet, cacheSet } from '@/services/gmStorage'
+import { fetchGzText } from '@/services/tags/fetchGzText'
+import { cacheGet, cacheSet } from '@/services/gmStorage'
 
 // EH wiki tag definition pages（5 個 category：tag/character/creator/language/series）
 // scrape 出來的 JSON。trans db 沒 intro 時 fallback，EN locale 強制走這個
@@ -107,7 +107,7 @@ export async function loadTagWiki(opts: LoadTagWikiOptions = {}): Promise<void> 
   }
 
   const url = TAG_WIKI_MIRRORS[opts.mirror ?? 'jsdelivr'].url
-  const json = await fetchAndDecompress(url)
+  const json = await fetchGzText(url)
   const payload = JSON.parse(json) as Payload
   if (payload.version !== SCHEMA_VERSION || !payload.entries) {
     // CDN edge 快取還沒失效時會拿到舊 schema (譬如剛 release 完 12h 內 jsdelivr
@@ -126,28 +126,3 @@ export async function refreshTagWiki(opts: LoadTagWikiOptions = {}): Promise<voi
   await loadTagWiki(opts)
 }
 
-async function fetchAndDecompress(url: string): Promise<string> {
-  const gz = await fetchGz(url)
-  const stream = new Response(gz).body!.pipeThrough(new DecompressionStream('gzip'))
-  return new Response(stream).text()
-}
-
-async function fetchGz(url: string): Promise<ArrayBuffer> {
-  if (hasGMXHR) {
-    return new Promise((resolve, reject) => {
-      GM.xmlHttpRequest({
-        method: 'GET',
-        url,
-        responseType: 'arraybuffer',
-        onload: (res) => {
-          if (res.status === 200) resolve(res.response as ArrayBuffer)
-          else reject(new Error(`HTTP ${res.status}`))
-        },
-        onerror: (err) => reject(new Error(`Network error: ${JSON.stringify(err)}`)),
-      })
-    })
-  }
-  const res = await fetch(url)
-  if (!res.ok) throw new Error(`HTTP ${res.status}`)
-  return res.arrayBuffer()
-}

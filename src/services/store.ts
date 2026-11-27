@@ -5,6 +5,7 @@ import type { Line, Button, ButtonLine, SeparatorLine, TagButton, UrlButton, Lin
 import { TAG_DB_MIRRORS, type TagDbMirror } from '@/services/tags/tagDb'
 import { TAG_COUNT_MIRRORS, type TagCountMirror } from '@/services/tags/tagCount'
 import { TAG_WIKI_MIRRORS, type TagWikiMirror } from '@/services/tags/tagWiki'
+import { CJK_DICT_MIRRORS, type CjkDictMirror } from '@/services/tags/cjkDict'
 import { locale, setLocale, detectLocale, isZhLocale, t, type Locale } from '@/composables/useI18n'
 import { PRESETS_BY_ID, type TagStylePresetId } from '@/composables/useTagStyle'
 import type { Selection } from '@/services/tagPick'
@@ -107,6 +108,8 @@ const INITIAL_SETTINGS = {
   tagCountTtlDays: 7,
   tagWikiMirror: 'jsdelivr' as TagWikiMirror,
   tagWikiTtlDays: 7,
+  cjkDictMirror: 'jsdelivr' as CjkDictMirror,
+  cjkDictTtlDays: 30,
   tagStylePreset: 'flat' as TagStylePresetId,
   buttonLineTextAlign: 'left' as LineTextAlign,
   separatorLineTextAlign: 'left' as LineTextAlign,
@@ -231,6 +234,8 @@ export const tagCountMirror    = refs.tagCountMirror
 export const tagCountTtlDays   = refs.tagCountTtlDays
 export const tagWikiMirror     = refs.tagWikiMirror
 export const tagWikiTtlDays    = refs.tagWikiTtlDays
+export const cjkDictMirror     = refs.cjkDictMirror
+export const cjkDictTtlDays    = refs.cjkDictTtlDays
 export const tagStylePreset    = refs.tagStylePreset
 export const buttonLineTextAlign = refs.buttonLineTextAlign
 export const separatorLineTextAlign = refs.separatorLineTextAlign
@@ -303,6 +308,7 @@ const SETTING_VALIDATORS: Partial<{ [K in SettingKey]: (v: unknown) => boolean }
   tagDbMirror:            v => typeof v === 'string' && v in TAG_DB_MIRRORS,
   tagCountMirror:         v => typeof v === 'string' && v in TAG_COUNT_MIRRORS,
   tagWikiMirror:          v => typeof v === 'string' && v in TAG_WIKI_MIRRORS,
+  cjkDictMirror:          v => typeof v === 'string' && v in CJK_DICT_MIRRORS,
 }
 
 function loadAllSettings(persisted: Partial<Settings>): void {
