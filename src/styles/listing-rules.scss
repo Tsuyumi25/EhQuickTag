@@ -381,34 +381,36 @@ tr.eqt-listing-rules__gallery--background > td {
   box-decoration-break: clone;
 }
 
-// 貼在規則名稱下方的浮層；不接滑鼠，移開名稱就收起來
+// 貼在規則名稱下方的浮層；不接滑鼠，移開名稱就收起來。底色、框線跟同一頁的 dock 一致，
+// 裡面的條件是規則頁摘要那一套 chip，項目間距用它們自帶的 margin
 .eqt-listing-rules__why {
   z-index: var(--eqt-z-popover);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--eqt-listing-rules-gap);
   max-width: calc(var(--eqt-listing-rules-panel-width) / 1.5);
-  padding: var(--eqt-listing-rules-gap) calc(var(--eqt-listing-rules-gap) * 2);
-  border-inline-start: var(--eqt-border-width) solid var(--eqt-listing-rules-solid);
+  padding: calc(var(--eqt-listing-rules-gap) * 1.5) calc(var(--eqt-listing-rules-gap) * 1.5) var(--eqt-listing-rules-gap);
+  border: var(--eqt-border-width) solid var(--eqt-border);
   border-radius: var(--eqt-radius-md);
-  background: var(--eqt-bg-elevated);
+  background: var(--eqt-listing-rules-dock-bg);
   box-shadow: var(--eqt-shadow-popover);
-  font-size: var(--eqt-fs-sm);
   pointer-events: none;
 }
-.eqt-listing-rules__why-term {
+.eqt-listing-rules__why-title {
   display: inline-flex;
   align-items: center;
   gap: calc(var(--eqt-listing-rules-gap) / 2);
-  padding: 0 var(--eqt-listing-rules-gap);
-  border-radius: var(--eqt-radius-sm);
-  background: color-mix(in srgb, var(--eqt-listing-rules-solid) 20%, transparent);
-}
-.eqt-listing-rules__why-icon {
-  width: var(--eqt-fs-sm);
-  height: var(--eqt-fs-sm);
-  flex-shrink: 0;
+  margin: var(--eqt-rule-page-item-margin);
+  font-weight: bold;
+
+  // 跟規則名稱 chip 上的漏斗同一個圖示、同一種填法，看得出這是哪一條規則
+  > svg {
+    width: var(--eqt-fs-md);
+    height: var(--eqt-fs-md);
+    flex-shrink: 0;
+    color: var(--eqt-listing-rules-solid);
+    fill: color-mix(in srgb, currentColor 45%, transparent);
+  }
 }
 
 // 排法照原生 .gl6t：置中、可換行，間距與單一個最寬 250px 都照它；字級跟著卡片走，跟原生標籤一樣大。

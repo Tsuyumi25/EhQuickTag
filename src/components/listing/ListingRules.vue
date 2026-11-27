@@ -4,6 +4,7 @@ import { computed, h, onBeforeUnmount, onMounted, ref, render, shallowRef, watch
 import { useFloating, autoUpdate, flip, offset, shift } from '@floating-ui/vue'
 import { Ban, ChevronDown, ExternalLink, Eye, Funnel, ListChecks, Search, Settings, Shapes, Tags, UserRound, X } from '@lucide/vue'
 import TagChip from '@/components/TagChip.vue'
+import RuleDigestTerm from '@/components/rules/RuleDigestTerm.vue'
 import GalleryTagListRows, { type GalleryTagListGroup } from '@/components/gallery/GalleryTagListRows.vue'
 import MyTagsEditor from '@/components/mytags/MyTagsEditor.vue'
 import { useFetchedMyTagsHost } from '@/composables/useFetchedMyTagsHost'
@@ -24,10 +25,9 @@ import { sortByNamespace } from '@/services/listing/tagGroups'
 import { litButtonPicks } from '@/services/listing/searchPicks'
 import { usePageSearch } from '@/composables/usePageSearch'
 import {
-  conditionRange, resolveRuleEffects, type GalleryProbe, type RangeCondition, type RuleEffects,
+  conditionRange, resolveRuleEffects, type GalleryProbe, type RuleEffects,
 } from '@/services/listing/galleryRules'
-import { formatRange } from '@/services/listing/ruleDigest'
-import { CATEGORY_LABELS } from '@/services/listing/galleryCategory'
+import type { DigestTerm } from '@/services/listing/ruleDigest'
 import { parseTerm, serializeEntry } from '@/services/search/searchSyntax'
 import { tokenIdentity } from '@/services/search/tagState'
 import { markEntriesOffPure, syncFromSearchPure, type TermEntry } from '@/services/search/sessionState'
@@ -257,9 +257,6 @@ const prefixTargets = computed(() => items.value.flatMap(item => {
 function toneStyle(tone: string | null) {
   return tone ? { '--eqt-listing-rules-tone': tone } : undefined
 }
-function rangeText(condition: RangeCondition) {
-  return `${t(`rulePage.${condition.kind}`)} ${formatRange(condition.kind, conditionRange(condition))}`
-}
 
 // 命中原因：滑鼠停在（或鍵盤移到）圖庫上的規則名稱時浮出來
 type ShownLabel = RuleEffects['labels'][number]
@@ -279,6 +276,17 @@ function hideWhy() {
   whyAnchor.value = null
   whyLabel.value = null
 }
+// 命中的條件用規則頁摘要那一套 chip 畫，跟規則頁、列表上的標籤是同一種樣子
+const whyTerms = computed<DigestTerm[]>(() => {
+  const evidence = whyLabel.value?.evidence
+  if (!evidence) return []
+  return [
+    ...evidence.categories.map(category => ({ kind: 'category', category, exclude: false }) as const),
+    ...evidence.uploaders.map(uploader => ({ kind: 'uploader', uploader, exclude: false }) as const),
+    ...evidence.tags.map(tag => ({ kind: 'tag', tag, exclude: false }) as const),
+    ...evidence.ranges.map(condition => ({ kind: 'range', field: condition.kind, range: conditionRange(condition), exclude: false }) as const),
+  ]
+})
 watch(labelTargets, targets => {
   if (whyAnchor.value && !targets.some(target => target.anchor.contains(whyAnchor.value))) hideWhy()
 })
@@ -505,17 +513,8 @@ onBeforeUnmount(() => {
       v-if="whyLabel" ref="whyPanel" class="eqt-listing-rules eqt-listing-rules__why" :style="[whyFloatingStyles, toneStyle(whyLabel.tone)]"
       role="tooltip" translate="no"
     >
-      <b>{{ whyLabel.text }}</b>
-      <span
-        v-for="category in whyLabel.evidence.categories" :key="category" class="eqt-listing-rules__why-term"
-      >{{ CATEGORY_LABELS[category] }}</span>
-      <span v-for="uploader in whyLabel.evidence.uploaders" :key="`uploader:${uploader}`" class="eqt-listing-rules__why-term">
-        <UserRound class="eqt-listing-rules__why-icon" aria-hidden="true" />{{ uploader }}
-      </span>
-      <span v-for="tag in whyLabel.evidence.tags" :key="tag" class="eqt-listing-rules__why-term">{{ display(tag) }}</span>
-      <span
-        v-for="condition in whyLabel.evidence.ranges" :key="condition.id" class="eqt-listing-rules__why-term"
-      >{{ rangeText(condition) }}</span>
+      <span class="eqt-listing-rules__why-title"><Funnel aria-hidden="true" />{{ whyLabel.text }}</span>
+      <RuleDigestTerm v-for="(term, index) in whyTerms" :key="index" :term="term" />
     </div>
   </Teleport>
 
