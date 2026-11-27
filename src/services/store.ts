@@ -10,7 +10,7 @@ import { PRESETS_BY_ID, type TagStylePresetId } from '@/composables/useTagStyle'
 import type { Selection } from '@/services/tagPick'
 import { MOUSE_BUTTONS, type MouseRoles } from '@/services/mouseRoles'
 
-const KEYS = {
+export const KEYS = {
   profiles: 'eqt_profiles',
   corrupted: 'eqt_profiles_corrupted',  // 解析失敗時備份原始 JSON 列表（CorruptedProfile[]）
   settings: 'eqt_settings',

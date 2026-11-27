@@ -4,7 +4,7 @@ import { cacheDelete, cacheGet, cacheKeys, cacheSet } from '@/services/gmStorage
 
 const ITEM_SCHEMA = 2
 
-function itemNamespace(prefix: string): { live: string; base: string } {
+export function itemNamespace(prefix: string): { live: string; base: string } {
   return { live: `${prefix}:`, base: `${prefix}_base:` }
 }
 

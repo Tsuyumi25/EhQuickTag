@@ -8,6 +8,7 @@ import { textAlignToJustify } from '@/utils/align'
 import { t } from '@/composables/useI18n'
 import { currentTagStyleClass } from '@/composables/useTagStyle'
 import { buttonPreviewLabel } from '@/utils/buttonPreview'
+import { downloadJson } from '@/utils/downloadJson'
 
 const props = defineProps<{
   mode: 'normal' | 'deleted' | 'corrupted'
@@ -58,13 +59,7 @@ async function onEditorCopy() {
 }
 
 function onEditorExport() {
-  const blob = new Blob([editorText.value], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `EhQuickTag-${props.name}-${new Date().toISOString().slice(0, 10)}.json`
-  a.click()
-  URL.revokeObjectURL(url)
+  downloadJson(`EhQuickTag-${props.name}-${new Date().toISOString().slice(0, 10)}.json`, editorText.value)
 }
 </script>
 

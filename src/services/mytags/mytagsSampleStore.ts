@@ -7,12 +7,12 @@ import {
   type Verdict,
 } from '@/services/mytags/mytagsSamples'
 
-const GALLERY_PREFIX = 'eqt_mytags_gallery'
-const VERDICT_PREFIX = 'eqt_mytags_verdict'
-const GALLERIES_LEGACY_KEY = 'eqt_mytags_galleries'
-const VERDICTS_LEGACY_KEY = 'eqt_mytags_verdicts'
+export const GALLERY_PREFIX = 'eqt_mytags_gallery'
+export const VERDICT_PREFIX = 'eqt_mytags_verdict'
+export const GALLERIES_LEGACY_KEY = 'eqt_mytags_galleries'
+export const VERDICTS_LEGACY_KEY = 'eqt_mytags_verdicts'
 /** 目前這一代樣本的代號。清空就換一個新的，沒有這個 key 代表還在第一代 */
-const GENERATION_KEY = 'eqt_mytags_samples_generation'
+export const GENERATION_KEY = 'eqt_mytags_samples_generation'
 const FIRST_GENERATION = '0'
 const LEGACY_SCHEMA = 1
 

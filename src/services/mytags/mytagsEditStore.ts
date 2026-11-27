@@ -3,8 +3,8 @@
 import { createItemStore } from '@/services/mytags/mytagsItemStore'
 import type { EditMap, PendingEdit } from '@/services/mytags/mytagsEdits'
 
-const EDIT_PREFIX = 'eqt_mytags_edit'
-const LEGACY_KEY = 'eqt_mytags_edits'
+export const EDIT_PREFIX = 'eqt_mytags_edit'
+export const LEGACY_KEY = 'eqt_mytags_edits'
 const LEGACY_SCHEMA = 1
 
 /** 清單的篩選與排序條件 */

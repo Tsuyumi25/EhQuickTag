@@ -5,7 +5,7 @@ import { reserveRuleIds, type GalleryRule } from '@/services/listing/galleryRule
 import { decodeRules, RULE_SCHEMA } from '@/services/listing/ruleStorage'
 import { createPageContext } from '@/composables/createPageContext'
 
-const STORAGE_KEY = 'eqt_gallery_rules'
+export const STORAGE_KEY = 'eqt_gallery_rules'
 
 export const useGalleryRuleStore = createPageContext(() => {
   const rules = ref<GalleryRule[]>([])

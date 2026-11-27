@@ -45,7 +45,7 @@ export const sessionIdentitySet = computed(() => {
 
 export type { TermEntry } from './sessionState'
 
-const HISTORY_KEY = 'eqt-search-history'
+export const HISTORY_KEY = 'eqt-search-history'
 const PERSIST_DEBOUNCE_MS = 100
 
 // === 持久化（內部）===
