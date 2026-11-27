@@ -266,6 +266,7 @@ export default {
   'settings.tagWikiRefreshSuccess': 'Tag wiki를 새로고침했습니다',
   'settings.tagWikiRefreshFailed': 'Tag wiki 새로고침에 실패했습니다. 나중에 다시 시도하세요.',
   'settings.tagWikiSchemaMismatch': 'Tag wiki 데이터 형식이 호환되지 않습니다 — CDN 엣지가 아직 이전 버전을 제공하고 있을 수 있습니다. 몇 시간 후 다시 시도하거나, 설정 → 데이터에서 GitHub Raw 미러로 전환하세요.',
+  'settings.tagBarEnabled': '태그 바 사용',
   'settings.fontFamily': '사용자 지정 글꼴',
   'settings.fontFamilyPlaceholder': '비워두면 페이지 글꼴 사용',
   'settings.fontFamilyHint': 'font-family 예시: ',

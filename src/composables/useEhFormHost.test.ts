@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, type EffectScope } from 'vue'
-import { useEhFormHost } from '@/composables/useEhFormHost'
+import { useEhFormHost, useEhTagBarHost } from '@/composables/useEhFormHost'
 
 
 const scopes: EffectScope[] = []
@@ -57,7 +57,7 @@ describe('useEhFormHost search synchronization', () => {
     expect(input.value).toBe('replacement query')
   })
 
-  it('同一個頁面重複取得回同一份 host，原生搜尋列不會再被包一次', () => {
+  it('同一個頁面重複取得回同一份 host', () => {
     const input = nativeSearch('initial query')
     const { scope, host } = acquireHost()
     const again = scope.run(useEhFormHost)!
@@ -65,6 +65,16 @@ describe('useEhFormHost search synchronization', () => {
     input.value = 'edited query'
     input.dispatchEvent(new Event('input'))
     expect(again!.searchText.value).toBe('edited query')
+  })
+
+  it('只同步搜尋文字時不動原生搜尋列；TagBar 接管只包一次', () => {
+    const input = nativeSearch('initial query')
+    const { scope } = acquireHost()
+    expect(input.parentElement.insertBefore).not.toHaveBeenCalled()
+    expect(input.parentElement.appendChild).not.toHaveBeenCalled()
+
+    const bar = scope.run(useEhTagBarHost)!
+    expect(scope.run(useEhTagBarHost)).toBe(bar)
     expect(input.parentElement.insertBefore).toHaveBeenCalledTimes(1)
     expect(input.parentElement.appendChild).toHaveBeenCalledTimes(1)
   })

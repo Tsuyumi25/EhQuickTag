@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import Draggable from 'vuedraggable'
 import { AlignHorizontalSpaceBetween, ArrowLeftRight, ExternalLink, GripVertical, Pencil, Check, Settings, Plus, Info } from '@lucide/vue'
 import TagBarProfileSwitcher from './TagBarProfileSwitcher.vue'
@@ -8,14 +8,14 @@ import SearchPanel from '@/components/search/SearchPanel.vue'
 import TagConfigPopup from './TagConfigPopup.vue'
 import UrlConfigPopup from './UrlConfigPopup.vue'
 import type { Line, SpacerButton } from '@/types'
-import { dblClickLeft, dblClickRight, dblClickLeftNewTabActive, dblClickRightNewTabActive, useAccentOnInclude, showSearchPanel, nsFormat, defaultExactMatch, type DblClickAction } from '@/services/store'
+import { dblClickLeft, dblClickRight, dblClickLeftNewTabActive, dblClickRightNewTabActive, useAccentOnInclude, tagBarEnabled, showSearchPanel, nsFormat, defaultExactMatch, type DblClickAction } from '@/services/store'
 import { openSettings, openSearchPopup } from '@/services/appOverlays'
 import { baseDragOptions, EQT_TAGS_GROUP, EQT_LINES_GROUP } from '@/utils/drag'
 import { recordSubmitAndFlush } from '@/services/search/searchSession'
 import { t } from '@/composables/useI18n'
 import { currentTagStyleClass } from '@/composables/useTagStyle'
 import { useTagButtonEditor } from '@/composables/useTagButtonEditor'
-import { useEhFormHost } from '@/composables/useEhFormHost'
+import { useEhTagBarHost } from '@/composables/useEhFormHost'
 import { usePageSearch } from '@/composables/usePageSearch'
 import { DEFAULT_SPACER_WIDTH } from '@/services/tagbar/spacerResize'
 
@@ -28,7 +28,10 @@ const ACTION_KEYS: Record<DblClickAction, string> = {
   none: 'tagbar.none',
 }
 
-const host = useEhFormHost()!
+const host = useEhTagBarHost()!
+// 按鈕行左右那欄的寬度是 TagBarLines 量出來寫到宿主上的；當下關掉標籤列時它不會再更新，
+// 歸零才不會讓搜尋面板與原生搜尋列一直縮著
+watch(tagBarEnabled, (on) => { if (!on) host.setControlsWidth(0) })
 const { searchText, search } = usePageSearch()
 
 const {
@@ -170,7 +173,7 @@ const dragToolNames = computed(() => [
     <!-- info hover 觸發的覆蓋層，樣式定義在 .eqt-tag-bar__overlay -->
     <div class="eqt-tag-bar__overlay"></div>
     <div class="eqt-tag-bar__lines">
-      <TagBarProfileSwitcher v-model:on-creation-page="onCreationPage" :editing="editing">
+      <TagBarProfileSwitcher v-if="tagBarEnabled" v-model:on-creation-page="onCreationPage" :editing="editing">
         <span class="eqt-tag-bar__info"><Info :size="16" /><span class="eqt-tag-bar__info-text">
           <span class="eqt-tag-bar__info-section">{{ t('tagbar.infoPreviewSection') }}</span>
           <span class="eqt-tag-bar__info-row">{{ t('tagbar.infoPreviewLeft', { action: t(ACTION_KEYS[dblClickLeft]) }) }}</span>
@@ -184,6 +187,7 @@ const dragToolNames = computed(() => [
       </TagBarProfileSwitcher>
 
       <TagBarLines
+        v-if="tagBarEnabled"
         ref="lineArea"
         v-model="searchText"
         :editing="editing"
@@ -200,14 +204,14 @@ const dragToolNames = computed(() => [
         <span class="eqt-tag-bar__search-area-label">{{ t('tagbar.searchPanel') }}</span>
         <SearchPanel
           v-model="searchText"
-          :editing="editing"
+          :editing="editing && tagBarEnabled"
           @add-to-search="openSearchPopup"
           @search="search('search')"
           @drag-start="onTagStart"
           @drag-end="onTagEnd"
         />
       </div>
-      <div class="eqt-tag-bar__bottom-row">
+      <div v-if="tagBarEnabled" class="eqt-tag-bar__bottom-row">
         <Draggable
           v-if="editing"
           v-bind="lineToolDragOptions"

@@ -266,6 +266,7 @@ export default {
   'settings.tagWikiRefreshSuccess': 'Tag wiki を更新しました',
   'settings.tagWikiRefreshFailed': 'Tag wiki の更新に失敗しました。後でリトライしてください',
   'settings.tagWikiSchemaMismatch': 'Tag Wiki のデータ形式が非互換です——CDN のエッジがまだ古いバージョンを配信している可能性があります。数時間後に再試行するか、設定 → データ で GitHub Raw ミラーに切り替えてください。',
+  'settings.tagBarEnabled': 'タグバーを有効にする',
   'settings.fontFamily': 'カスタムフォント',
   'settings.fontFamilyPlaceholder': '空欄の場合はページのフォントを使用',
   'settings.fontFamilyHint': 'font-family 値の例：',

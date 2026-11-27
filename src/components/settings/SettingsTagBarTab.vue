@@ -11,7 +11,7 @@ import {
   dblClickLeft, dblClickRight, dblClickLeftNewTabActive, dblClickRightNewTabActive,
   nsFormat, defaultExactMatch,
   tagStylePreset, buttonLineTextAlign, separatorLineTextAlign, useAccentOnInclude, type DblClickAction,
-  showSearchPanel, searchPanelLangMode, enableHistory, followCurrentSite,
+  tagBarEnabled, showSearchPanel, searchPanelLangMode, enableHistory, followCurrentSite,
   SEARCH_PANEL_LANG_MODES,
 } from '@/services/store'
 import { TAG_STYLE_PRESETS, currentTagStyleClass } from '@/composables/useTagStyle'
@@ -37,6 +37,14 @@ const previewLines = computed(() => getDefaultLines())
       <label class="eqt-settings__row">
         <input
           type="checkbox"
+          :checked="tagBarEnabled"
+          @change="tagBarEnabled = ($event.target as HTMLInputElement).checked"
+        />
+        <span class="eqt-settings__label">{{ t('settings.tagBarEnabled') }}</span>
+      </label>
+      <label class="eqt-settings__row">
+        <input
+          type="checkbox"
           :checked="showSearchPanel"
           @change="showSearchPanel = ($event.target as HTMLInputElement).checked"
         />
@@ -58,10 +66,11 @@ const previewLines = computed(() => getDefaultLines())
         </div>
       </div>
 
-      <label class="eqt-settings__row">
+      <label class="eqt-settings__row eqt-settings__row--sub">
         <input
           type="checkbox"
           :checked="enableHistory"
+          :disabled="!showSearchPanel"
           @change="enableHistory = ($event.target as HTMLInputElement).checked"
         />
         <span class="eqt-settings__label">{{ t('settings.enableHistory') }}</span>

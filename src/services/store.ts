@@ -116,9 +116,12 @@ const INITIAL_SETTINGS = {
   // 預設跟著 browser locale 走，使用者用 controls-row 的「中文/EN」toggle 覆蓋。
   // 持久化：跨頁／重開瀏覽器後維持上次選擇，不再回退到 browser locale
   searchPanelShowZh: isZhLocale(),
+  // 搜尋頁／收藏頁的標籤列（分組、按鈕行、編輯工具），跟下面的搜尋面板各自開關。
+  // 兩個都關時原生搜尋列不被接管，設定改從 userscript manager 選單進；
+  // 接管只在載入時決定，從兩個都關的狀態打開要重新整理才生效
+  tagBarEnabled: true,
   // SearchPanel 進階面板（legend-style 卡片）顯示開關，對應 SettingsPopup
-  // 'tagbar' tab 的 checkbox。故意不做「整個 TagBar 隱藏」的 toggle——
-  // 關掉就 lock out 自己（設定打不開）
+  // 'tagbar' tab 的 checkbox
   showSearchPanel: true,
   // SearchPanel chip 顯示語言模式：
   //   'auto'         → 跟著 UI locale 走（中文 → toggle、其他 → english-only）
@@ -233,6 +236,7 @@ export const buttonLineTextAlign = refs.buttonLineTextAlign
 export const separatorLineTextAlign = refs.separatorLineTextAlign
 export const useAccentOnInclude = refs.useAccentOnInclude
 export const searchPanelShowZh = refs.searchPanelShowZh
+export const tagBarEnabled      = refs.tagBarEnabled
 export const showSearchPanel    = refs.showSearchPanel
 export const searchPanelLangMode = refs.searchPanelLangMode
 export const convertToTraditional = refs.convertToTraditional

@@ -266,6 +266,7 @@ export default {
   'settings.tagWikiRefreshSuccess': 'Tag wiki refreshed',
   'settings.tagWikiRefreshFailed': 'Tag wiki refresh failed. Please retry later.',
   'settings.tagWikiSchemaMismatch': 'Tag wiki data format mismatch — the CDN edge may still be serving the previous version. Try again in a few hours, or switch to the GitHub Raw mirror in Settings → Data.',
+  'settings.tagBarEnabled': 'Enable the tag bar',
   'settings.fontFamily': 'Custom font',
   'settings.fontFamilyPlaceholder': 'Leave empty to use page font',
   'settings.fontFamilyHint': 'font-family example: ',

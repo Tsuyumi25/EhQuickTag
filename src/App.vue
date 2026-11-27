@@ -10,12 +10,12 @@ import SettingsPopup from '@/components/settings/SettingsPopup.vue'
 import SearchPopup from '@/components/search/SearchPopup.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import MpvGalleryOverlay from '@/components/reader/MpvGalleryOverlay.vue'
-import { useEhFormHost } from '@/composables/useEhFormHost'
+import { useEhTagBarHost } from '@/composables/useEhFormHost'
 import { useEhGalleryHost } from '@/composables/useEhGalleryHost'
 import { useEhMyTagsHost } from '@/composables/useEhMyTagsHost'
 import { usePageSearch } from '@/composables/usePageSearch'
 import { showSettings, initialSettingsTab, showSearchPopup, showRules } from '@/services/appOverlays'
-import { taggingEnhancerEnabled, myTagsEnhancerEnabled } from '@/services/store'
+import { taggingEnhancerEnabled, myTagsEnhancerEnabled, tagBarEnabled, showSearchPanel } from '@/services/store'
 import { refreshMyTagsPalette } from '@/services/mytags/mytagsPalette'
 import { useEqtToast } from '@/composables/useEqtToast'
 import { t } from '@/composables/useI18n'
@@ -23,7 +23,8 @@ import { evrInstalled } from '@/utils/evr'
 import { mpvGalleryUrl } from '@/services/reader/mpvGallery'
 
 useGalleryRuleStore()
-const formHost = useEhFormHost()
+// 標籤列與搜尋面板各自開關，共用同一個接管點；兩個都關才讓原生搜尋列原封不動
+const tagBarHost = tagBarEnabled.value || showSearchPanel.value ? useEhTagBarHost() : null
 const galleryHost = taggingEnhancerEnabled.value ? useEhGalleryHost() : null
 const myTagsHost = myTagsEnhancerEnabled.value ? useEhMyTagsHost() : null
 const pageSearch = usePageSearch()
@@ -40,7 +41,7 @@ onMounted(() => {
   <ListingRules v-if="evrInstalled" />
   <RulePage v-if="showRules" @close="showRules = false" />
 
-  <Teleport v-if="formHost" :to="formHost.anchor">
+  <Teleport v-if="tagBarHost && (tagBarEnabled || showSearchPanel)" :to="tagBarHost.anchor">
     <TagBar />
   </Teleport>
 

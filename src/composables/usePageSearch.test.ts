@@ -35,8 +35,6 @@ describe('usePageSearch', () => {
     vi.mocked(useEhFormHost).mockReturnValue({
       searchText: nativeText,
       input: { form: null } as HTMLInputElement,
-      anchor: {} as HTMLElement,
-      setControlsWidth() {},
     })
     const bar = scope.run(usePageSearch)!
     expect(history.value).toEqual(['initial$'])
