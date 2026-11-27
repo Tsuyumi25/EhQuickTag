@@ -8,7 +8,7 @@ import SearchPanel from '@/components/search/SearchPanel.vue'
 import TagConfigPopup from './TagConfigPopup.vue'
 import UrlConfigPopup from './UrlConfigPopup.vue'
 import type { Line, SpacerButton } from '@/types'
-import { dblClickLeft, dblClickRight, dblClickLeftNewTabActive, dblClickRightNewTabActive, useAccentOnInclude, tagBarEnabled, showSearchPanel, nsFormat, defaultExactMatch, type DblClickAction } from '@/services/store'
+import { dblClickLeft, dblClickRight, dblClickLeftNewTabActive, dblClickRightNewTabActive, useAccentOnInclude, tagBarEnabled, showSearchPanel, separatorLineTextAlign, nsFormat, defaultExactMatch, type DblClickAction } from '@/services/store'
 import { openSettings, openSearchPopup } from '@/services/appOverlays'
 import { baseDragOptions, EQT_TAGS_GROUP, EQT_LINES_GROUP } from '@/utils/drag'
 import { recordSubmitAndFlush } from '@/services/search/searchSession'
@@ -222,9 +222,19 @@ const dragToolNames = computed(() => [
           class="eqt-tag-bar__line-add"
         >
           <template #item="{ element: tool }">
-            <div class="eqt-tag-bar__tool">
-              <GripVertical :size="12" />
-              {{ t(tool.kind === 'separator' ? 'tagbar.addSeparatorLine' : 'tagbar.addButtonLine') }}
+            <div class="eqt-tag-bar__tool" :class="`eqt-tag-bar__tool--${tool.kind === 'separator' ? 'separator' : 'row'}`">
+              <span class="eqt-tag-bar__tool-face">
+                <GripVertical :size="12" />
+                {{ t(tool.kind === 'separator' ? 'tagbar.addSeparatorLine' : 'tagbar.addButtonLine') }}
+              </span>
+              <div class="eqt-tag-bar__tool-object eqt-tag-bar__line-wrap eqt-tag-bar__line-wrap--placeholder" aria-hidden="true">
+                <div
+                  v-if="tool.kind === 'separator'"
+                  class="eqt-tag-bar__line eqt-tag-bar__line--separator eqt-tag-bar__line--separator-solid eqt-tag-bar__line--separator-pos-middle"
+                  :class="`eqt-tag-bar__line--separator-align-${separatorLineTextAlign}`"
+                />
+                <div v-else class="eqt-tag-bar__line eqt-tag-bar__tool-empty-line" />
+              </div>
             </div>
           </template>
         </Draggable>
@@ -239,9 +249,19 @@ const dragToolNames = computed(() => [
           class="eqt-tag-bar__item-add"
         >
           <template #item="{ element: tool }">
-            <div class="eqt-tag-bar__tool">
-              <component :is="tool.mode === 'flex' ? AlignHorizontalSpaceBetween : ArrowLeftRight" :size="12" />
-              {{ t(tool.mode === 'flex' ? 'tagbar.spacerModeFlex' : 'tagbar.spacerModeFixed') }}
+            <div class="eqt-tag-bar__tool" :class="`eqt-tag-bar__tool--spacer-${tool.mode}`">
+              <span class="eqt-tag-bar__tool-face">
+                <component :is="tool.mode === 'flex' ? AlignHorizontalSpaceBetween : ArrowLeftRight" :size="12" />
+                {{ t(tool.mode === 'flex' ? 'tagbar.spacerModeFlex' : 'tagbar.spacerModeFixed') }}
+              </span>
+              <div
+                class="eqt-tag-bar__tool-object eqt-tag-bar__spacer eqt-tag-bar__spacer--editing"
+                :class="`eqt-tag-bar__spacer--${tool.mode}`"
+                :style="tool.mode === 'fixed' ? { width: `${tool.width}px` } : undefined"
+                aria-hidden="true"
+              >
+                <span class="eqt-tag-bar__spacer-body">{{ tool.mode === 'flex' ? `⇤ ${t('tagbar.spacerFlexLabel')} ⇥` : '↔' }}</span>
+              </div>
             </div>
           </template>
         </Draggable>

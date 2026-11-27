@@ -274,6 +274,62 @@
     }
   }
 
+  &__tool-face {
+    display: contents;
+  }
+
+  .eqt-tag-bar__tool > &__tool-object {
+    display: none;
+  }
+
+  // 拖出工具箱之後，落在行裡的預覽與跟著游標的那份複本都換成實際物件的樣子；
+  // 還停在工具箱裡的那份維持按鈕樣子，否則工具箱自己的版面會跳。
+  // 工具按鈕本身要改成 block：留著按鈕的 inline-flex，沒有內容的空行、分隔線會縮成 0 寬。
+  // 選擇器多帶一個 class，才蓋得過 btn-split-item 用相鄰選擇器畫的左框
+  &__line-rows > &__tool.eqt-tag-bar__tool--ghost,
+  &__line > &__tool.eqt-tag-bar__tool--ghost,
+  &__tool.eqt-tag-bar__tool--drag {
+    display: block;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: grabbing;
+
+    > .eqt-tag-bar__tool-face { display: none; }
+    > .eqt-tag-bar__tool-object { display: block; }
+
+    &.eqt-tag-bar__tool--row,
+    &.eqt-tag-bar__tool--separator {
+      > .eqt-tag-bar__tool-object { display: grid; }
+    }
+  }
+
+  &__line > &__tool--spacer-flex.eqt-tag-bar__tool--ghost {
+    flex: 1 1 0;
+    min-width: 8px;
+  }
+
+  &__tool--spacer-flex > &__tool-object {
+    width: 100%;
+  }
+
+  // 跟著游標的複本：Sortable 把工具按鈕的寬高寫成 inline，要蓋掉才裝得下實際物件。
+  // 它不在任何一行裡，沒有容器寬可以撐，行與彈簧給一個固定的拖曳寬
+  &__tool--drag {
+    height: auto !important;
+
+    &.eqt-tag-bar__tool--row,
+    &.eqt-tag-bar__tool--separator { width: 24em !important; }
+
+    &.eqt-tag-bar__tool--spacer-flex { width: 8em !important; }
+    &.eqt-tag-bar__tool--spacer-fixed { width: auto !important; }
+  }
+
+  &__tool-empty-line {
+    border: var(--eqt-border-width) dashed color-mix(in srgb, var(--eqt-border) 60%, transparent);
+    border-radius: var(--eqt-radius-sm);
+  }
+
   // 右下 ctrl 區的「+ 標籤 / + URL」split；hug content 不撐。
   // 色彩 override mixin 預設的「外框 + hint 文字」，改成跟旁邊獨立 ctrl
   // 一致的「bg-btn 填充 + secondary 文字」，視覺權重才不會掉一階。
