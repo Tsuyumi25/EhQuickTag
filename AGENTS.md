@@ -94,6 +94,17 @@ Treat commit messages, comments, README and issues as permanent:
   misread out of context. Use an abstract stand-in ("some parody tag")
   instead; category names (female / male / parody / character) are fine.
 
+## README
+
+- Do not add entries to the feature lists (`## Features` in `README.md`,
+  `## 功能` in `README.zh-TW.md`) on your own. Edit them only when the user
+  asks.
+- Each entry is a noun phrase or a short verb phrase; length alone is fine.
+  An entry written as a sentence is the problem: a colon or semicolon
+  followed by an explanation of how it works, or a comma joining a second
+  clause. Cut the explanation or recast the entry as a phrase, and keep any
+  distinct capability the sentence carried as its own entry.
+
 ## Setup
 
 ```

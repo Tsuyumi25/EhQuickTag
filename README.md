@@ -41,11 +41,11 @@ My Tags Enhancer
   - [x] Separator text, line style, position, size, and alignment
   - [x] Inline gaps and springs, drag-resizable with cross-row snapping
   - [x] EH search syntax editor
-  - [x] Also on the Favorites page, searching within the current favorites category
+  - [x] Favorites-page search within the current category
 - [x] Link buttons
   - [x] Build EH search URLs from categories, keywords, and advanced options
   - [x] Fill in the current page's search conditions in one click
-  - [x] Links follow whichever site you are on (e-hentai / exhentai)
+  - [x] Links matching the current site (e-hentai / exhentai)
 - [x] Search panel
   - [x] Visual search terms
   - [x] Cross-page search history
@@ -61,20 +61,21 @@ My Tags Enhancer
   - [x] Inline add-tag picker
   - [x] Display My Tags personal colors and scores on gallery tags
   - [x] Open selected gallery tags in My Tags for inspection and editing
-  - [x] Add, watch, or edit My Tags right on the gallery page: the action bar flips into a My Tags editor, and the tag you left-click or sweep onto becomes the one being edited
-  - [x] Import candidates from other galleries, with solid/dashed/dotted check icons indicating source evidence on candidates and existing tags
+  - [x] Add, watch, or edit My Tags right on the gallery page
+  - [x] Import tag candidates from other galleries
   - [x] Gallery Tagging Wiki shortcut
-  - [x] Tag from the Multi-Page Viewer: a button in its icon column floats the gallery's info box over the pages
+  - [x] Tag from the Multi-Page Viewer
 - [x] My Tags Enhancer
-  - [x] Preview filtering on gallery samples in real time, adjusting weights and thresholds before applying
-  - [x] Mark galleries as “block” or “keep” to tune rules to your preferences
+  - [x] Preview filtering on gallery samples in real time
+  - [x] Mark galleries as “block” or “keep”
   - [x] View and organize tags across tag sets with bulk actions
 - [x] Gallery List Enhancer (needs [Eh View Refined](https://github.com/Tsuyumi25/EhViewRefined))
   - [x] Every tag on listing pages, with My Tags colors and scores
-  - [x] Left-click includes, right-click excludes, drag selects several; the Dock gathers the selection to search, open in My Tags, or add to a gallery rule
-  - [x] Add, watch, or edit My Tags from the Dock: it flips into a small, non-blocking My Tags editor, and the tag you left-click or sweep onto becomes the one being edited
-  - [x] Gallery rules match by tags, categories, uploaders, stars and pages, built visually from AND / OR groups or written as an expression
-  - [x] Rule actions: colors, fade, blur, mosaic, strikethrough and text styles on a gallery's card, cover or title; a title prefix; or hiding the gallery
+  - [x] Left-click, right-click, and drag selection, gathered in a Dock
+  - [x] Add, watch, or edit My Tags from the Dock
+  - [x] Gallery rules by tags, categories, uploaders, stars, and pages
+  - [x] Visual AND / OR groups or expression syntax
+  - [x] Rule actions: color, fade, blur, mosaic, strikethrough, text style, title prefix, hide
   - [x] Live preview on the listing while editing rules
 - [x] Personalization
   - [x] Multiple independent tag profiles
